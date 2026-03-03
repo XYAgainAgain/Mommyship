@@ -21,10 +21,10 @@ Welcome to Mommyship! This is a mildly friendlier, more robust, and ever-so-slig
 
 Mommyship was created by two big nerds, **Jaz** & **Sam**, to fill some gaps in the original system.
 
-*Mommyship is a horror game for mature audiences. It contains violence, foul language, body horror, some sexual content, drug use, and depictions of mental illness, trauma, stress, panic, and capitalistic abuse which may not be suitable for all audiences. Please be advised.*
-
 ---
 
-> Mommyship is an independent, non-commercial homebrew project and is not affiliated with or endorsed by Tuesday Knight Games. MOTHERSHIP™ is a registered trademark of Tuesday Knight Games. All rights reserved.
+*Mommyship is a horror game for mature audiences. It contains violence, foul language, body horror, some sexual content, drug use, and depictions of mental illness, trauma, stress, panic, and capitalistic abuse which may not be suitable for all audiences. Please be advised.*
+
+<p class="homepage-disclaimer">Mommyship is an independent, non-commercial homebrew project and is not affiliated with or endorsed by Tuesday Knight Games. MOTHERSHIP™ is a registered trademark of Tuesday Knight Games. All rights reserved.</p>
 
 </div>

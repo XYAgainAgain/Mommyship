@@ -373,18 +373,24 @@ body:has(.homepage-hero) .md-main {
 body:has(.homepage-hero) .md-main__inner {
   flex: 1;
   display: flex;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
 }
 body:has(.homepage-hero) .md-content {
   flex: 1;
   display: flex;
+  width: 100%;
+  max-width: 100%;
 }
 body:has(.homepage-hero) .md-content__inner {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
 }
@@ -470,6 +476,12 @@ body:has(.homepage-hero) .md-content__inner {
 .homepage-hero ul {
   display: inline-block;
   text-align: left;
+}
+
+.homepage-disclaimer {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  margin-bottom: 0;
 }
 
 /* Splash banner images under section h1 headings */
