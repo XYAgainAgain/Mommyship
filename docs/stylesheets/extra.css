@@ -1,0 +1,600 @@
+/* Header site title — Bungee Outline with neon pulse */
+.md-header__topic .md-ellipsis {
+  font-family: "Bungee Outline", "League Spartan", sans-serif;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 1px #ffffff;
+  animation: neon-pulse 3s ease-in-out infinite;
+}
+
+/* Footer shortcut legend — fixed colors, immune to theme switching */
+.md-footer-meta {
+  background: rgba(13, 13, 26, 0.7);
+}
+
+.md-footer-meta__inner {
+  justify-content: center;
+}
+
+.shortcut-legend {
+  text-align: center;
+  padding: 0.6rem 0;
+  font-size: 0.7rem;
+  color: rgba(255, 250, 255, 0.45);
+}
+
+.shortcut-legend__sep::before {
+  content: "\00a0\00a0\2022\00a0\00a0";
+}
+
+.shortcut-legend kbd {
+  display: inline-block;
+  padding: 0.15em 0.4em;
+  font-family: inherit;
+  font-size: 0.85em;
+  line-height: 1;
+  color: #fffaff;
+  background: rgba(255, 250, 255, 0.1);
+  border: 1px solid rgba(255, 250, 255, 0.2);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(255, 250, 255, 0.15);
+  vertical-align: baseline;
+}
+
+@font-face {
+  font-family: "Bungee Outline";
+  src: url("../assets/fonts/BungeeOutline-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "League Spartan";
+  src: url("../assets/fonts/LeagueSpartan-VariableFont_wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Color overrides — turquoise/cerulean light, purple/pink dark */
+:root {
+  --md-primary-fg-color: #41ead4;
+  --md-primary-bg-color: #fff;
+  --md-accent-fg-color: #0075a2;
+  --md-typeset-a-color: #41ead4;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #41ead4;
+  --md-primary-bg-color: #fff;
+  --md-accent-fg-color: #0075a2;
+  --md-typeset-a-color: #41ead4;
+  --md-default-fg-color--light: rgba(0, 0, 0, 0.54);
+  --md-default-fg-color--lighter: rgba(0, 0, 0, 0.32);
+  --md-default-fg-color--lightest: rgba(0, 0, 0, 0.12);
+}
+
+[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
+  --md-hue: 280;
+  --md-default-bg-color: #0d0d1a;
+  --md-default-fg-color: #fffaff;
+  --md-default-fg-color--light: rgba(255, 250, 255, 0.35);
+  --md-default-fg-color--lighter: rgba(255, 250, 255, 0.32);
+  --md-default-fg-color--lightest: rgba(255, 250, 255, 0.12);
+  --md-primary-fg-color: #8332ac;
+  --md-primary-bg-color: #fffaff;
+  --md-accent-fg-color: #F679E5;
+  --md-code-bg-color: #1a1a2e;
+  --md-typeset-a-color: #8332ac;
+}
+
+.md-typeset a:hover {
+  color: #0075a2;
+}
+
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+  color: #F679E5;
+}
+
+.md-nav__link {
+  color: inherit;
+}
+
+.md-nav__link:hover {
+  color: #0075a2;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: #F679E5;
+}
+
+.md-nav__item--active > .md-nav__link {
+  color: #0075a2;
+}
+
+/* TOC: highlight current section (set by JS) */
+.md-nav__link--current {
+  color: var(--md-accent-fg-color) !important;
+}
+
+/* TOC: dim passed sections */
+.md-nav__link--passed {
+  color: rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--passed {
+  color: rgba(255, 250, 255, 0.35) !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__item--active > .md-nav__link {
+  color: #F679E5;
+}
+
+.md-header {
+  background-color: #41ead4;
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background-color: #8332ac;
+}
+
+.text-size-rocker {
+  display: flex;
+  align-items: center;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  margin: 0 0.4rem;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.text-size-rocker__btn {
+  background: transparent;
+  border: none;
+  color: currentcolor;
+  cursor: pointer;
+  font-family: "League Spartan", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  transition: background-color 0.15s ease;
+  outline-color: var(--md-accent-fg-color);
+}
+
+.text-size-rocker__btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.text-size-rocker__btn:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Accent fill on the -/+ buttons for visibility */
+.text-size-rocker__btn[data-text-size="decrease"],
+.text-size-rocker__btn[data-text-size="increase"] {
+  background: #0075a2;
+}
+
+.text-size-rocker__btn[data-text-size="decrease"]:hover,
+.text-size-rocker__btn[data-text-size="increase"]:hover {
+  background: #1a8db8;
+}
+
+.text-size-rocker__btn[data-text-size="decrease"]:active,
+.text-size-rocker__btn[data-text-size="increase"]:active {
+  background: #005c82;
+}
+
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="decrease"],
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="increase"] {
+  background: #F679E5;
+}
+
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="decrease"]:hover,
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="increase"]:hover {
+  background: #f99bec;
+}
+
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="decrease"]:active,
+[data-md-color-scheme="slate"] .text-size-rocker__btn[data-text-size="increase"]:active {
+  background: #e45ad0;
+}
+
+.text-size-rocker__btn[data-text-size="reset"] {
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  border-right: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+@media screen and (max-width: 44.984375em) {
+  .text-size-rocker__btn {
+    padding: 0.25rem 0.35rem;
+    font-size: 0.6rem;
+  }
+}
+
+@media screen and (max-width: 29.984375em) {
+  .text-size-rocker {
+    display: none;
+  }
+}
+
+[data-md-color-scheme="slate"] .md-search__input::placeholder {
+  color: rgba(255, 250, 255, 0.5);
+}
+
+/* League Spartan everywhere */
+:root {
+  --md-text-font: "League Spartan", sans-serif;
+  --md-code-font: "League Spartan", monospace;
+}
+
+body,
+input,
+button,
+select,
+textarea {
+  font-family: "League Spartan", sans-serif;
+}
+
+.md-typeset {
+  font-family: "League Spartan", sans-serif;
+  line-height: 1.7;
+}
+
+/* Base font-size bump (static — not affected by text-size rocker) */
+html {
+  font-size: 137.5%;
+}
+
+@media screen and (min-width: 100em) {
+  html {
+    font-size: 150%;
+  }
+}
+
+@media screen and (min-width: 125em) {
+  html {
+    font-size: 162.5%;
+  }
+}
+
+/* Text-size rocker scaling — targets only content font-sizes, header untouched */
+.md-typeset {
+  font-size: calc(0.8rem * var(--md-text-scale, 1));
+}
+
+.md-typeset table:not([class]) {
+  font-size: calc(0.64rem * var(--md-text-scale, 1));
+}
+
+.md-nav {
+  font-size: calc(0.7rem * var(--md-text-scale, 1));
+}
+
+.md-nav--primary .md-nav__item,
+.md-nav--primary .md-nav__title {
+  font-size: calc(0.8rem * var(--md-text-scale, 1));
+}
+
+/* Bold top-level nav links to match section labels */
+.md-nav--primary > .md-nav__list > .md-nav__item > .md-nav__link {
+  font-weight: 700;
+}
+
+/* Widen content area for tables */
+.md-grid {
+  max-width: 1800px;
+}
+
+/* Center all tables */
+.md-typeset__scrollwrap {
+  display: flex;
+  justify-content: center;
+}
+
+.md-typeset h1 {
+  font-family: "Bungee Outline", "League Spartan", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-align: center;
+  -webkit-text-stroke: 0.5px #000000;
+  animation: neon-pulse 3s ease-in-out infinite;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  -webkit-text-stroke: 1px #ffffff;
+}
+
+/* Hide permalink anchors on h1 so they don't throw off centering */
+.md-typeset h1 .headerlink {
+  display: none;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 5px var(--md-primary-fg-color),
+      0 0 5px var(--md-primary-fg-color),
+      0 0 10px var(--md-primary-fg-color),
+      0 0 10px var(--md-primary-fg-color),
+      0 0 20px var(--md-primary-fg-color),
+      0 0 30px var(--md-primary-fg-color);
+  }
+  50% {
+    text-shadow:
+      0 0 2px var(--md-primary-fg-color),
+      0 0 2px var(--md-primary-fg-color),
+      0 0 5px var(--md-primary-fg-color),
+      0 0 5px var(--md-primary-fg-color),
+      0 0 10px var(--md-primary-fg-color),
+      0 0 15px var(--md-primary-fg-color);
+  }
+}
+
+.homepage-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #0d0d1a url("../assets/images/MothershipSplash0b.webp") center / cover no-repeat;
+  background-blend-mode: screen;
+  pointer-events: none;
+}
+
+.homepage-hero {
+  text-align: center;
+  position: relative;
+  background: rgba(13, 13, 26, 0.7);
+  padding: 1.5rem 2rem;
+  border-radius: 8px;
+  width: min(80vh, 90%);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 30%, transparent);
+  z-index: 1;
+}
+
+/* Vertically center the hero card between header and footer */
+body:has(.homepage-hero) .md-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--md-toolbar-height, 48px));
+  overflow: hidden;
+}
+body:has(.homepage-hero) .md-main {
+  flex: 1;
+  display: flex;
+}
+body:has(.homepage-hero) .md-main__inner {
+  flex: 1;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+body:has(.homepage-hero) .md-content {
+  flex: 1;
+  display: flex;
+}
+body:has(.homepage-hero) .md-content__inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* Radar-sweep glow tracing the card edge */
+.homepage-hero::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 16px;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    transparent 55%,
+    var(--md-primary-fg-color) 75%,
+    var(--md-primary-fg-color) 90%,
+    transparent 100%
+  );
+  padding: 12px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: blur(10px);
+  animation: radar-sweep 6s linear infinite;
+  pointer-events: none;
+}
+
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes radar-sweep {
+  from { --glow-angle: 0deg; }
+  to { --glow-angle: 360deg; }
+}
+
+/* Force light text on homepage so it reads over the dark background art */
+.homepage-hero,
+.homepage-hero .md-typeset,
+.homepage-hero strong,
+.homepage-hero em,
+.homepage-hero p,
+.homepage-hero li {
+  color: #fffaff;
+}
+
+.homepage-hero a {
+  color: #41ead4;
+}
+
+.homepage-hero a:hover {
+  color: #0075a2;
+}
+
+[data-md-color-scheme="slate"] .homepage-hero a {
+  color: #8332ac;
+}
+
+[data-md-color-scheme="slate"] .homepage-hero a:hover {
+  color: #F679E5;
+}
+
+.homepage-hero hr {
+  border-color: rgba(255, 250, 255, 0.3);
+}
+
+.homepage-hero h1 {
+  font-size: clamp(2rem, 5.5vw, 4.5rem);
+  margin: 1rem 0 1rem;
+  -webkit-text-stroke: 1px #fff;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.homepage-hero h1 .headerlink {
+  display: none;
+}
+
+.homepage-hero ul {
+  display: inline-block;
+  text-align: left;
+}
+
+/* Splash banner images under section h1 headings */
+.md-typeset .splash-banner {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto 1.5rem;
+  opacity: 0.8;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .splash-banner {
+  filter: brightness(0.7) saturate(1.2);
+}
+
+/* Remove default <p> margin around the banner image */
+.md-typeset p:has(> .splash-banner) {
+  margin: 0;
+  line-height: 0;
+}
+
+/* Character sheet images — same sizing as splash banners, no dimming */
+.md-typeset .character-sheet {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  margin: 1.5rem auto 0.5rem;
+}
+
+/* Side-by-side sheet pair */
+.sheet-pair {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin: 1.5rem auto 0.5rem;
+}
+
+.sheet-pair__col {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-pair .character-sheet {
+  width: 100%;
+  margin: 0;
+}
+
+.sheet-pair .sheet-download-wrap {
+  margin-bottom: 0;
+}
+
+.md-typeset p:has(> .character-sheet) {
+  margin: 0;
+  line-height: 0;
+}
+
+/* Download button beneath each character sheet */
+.sheet-download-wrap {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.md-typeset .sheet-download {
+  display: inline-block;
+  padding: 0.5rem 1.4rem;
+  font-family: "League Spartan", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: var(--md-accent-fg-color);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.md-typeset .sheet-download:hover {
+  background: #005c82;
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .sheet-download:hover {
+  background: #e45ad0;
+  color: #fff;
+}
+
+/* Bump definition list terms for visual weight without using headers */
+.md-typeset dt {
+  font-size: 1.2em;
+}
+
+/* Styled tooltips for bracket notation ([+] / [-]) injected by JS */
+.md-typeset abbr[data-title] {
+  position: relative;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
+  cursor: help;
+}
+
+.md-typeset abbr[data-title]::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.55rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.md-typeset abbr[data-title]:hover::after {
+  opacity: 1;
+}
+

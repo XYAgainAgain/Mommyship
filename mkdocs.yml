@@ -1,0 +1,80 @@
+site_name: Mommyship
+site_description: A Homebrew Table Ruleset for Mothership Sci-Fi Horror RPG
+site_url: https://xyagainagain.github.io/Mommyship/
+
+theme:
+  name: material
+  custom_dir: overrides
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.tooltips
+  icon:
+    logo: material/rocket-launch
+  favicon: assets/favicon.png
+
+nav:
+  - Home: index.md
+  - Player's Survival Guide:
+    - players-survival-guide/index.md
+    - Making Your Character: players-survival-guide/making-your-character.md
+    - How to Play: players-survival-guide/how-to-play.md
+    - Civilization: players-survival-guide/civilization.md
+    - Gear: players-survival-guide/gear.md
+    - Quick Guide: players-survival-guide/quick-guide.md
+  - Shipbreaker's Toolkit:
+    - shipbreakers-toolkit/index.md
+    - Ships & Space Travel: shipbreakers-toolkit/ships-and-space-travel.md
+    - Space Travel: shipbreakers-toolkit/space-travel.md
+    - Operating Costs: shipbreakers-toolkit/operating-costs.md
+    - Ship Quick Guide: shipbreakers-toolkit/ship-quick-guide.md
+  - D.A.V.E. Pilot Manual: dave-pilot-manual.md
+
+plugins:
+  - search
+  - glightbox
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - def_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.mark
+  - pymdownx.critic
+  - pymdownx.keys
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      title: Table of Contents
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
+
