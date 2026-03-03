@@ -270,6 +270,28 @@ html {
   font-size: calc(0.64rem * var(--md-text-scale, 1));
 }
 
+/* Tighter cell padding — half of Material's default (.9375em 1.25em) */
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  padding: .47em .625em;
+}
+
+/* Material sets min-width: 5rem on all th; kills 9-column tables */
+.md-typeset table:not([class]) th {
+  min-width: 0;
+}
+
+/* Material's bleed pattern adds padding: 0 .8rem here, creating dead scroll space */
+.md-typeset__table {
+  padding: 0;
+}
+
+/* Remove compensating negative margin — scrollwrap now aligns with content */
+.md-typeset__scrollwrap {
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .md-nav {
   font-size: calc(0.7rem * var(--md-text-scale, 1));
 }
@@ -286,7 +308,7 @@ html {
 
 /* Widen content area for tables */
 .md-grid {
-  max-width: 1800px;
+  max-width: 85rem;
 }
 
 /* Center all tables */
@@ -491,11 +513,10 @@ body:has(.homepage-hero) .md-content__inner {
   border-radius: 6px;
   display: block;
   margin: 0 auto 1.5rem;
-  opacity: 0.8;
 }
 
 [data-md-color-scheme="slate"] .md-typeset .splash-banner {
-  filter: brightness(0.7) saturate(1.2);
+  mix-blend-mode: screen;
 }
 
 /* Remove default <p> margin around the banner image */

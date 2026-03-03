@@ -452,9 +452,9 @@ Whether it's cosmic rays, an engine leak, or some previously undiscovered astero
 
 | LEVEL | DAMAGE |
 | :---: | :---: |
-| 1 — TRACE Normal, everyday radiation. Cosmic rays. | None immediately. Possible long-term side effects include cancer. |
-| 2 — ACUTE Unshielded reactors and Warp Cores. | Reduce all Stats and Saves by 1 every round. |
-| 3 — LETHAL Atomic weapons, direct handling of Warp Cores. | Every round, Body Save or lethal dose (death in 1d5 days). |
+| 1 — **TRACE** Normal, everyday radiation. Cosmic rays. | None immediately. Possible long-term side effects include cancer. |
+| 2 — **ACUTE** Unshielded reactors and Warp Cores. | Reduce all Stats and Saves by 1 every round. |
+| 3 — **LETHAL** Atomic weapons, direct handling of Warp Cores. | Every round, Body Save or lethal dose (death in 1d5 days). |
 
 Armor with Radiation Shielding (such as the Hazard Suit) blocks all three levels of radiation.
 

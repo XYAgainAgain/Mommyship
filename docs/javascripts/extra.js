@@ -657,6 +657,19 @@ function watchColorScheme() {
   });
 }
 
+function applyQuickGuideWidth() {
+  var path = window.location.pathname;
+  var el = document.querySelector(".md-content");
+  if (!el) return;
+  if (path.includes("quick-guide")) {
+    el.style.maxWidth = "40rem";
+    el.style.margin = "0 auto";
+  } else {
+    el.style.maxWidth = "";
+    el.style.margin = "";
+  }
+}
+
 document$.subscribe(function() {
   updateCurrentTocItem();
   window.addEventListener("scroll", updateCurrentTocItem, { passive: true });
@@ -669,4 +682,5 @@ document$.subscribe(function() {
   initStarfield();
   bindGalacticity();
   watchColorScheme();
+  applyQuickGuideWidth();
 });

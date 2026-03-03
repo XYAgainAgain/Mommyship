@@ -35,6 +35,8 @@ In addition to these Ship Stats, vessels also typically have a number of other p
 
 These icons can be found on maps of vessels of all kinds, indicating certain facilities, functions, and features. These are not necessarily galactically-recognized symbols, but for the sake of play, it's safe to assume everybody knows what these mean.
 
+*(JUST PRETEND THERE'S AN IMAGE HERE; IT'S COMING SOON™ I SWEAR)*
+
 ### *1.1.2 ROLES ON A SHIP* {#1.1.2-roles-on-a-ship}
 
 Ships don't fly themselves (at least, not always). Crewing a ship requires at least ¼ its maximum Crew capacity, rounded up (minimum 1), and it must have a **Captain**. Each Role can only be filled by one character at a time, regardless of ship size or Class. There are benefits to running with a fuller crew, however — crew can inhabit Roles on the ship, conferring their Skills to certain rolls or granting additional benefits to running the ship. If someone aboard the ship meets no prerequisites, they are considered a Passenger (or potential Acting Captain).
@@ -90,7 +92,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 
 **The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost.**
 
-| AMENITY UPGRADES |  |  |  |
+| AMENITY UPGRADES | ———— | ———— | ———— |
 | :---: | :---: | :---: | :---: |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Bioration Tank** | 200kcr | 1 week | Provides rations for biological crewmembers for 1 year. |
@@ -102,7 +104,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 | **Medbay** | 2mcr | 3 weeks | [+] Body Saves to regain health while aboard the ship. Offers other medical treatments available at Warden's discretion. |
 | **Recreation Module** | 800kcr | 1 month | Entertainment hub, basic streaming plan, Zero-G pool table, minifridge. |
 | **Science Lab** | 500kcr | 3 weeks | Allows for detailed research, study, testing, and experimentation of samples. |
-| **MINOR UPGRADES** | — | — | — |
+| **MINOR UPGRADES** | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded crypods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
 | **Cryochamber** | 5mcr | 2 weeks | Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
@@ -115,7 +117,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 | **Improved Radiators** | 1.5mcr | 1 month | Grants +5 Thrusters. |
 | **Landing Gear** | 5mcr | 1 month × Ship Class | Retrofitted equipment for orbital landing and launch. |
 | **Upgrade Rack** | 6mcr | 1 month | Exterior module. Grants +3 Upgrades. Each additional rack installed costs 2× the last. |
-| **MAJOR UPGRADES** | — | — | — |
+| **MAJOR UPGRADES** | ———— | ———— | — |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Engine Improvements** | 9mcr | 3 weeks | Grants +15 Thrusters. |
 | **Enhanced A.I.** | 5.5mcr | 1 week | Grants +15 Systems. |
@@ -125,7 +127,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 | **Signature Reduction** | 15mcr | 1 month | While activated, your ship is only detectable with a successful Systems Check [-] at Firing Range. Double Fuel cost and travel times while in use. Does not work in Core Space. |
 | **Streamlined Fuel Injectors** | 4mcr | 2 months | Fuel lasts for 2 months of space travel. In the Movement Phase, bidding 1 Fuel also counts as bidding 2 Fuel. |
 | **Targeting Sensors** | 2mcr | 2 weeks | Systems Check (Firing Range): Confers [+] to Battle Checks made in ship-to-ship combat. |
-| **ILLEGAL UPGRADES**  | — | — | — |
+| **ILLEGAL UPGRADES**  | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Accelerated Afterburner** | 2.5mcr | 2 weeks | If you win the Fuel bid while Pursuing or Evading a target, that target has [-] on their Thrusters Check. |
 | **Comms Jammer** | 500kcr | 1 week | Systems Check (Firing Range): Allows for communication jamming and eavesdropping. |
@@ -141,7 +143,7 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 
 **The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost.**
 
-| DEFENSIVE HARDPOINTS | — | — | — |
+| DEFENSIVE HARDPOINTS | ———— | ———— | ———— |
 | :---: | :---: | :---: | :---: |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Adaptive Armor** | 9mcr | 1 month | Grants +2 Maximum Hull. |
@@ -150,7 +152,7 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Laser Defense System** | 2mcr | 2 weeks | Grants +5 to Battle. Ignore enemy's MDMG bonus from missile launchers.  |
 | **Reinforced Plating** | 4.5mcr | 1 month | Grants +1 Maximum Hull. |
 | **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check.  If you roll a Critical Success on your Battle Check, the target Critical Fails their next Thrusters Check. |
-| **WEAPON HARDPOINTS** | — | — | — |
+| **WEAPON HARDPOINTS** | ———— | ———— | ———— |
 | **Autocannon** | 4.5mcr | 2 weeks | Grants +10 to Battle. Kinetic ballistic weaponry. |
 |  **Extra Hardpoint** | 3mcr | 2 weeks | Grants +1 Hardpoint. Each additional Hardpoint costs 2× the previous. |
 | **Heavy Missile Launcher** | 6mcr | 2 weeks | Grants +15 to Battle. Grants +1 MDMG. |

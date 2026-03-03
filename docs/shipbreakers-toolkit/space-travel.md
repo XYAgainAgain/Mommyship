@@ -101,7 +101,7 @@ Occasionally, you may need to put your ship on emergency power, seal yourself in
 
 The result of this roll is how long it takes for help to pick up your Distress Signal and arrive to provide aid and/or finish you off.
 
-| D10 | CORE WORLDS | ASTEROID BELT | RIM SPACE | DEEP SPACE/DEAD ZONES |
+| ⠀D10⠀ | CORE WORLDS | ASTEROID BELT | RIM SPACE | DEEP SPACE/DEAD ZONES |
 | :---: | :---: | :---: | :---: | :---: |
 | 00 | **1d10 DAYS** Fate is on your side. | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS**  Remember to review the Company policy on backpay in the event of a cryo-emergency. |
 | 01–02 | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. |
@@ -227,7 +227,7 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 
 ***Note:** If a repair has an associated 10% rate for something to go wrong, roll 1d10. On a 0, the effect triggers. For 50% odds, even-digit rolls are good and odd-digit rolls are bad.*
 
-| MAINTENANCE ISSUES |  |  |  |  |  |
+| ISSUES |  |  |  |  |  |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | **MINOR REPAIRS** |  |  |  |  |  |
 | 00 | Rancid smell permeates cabins. | 34 | Worn landing struts. | 67 | Miscalibrated guidance system. |
