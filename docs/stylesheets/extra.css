@@ -610,3 +610,198 @@ body:has(.homepage-hero) .md-content__inner {
   opacity: 1;
 }
 
+/* Starfield — dark mode only, all pages except homepage */
+[data-md-color-scheme="slate"] #starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body:has(.homepage-hero) #starfield {
+  display: none;
+}
+
+/* Base star layers — A/B copies crossfade for seamless expansion loop */
+#starfield .stars-layer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+/* A/B/C copies offset by thirds of the cycle for seamless coverage */
+#starfield .stars-layer[data-depth="1"] { animation: starfield-expand 40s linear infinite; }
+#starfield .stars-layer[data-depth="1"].stars-layer--b { animation-delay: -13.33s; }
+#starfield .stars-layer[data-depth="1"].stars-layer--c { animation-delay: -26.67s; }
+#starfield .stars-layer[data-depth="2"] { animation: starfield-expand 70s linear infinite; }
+#starfield .stars-layer[data-depth="2"].stars-layer--b { animation-delay: -23.33s; }
+#starfield .stars-layer[data-depth="2"].stars-layer--c { animation-delay: -46.67s; }
+#starfield .stars-layer[data-depth="3"] { animation: starfield-expand 100s linear infinite; }
+#starfield .stars-layer[data-depth="3"].stars-layer--b { animation-delay: -33.33s; }
+#starfield .stars-layer[data-depth="3"].stars-layer--c { animation-delay: -66.67s; }
+
+/* Stars persist at full opacity longer, fade only at the very edges */
+@keyframes starfield-expand {
+  0% { transform: scale(0.6); opacity: 0; }
+  5% { opacity: 1; }
+  96% { opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Twinkle overlays — 3 groups per depth, staggered brightness pulses */
+#starfield .stars-twinkle {
+  animation: starfield-expand 40s linear infinite, starfield-twinkle 3s ease-in-out infinite alternate;
+}
+
+#starfield .stars-twinkle--0 { animation-delay: 0s, 0s; }
+#starfield .stars-twinkle--1 { animation-delay: 0s, -1s; }
+#starfield .stars-twinkle--2 { animation-delay: 0s, -2s; }
+
+#starfield .stars-twinkle[data-depth="2"] { animation-duration: 70s, 4.5s; }
+#starfield .stars-twinkle[data-depth="3"] { animation-duration: 100s, 6s; }
+
+@keyframes starfield-twinkle {
+  0% { filter: brightness(0.3); }
+  100% { filter: brightness(1.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #starfield .stars-layer {
+    animation: none !important;
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  #starfield .stars-twinkle {
+    animation: starfield-twinkle 3s ease-in-out infinite alternate !important;
+  }
+}
+
+/* Galacticity slider — only visible in dark mode, hidden on homepage */
+.galacticity-control {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0.4rem;
+  flex-shrink: 0;
+}
+
+[data-md-color-scheme="slate"] .galacticity-control {
+  display: flex;
+}
+
+body:has(.homepage-hero) .galacticity-control {
+  display: none !important;
+}
+
+.galacticity-control__label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: default;
+}
+
+/* Range input — neon track and thumb */
+.galacticity-control__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  cursor: pointer;
+}
+
+.galacticity-control__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #F679E5;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.galacticity-control__slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #F679E5;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.galacticity-control__slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 8px rgba(246, 121, 229, 0.6);
+}
+
+.galacticity-control__slider:hover::-moz-range-thumb {
+  box-shadow: 0 0 8px rgba(246, 121, 229, 0.6);
+}
+
+/* JUMP button */
+.galacticity-control__jump {
+  background: transparent;
+  border: 1px solid rgba(246, 121, 229, 0.6);
+  color: #fff;
+  font-family: "Bungee Outline", "League Spartan", sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  -webkit-text-stroke: 0.5px #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  animation: jump-breathe 4s ease-in-out infinite;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.galacticity-control__jump:hover {
+  background: #F679E5;
+  transform: scale(1.1);
+  animation: none;
+  box-shadow: 0 0 14px rgba(246, 121, 229, 0.8), 0 0 20px rgba(246, 121, 229, 0.3);
+}
+
+.galacticity-control__jump:active {
+  background: #e45ad0;
+  transform: scale(0.95);
+}
+
+@keyframes jump-breathe {
+  0%, 100% { box-shadow: 0 0 4px rgba(246, 121, 229, 0.15); }
+  50% { box-shadow: 0 0 8px rgba(246, 121, 229, 0.35); }
+}
+
+@media screen and (max-width: 29.984375em) {
+  .galacticity-control {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galacticity-control__jump {
+    display: none;
+  }
+}
+
+/* Hyperspace — scale-only keyframe (no opacity fade) prevents flicker at high speed */
+@keyframes starfield-hyperspace {
+  0% { transform: scale(0.6); }
+  100% { transform: scale(2.5); }
+}
+
+#starfield.hyperspace .stars-layer,
+#starfield.hyperspace .stars-twinkle {
+  display: none;
+}
+
