@@ -53,10 +53,10 @@ D.A.V.E. is equipped with one shoulder-mounted Softpoint™ slot, which can be u
     - **Minigun:** Long. Heavy. Heavy Shells, 3 shots. Affects target & all Adjacent. Ignores ≤5 AP. 3d10 damage (Gunshot).  
     - **Particle Shield:** 10 AP cover in Close range of D.A.V.E. for 1d5 rounds or until reduced to 0 AP. If reduced to 0 AP, can be recharged with 1 hour's worth of Powercell charge.  
     - **Scrapblaster:** Close. Heavy. Special (scrap metal), 1 shot. Ignores AP/cover. Variable damage:   
-    - Target AP 20+: 1d10+1   
-    - Target AP 10–19: 2d10+2  
-    - Target AP 5–9: 3d10+3  
-    - Target AP 1–4: 4d10+4  
+        - Target AP 20+: 1d10+1   
+        - Target AP 10–19: 2d10+2  
+        - Target AP 5–9: 3d10+3  
+        - Target AP 1–4: 4d10+4  
     - **Thermite Launcher:** Close. Heavy Shells, 1 shot. Body Save ([-] if Adjacent) or 2d10 damage (Fire/Explosives).   
     - **Tractor Beam:** Close. Energy Cells, 4 shots. Body Save [-] or pulled Adjacent to D.A.V.E.  
     - **Ultrasonic Cannon:** Long. Energy Cells, 4 shots. Sanity Save ([-] for Humans) or Stunned for 1d5 rounds.
