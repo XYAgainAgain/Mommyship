@@ -83,7 +83,7 @@ Contractors who survive a job and are paid in full increase their Loyalty by 1. 
 
 Not all Contractors need a motivation, but those who do always fail Loyalty Saves when the two come in conflict. A contractor's motivation always supersedes any sense of loyalty to the crew they may have. You don't need to roll up a motivation for every contractor, just notable ones.
 
-### *3.3.2 CONTRACTOR MOTIVATION (D20)*
+### *3.3.3 CONTRACTOR MOTIVATION (D20)*
 
 | D20 | RANDOM MOTIVATION |
 | :---: | ----- |
