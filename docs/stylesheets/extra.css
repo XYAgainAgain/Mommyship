@@ -8,12 +8,21 @@
   animation: neon-pulse 3s ease-in-out infinite;
 }
 
-/* Footer shortcut legend — fixed colors, immune to theme switching */
+/* Footer — match header height, fixed colors */
+.md-footer {
+  height: 2.4rem;
+}
+
 .md-footer-meta {
+  height: 100%;
+  padding: 0;
   background: rgba(13, 13, 26, 0.7);
 }
 
 .md-footer-meta__inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
@@ -369,52 +378,59 @@ html {
   text-align: center;
   position: relative;
   background: rgba(13, 13, 26, 0.7);
-  padding: 1.5rem 2rem;
+  padding: 0.5rem 1.5rem;
   border-radius: 8px;
-  width: min(80vh, 90%);
+  width: min(94cqb, 90cqi);
   aspect-ratio: 1 / 1;
-  margin: 0 auto;
+  margin: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 30%, transparent);
   z-index: 1;
+  container-type: inline-size;
 }
 
-/* Vertically center the hero card between header and footer */
-body:has(.homepage-hero) .md-container {
+/* Lock homepage to exactly one viewport */
+body:has(.homepage-hero) {
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--md-toolbar-height, 48px));
+}
+
+body:has(.homepage-hero) .md-header {
+  flex-shrink: 0;
+}
+
+body:has(.homepage-hero) .md-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
+
 body:has(.homepage-hero) .md-main {
   flex: 1;
-  display: flex;
-}
-body:has(.homepage-hero) .md-main__inner {
-  flex: 1;
-  display: flex;
-  width: 100%;
-  max-width: 100%;
+  display: grid;
+  place-content: center;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  container-type: size;
+  overflow: hidden;
 }
-body:has(.homepage-hero) .md-content {
-  flex: 1;
-  display: flex;
-  width: 100%;
-  max-width: 100%;
-}
+
+/* Collapse intermediate wrappers so the hero is a direct grid child */
+body:has(.homepage-hero) .md-main__inner,
+body:has(.homepage-hero) .md-content,
 body:has(.homepage-hero) .md-content__inner {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
+  display: contents;
+}
+
+body:has(.homepage-hero) .md-footer {
+  display: none;
 }
 
 /* Radar-sweep glow tracing the card edge */
@@ -479,13 +495,18 @@ body:has(.homepage-hero) .md-content__inner {
   color: #F679E5;
 }
 
+.homepage-hero p,
+.homepage-hero li {
+  font-size: calc(clamp(0.55rem, 2.2cqi, 0.85rem) * var(--md-text-scale, 1));
+}
+
 .homepage-hero hr {
   border-color: rgba(255, 250, 255, 0.3);
 }
 
 .homepage-hero h1 {
-  font-size: clamp(2rem, 5.5vw, 4.5rem);
-  margin: 1rem 0 1rem;
+  font-size: calc(clamp(2rem, 10cqi, 4.5rem) * var(--md-text-scale, 1));
+  margin: 0 0 1cqi;
   -webkit-text-stroke: 1px #fff;
   color: #fff;
   white-space: nowrap;
@@ -501,7 +522,7 @@ body:has(.homepage-hero) .md-content__inner {
 }
 
 .homepage-disclaimer {
-  font-size: 0.65rem;
+  font-size: calc(clamp(0.45rem, 1.5cqi, 0.65rem) * var(--md-text-scale, 1));
   opacity: 0.5;
   margin-bottom: 0;
 }
@@ -631,8 +652,13 @@ body:has(.homepage-hero) .md-content__inner {
   opacity: 1;
 }
 
-/* Starfield — dark mode only, all pages except homepage */
+/* Starfield — hidden by default, visible in dark mode only (except homepage) */
+#starfield {
+  display: none;
+}
+
 [data-md-color-scheme="slate"] #starfield {
+  display: block;
   position: fixed;
   inset: 0;
   z-index: -1;

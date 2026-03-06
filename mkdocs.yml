@@ -1,5 +1,5 @@
 site_name: Mommyship
-site_description: A Homebrew Table Ruleset for Mothership Sci-Fi Horror RPG
+site_description: A Homebrew Ruleset for the Mothership Sci-Fi Horror RPG
 site_url: https://xyagainagain.github.io/Mommyship/
 
 theme:
@@ -17,7 +17,7 @@ theme:
       accent: custom
       toggle:
         icon: material/weather-sunny
-        name: Switch to dark mode
+        name: Switch to dark mode (AKA correct mode)
   features:
     - navigation.instant
     - navigation.tracking
