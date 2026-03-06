@@ -6,12 +6,12 @@ The Known Galaxy is expansive and expensive. Between adventures, contracts, and 
 
 ## 3.1 PORTS
 
-When characters are in need of a place to repair, reFuel, and catch a little R&R, they need to dock at the nearest port. While in port, you can buy and sell equipment, look for work, buy a ticket or charter a vehicle, or take some much needed Shore Leave. 
+When characters are in need of a place to repair, refuel, and catch a little R&R, they need to dock at the nearest port. While in port, you can buy and sell equipment, look for work, buy a ticket or charter a vehicle, or take some much needed Shore Leave. 
 
 There are five basic classes of Port based on their safety, importance, and affluence:
 
 1. **X-Class Ports:** Notorious criminal settlements and pirate bases. X-Class Ports are beyond the reach of the Company, making them much more free and much more dangerous. 
-2. **C-Class Ports:** Rundown, out-of-the-way outposts, reFueling stations, and forward military posts. You can find C-Class Ports on any frontier settlement or Rimspace backworld, minimally staffed and minimally supplied. 
+2. **C-Class Ports:** Rundown, out-of-the-way outposts, refueling stations, and forward military posts. You can find C-Class Ports on any frontier settlement or Rimspace backworld, minimally staffed and minimally supplied. 
 3. **B-Class Ports**: Blue-collar industrial stations and large-scale military installations. B-Class Ports build ships, garrison troops, mine ore, and take care of all the heavy industry required to keep the galaxy spinning. 
 4. **A-Class Ports**: Overpopulated metropolises, trading centers, and power brokers. A-Class Ports house millions and contain everything you'd expect to find in a planetside city, and more if you know where to look. 
 5. **S-Class Ports**: Luxurious pleasure spas and restricted-access palatial estates of the uber-wealthy. S-Class Ports are the rare gems of the void. Heavily guarded, invite only. 
@@ -36,7 +36,7 @@ Shore Leave can be as detailed or abstract as your group prefers. You might play
 | A-CLASS | 2d10×10kcr | 2d10 |
 | S-CLASS | 2d10×100kcr | All |
 
-2. **Make a Sanity Save.** In order to process Stress into something useful, make a Sanity Save. 2d10 x 100kcr. Example: *Shore Leave at Anarene's Folly…*
+2. **Make a Sanity Save.** In order to process Stress into something useful, make a Sanity Save. Example: *Shore Leave at Anarene's Folly…*
 
 - **Success**: Convert some of the Stress into improved Saves & Stats. Each port converts a different amount of Stress as shown in the table. Whatever Stress you don't convert is relieved, setting the character back to Minimum Stress.  
 - **Critical Success**: Convert the maximum amount of Stress allowed at that port into improved Saves and/or Stats, and relieve the remainder.  

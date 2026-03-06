@@ -119,7 +119,7 @@ A crew makes a Debt Check when:
 Debt tracks “big” income and costs. Most jobs that a crew in debt take on pay in the form of reducing their Debt:
 
 - -1 Debt: Any standard job. A particularly good load of salvage, or precious materials.  
-- -2 or 3 Debt: A longer or complex job, or one that would warrant Hazard Pay. A singularly valuable piece of salvage or a covert task performed.  
+- -2 or -3 Debt: A longer or complex job, or one that would warrant Hazard Pay. A singularly valuable piece of salvage or a covert task performed.  
 - -4 or more Debt: Meticulous heists, or genuine acts of heroism that save infrastructure or creditor assets. Artifacts that could change the balance of power in a sector.
 
 A crew in Debt still tracks “small” income and expenditures, and a few credits usually trickle over into their accounts after their creditors take their share of any reward. When a crew gets paid for a job or sells a haul, they reduce their Debt and then make a Payday roll: the crew splits 1d10 × 10kcr between themselves.

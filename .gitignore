@@ -1,4 +1,6 @@
 site/
+docs/.obsidian/
+docs/*.canvas
 .cache/
 .dev/
 .claude/

@@ -14,7 +14,7 @@ Interplanetary trips can take anywhere from a few weeks to reach a nearby planet
 
 ## 2.3 REFUEL & RESUPPLY
 
-You refuel and resupply your ship while in port. Each Ship Class uses a different grade of Fuel, but Fuel from a ship one class below yours can be siphoned and used on a 2:1 basis. Likewise, Fuel from a shop one class above yours can be used on a 1:2 basis. All other Fuel is incompatible.
+You refuel and resupply your ship while in port. Each Ship Class uses a different grade of Fuel, but Fuel from a ship one class below yours can be siphoned and used on a 2:1 basis. Likewise, Fuel from a ship one class above yours can be used on a 1:2 basis. All other Fuel is incompatible.
 
 After any number of engagements equal to your ship's class where you used your ship's weapons, you must resupply. If you fail to resupply, Battle Checks are at [-] on your next ship combat. After that, you automatically fail all Battle Checks.
 
@@ -227,42 +227,42 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 
 ***Note:** If a repair has an associated 10% rate for something to go wrong, roll 1d10. On a 0, the effect triggers. For 50% odds, even-digit rolls are good and odd-digit rolls are bad.*
 
-| ISSUES |  |  |  |  |  |
+| ISSUES |  |  |                                                                           |  |  |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **MINOR REPAIRS** |  |  |  |  |  |
-| 00 | Rancid smell permeates cabins. | 34 | Worn landing struts. | 67 | Miscalibrated guidance system. |
-| 01 | Huge mess everywhere. | 35 | Out-of-date air filters. |  |  |
-| 02 | Staticky comms. | 36 | Corroded pipes. | 68 | Overloaded power storage. |
-| 03 | Faulty electrical system. | 37 | Inaccurate orbital transfer information. | 69 | Sensor arrays only display porn. |
-| 04 | Loose couplings. | 38 | Worn out Fuel injector nozzles. | 70 | Failed water recovery systems. |
-| 05 | Hidden (highly illegal) contraband. | 39 | Inoperative exterior lighting. | 71 | Micro-meteroid hull damage. |
-| 06 | Autopilot systems down. | 40 | Defective intercomms. | 72 | Carbon dioxide alarm won't stop. |
-| 07 | Leaking hydraulics. | 41 | Inadequate waste recycling. | 73 | Solar panel degradation. |
-| 08 | Creaking hull. | 42 | Faulty altitude control thrusters. | 74 | Computer failure from cosmic radiation. |
-| 09 | Damaged bulkheads. | 43 | Insufficient Life Support redundancy. | 75 | Overloaded circuitry. |
-| 10 | Misaligned docking clamps. | 44 | Delayed communications relay. | 76 | Malfunctioning plasma thruster. |
-| 11 | Viewports blocked. | 45 | Damaged Fuel lines. | 77 | Dehumidifier failure. |
-| 12 | Jammed exterior airlocks. | 46 | Corroded exhaust manifolds. | 78 | Intermittent electrical outages. |
-| 13 | Dysfunctional gravity plating. | 47 | Terminal displays burnt-out. | 79 | Fire suppression out of code. |
-| 14 | Out of code compliance. | 48 | Check engine light.  | 80 | Damaged floor panelling. |
-| 15 | Controls sticking. | 49 | Failed data backup systems. | 81 | Broken light fixture in remote corridor. |
-| 16 | Coolant leak. | 50 | Faulty door locks. | 82 | Damaged coolant pump. |
-| 17 | Miscalibrated thruster gimbal system. | 51 | Buggy communications. | 83 | Cracked viewports. |
-| 18 | Bevy of OSHA violations. | 52 | Infested food storage facilities. | 84 | Systems full of malware. |
-| 19 | Blocked air vents. | 53 | Corrupted data banks. | 85 | Leaky Fuel valve. |
-| 20 | Emergency lighting only. | 54 | Jammed cargo bay doors. | 86 | Jammed exhaust vent. |
-| 21 | Internal networking issues. | 55 | Flickering interior lights. | 87 | Clogged waste disposal chute. |
-| 22 | Inaccurate data collection. | 56 | Failed airlock seals. | 88 | Lifts non-functional. |
-| **MAJOR REPAIRS** |  |  |  |  |  |
-| 23 | **Oxygen Leak.** If the ship is low on O2, lose 1d5 extra per day. | 57 | **Fuel Leak.** Burn +1 Fuel every time you spend Fuel. | 89 | **Clogged Air Filtration.** Max crew capacity is halved. (Mechs don't count). |
-| 24 | **Throttled Afterburners.** -2d10 Thrusters. | 58 | **Jump Bug.** 10% chance Jump takes 2d10 months, not 2d10 days.  | 90 | **Broken Backup Generator.** No emergency power. |
-| 25 | **Lemon.** Maintenance Checks at [-]. | 59 | **Fragile.** Always take +1 MDMG. | 91 | **Weakened Frame.** -1 Maximum Hull. |
-| 26 | **Slow Acceleration.** +1 Week to travel. | 60 | **Cracked Heat Shields**. Ship becomes Extremely Hot or Cold. | 92 | **Chemical Spill.** Body Saves [-] While on board.  |
-| 27 | **Inaccurate Navigation.** 50% chance pathfinding is faulty. | 61 | **Outdated Software.** -1d0 Systems. | 93 | **Scanner Reduction.** Ship has to be one Range closer to broadcast/receive. |
-| 28 | **Miscalibrated Targeting Sensors.** -1d10 Battle. | 62 | **Contaminated Water Purification.** Parasites in the water supply. | 94 | **Transponder Slagged.** Cannot turn Transponder On.  |
-| 29 | **Faulty Cryopods**. Nightmares, cryosickness lasts +1 Week. | 63 |  **Malfunctioning Waste Management.**  One Amenity becomes non-functional. | 95 | **Corrupted A.I.** [-] on Systems Checks. |
-| 30 | **Malfunctioning Escape Pods.** 50% chance will not eject from ship. | 64 | **Fusion Reactor Overheating.** -1d10 Thrusters.  | 96 | **Drive Jamming.** 10% chance warp core consumed and Jump fails. |
-| 31 | **Cycling Transponder**. Unable to send Distress Signals. | 65 | **Failed Radiation Shielding.** +1 Radiation Level. | 97 | **Rust Bucket.** +1 Minimum Stress to all crew. |
-| 32 | **Sabotaged Coolant System.** [-] Rest Checks while onboard. | 66  | **Structural Damage.** One Upgrade becomes non-functional. | 98 | **Security Malfunction.** 1d5 bulkheads seal and will not open.  |
-| 33 | **Death Trap.** [-] on all Ship Checks. |  |  | 99 | **Slagged.** One Hardpoint becomes inoperable. |
+| **MINOR REPAIRS** |  |  |                                                                           |  |  |
+| 00 | Rancid smell permeates cabins. | 34 |                           Worn landing struts.                            | 67 | Miscalibrated guidance system. |
+| 01 | Huge mess everywhere. | 35 |                         Out-of-date air filters.                          |  |  |
+| 02 | Staticky comms. | 36 |                              Corroded pipes.                              | 68 | Overloaded power storage. |
+| 03 | Faulty electrical system. | 37 |                 Inaccurate orbital transfer information.                  | 69 | Sensor arrays only display porn. |
+| 04 | Loose couplings. | 38 |                      Worn out Fuel injector nozzles.                      | 70 | Failed water recovery systems. |
+| 05 | Hidden (highly illegal) contraband. | 39 |                      Inoperative exterior lighting.                       | 71 | Micro-meteroid hull damage. |
+| 06 | Autopilot systems down. | 40 |                           Defective intercomms.                           | 72 | Carbon dioxide alarm won't stop. |
+| 07 | Leaking hydraulics. | 41 |                        Inadequate waste recycling.                        | 73 | Solar panel degradation. |
+| 08 | Creaking hull. | 42 |                    Faulty altitude control thrusters.                     | 74 | Computer failure from cosmic radiation. |
+| 09 | Damaged bulkheads. | 43 |                   Insufficient Life Support redundancy.                   | 75 | Overloaded circuitry. |
+| 10 | Misaligned docking clamps. | 44 |                       Delayed communications relay.                       | 76 | Malfunctioning plasma thruster. |
+| 11 | Viewports blocked. | 45 |                            Damaged Fuel lines.                            | 77 | Dehumidifier failure. |
+| 12 | Jammed exterior airlocks. | 46 |                        Corroded exhaust manifolds.                        | 78 | Intermittent electrical outages. |
+| 13 | Dysfunctional gravity plating. | 47 |                       Terminal displays burnt-out.                        | 79 | Fire suppression out of code. |
+| 14 | Out of code compliance. | 48 |                            Check engine light.                            | 80 | Damaged floor panelling. |
+| 15 | Controls sticking. | 49 |                        Failed data backup systems.                        | 81 | Broken light fixture in remote corridor. |
+| 16 | Coolant leak. | 50 |                            Faulty door locks.                             | 82 | Damaged coolant pump. |
+| 17 | Miscalibrated thruster gimbal system. | 51 |                           Buggy communications.                           | 83 | Cracked viewports. |
+| 18 | Bevy of OSHA violations. | 52 |                     Infested food storage facilities.                     | 84 | Systems full of malware. |
+| 19 | Blocked air vents. | 53 |                           Corrupted data banks.                           | 85 | Leaky Fuel valve. |
+| 20 | Emergency lighting only. | 54 |                          Jammed cargo bay doors.                          | 86 | Jammed exhaust vent. |
+| 21 | Internal networking issues. | 55 |                        Flickering interior lights.                        | 87 | Clogged waste disposal chute. |
+| 22 | Inaccurate data collection. | 56 |                           Failed airlock seals.                           | 88 | Lifts non-functional. |
+| **MAJOR REPAIRS** |  |  |                                                                           |  |  |
+| 23 | **Oxygen Leak.** If the ship is low on O2, lose 1d5 extra per day. | 57 |          **Fuel Leak.** Burn +1 Fuel every time you spend Fuel.           | 89 | **Clogged Air Filtration.** Max crew capacity is halved. (Mechs don't count). |
+| 24 | **Throttled Afterburners.** -2d10 Thrusters. | 58 |      **Jump Bug.** 10% chance Jump takes 2d10 months, not 2d10 days.      | 90 | **Broken Backup Generator.** No emergency power. |
+| 25 | **Lemon.** Maintenance Checks at [-]. | 59 |                     **Fragile.** Always take +1 MDMG.                     | 91 | **Weakened Frame.** -1 Maximum Hull. |
+| 26 | **Slow Acceleration.** +1 Week to travel. | 60 |       **Cracked Heat Shields**. Ship becomes Extremely Hot or Cold.       | 92 | **Chemical Spill.** Body Saves [-] While on board.  |
+| 27 | **Inaccurate Navigation.** 50% chance pathfinding is faulty. | 61 |                   **Outdated Software.** -1d10 Systems.                   | 93 | **Scanner Reduction.** Ship has to be one Range closer to broadcast/receive. |
+| 28 | **Miscalibrated Targeting Sensors.** -1d10 Battle. | 62 |    **Contaminated Water Purification.** Parasites in the water supply.    | 94 | **Transponder Slagged.** Cannot turn Transponder On.  |
+| 29 | **Faulty Cryopods**. Nightmares, cryosickness lasts +1 Week. | 63 | **Malfunctioning Waste Management.**  One Amenity becomes non-functional. | 95 | **Corrupted A.I.** [-] on Systems Checks. |
+| 30 | **Malfunctioning Escape Pods.** 50% chance will not eject from ship. | 64 |             **Fusion Reactor Overheating.** -1d10 Thrusters.              | 96 | **Drive Jamming.** 10% chance warp core consumed and Jump fails. |
+| 31 | **Cycling Transponder**. Unable to send Distress Signals. | 65 |            **Failed Radiation Shielding.** +1 Radiation Level.            | 97 | **Rust Bucket.** +1 Minimum Stress to all crew. |
+| 32 | **Sabotaged Coolant System.** [-] Rest Checks while onboard. | 66  |        **Structural Damage.** One Upgrade becomes non-functional.         | 98 | **Security Malfunction.** 1d5 bulkheads seal and will not open.  |
+| 33 | **Death Trap.** [-] on all Ship Checks. |  |                                                                           | 99 | **Slagged.** One Hardpoint becomes inoperable. |
 

@@ -92,50 +92,50 @@ Average installation times (given availability, labor, etc) are listed below. If
 
 **The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost.**
 
-| AMENITY UPGRADES |          |                       |  |
-| :---: | :---: | :---: | :---: |
-| **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
-| **Bioration Tank** | 200kcr | 1 week | Provides rations for biological crewmembers for 1 year. |
-| **Biplanar Gravity Generator** | 3mcr | 3 weeks | Produces artificial gravity aboard the ship. |
-| **Cosmetic Remodel** | 500kcr | 1 month × Ship Class | Upgrade in appearance to the ship's interior including paint, furnishings, and other decorations. Does not consume an Upgrade slot. |
-| **Habitat Module** | 4mcr | 1 month | Increases maximum crew capacity by up to 24 per Ship Class (e.g., Class-IV could have up to 96). |
-| **Hangar/ Dronebay** | 600kcr | 1 month | Allows for the storage and maintenance of 4 Class-0 Vessels. |
-| **Machine Shop** | 5mcr | 3 weeks | Allows crew to repair up to 3 MDMG and 3 Hull without returning to port. Resupply for 1mcr. |
-| **Medbay** | 2mcr | 3 weeks | [+] Body Saves to regain health while aboard the ship. Offers other medical treatments available at Warden's discretion. |
-| **Recreation Module** | 800kcr | 1 month | Entertainment hub, basic streaming plan, Zero-G pool table, minifridge. |
-| **Science Lab** | 500kcr | 3 weeks | Allows for detailed research, study, testing, and experimentation of samples. |
-| **MINOR UPGRADES** | ———— | ———— | ———————————— |
-| **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
-| **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded crypods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
-| **Cryochamber** | 5mcr | 2 weeks | Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
-| **Dedicated Reactor** | 1mcr | 1 month | Grants +5 Systems. |
-| **Deep Space Scanners** | 1mcr | 2 weeks | Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at firing Range, etc.). |
-| **Emergency Systems** | 1mcr | 1 month | Grants 1 month of emergency power and Life Support. Must be replaced after use. |
-| **Onboard Android Databank** | 3mcr | 2 weeks | Backs up mechanical crew memory files weekly for reconstitution in new bot bodies (not included). |
-| **Escape Pod** | 1.5mcr | 1 week | A replacement escape pod, holds up to 4 Passengers/class. |
-| **Expanded Fuel Bay** | 2mcr | 3 weeks | Increases Max Fuel capacity by 12. |
-| **Improved Radiators** | 1.5mcr | 1 month | Grants +5 Thrusters. |
-| **Landing Gear** | 5mcr | 1 month × Ship Class | Retrofitted equipment for orbital landing and launch. |
-| **Upgrade Rack** | 6mcr | 1 month | Exterior module. Grants +3 Upgrades. Each additional rack installed costs 2× the last. |
-| **MAJOR UPGRADES** | ———— | ———— | ———————————— |
-| **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
-| **Engine Improvements** | 9mcr | 3 weeks | Grants +15 Thrusters. |
-| **Enhanced A.I.** | 5.5mcr | 1 week | Grants +15 Systems. |
-| **Expanded Frame** | 12mcr | 1 month × Ship Class | Structural alterations. Grants +5 Upgrades. Ships can only accommodate 1 of these per Ship Class level. Each additional Expanded Frame costs 2× the previous. |
-| **Hydrogen Probe** | 3mcr | 1 month | Allows ship to harvest Fuel while in orbit around a gas giant planet. For each week in orbit, make a Systems Check. On a success, gain 1 Fuel. On a failure, gain no Fuel. |
-| **Redundant Systems** | 5mcr | 1 month | Allows ship to ignore any one MGDMG roll. Must be replaced after use. |
-| **Signature Reduction** | 15mcr | 1 month | While activated, your ship is only detectable with a successful Systems Check [-] at Firing Range. Double Fuel cost and travel times while in use. Does not work in Core Space. |
-| **Streamlined Fuel Injectors** | 4mcr | 2 months | Fuel lasts for 2 months of space travel. In the Movement Phase, bidding 1 Fuel also counts as bidding 2 Fuel. |
-| **Targeting Sensors** | 2mcr | 2 weeks | Systems Check (Firing Range): Confers [+] to Battle Checks made in ship-to-ship combat. |
-| **ILLEGAL UPGRADES**  | ———— | ———— | ———————————— |
-| **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
-| **Accelerated Afterburner** | 2.5mcr | 2 weeks | If you win the Fuel bid while Pursuing or Evading a target, that target has [-] on their Thrusters Check. |
-| **Comms Jammer** | 500kcr | 1 week | Systems Check (Firing Range): Allows for communication jamming and eavesdropping. |
-| **Contraband Hold** | 500kcr | 1 month | Small, hidden Cargo Bay. Very hard for boarding parties to detect. |
-| **Embedded Clone Pod** | 15mcr | 2 months × Ship Class | Allows a crewmember to be reconstituted in the form of their last time aboard the ship 1d10 months after their untimely demise. Can only generate one clone at a time. |
-| **Expanded Ammo Bay** | 3mcr | 2 weeks | Your ship counts as one class greater for determining when you must resupply your Hardpoint ammo. |
-| **Solar Scraper** | 15mcr | 1 month | Allows ship to harvest radiation while in orbit around a star. For each month in orbit, make a Systems Check. On a success, gain 1 Warp Core. On a failure, gain none. |
-| **Transponder Emulator** | 10mcr | 1 month | Secondary comms relay masking the transponder code, callsign, and other ship metadata from other ships and structures in Firing Range or further. |
+|        AMENITY UPGRADES        |          |                       |                                                                                                                                                                                        |
+| :----------------------------: | :------: | :-------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
+|       **Bioration Tank**       |  200kcr  |        1 week         |                                                                Provides rations for biological crewmembers for 1 year.                                                                 |
+| **Biplanar Gravity Generator** |   3mcr   |        3 weeks        |                                                                      Produces artificial gravity aboard the ship.                                                                      |
+|      **Cosmetic Remodel**      |  500kcr  | 1 month × Ship Class  |                          Upgrade in appearance to the ship's interior including paint, furnishings, and other decorations. Does not consume an Upgrade slot.                           |
+|       **Habitat Module**       |   4mcr   |        1 month        |                                            Increases maximum crew capacity by up to 24 per Ship Class (e.g., Class-IV could have up to 96).                                            |
+|      **Hangar/ Dronebay**      |  600kcr  |        1 month        |                                                              Allows for the storage and maintenance of 4 Class-0 Vessels.                                                              |
+|        **Machine Shop**        |   5mcr   |        3 weeks        |                                              Allows crew to repair up to 3 MDMG and 3 Hull without returning to port. Resupply for 1mcr.                                               |
+|           **Medbay**           |   2mcr   |        3 weeks        |                                [+] Body Saves to regain health while aboard the ship. Offers other medical treatments available at Warden's discretion.                                |
+|     **Recreation Module**      |  800kcr  |        1 month        |                                                        Entertainment hub, basic streaming plan, Zero-G pool table, minifridge.                                                         |
+|        **Science Lab**         |  500kcr  |        3 weeks        |                                                     Allows for detailed research, study, testing, and experimentation of samples.                                                      |
+|       **MINOR UPGRADES**       |   ————   |         ————          |                                                                                      ————————————                                                                                      |
+|          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
+|      **Agar Cushioning**       |  1.5mcr  |        2 weeks        | Upgraded cryopods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
+|        **Cryochamber**         |   5mcr   |        2 weeks        |                                           Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72).                                            |
+|     **Dedicated Reactor**      |   1mcr   |        1 month        |                                                                                   Grants +5 Systems.                                                                                   |
+|    **Deep Space Scanners**     |   1mcr   |        2 weeks        |            Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at firing Range, etc.).            |
+|     **Emergency Systems**      |   1mcr   |        1 month        |                                                    Grants 1 month of emergency power and Life Support. Must be replaced after use.                                                     |
+|  **Onboard Android Databank**  |   3mcr   |        2 weeks        |                                           Backs up mechanical crew memory files weekly for reconstitution in new bot bodies (not included).                                            |
+|         **Escape Pod**         |  1.5mcr  |        1 week         |                                                               A replacement escape pod, holds up to 4 Passengers/class.                                                                |
+|     **Expanded Fuel Bay**      |   2mcr   |        3 weeks        |                                                                           Increases Max Fuel capacity by 12.                                                                           |
+|     **Improved Radiators**     |  1.5mcr  |        1 month        |                                                                                  Grants +5 Thrusters.                                                                                  |
+|        **Landing Gear**        |   5mcr   | 1 month × Ship Class  |                                                                 Retrofitted equipment for orbital landing and launch.                                                                  |
+|        **Upgrade Rack**        |   6mcr   |        1 month        |                                                 Exterior module. Grants +3 Upgrades. Each additional rack installed costs 2× the last.                                                 |
+|       **MAJOR UPGRADES**       |   ————   |         ————          |                                                                                      ————————————                                                                                      |
+|          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
+|    **Engine Improvements**     |   9mcr   |        3 weeks        |                                                                                 Grants +15 Thrusters.                                                                                  |
+|       **Enhanced A.I.**        |  5.5mcr  |        1 week         |                                                                                  Grants +15 Systems.                                                                                   |
+|       **Expanded Frame**       |  12mcr   | 1 month × Ship Class  |             Structural alterations. Grants +5 Upgrades. Ships can only accommodate 1 of these per Ship Class level. Each additional Expanded Frame costs 2× the previous.              |
+|       **Hydrogen Probe**       |   3mcr   |        1 month        |       Allows ship to harvest Fuel while in orbit around a gas giant planet. For each week in orbit, make a Systems Check. On a success, gain 1 Fuel. On a failure, gain no Fuel.       |
+|     **Redundant Systems**      |   5mcr   |        1 month        |                                                          Allows ship to ignore any one MDMG roll. Must be replaced after use.                                                          |
+|    **Signature Reduction**     |  15mcr   |        1 month        |    While activated, your ship is only detectable with a successful Systems Check [-] at Firing Range. Double Fuel cost and travel times while in use. Does not work in Core Space.     |
+| **Streamlined Fuel Injectors** |   4mcr   |       2 months        |                                     Fuel lasts for 2 months of space travel. In the Movement Phase, bidding 1 Fuel also counts as bidding 2 Fuel.                                      |
+|     **Targeting Sensors**      |   2mcr   |        2 weeks        |                                                Systems Check (Firing Range): Confers [+] to Battle Checks made in ship-to-ship combat.                                                 |
+|      **ILLEGAL UPGRADES**      |   ————   |         ————          |                                                                                      ————————————                                                                                      |
+|          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
+|  **Accelerated Afterburner**   |  2.5mcr  |        2 weeks        |                                       If you win the Fuel bid while Pursuing or Evading a target, that target has [-] on their Thrusters Check.                                        |
+|        **Comms Jammer**        |  500kcr  |        1 week         |                                                   Systems Check (Firing Range): Allows for communication jamming and eavesdropping.                                                    |
+|      **Contraband Hold**       |  500kcr  |        1 month        |                                                           Small, hidden Cargo Bay. Very hard for boarding parties to detect.                                                           |
+|     **Embedded Clone Pod**     |  15mcr   | 2 months × Ship Class |         Allows a crewmember to be reconstituted in the form of their last time aboard the ship 1d10 months after their untimely demise. Can only generate one clone at a time.         |
+|     **Expanded Ammo Bay**      |   3mcr   |        2 weeks        |                                           Your ship counts as one class greater for determining when you must resupply your Hardpoint ammo.                                            |
+|       **Solar Scraper**        |  15mcr   |        1 month        |         Allows ship to harvest radiation while in orbit around a star. For each month in orbit, make a Systems Check. On a success, gain 1 Warp Core. On a failure, gain none.         |
+|    **Transponder Emulator**    |  10mcr   |        1 month        |                   Secondary comms relay masking the transponder code, callsign, and other ship metadata from other ships and structures in Firing Range or further.                    |
 
 ### *1.3.2 HARDPOINTS*
 
@@ -188,6 +188,6 @@ When swapping out ship Upgrades or Hardpoints, a Smarts (Mechanical Repair or En
 
 - **Success:** The Upgrade/Hardpoint's degradation level increases by 1 (Pristine → Refurbished → Used → Risky).  
 - **Critical Success:** The Upgrade/Hardpoint retains its original condition.  
-- **Failure:** The Upgrade/Hardpoint's degradation level decreases by 2 to a minimum of Risky.  
+- **Failure:** The Upgrade/Hardpoint's degradation level worsens by 2 to a minimum of Risky.  
 - **Critical Failure:** The Upgrade/Hardpoint is destroyed regardless of its current condition and becomes scrap.
 

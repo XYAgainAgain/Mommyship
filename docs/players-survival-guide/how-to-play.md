@@ -331,11 +331,11 @@ All weapons have Traits assigned to them, specifying which Stat is used in comba
 
 ### *2.6.4 DAMAGE*
 
-When taking Damage (DMG), subtract it from your Health. If your Health reaches zero, gain a Wound and roll on the Wounds Table. Then, rest the character's health to its Maximum and subtract any carryover damage. Once your character suffers their Maximum Wounds, make a Death Save.
+When taking Damage (DMG), subtract it from your Health. If your Health reaches zero, gain a Wound and roll on the Wounds Table. Then, reset the character's health to its Maximum and subtract any carryover damage. Once your character suffers their Maximum Wounds, make a Death Save.
 
 ### *2.6.5 ARMOR*
 
-While wearing armor, you are shielded from damage under your current Armor Points (AP). Any hits you suffer that deal damage less than you AP instead deal no damage to you.
+While wearing armor, you are shielded from damage under your current Armor Points (AP). Any hits you suffer that deal damage less than your AP instead deal no damage to you.
 
 When you suffer damage higher than your current AP value (per hit), subtract your AP from the damage, and your armor gets -1 to its AP until you can repair it. This penalty can stack, and armor breaks completely at 0 AP. Different armor requires different resources and tools for repair. 
 
