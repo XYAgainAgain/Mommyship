@@ -1,4 +1,4 @@
-/* Header site title — Bungee Outline with neon pulse */
+/* Header site title: Bungee Outline with neon pulse */
 .md-header__topic .md-ellipsis {
   font-family: "Bungee Outline", "League Spartan", sans-serif;
   font-weight: 400;
@@ -8,7 +8,7 @@
   animation: neon-pulse 3s ease-in-out infinite;
 }
 
-/* Footer — match header height, fixed colors */
+/* Footer: match header height, fixed colors */
 .md-footer {
   height: 2.4rem;
 }
@@ -67,7 +67,7 @@
   font-display: swap;
 }
 
-/* Color overrides — turquoise/cerulean light, purple/pink dark */
+/* Color overrides: turquoise/cerulean light, purple/pink dark */
 :root {
   --md-primary-fg-color: #41ead4;
   --md-primary-bg-color: #fff;
@@ -85,7 +85,7 @@
   --md-default-fg-color--lightest: rgba(0, 0, 0, 0.12);
 }
 
-[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
+[data-md-color-scheme="slate"] {
   --md-hue: 280;
   --md-default-bg-color: #0d0d1a;
   --md-default-fg-color: #fffaff;
@@ -234,7 +234,7 @@
   color: rgba(255, 250, 255, 0.5);
 }
 
-/* League Spartan everywhere */
+/* League Spartan EVERYWHERE!!! */
 :root {
   --md-text-font: "League Spartan", sans-serif;
   --md-code-font: "League Spartan", monospace;
@@ -253,7 +253,7 @@ textarea {
   line-height: 1.7;
 }
 
-/* Base font-size bump (static — not affected by text-size rocker) */
+/* Base font-size bump (static, not affected by text-size rocker) */
 html {
   font-size: 137.5%;
 }
@@ -270,7 +270,7 @@ html {
   }
 }
 
-/* Text-size rocker scaling — targets only content font-sizes, header untouched */
+/* Text-size rocker scaling targets only content font-sizes, not header */
 .md-typeset {
   font-size: calc(0.8rem * var(--md-text-scale, 1));
 }
@@ -391,7 +391,7 @@ html {
   container-type: inline-size;
 }
 
-/* Lock homepage to exactly one viewport */
+/* Lock homepage to exactly one viewport, dammit */
 body:has(.homepage-hero) {
   height: 100dvh;
   overflow: hidden;
@@ -652,7 +652,7 @@ body:has(.homepage-hero) .md-footer {
   opacity: 1;
 }
 
-/* Starfield — hidden by default, visible in dark mode only (except homepage) */
+/* Starfield! Visible in dark mode only (except homepage) */
 #starfield {
   display: none;
 }
@@ -671,7 +671,7 @@ body:has(.homepage-hero) #starfield {
   display: none;
 }
 
-/* Base star layers — A/B copies crossfade for seamless expansion loop */
+/* Base star layers: A/B copies crossfade for seamless expansion loop */
 #starfield .stars-layer {
   position: absolute;
   width: 1px;
@@ -701,7 +701,7 @@ body:has(.homepage-hero) #starfield {
   100% { transform: scale(2.5); opacity: 0; }
 }
 
-/* Twinkle overlays — 3 groups per depth, staggered brightness pulses */
+/* Twinkle overlays: 3 groups per depth, staggered brightness pulses */
 #starfield .stars-twinkle {
   animation: starfield-expand 40s linear infinite, starfield-twinkle 3s ease-in-out infinite alternate;
 }
@@ -729,7 +729,7 @@ body:has(.homepage-hero) #starfield {
   }
 }
 
-/* Galacticity slider — only visible in dark mode, hidden on homepage */
+/* Galacticity slider only visible in dark mode */
 .galacticity-control {
   display: none;
   align-items: center;
@@ -753,7 +753,7 @@ body:has(.homepage-hero) .galacticity-control {
   cursor: default;
 }
 
-/* Range input — neon track and thumb */
+/* Range input: neon track and thumb */
 .galacticity-control__slider {
   -webkit-appearance: none;
   appearance: none;
@@ -795,7 +795,7 @@ body:has(.homepage-hero) .galacticity-control {
   box-shadow: 0 0 8px rgba(246, 121, 229, 0.6);
 }
 
-/* JUMP button */
+/* JUMP! button */
 .galacticity-control__jump {
   background: transparent;
   border: 1px solid rgba(246, 121, 229, 0.6);
@@ -841,7 +841,7 @@ body:has(.homepage-hero) .galacticity-control {
   }
 }
 
-/* Hyperspace — scale-only keyframe (no opacity fade) prevents flicker at high speed */
+/* Hyperspace! Scale-only keyframe (no opacity fade) prevents flicker at high speed */
 @keyframes starfield-hyperspace {
   0% { transform: scale(0.6); }
   100% { transform: scale(2.5); }
