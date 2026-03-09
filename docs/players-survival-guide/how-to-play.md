@@ -281,7 +281,7 @@ Upon completion of this Shore Leave, you will make a Save relevant to the Skill 
 - **Failure:** You gain the Skill, and have [-] to rolls using it for 1d100 days. 
 - **Critical Failure:** You reject the upgrade. Take a Wound, and do not gain the Skill. 
 
-## 2.6 VIOLENT ENCOUNTERS
+## 2.6 ENCOUNTERS
 
 Violence in Mommyship is incredibly dangerous, and should be avoided at all costs. When all else fails, this is how to resolve the encounter. 
 
@@ -339,7 +339,7 @@ While wearing armor, you are shielded from damage under your current Armor Point
 
 When you suffer damage higher than your current AP value (per hit), subtract your AP from the damage, and your armor gets -1 to its AP until you can repair it. This penalty can stack, and armor breaks completely at 0 AP. Different armor requires different resources and tools for repair. 
 
-Anti-Armor weapons/attacks ignore armor's damage reduction and reduce any worn armor's AP by 1, and breaks the armor as normal when it reaches 0 AP.
+Anti-armor weapons/attacks ignore armor's damage reduction and reduce any worn armor's AP by 1, and break the armor as normal when it reaches 0 AP.
 
 ### *2.6.6 COVER*
 
@@ -375,6 +375,11 @@ When you die, the Warden makes a Death Save by placing 1d10 in a cup, shaking th
 | 05–09 | **You have died.** Roll up a new character. |
 
 ### *2.6.8 WOUND EFFECTS (D10)*
+
+When you take a Wound and roll on the Wound Effects Table, the weapon that dealt the Wound may have [+] or [-] listed after the type of Wound it inflicts:
+
+- [+] after a Wound type = target takes the better/less harmful Wound (bad for the attacker)
+- [-] after a Wound type = target takes the worse/more harmful Wound (good for the attacker)
 
 | D10 | SEVERITY | BLUNT FORCE | BLEEDING | GUNSHOT | FIRE & EXPLOSIVES | GORE & MASSIVE | ORGANIC TRAUMA |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |

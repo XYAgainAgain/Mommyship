@@ -6,61 +6,61 @@ Oftentimes the difference between life and death is having the right tools for t
 
 ## 4.1 WEAPONS
 
-|           WEAPON            | PRICE  |  TYPE  |  TRAIT  |                                                                        DESCRIPTION                                                                        |     AMMO     |
-| :-------------------------: | :----: | :----: | :-----: | :-------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------: |
-|        Assault Rifle        | 1.2kcr | Ranged |  Light  |                                                             Long. 2d10 DMG. 4 shots. Gunshot.                                                             | Heavy Shells |
-|         Basic Blade         |  50cr  | Melee  |  Light  |                                          (Scalpel, utility knife, switchblade.) Adjacent. 1d5 DMG. Bleeding [-].                                          |     N/A      |
-|       Basic Bludgeon        |  50cr  | Melee  |  Heavy  |                                          (Wrenches, hammers, batons, stick.) Adjacent. 1d5 DMG. Blunt Force [-].                                          |     N/A      |
-|        Boarding Axe         | 150cr  | Melee  |  Heavy  |                                           Adjacent. 2d10 DMG. Gore [+]. [+] on STR Checks vs inanimate objects.                                           |     N/A      |
-|         Chem-caster         | 900cr  | Ranged |  Tech   |                           Close. 1 DMG. Organic Trauma. If DMG dealt: administers a chem of choice that shooter has on hand to target.                           |   Special    |
-|        Combat Knife         |  75cr  | Melee  |  Light  |                                             Adjacent. 1d5+SPD/10 DMG. Bleeding. Can be thrown at Close Range.                                             |     N/A      |
-|       Combat Shotgun        | 1.4kcr | Ranged |  Light  |                                          Close. 3d10+3 DMG. 6 shots. Gunshot. 1d10+3 DMG @ Long Range or Longer.                                          | Heavy Shells |
-|           Crowbar           |  25cr  | Melee  |  Heavy  |                      Adjacent. 1d5 DMG. Blunt Force [+]. Grants [+] on STR Checks to open jammed airlocks, lift heavy objects, etc.                       |     N/A      |
-|    Double-Barrel Shotgun    | 900cr  | Ranged |  Light  |                                            Close. 3d10 DMG. 2 shots. Gunshot. 1d10 DMG @ Long Range or Longer.                                            | Heavy Shells |
-|          EMP Rifle          | 1.8kcr | Ranged |  Tech   |                                 Long. 1d10 DMG. Fire & Explosives [+]. If target is Mech, Body Save [-] shuts down until repairs & hard reboot.                                  | Energy Cell  |
-|        Flamethrower         |  4kcr  | Ranged |  Light  |                             Close. 2d10 DMG. 4 shots. Fire/Explosives [+]. Body Save [-] or be set on fire (2d10 DMG/round).                              | Energy Cells |
-|          Flare Gun          |  25cr  | Ranged |  Light  |                         Long. 1d5 DMG. 2 shots. Fire/Explosives [-]. High intensity flare visible day and night from Long Range.                          | Energy Cells |
-|          Foam Gun           | 500cr  | Ranged |  Light  |                                  Close. 1 DMG. 2 shots. Blunt Force. Body Save or become stuck. STR Check [-] to escape.                                  | Light Rounds |
-|        Frag Grenade         | 400cr  | Ranged |  Light  |                                Close. 3d10 DMG. Fire/Explosives. All Adjacent to target must Body Save or take equal DMG.                                 |  Single Use  |
-|         Gas Grenade         | 200cr  | Ranged |  Light  |                    Close. Body Save or [-] to Speed & Strength for 1d5 rounds. Affects target & all Adjacent unless they have O2, etc.                    |  Single Use  |
-| General-Purpose Machine Gun |  8kcr  | Ranged |  Heavy  |                            Long. 4d10 DMG. 5 shots. Gunshot [+]. Two-handed. Barrel can be maneuvered to fire around corners.                             | Heavy Shells |
-|      Grenade Launcher       |  2kcr  | Ranged |  Heavy  |                                       Long. Damage as grenade. 1 round. Uses grenades as ammo (except Petrol Bomb).                                       |   Special    |
-|        Hacking Dart         | 2.5kcr | Ranged |  Tech   |                                Close. 1 DMG. If target is Mech, Sanity Save or is under control of shooter for 1d5 rounds.                                | Light Rounds |
-|         Hand Welder         | 250cr  | Melee  |  Heavy  |                                     Adjacent. 1d10 DMG. Bleeding. Can cut through Airlock doors. Requires powercell.                                      |     N/A      |
-|       Hard-Holoblade        | 400cr  | Melee  |  Light  |                                      Adjacent. 1d10+2 DMG. Bleeding [-]. Does not damage Mechs. Requires powercell.                                       |     N/A      |
-|       Holdout Pistol        | 200cr  | Ranged |  Light  |                                  Close. 1d5+1 DMG. 8 Shots. Gunshot [+]. Makes very little noise. Can easily be hidden.                                   | Light Rounds |
-|         Large Blade         | 100cr  | Melee  |  Heavy  |                                                (sword, kitchen knife, axe). Adjacent. 1d10 DMG. Bleeding.                                                 |     N/A      |
-|       Large Bludgeon        | 100cr  | Melee  |  Heavy  |                                     (shovel, fire extinguisher, standing lamp, pipe) Adjacent. 1d10 DMG. Blunt Force.                                     |     N/A      |
-|        Laser Cutter         | 1.5kcr | Ranged |  Heavy  |                              Long. 1d100 DMG. 6 shots. Bleeding [+] or Gore [+]. Two-handed. 1 round recharge between shots.                              | Energy Cells |
-|        Laser Pistol         | 550cr  | Ranged |  Light  |                                                      Close. 1d10+4 DMG. 6 shots. Fire & Explosives.                                                       | Energy Cells |
-|        Martial Blade        | 250cr  | Melee  |  Heavy  |                                             (lance, odachi, katana) Adjacent. 1d10+STR/10 DMG. Bleeding [+].                                              |     N/A      |
-|      Martial Bludgeon       | 250cr  | Melee  |  Heavy  |                                             (staff, hammer, maul) Adjacent. 1d10+STR/10 DMG. Blunt Force [+].                                             |     N/A      |
-|         Mind Melter         | 1.5kcr | Ranged | Psychic |      Close. 1d10 DMG. Organic Trauma. If DMG dealt: enemy must Sanity Save or go catatonic for 1d10 rounds. Does not work on Mechs. Requires Powercell.      |     N/A      |
-|          Nail Gun           | 150cr  | Ranged |  Heavy  |                                                    Close. 1d5+3 DMG. 32 shots. Bleeding. Ignores 2 AP.                                                    | Light Rounds |
-|       Poison Injector       | 400cr  | Melee  |  Light  |                           Adjacent. 1d10 DMG. 1 shot. Bleeding [-]. Body Save [-] or additional 1d10 DMG/round for 1d10 rounds.                           |  Single Use  |
-|          Power Saw          | 500cr  | Melee  |  Heavy  |                              Adjacent. 3d10 DMG. Gore [+]. Must cool down for 1 round after each attack. Requires powercell.                              |     N/A      |
-|         Prism Whip          | 800cr  | Melee  |  Light  |                                              Adjacent. 2d10 DMG. Fire & Explosives [-]. Requires powercell.                                               |     N/A      |
-|      Psypulse Launcher      |  2kcr  | Ranged | Psychic |               Close. Body Save [-] or thrown 1d10×10 feet away from shooter and takes 1d5 DMG for every 10 feet it is pushed. Blunt Force.                | Energy Cells |
-|         Pulse Rifle         | 2.4kcr | Ranged |  Light  |                                                             Long. 3d10 DMG. 5 shots. Gunshot.                                                             | Heavy Shells |
-|        Pump Shotgun         |  1kcr  | Ranged |  Light  |                                          Close. 3d10+1 DMG. 4 shots. Gunshot. 1d10+1 DMG @ Long Range or Longer.                                          | Heavy Shells |
+|           WEAPON            | PRICE  |  TYPE  |  TRAIT  |                         DESCRIPTION                          |     AMMO     |
+| :-------------------------: | :----: | :----: | :-----: | :----------------------------------------------------------: | :----------: |
+|        Assault Rifle        | 1.2kcr | Ranged |  Light  |              Long. 2d10 DMG. 4 shots. Gunshot.               | Heavy Shells |
+|         Basic Blade         |  50cr  | Melee  |  Light  | (Scalpel, utility knife, switchblade.) Adjacent. 1d5 DMG. Bleeding [-]. |     N/A      |
+|       Basic Bludgeon        |  50cr  | Melee  |  Heavy  | (Wrenches, hammers, batons, stick.) Adjacent. 1d5 DMG. Blunt Force [-]. |     N/A      |
+|        Boarding Axe         | 150cr  | Melee  |  Heavy  | Adjacent. 2d10 DMG. Gore [+]. [+] on STR Checks vs inanimate objects. |     N/A      |
+|         Chem-caster         | 900cr  | Ranged |  Tech   | Close. 1 DMG. Organic Trauma. If DMG dealt: administers a chem of choice that shooter has on hand to target. |   Special    |
+|        Combat Knife         |  75cr  | Melee  |  Light  | Adjacent. 1d5+SPD/10 DMG. Bleeding. Can be thrown at Close Range. |     N/A      |
+|       Combat Shotgun        | 1.4kcr | Ranged |  Light  | Close. 3d10+3 DMG. 6 shots. Gunshot. 1d10+3 DMG @ Long Range or Longer. | Heavy Shells |
+|           Crowbar           |  25cr  | Melee  |  Heavy  | Adjacent. 1d5 DMG. Blunt Force [+]. Grants [+] on STR Checks to open jammed airlocks, lift heavy objects, etc. |     N/A      |
+|    Double-Barrel Shotgun    | 900cr  | Ranged |  Light  | Close. 3d10 DMG. 2 shots. Gunshot. 1d10 DMG @ Long Range or Longer. | Heavy Shells |
+|          EMP Rifle          | 1.8kcr | Ranged |  Tech   | Long. 1d10 DMG. Fire & Explosives [+]. If target is Mech, Body Save [-] shuts down until repairs & hard reboot. | Energy Cell  |
+|        Flamethrower         |  4kcr  | Ranged |  Light  | Close. 2d10 DMG. 4 shots. Fire/Explosives [+]. Body Save [-] or be set on fire (2d10 DMG/round). | Energy Cells |
+|          Flare Gun          |  25cr  | Ranged |  Light  | Long. 1d5 DMG. 2 shots. Fire/Explosives [-]. High intensity flare visible day and night from Long Range. | Energy Cells |
+|          Foam Gun           | 500cr  | Ranged |  Light  | Close. 1 DMG. 2 shots. Blunt Force. Body Save or become stuck. STR Check [-] to escape. | Light Rounds |
+|        Frag Grenade         | 400cr  | Ranged |  Light  | Close. 3d10 DMG. Fire/Explosives. All Adjacent to target must Body Save or take equal DMG. |  Single Use  |
+|         Gas Grenade         | 200cr  | Ranged |  Light  | Close. Body Save or [-] to Speed & Strength for 1d5 rounds. Affects target & all Adjacent unless they have O2, etc. |  Single Use  |
+| General-Purpose Machine Gun |  8kcr  | Ranged |  Heavy  | Long. 4d10 DMG. 5 shots. Gunshot [+]. Two-handed. Barrel can be maneuvered to fire around corners. | Heavy Shells |
+|      Grenade Launcher       |  2kcr  | Ranged |  Heavy  | Long. Damage as grenade. 1 round. Uses grenades as ammo (except Petrol Bomb). |   Special    |
+|        Hacking Dart         | 2.5kcr | Ranged |  Tech   | Close. 1 DMG. If target is Mech, Sanity Save or is under control of shooter for 1d5 rounds. | Light Rounds |
+|         Hand Welder         | 250cr  | Melee  |  Heavy  | Adjacent. 1d10 DMG. Bleeding. Can cut through Airlock doors. Requires powercell. |     N/A      |
+|       Hard-Holoblade        | 400cr  | Melee  |  Light  | Adjacent. 1d10+2 DMG. Bleeding [-]. Does not damage Mechs. Requires powercell. |     N/A      |
+|       Holdout Pistol        | 200cr  | Ranged |  Light  | Close. 1d5+1 DMG. 8 Shots. Gunshot [+]. Makes very little noise. Can easily be hidden. | Light Rounds |
+|         Large Blade         | 100cr  | Melee  |  Heavy  |  (sword, kitchen knife, axe). Adjacent. 1d10 DMG. Bleeding.  |     N/A      |
+|       Large Bludgeon        | 100cr  | Melee  |  Heavy  | (shovel, fire extinguisher, standing lamp, pipe) Adjacent. 1d10 DMG. Blunt Force. |     N/A      |
+|        Laser Cutter         | 1.5kcr | Ranged |  Heavy  | Long. 1d100 DMG. 6 shots. Bleeding [+] or Gore [+]. Two-handed. 1 round recharge between shots. Beam penetrates just about anything. | Energy Cells |
+|        Laser Pistol         | 550cr  | Ranged |  Light  |        Close. 1d10+4 DMG. 6 shots. Fire & Explosives.        | Energy Cells |
+|        Martial Blade        | 250cr  | Melee  |  Heavy  | (lance, odachi, katana) Adjacent. 1d10+STR/10 DMG. Bleeding [+]. |     N/A      |
+|      Martial Bludgeon       | 250cr  | Melee  |  Heavy  | (staff, hammer, maul) Adjacent. 1d10+STR/10 DMG. Blunt Force [+]. |     N/A      |
+|         Mind Melter         | 1.5kcr | Ranged | Psychic | Close. 1d10 DMG. Organic Trauma. If DMG dealt: enemy must Sanity Save or go catatonic for 1d10 rounds. Does not work on Mechs. Requires Powercell. |     N/A      |
+|          Nail Gun           | 150cr  | Ranged |  Heavy  |     Close. 1d5+3 DMG. 32 shots. Bleeding. Ignores 2 AP.      | Light Rounds |
+|       Poison Injector       | 400cr  | Melee  |  Light  | Adjacent. 1d10 DMG. 1 shot. Bleeding [-]. Body Save [-] or additional 1d10 DMG/round for 1d10 rounds. |  Single Use  |
+|          Power Saw          | 500cr  | Melee  |  Heavy  | Adjacent. 3d10 DMG. Gore [+]. Must cool down for 1 round after each attack. Requires powercell. |     N/A      |
+|         Prism Whip          | 800cr  | Melee  |  Light  | Adjacent. 2d10 DMG. Fire & Explosives [-]. Requires powercell. |     N/A      |
+|      Psypulse Launcher      |  2kcr  | Ranged | Psychic | Close. Body Save [-] or thrown 1d10×10 feet away from shooter and takes 1d5 DMG for every 10 feet it is pushed. Blunt Force. | Energy Cells |
+|         Pulse Rifle         | 2.4kcr | Ranged |  Light  |              Long. 3d10 DMG. 5 shots. Gunshot.               | Heavy Shells |
+|        Pump Shotgun         |  1kcr  | Ranged |  Light  | Close. 3d10+1 DMG. 4 shots. Gunshot. 1d10+1 DMG @ Long Range or Longer. | Heavy Shells |
 |           Raygun            |  3kcr  | Ranged |  Tech   | Long. Fires a continuous beam hitting all creatures it crosses. 2 shots. Body Save ([-] at Adjacent, [+] at Long Range) or 3d10 DMG. Fire/Explosives [+]. | Energy Cells |
-|          Revolver           | 750cr  | Ranged |  Light  |                                                           Close. 1d10+3 DMG. 6 shots. Gunshot.                                                            | Light Rounds |
-|         Rigging Gun         | 350cr  | Ranged |  Heavy  |                     Close. 1d10 DMG+1d10 DMG when removed. 1 shot. Bleeding [+]. 100m micro-filament. Body Save or become entangled.                      | Heavy Shells |
-|          Rivet Gun          | 250cr  | Melee  |  Heavy  |                                             Close. 3 DMG. Body Save or be impaled (instant +1d10 DMG). Gore.                                              | Heavy Shells |
-|       Rocket Launcher       |  4kcr  | Ranged |  Heavy  |                                 Long. 4d10 DMG (AA). 1 shot. Fire & Explosives. Can only be fired at Long Range targets.                                  | Heavy Shells |
-|         Smart Rifle         |  5kcr  | Ranged |  Tech   |                                 Extreme. 3d10 DMG (AA). 3 shots. Gunshot [+]. [-] on STR Check when fired at Close Range.                                 | Energy Cells |
-|             SMG             |  1kcr  | Ranged |  Light  |                                                Long. 2d10 DMG. 5 shots. Gunshot. Can be fired one-handed.                                                 | Light Rounds |
-|        Smoke Grenade        | 200cr  | Ranged |  Light  |            Close. No DMG. 3 rounds cover. All Ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision.            |  Single Use  |
-|        Sniper Rifle         |  4kcr  | Ranged |  Light  |                                         Extreme. 3d10 DMG. Gunshot. Critical: Deals 3 WOUNDS instead of DMG roll.                                         | Light Rounds |
-|       Spray & Lighter       |  25cr  | Ranged |  Light  |                                                   Close. 1d5 DMG (+1d5 on fire). Fire & Explosives [-].                                                   |  Single Use  |
-|         Stun Baton          | 200cr  | Melee  |  Tech   |                                           Adjacent. 1d5 DMG. Blunt Force. Body Save or be stunned for 1 round.                                            |     N/A      |
-|        Stun Grenade         | 200cr  | Ranged |  Light  |               Close. Body Save or stunned for 1d5 rounds. Affects the target and all Adjacent unless they have protected vision from armor.               |  Single Use  |
-|       Throwing Blades       | 500cr  | Melee  |  Light  |                Close. 1d5 DMG. Bleeding. Can target up to 3 adjacent creatures/objects. On Crit (failure or success), blade is destroyed.                 |     N/A      |
+|          Revolver           | 750cr  | Ranged |  Light  |             Close. 1d10+3 DMG. 6 shots. Gunshot.             | Light Rounds |
+|         Rigging Gun         | 350cr  | Ranged |  Heavy  | Close. 1d10 DMG+1d10 DMG when removed. 1 shot. Bleeding [+]. 100m micro-filament. Body Save or become entangled. | Heavy Shells |
+|          Rivet Gun          | 250cr  | Melee  |  Heavy  | Close. 3 DMG. Body Save or be impaled (instant +1d10 DMG). Gore. | Heavy Shells |
+|       Rocket Launcher       |  4kcr  | Ranged |  Heavy  | Long. 4d10 DMG, Anti-Armor. 1 shot. Fire & Explosives. Can only be fired at Long Range targets. Damages all Adjacent to target. | Heavy Shells |
+|         Smart Rifle         |  5kcr  | Ranged |  Tech   | Extreme. 3d10 DMG. 3 shots. Gunshot [+]. [-] on STR Check when fired at Close Range. Damages all Adjacent to target. | Energy Cells |
+|             SMG             |  1kcr  | Ranged |  Light  |  Long. 2d10 DMG. 5 shots. Gunshot. Can be fired one-handed.  | Light Rounds |
+|        Smoke Grenade        | 200cr  | Ranged |  Light  | Close. No DMG. 3 rounds cover. All Ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision. |  Single Use  |
+|        Sniper Rifle         |  4kcr  | Ranged |  Light  | Extreme. 3d10 DMG, Anti-Armor. Gunshot. Critical: Deals 3 WOUNDS instead of DMG roll. | Light Rounds |
+|       Spray & Lighter       |  25cr  | Ranged |  Light  |    Close. 1d5 DMG (+1d5 on fire). Fire & Explosives [-].     |  Single Use  |
+|         Stun Baton          | 200cr  | Melee  |  Tech   | Adjacent. 1d5 DMG. Blunt Force. Body Save or be stunned for 1 round. |     N/A      |
+|        Stun Grenade         | 200cr  | Ranged |  Light  | Close. Body Save or stunned for 1d5 rounds. Affects the target and all Adjacent unless they have protected vision from armor. |  Single Use  |
+|       Throwing Blades       | 500cr  | Melee  |  Light  | Close. 1d5 DMG. Bleeding. Can target up to 3 adjacent creatures/objects. On Crit (failure or success), blade is destroyed. |     N/A      |
 |        Tranq Pistol         | 500cr  | Ranged |  Light  | Close. 1d5 DMG. 6 shots. Blunt Force. If DMG dealt: enemy must Body Save or be unconscious for 1d10 rounds. Does not work on Mechs or very large targets. | Light Rounds |
-|           Unarmed           |  0cr   | Melee  |  Heavy  |                                                            Adjacent. STR/10 DMG. Blunt Force.                                                             |     N/A      |
-|        Varmint Rifle        | 550cr  | Ranged |  Light  |                                                        Long. 1d5+SPD/10 DMG. 5 shots. Gunshot [+].                                                        | Light Rounds |
-|          Vibechete          |  1kcr  | Melee  |  Heavy  |                                                                 Adjacent. 1d10 DMG. Gore.                                                                 |     N/A      |
-|         Vibrosword          |  2kcr  | Melee  |  Heavy  |                                                              Adjacent. 2d10 DMG (AA). Gore.                                                               |     N/A      |
+|           Unarmed           |  0cr   | Melee  |  Heavy  |              Adjacent. STR/10 DMG. Blunt Force.              |     N/A      |
+|        Varmint Rifle        | 550cr  | Ranged |  Light  |         Long. 1d5+SPD/10 DMG. 5 shots. Gunshot [+].          | Light Rounds |
+|          Vibechete          |  1kcr  | Melee  |  Heavy  |                  Adjacent. 1d10 DMG. Gore.                   |     N/A      |
+|         Vibrosword          |  2kcr  | Melee  |  Heavy  |  Adjacent. 2d10 DMG. Gore. Damages all Adjacent to target.   |     N/A      |
 
 ## 4.2 ARMOR
 
