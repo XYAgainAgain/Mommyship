@@ -15,13 +15,13 @@ While piloting D.A.V.E., the pilot uses their own Stats and Skills to operate it
 
 <div class="sheet-pair">
 <div class="sheet-pair__col">
-<img src="../assets/images/DAVE.png" alt="D.A.V.E. — Light Sheet" class="character-sheet">
+<img src="../assets/images/DAVE.webp" alt="D.A.V.E. — Light Sheet" class="character-sheet">
 <div class="sheet-download-wrap">
 <a href="../assets/images/DAVE.png" download="DAVE.png" class="sheet-download">Download Light D.A.V.E.</a>
 </div>
 </div>
 <div class="sheet-pair__col">
-<img src="../assets/images/DARK-DAVE.png" alt="D.A.V.E. — Dark Sheet" class="character-sheet">
+<img src="../assets/images/DARK-DAVE.webp" alt="D.A.V.E. — Dark Sheet" class="character-sheet">
 <div class="sheet-download-wrap">
 <a href="../assets/images/DARK-DAVE.png" download="DARK-DAVE.png" class="sheet-download">Download Dark D.A.V.E.</a>
 </div>
@@ -75,7 +75,7 @@ D.A.V.E. has one Utility slot, which can be used to install one of the following
 - **Drink Dispenser:** A 10-gallon keg with nozzle attachment and 6 magnetic cups. Includes interior and passenger cupholders.
 - **O2 Reserve:** Doubles O2 duration to 24 hours.
 - **Piggyback Seat:** Exposed seat with roll-cage for a single passenger. Does not grant AP protection to the passenger.
-- **Short-Range Comms:** Allows communication surface-to-surface within 12 kilometers. Blocked by radio jammers.
+- **Short-Range Comms:** Allows communication surface-to-surface within 12 kilometers. Blocked by jammers.
 - **Solar Panel:** Recharges Powercell and regulates keg temperature with 6 hours of solar exposure.
 - **Storage Locker:** Metal storage locker, 2' wide, 1.5' deep, 5' tall. Interior shelves (removable).
 
@@ -85,7 +85,7 @@ D.A.V.E. has one Utility slot, which can be used to install one of the following
 - **Long-Range Comms:** Communication device for use in surface-to-ship communication.
 - **Infrared Array:** Allows the wearer to see heat signatures, sometimes up to several hours old.
 - **Integrated Terminal:** Interface which allows the user to hack into external computers and networks, as well as perform standard computational tasks. 
-- **Radio Jammer:** When activated, renders all radio signals within 100km incomprehensible.
+- **Radio Jammer:** When activated, renders all radio signals within Contact Range incomprehensible.
 - **Winch**: 50m retractable high-tension cable with hook.
 
 **Premium Utilities (100kcr)**

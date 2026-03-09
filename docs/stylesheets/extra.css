@@ -546,6 +546,24 @@ body:has(.homepage-hero) .md-footer {
   line-height: 0;
 }
 
+/* Theme-matched images — show light/dark variants based on active scheme */
+.theme-img-light,
+.theme-img-dark {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  margin: 1rem auto 1.5rem;
+}
+
+.theme-img-dark { display: none; }
+
+[data-md-color-scheme="slate"] .theme-img-light { display: none; }
+[data-md-color-scheme="slate"] .theme-img-dark {
+  display: block;
+  mix-blend-mode: screen;
+}
+
 /* Character sheet images — same sizing as splash banners, no dimming */
 .md-typeset .character-sheet {
   width: 100%;

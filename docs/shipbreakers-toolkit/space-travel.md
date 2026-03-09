@@ -47,7 +47,7 @@ Most crews spend their time in hyperspace in cryosleep while an android monitors
 
 Jumps through hyperspace take 2d10 days. However, the effects of relativity on Faster-Than-Light travel are uncertain and seemingly random. A crew returns from a Jump-3 voyage to learn they have been gone several years, while others return only a few seconds after their departure. 
 
-Regular Jump-1 warp lanes seem to wear down the chaotic effects, but those who make long jumps, like the legendary JUMP-9 COLONY SHIPS, are never expected to return. No one is certain what the effects of multiple Jump-9s would be. And perhaps those pioneers have returned, just millenia into our future. Or else somewhere in our past.
+Regular Jump-1 warp lanes seem to wear down the chaotic effects, but those who make long jumps, like the legendary JUMP-9 COLONY SHIPS, are never expected to return. No one is certain what the effects of multiple Jump-9s would be. And perhaps those pioneers have returned, just millennia into our future. Or else somewhere in our past.
 
 ## 2.5 BOOKING PASSAGE
 

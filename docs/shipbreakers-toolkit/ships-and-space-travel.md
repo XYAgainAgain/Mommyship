@@ -35,7 +35,8 @@ In addition to these Ship Stats, vessels also typically have a number of other p
 
 These icons can be found on maps of vessels of all kinds, indicating certain facilities, functions, and features. These are not necessarily galactically-recognized symbols, but for the sake of play, it's safe to assume everybody knows what these mean.
 
-*(JUST PRETEND THERE'S AN IMAGE HERE; IT'S COMING SOON™ I SWEAR)*
+<img src="../../assets/images/DECKPLAN-LIGHT.webp" alt="Ship Deckplan Icons" class="theme-img-light">
+<img src="../../assets/images/DECKPLAN-DARK.webp" alt="Ship Deckplan Icons" class="theme-img-dark">
 
 ### *1.1.2 ROLES ON A SHIP* {#1.1.2-roles-on-a-ship}
 
@@ -69,16 +70,34 @@ The Jump Rating determines how many systems a ship can travel with the use of a 
 
 The Class of a ship is a general measure of its size and capability. Ships are rated on a scale of Class-0 (C-0) to Class-5 (C-V). The higher a ship's class, the larger, more powerful, and more expensive it is. 
 
-Ship class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel.
+Ship class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel. The chart below outlines what a ship of a given Class would generally be equipped with. Further amenities, functions, and capacity can be installed via Upgrades. Vessels with higher capacities tend to cost more initially.
 
-| CLASS | DESCRIPTION | BASE HULL | BASE MDMG | BASE THRUSTERS | BASE BATTLE | BASE SYSTEMS | UPGRADE SLOTS | STARTING PRICE |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **C-0** | Shuttlecraft and small-crew. | 0 | 1 | 20 | 10 | 20 | 2 | 20mcr |
-| **C-I** | Light commercial. | 1 | 1d5 | 45 | 25 | 30 | 4 | 50mcr |
-| **C-II** | Medium commercial. | 2 | 1d5 | 40 | 25 | 35 | 6 | 150mcr |
-| **C-III** | Heavy commercial. | 3 | 1d5 | 35 | 15 | 40 | 8 | 300mcr |
-| **C-IV** | Light military. | 4 | 1d10 | 30 | 55 | 25 | 10 | 700mcr |
-| **C-V** | Heavy military. | 5 | 1d10 | 20 | 65 | 30 | 12 | 1bcr |
+| FEATURE | C-0 | C-I | C-II | C-III | C-IV | C-V |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **DESCRIPTION** | Shuttlecraft and small-crew. | Light commercial. | Medium commercial. | Heavy commercial. | Light military. | Heavy military. |
+| **STARTING PRICE** | 20mcr | 50mcr | 150mcr | 300mcr | 700mcr | 1bcr |
+| **BASE HULL** | 0 | 1 | 2 | 3 | 4 | 5 |
+| **BASE MDMG** | 1 | 1d5 | 1d5 | 1d5 | 1d10 | 1d10 |
+| **BASE THRUSTERS** | 20 | 45 | 40 | 35 | 30 | 20 |
+| **BASE BATTLE** | 10 | 25 | 25 | 15 | 55 | 65 |
+| **BASE SYSTEMS** | 20 | 30 | 35 | 40 | 25 | 30 |
+| **UPGRADE SLOTS** | 2 | 4 | 6 | 8 | 10 | 12 |
+| **FUEL CAPACITY** | 1d5 | 2d5 | 2d10 | 2d10+2 | 2d10+4 | 2d10+6 |
+| **CREW CAPACITY** | 1 | 2d5 | 2d10 | 2d10+20 | 4d10+20 | 4d10+40 |
+| **PASSENGER CAPACITY** | 0–6 | 0–12 | 0–12 | 6–24 | 12–32 | 24–48 |
+| **CARGO CAPACITY** | 0–1 | 1–8 | 2–20 | 3–50 | 4–30 | 5–25 |
+| **LANDING GEAR** | Yes | Aftermarket | Aftermarket | No | No | No |
+| **JUMP CAPABILITY** | No | Aftermarket | Yes | Yes | Yes | Yes |
+
+The base frames above can be further modified at additional cost. Most frames available to player characters will be prefabricated and unable to be modified further without Upgrades. However, to facilitate building custom ship frames or ships from different manufacturers, these pricing guidelines can be used:
+
+| MODIFICATION | C-0 PRICE | C-I PRICE | C-II PRICE | C-III PRICE | C-IV PRICE | C-V PRICE |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Hull Point +1 | 1.5mcr | 3mcr | 6mcr | 9mcr | 12mcr | 15mcr |
+| Battle +5 | 500kcr | 1mcr | 2mcr | 3mcr | 4mcr | 5mcr |
+| Thrusters +5 | 250kcr | 500kcr | 1mcr | 1.5mcr | 2mcr | 2.5mcr |
+| Systems +5 | 150kcr | 300kcr | 600kcr | 900kcr | 1.2mcr | 1.5mcr |
+| Escape Pod +1 | 750kcr | 1.5mcr | 3mcr | 4.5mcr | 6mcr | 7.5mcr |
 
 ## 1.3 UPGRADES & HARDPOINTS
 
@@ -107,6 +126,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 |       **MINOR UPGRADES**       |   ————   |         ————          |                                                                                      ————————————                                                                                      |
 |          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
 |      **Agar Cushioning**       |  1.5mcr  |        2 weeks        | Upgraded cryopods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
+|      **Cargo Container**       |  100kcr  |         1 day         | 20 ft.^3^ metallic container that slots into the Cargo Bay (4× ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
 |        **Cryochamber**         |   5mcr   |        2 weeks        |                                           Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72).                                            |
 |     **Dedicated Reactor**      |   1mcr   |        1 month        |                                                                                   Grants +5 Systems.                                                                                   |
 |    **Deep Space Scanners**     |   1mcr   |        2 weeks        |            Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at firing Range, etc.).            |
@@ -119,6 +139,8 @@ Average installation times (given availability, labor, etc) are listed below. If
 |        **Upgrade Rack**        |   6mcr   |        1 month        |                                                 Exterior module. Grants +3 Upgrades. Each additional rack installed costs 2× the last.                                                 |
 |       **MAJOR UPGRADES**       |   ————   |         ————          |                                                                                      ————————————                                                                                      |
 |          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
+|            **Brig**            |  1.5mcr  |        2 weeks        |                          Intern up to half the ship's total crew indefinitely. It's cramped, but not inhumane. Creatures in the Brig can't lose Stress.                          |
+|          **Cargo Bay**         |   4mcr   |        1 month        |                                              Enables the ship to hold a number of Cargo Containers up to 4× its Class.                                              |
 |    **Engine Improvements**     |   9mcr   |        3 weeks        |                                                                                 Grants +15 Thrusters.                                                                                  |
 |       **Enhanced A.I.**        |  5.5mcr  |        1 week         |                                                                                  Grants +15 Systems.                                                                                   |
 |       **Expanded Frame**       |  12mcr   | 1 month × Ship Class  |             Structural alterations. Grants +5 Upgrades. Ships can only accommodate 1 of these per Ship Class level. Each additional Expanded Frame costs 2× the previous.              |
@@ -130,7 +152,7 @@ Average installation times (given availability, labor, etc) are listed below. If
 |      **ILLEGAL UPGRADES**      |   ————   |         ————          |                                                                                      ————————————                                                                                      |
 |          **UPGRADE**           | **COST** |       **INST.**       |                                                                                    **DESCRIPTION**                                                                                     |
 |  **Accelerated Afterburner**   |  2.5mcr  |        2 weeks        |                                       If you win the Fuel bid while Pursuing or Evading a target, that target has [-] on their Thrusters Check.                                        |
-|        **Comms Jammer**        |  500kcr  |        1 week         |                                                   Systems Check (Firing Range): Allows for communication jamming and eavesdropping.                                                    |
+|        **Comms Jammer**        |  500kcr  |        1 week         |                                                   Systems Check (Firing Range): Allows for communication jamming and eavesdropping within Detection Range.                                                    |
 |      **Contraband Hold**       |  500kcr  |        1 month        |                                                           Small, hidden Cargo Bay. Very hard for boarding parties to detect.                                                           |
 |     **Embedded Clone Pod**     |  15mcr   | 2 months × Ship Class |         Allows a crewmember to be reconstituted in the form of their last time aboard the ship 1d10 months after their untimely demise. Can only generate one clone at a time.         |
 |     **Expanded Ammo Bay**      |   3mcr   |        2 weeks        |                                           Your ship counts as one class greater for determining when you must resupply your Hardpoint ammo.                                            |

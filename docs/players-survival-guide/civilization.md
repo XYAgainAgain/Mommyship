@@ -53,9 +53,9 @@ Contractors should generally be controlled by the player who hired them or by an
 
 Contractors are much simpler characters than the ones you play, and only have four Stats, which Range from 1–10. When making Checks, they roll 1d10 instead of a 1d100. 
 
-- **Combat**: This is a catch-all Stat for all physical, manual, and combat Checks, showing how good they are in a fight. Contractors will have a Combat of between 1–7.  
-- **Instinct**: This is a catch-all Stat for Fear, Sanity, Body, Speed, Smarts, Savvy, and everything else. Contractors will have an Instinct of between 1–5.  
-- **Max Wounds**: Contractors don't track their Health per Wound. Instead, any Damage they take counts as a Wound. If they take Wounds equal to their Maximum Wounds, they die.  
+- **Combat**: This is a catch-all Stat for all physical, manual, and combat Checks, showing how good they are in a fight. Contractors will have a Combat score of between 1–7.  
+- **Instinct**: This is a catch-all Stat for Fear, Sanity, Body, Speed, Smarts, Savvy, and everything else. Contractors will have an Instinct score of between 1–5.  
+- **Max Wounds**: Contractors don't track their Health per Wound. Instead, any Damage equal to or more than their current Loyalty they take counts as a Wound. If they take Wounds equal to their Maximum Wounds, they must make a Death Saving throw.  
 - **Loyalty**: Loyalty is a Save, and is rolled whenever the contractor needs to make a decision between what's best for them and what's best for you. On a success they help you out, but on a failure they help themselves out. Each contractor starts with a Loyalty Save of 2+1d5, rolled after they are hired. 
 
 These simplified Stats make Contractors easier to track. Contractors are generally weaker than your characters, and don't last long, so be sure to protect them. Some contractors may also have Skill Bonuses, as determined by the Warden.

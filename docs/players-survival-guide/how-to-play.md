@@ -167,8 +167,8 @@ You've received standard training in this area equivalent to a bachelor's degree
 - **Computers:** Fluent use of computers and their networks. 
 - **First Aid:** Basic medical care for everyday injuries. 
 - **Geology:** The study of solid features of any terrestrial planet or its satellites. 
-- **History:** The study of past events, commerce, political entities and military operations.
-- **Industrial Equipment:** The safe and proper use of heavy machinery and tools (exosuits, forklifts, drills, breakers, laser cutters, etc). 
+- **History:** The study of past events, commerce, political entities, and military operations.
+- **Industrial Equipment:** The safe and proper use of heavy machinery and tools (exosuits, forklifts, drills, breakers, laser cutters, etc.). 
 - **Influence:** Interpersonal sway, ability to read social cues and respond accordingly.
 - **Jury-rigging:** Makeshift repair or engineering, using only the tools and materials at hand. 
 - **Linguistics:** The study of languages (alive, dead, and undiscovered). 
@@ -254,7 +254,7 @@ You are advanced in your field and are aware of cutting edge techniques or highl
 - **Robotics:** Design, maintenance, and operation of robots, drones, and androids.
     - **Requires:** Mechanical Repair
 - **Sophontology:** The study of the behavior and mind of inhuman entities.
-    - **Requires:** Psychology or Archaeology
+    - **Requires:** Psychology or Archeology
 - **Surgery:** Manually operating on living or dead biological subjects.
     - **Requires:** Field Medicine or Pathology
 - **Xenoesotericism:** Obscure beliefs, mysticism, and religion regarding non-human entities.
@@ -376,18 +376,18 @@ When you die, the Warden makes a Death Save by placing 1d10 in a cup, shaking th
 
 ### *2.6.8 WOUND EFFECTS (D10)*
 
-| D10 | SEVERITY | BLUNT FORCE | BLEEDING | GUNSHOT | FIRE & EXPLOSIVES | GORE & MASSIVE |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 00 | Flesh Wound | Winded. [-] until you catch your breath. | Drop held item. | Grazed, knocked down.    | Hair burnt. Gain 1d5 Stress. | Vomit [-] on next action. |
-| 01 | Minor Injury | Black Eye. [-] on Savvy Checks. | Loss of blood. Those Close gain 1 Stress. | Bleeding +1 | Awesome Scar. +1 Min. Stress. | Awesome Scar. +1 Min. Stress. |
-| 02 |    | Bell rung. [-] on Smarts Checks. | Blood in eyes. [-] until wiped clean.    | Fractured extremity. [-] on next Speed Check. | Singed. [-] on next action. | Digit mangled. |
-| 03 |    | Leg or foot broken. [-] on Speed Checks. | Laceration. Bleeding +1 | Broken rib. If relying on limited oxygen supply, depletes at 2× rate. | Shrapnel/large burn. [-] on next 1d5 actions.    | Eye gouged out. |
-| 04 |    | Snapped collarbone. [-] on Strength Checks. | Major cut. Bleeding +2 | Fractured extremity. -1 AP. | Extensive burns. -1d10 Strength. | Ripped off flesh. -1d10 Strength. |
-| 05 | Major Injury | Concussion. Lose use of all Skills. | Fingers/toes severed. Bleeding +3 | Lodged bullet. Surgery required. | Major Burn. -2d10 Body Save. | Paralyzed from the waist down. |
-| 06 |    | Rupture. -1d5 AP. | Hand/foot severed. Bleeding +4 | Gunshot to the neck. Bleeding +3 | Traumatic Burn. -2d10 Fear Save. | Limb severed. Bleeding +5. |
-| 07 | Lethal Injury (Death Save in 1d10 rounds) | Back broken. [-] on all Checks. | Limb severed. Bleeding +5 | Major blood loss. Bleeding +4 | Limb on fire. 2d10 DMG per round. | Impaled Bleeding +6.    |
-| 08 |    | Skull fracture. [-] on all Saves. | Major artery cut. Bleeding +6 | Sucking chest wound. Bleeding +5 | Body on fire. 3d10 DMG per round. | Guts spooled on floor. Bleeding +7.    |
-| 09 | Fatal Injury (Death Save now) | Spine or neck broken. Death Save. | Throat slit or heart pierced. Death Save. | Headshot. Death Save. | Engulfed in a fiery explosion. Death Save. | Head explodes. No Death Save. You have died. |
+| D10 | SEVERITY | BLUNT FORCE | BLEEDING | GUNSHOT | FIRE & EXPLOSIVES | GORE & MASSIVE | ORGANIC TRAUMA |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 00 | Flesh Wound | Winded. [-] until you catch your breath. | Drop held item. | Grazed, knocked down.    | Hair burnt. Gain 1d5 Stress. | Vomit [-] on next action. | Adverse reaction. Hives & sweating. |
+| 01 | Minor Injury | Black Eye. [-] on Savvy Checks. | Loss of blood. Those Close gain 1 Stress. | Bleeding +1 | Awesome Scar. +1 Min. Stress. | Awesome Scar. +1 Min. Stress. | Muscular dystrophy. -1d5 Strength. |
+| 02 |    | Bell rung. [-] on Smarts Checks. | Blood in eyes. [-] until wiped clean.    | Fractured extremity. [-] on next Speed Check. | Singed. [-] on next action. | Digit mangled. | -1d5 Speed. |
+| 03 |    | Leg or foot broken. [-] on Speed Checks. | Laceration. Bleeding +1 | Broken rib. If relying on limited oxygen supply, depletes at 2× rate. | Shrapnel/large burn. [-] on next 1d5 actions.    | Eye gouged out. | Tonic-clonic seizure. -1d10 Smarts. |
+| 04 |    | Snapped collarbone. [-] on Strength Checks. | Major cut. Bleeding +2 | Fractured extremity. -1 AP. | Extensive burns. -1d10 Strength. | Ripped off flesh. -1d10 Strength. | Projectile vomit. [-] on next 3 Savvy Checks. |
+| 05 | Major Injury | Concussion. Lose use of all Skills. | Fingers/toes severed. Bleeding +3 | Lodged bullet. Surgery required. | Major Burn. -2d10 Body Save. | Paralyzed from the waist down. | Partial organ failure. [-] on Body Saves. |
+| 06 |    | Rupture. -1d5 AP. | Hand/foot severed. Bleeding +4 | Gunshot to the neck. Bleeding +3 | Traumatic Burn. -2d10 Fear Save. | Limb severed. Bleeding +5. | Major organ failure. Incapacitated for 1d10 rounds. |
+| 07 | Lethal Injury (Death Save in 1d10 rounds) | Back broken. [-] on all Checks. | Limb severed. Bleeding +5 | Major blood loss. Bleeding +4 | Limb on fire. 2d10 DMG per round. | Impaled. Bleeding +6. | Dangerous dosage. Make a Chem Check.    |
+| 08 |    | Skull fracture. [-] on all Saves. | Major artery cut. Bleeding +6 | Sucking chest wound. Bleeding +5 | Body on fire. 3d10 DMG per round. | Guts spooled on floor. Bleeding +7. | Lethal dosage. Make a Chem Check [-].    |
+| 09 | Fatal Injury (Death Save now) | Spine or neck broken. Death Save. | Throat slit or heart pierced. Death Save. | Headshot. Death Save. | Engulfed in a fiery explosion. Death Save. | Head explodes. No Death Save. You have died. | Total nervous system collapse. You die swiftly & painfully. |
 
 ### *2.6.9 RANGE & DISTANCE*
 
@@ -440,7 +440,7 @@ Every 24 hours, subtract the total number of breathing crewmembers from the rema
 
 Whenever the oxygen supply is less than twice the amount of breathing Passengers, all rolls are at Disadvantage as the crew suffers headaches, fatigue, anxiety, and general clumsiness. 
 
-Whenever the oxygen supply is less than the total amount of breathing Passengers, every breathing Passenger must make a Body Save or else make a Death Save as they suffer panting, dizziness, severe headaches, impaired vision and tinnitus. 
+Whenever the oxygen supply is less than the total amount of breathing Passengers, every breathing Passenger must make a Body Save or else make a Death Save as they suffer panting, dizziness, severe headaches, impaired vision, and tinnitus. 
 
 Once the oxygen supply runs out, you can survive for 15 seconds before you fall unconscious. After falling unconscious, you can survive for 1d5 minutes without oxygen before dying. 
 
