@@ -8,5 +8,5 @@
 *[NPC]: Non-Player Character
 *[NPCs]: Non-Player Characters
 *[O2]: Oxygen supply
-*[AA]: Anti-Armor (ignores Armor Points)
+*[AA]: All Adjacent
 *[d5]: 1d10 halved & rounded up
