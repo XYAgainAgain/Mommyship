@@ -415,7 +415,7 @@ Planets with Toxic or Corrosive atmospheres require special gear to explore, oth
 
 **Toxic Atmosphere:** The planet's atmosphere is not fit to breathe, but is otherwise safe. A rebreather or armor with its own oxygen supply is required. Without these, characters take 1d10 DMG per round, Body Save for half. 
 
-**Corrosive Atmosphere:** The planet's atmosphere is deadly and destructive. It deals Damage every round while on it. This Ranges from 1 DMG / round (Mildly Corrosive) to 10 DMG / round (Highly Corrosive). Anything higher is simply impossible to safely traverse without specialized equipment and armor. 
+**Corrosive Atmosphere:** The planet's atmosphere is deadly and destructive. It deals Damage every round while on it. This Ranges from 1 DMG/round (Mildly Corrosive) to 10 DMG/round (Highly Corrosive). Anything higher is simply impossible to safely traverse without specialized equipment and armor. 
 
 ### *2.7.2 BLEEDING*
 
