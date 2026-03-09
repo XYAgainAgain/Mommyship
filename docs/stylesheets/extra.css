@@ -433,6 +433,12 @@ body:has(.homepage-hero) .md-footer {
   display: none;
 }
 
+/* Lock section landing pages to exactly one viewport */
+body:has(.section-landing) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 /* Radar-sweep glow tracing the card edge */
 .homepage-hero::after {
   content: "";

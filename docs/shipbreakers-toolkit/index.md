@@ -1,3 +1,5 @@
+<div class="section-landing" markdown>
+
 # MOMMYSHIP
 
 ## **SHIPBREAKER'S TOOLKIT**
@@ -14,3 +16,5 @@ It also introduces an expenses calculator for modularly creating ships and calcu
 - [**2.0 Space Travel**](space-travel.md) — Navigation, Refueling, Interstellar Jumps, Ship-to-Ship Contact, Combat, & Repairs
 - [**3.0 Operating Costs**](operating-costs.md) — Company, Military, Owner-Operators, Freelancers, & Debt
 - [**4.0 Ship Quick Guide**](ship-quick-guide.md) — At-a-glance reference table
+
+</div>

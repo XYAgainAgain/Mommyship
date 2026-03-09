@@ -1,3 +1,5 @@
+<div class="section-landing" markdown>
+
 # MOMMYSHIP
 
 ## **PLAYER'S SURVIVAL GUIDE**
@@ -17,3 +19,5 @@ Last but not least, an entirely new Character Sheet has been designed to align w
 - [**3.0 Civilization**](civilization.md) — Ports, Shore Leave, & Contractors
 - [**4.0 Gear**](gear.md) — Weapons, Armor, Chems, & Equipment
 - [**5.0 Quick Guide**](quick-guide.md) — At-a-glance reference table
+
+</div>

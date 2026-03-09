@@ -1,3 +1,5 @@
+<div class="section-landing" markdown>
+
 # 4.0 SHIP QUICK GUIDE
 
 |                       [**STAT CHECKS**](ships-and-space-travel.md#1.1-how-a-ship-works)                        |                          [**TRAVEL**](space-travel.md)                          |                           [**CREW**](ships-and-space-travel.md#1.1.2-roles-on-a-ship)                           |
@@ -9,3 +11,5 @@
 | All ships can take up to 8 MDMG. Each MDMG point affects Ship's Stats & functions. See [table](space-travel.md#2.7-ship-to-ship-combat). Deal MDMG using Hardpoints & Weapons as per Ship Combat. | Ignore any MDMG less than the Hull of your Ship Class + Upgrades. Any MDMG greater than that value reduces Hull by 1 and carries over to ship (max. 8). | For when things go really bad and your ship is dead in the void, roll on the [table](space-travel.md#2.6.2-distress-signals) to see if/when aid arrives. Seal yourself in a cryopod and pray to literally anything. |
 |  | [**RANGE**](space-travel.md#2.6.1-range) |  |
 | **DETECTION:** Within the same system; communication is slow. Low combat risk. | **FIRING:** Within weeks of each other; communicate with minor delay. Moderate combat risk. | **CONTACT:** Within a few days of each other; no communication delay. High combat and boarding risk. |
+
+</div>

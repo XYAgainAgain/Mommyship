@@ -1,3 +1,5 @@
+<div class="section-landing" markdown>
+
 # 5.0 QUICK GUIDE
 
 |                       [**STAT CHECKS**](how-to-play.md#221-stat-checks)                        |                          [**SAVES**](how-to-play.md#222-saves)                           |                       [**PANIC CHECKS**](how-to-play.md#24-panic)                       |
@@ -11,3 +13,5 @@
 |               **ADJACENT:** It can touch you.                | **CLOSE:** It can get to you. <br />**LONG:** It can shoot you. |             **EXTREME:** It can hear you scream.             |
 
 <p style="text-align: center"><em>♥ It's a big, scary galaxy out there. Just do your best and try to have fun before your untimely demise. ♥</em></p>
+
+</div>
