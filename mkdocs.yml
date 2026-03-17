@@ -50,11 +50,6 @@ nav:
     - Operating Costs: shipbreakers-toolkit/operating-costs.md
     - Ship Quick Guide: shipbreakers-toolkit/ship-quick-guide.md
   - D.A.V.E. Pilot Manual: dave-pilot-manual.md
-  - Osminok:
-    - The Osminok System: osminok/osminok-system.md
-    - The Osminoki: osminok/osminoki.md
-    - Ecology: osminok/ecology.md
-    - The Teuthidan Faith: osminok/teuthidan-faith.md
 
 plugins:
   - search
