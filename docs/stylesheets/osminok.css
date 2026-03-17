@@ -19,6 +19,17 @@
   font-display: swap;
 }
 
+/* Override Material palette to eliminate Mommyship color bleed */
+body:has(.osminok-ocean) {
+  --md-default-fg-color: #CCC3C1;
+  --md-default-fg-color--light: rgba(204, 195, 193, 0.7);
+  --md-default-fg-color--lighter: rgba(204, 195, 193, 0.5);
+  --md-default-fg-color--lightest: rgba(204, 195, 193, 0.2);
+  --md-primary-fg-color: #50A0FF;
+  --md-accent-fg-color: #50A0FF;
+  --md-typeset-a-color: #50A0FF;
+}
+
 /* Kill the space theme on ocean pages */
 body:has(.osminok-ocean) #starfield,
 body:has(.osminok-ocean) .galacticity-control {
@@ -114,26 +125,92 @@ body:has(.osminok-ocean) .md-content__inner {
 }
 
 body:has(.osminok-ocean) .md-typeset {
-  color: #b0c8e0;
+  color: #CCC3C1;
+}
+
+/* Paragraph indentation for dense lore text */
+body:has(.osminok-ocean) .md-typeset p {
+  text-indent: 2em;
+}
+
+body:has(.osminok-ocean) .md-typeset h1,
+body:has(.osminok-ocean) .md-typeset h2,
+body:has(.osminok-ocean) .md-typeset h3,
+body:has(.osminok-ocean) .md-typeset h4 {
+  color: #64D2E6;
+  font-weight: 500;
 }
 
 body:has(.osminok-ocean) .md-typeset h2,
 body:has(.osminok-ocean) .md-typeset h3,
 body:has(.osminok-ocean) .md-typeset h4 {
-  color: #c0d8f0;
+  font-size: 130%;
 }
 
 body:has(.osminok-ocean) .md-typeset strong {
-  color: #30c8b4;
+  color: #64D2E6;
 }
 
 body:has(.osminok-ocean) .md-typeset em {
-  color: #a890c8;
+  color: #EBE8E7;
 }
 
 body:has(.osminok-ocean) .md-typeset blockquote {
-  background: rgba(30, 180, 160, 0.04);
-  border-left-color: rgba(30, 180, 160, 0.2);
+  background: rgba(80, 160, 255, 0.04);
+  border-left-color: rgba(100, 210, 230, 0.25);
+}
+
+/* Text-size rocker — override Mommyship pink, inherit body font */
+body:has(.osminok-ocean) .text-size-rocker__btn {
+  font-family: "Capriola", sans-serif;
+}
+
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="decrease"],
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="increase"] {
+  background: #2a7ab5;
+}
+
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="decrease"]:hover,
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="increase"]:hover {
+  background: #3a8ec8;
+}
+
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="decrease"]:active,
+body:has(.osminok-ocean) .text-size-rocker__btn[data-text-size="increase"]:active {
+  background: #1e6a9e;
+}
+
+/* TOC active link — cyan to match headers */
+body:has(.osminok-ocean) .md-nav__link--current {
+  color: #64D2E6 !important;
+}
+
+/* Override Mommyship pink hover (extra.css sets these as direct colors) */
+body:has(.osminok-ocean) .md-typeset a:hover,
+body:has(.osminok-ocean) .md-nav__link:hover {
+  color: #78E6C8;
+}
+
+/* Scrollbar — matches rocker button tones */
+body:has(.osminok-ocean) ::-webkit-scrollbar {
+  width: 8px;
+}
+
+body:has(.osminok-ocean) ::-webkit-scrollbar-track {
+  background: rgba(18, 25, 38, 0.5);
+}
+
+body:has(.osminok-ocean) ::-webkit-scrollbar-thumb {
+  background: #2a7ab5;
+  border-radius: 4px;
+}
+
+body:has(.osminok-ocean) ::-webkit-scrollbar-thumb:hover {
+  background: #3a8ec8;
+}
+
+body:has(.osminok-ocean) {
+  scrollbar-color: #2a7ab5 rgba(18, 25, 38, 0.5);
 }
 
 /* Hero h1 overlaps the wave zone — position: relative keeps it

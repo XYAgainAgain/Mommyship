@@ -1,6 +1,8 @@
 ---
 hide:
   - navigation
+search:
+  exclude: true
 ---
 
 <div class="osminok-ocean"></div>

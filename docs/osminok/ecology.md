@@ -1,6 +1,8 @@
 ---
 hide:
   - navigation
+search:
+  exclude: true
 ---
 
 <div class="osminok-ocean"></div>
@@ -14,7 +16,7 @@ hide:
 <div class="wave wave-4"></div>
 </div>
 
-# Ecology
+# Ecology of Osminok Prime
 
 Every creature in this section has two names. The **shortname** is a two-component compound roughly two phonemes long, where the first half describes a defining trait and the second half says what the thing *is*.
 

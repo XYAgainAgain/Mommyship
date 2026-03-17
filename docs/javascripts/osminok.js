@@ -527,7 +527,7 @@ document$.subscribe(function () {
       children.forEach(function (el) {
         if (el.tagName === 'H3') h3Count++;
         if (h3Count > 0) {
-          el.style.marginInline = (h3Count * 1) + '%';
+          el.style.marginInline = (h3Count * 0.5) + '%';
           squeezedEls.push(el);
         }
       });
