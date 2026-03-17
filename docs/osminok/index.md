@@ -1,32 +1,28 @@
 ---
+title: Osminok Lore Bible
 hide:
   - navigation
 search:
   exclude: true
 ---
 
-<div class="osminok-ocean"></div>
+<div class="osminok-ocean osminok-landing"></div>
 
-<div class="ocean-surface">
-<canvas class="storm-canvas"></canvas>
-<div class="storm-blur"></div>
-<div class="wave wave-1"></div>
-<div class="wave wave-2"></div>
-<div class="wave wave-3"></div>
-<div class="wave wave-4"></div>
+<canvas class="swirly-stars"></canvas>
+
+<div class="section-landing">
+
+<div class="ring">
+<div class="ringwave"><div class="ringswell"></div></div>
+<div class="ring-content">
+<h1>Osminok</h1>
+<nav class="ring-nav">
+<a href="osminok-system/">The Osminok System</a>
+<a href="osminoki/">The Osminoki</a>
+<a href="ecology/">Ecology</a>
+<a href="teuthidan-faith/">The Teuthidan Faith</a>
+</nav>
 </div>
-
-<div class="section-landing" markdown>
-
-# Osminok
-
-## **The Lore Bible**
-
----
-
-- [**The Osminok System**](osminok-system.md) — The star, the planet, the moon, the rings, and what you can see from the surface
-- [**The Osminoki**](osminoki.md) — Biology, evolution, variants, lifecycle, culture, society, and the off-world diaspora
-- [**Ecology**](ecology.md) — Every creature worth naming in Osminok's ocean
-- [**The Teuthidan Faith**](teuthidan-faith.md) — Teuthida's journey, the Abbey, the Four Tenets, and daily practice
+</div>
 
 </div>

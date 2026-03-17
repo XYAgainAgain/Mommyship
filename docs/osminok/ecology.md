@@ -1,4 +1,5 @@
 ---
+title: Ecology of Osminok Prime
 hide:
   - navigation
 search:

@@ -1,4 +1,5 @@
 ---
+title: The Osminoki
 hide:
   - navigation
 search:

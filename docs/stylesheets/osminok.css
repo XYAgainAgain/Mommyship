@@ -102,8 +102,26 @@ body:has(.osminok-ocean) .md-typeset h1 {
   font-size: 3em;
   font-weight: 400;
   -webkit-text-stroke: 0;
-  animation: none;
-  text-shadow: none;
+  animation: osminok-glow-ripple 2.5s ease-in-out infinite;
+}
+
+@keyframes osminok-glow-ripple {
+  0%, 100% {
+    text-shadow:
+      -8px 0 18px rgba(100, 210, 230, 0.5),
+      8px 0 8px rgba(80, 160, 255, 0.15),
+      -3px 2px 10px rgba(100, 210, 230, 0.25),
+      3px -2px 6px rgba(80, 160, 255, 0.15),
+      0 0 4px rgba(100, 210, 230, 0.3);
+  }
+  50% {
+    text-shadow:
+      8px 0 18px rgba(80, 160, 255, 0.5),
+      -8px 0 8px rgba(100, 210, 230, 0.15),
+      3px -2px 10px rgba(80, 160, 255, 0.25),
+      -3px 2px 6px rgba(100, 210, 230, 0.15),
+      0 0 4px rgba(80, 160, 255, 0.3);
+  }
 }
 
 body:has(.osminok-ocean) .md-typeset h1 .headerlink {
@@ -141,10 +159,17 @@ body:has(.osminok-ocean) .md-typeset h4 {
   font-weight: 500;
 }
 
-body:has(.osminok-ocean) .md-typeset h2,
+body:has(.osminok-ocean) .md-typeset h2 {
+  font-size: 130%;
+  animation: osminok-glow-ripple 2.5s ease-in-out infinite;
+}
+
 body:has(.osminok-ocean) .md-typeset h3,
 body:has(.osminok-ocean) .md-typeset h4 {
   font-size: 130%;
+  text-shadow:
+    0 0 10px rgba(100, 210, 230, 0.35),
+    0 0 3px rgba(80, 160, 255, 0.25);
 }
 
 body:has(.osminok-ocean) .md-typeset strong {
@@ -156,8 +181,9 @@ body:has(.osminok-ocean) .md-typeset em {
 }
 
 body:has(.osminok-ocean) .md-typeset blockquote {
-  background: rgba(80, 160, 255, 0.04);
-  border-left-color: rgba(100, 210, 230, 0.25);
+  background: rgba(80, 160, 255, 0.08);
+  border-left-color: rgba(100, 210, 230, 0.3);
+  color: #C0BAB8;
 }
 
 /* Text-size rocker — override Mommyship pink, inherit body font */
@@ -842,14 +868,15 @@ body:has(.osminok-dive) .md-nav--secondary a[href="#11000m"] { color: #271340 !i
 body:has(.osminok-dive) .md-nav--secondary a[href="#12000m"] { color: #220e38 !important; }
 body:has(.osminok-dive) .md-nav--secondary a[href="#_1"] { color: #1a0a2e !important; }
 
-/* Back to Top pill — transparent with glow text on dive page */
-body:has(.osminok-dive) .md-top {
+/* "Surface" pill — all Osminok pages */
+body:has(.osminok-ocean) .md-top {
   background: rgba(18, 25, 38, 0.4) !important;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(110, 30, 160, 0.3);
-  color: rgba(200, 180, 230, 0.9);
-  text-shadow: 0 0 8px rgba(110, 30, 160, 0.5);
+  border: 1px solid rgba(42, 122, 181, 0.3);
+  color: rgba(100, 210, 230, 0.9);
+  text-shadow: 0 0 8px rgba(80, 160, 255, 0.4);
+  font-family: "Capriola", sans-serif;
 }
 
 /* 25% brightness boost on dive bio layers — GPU-composited, no per-particle changes */
@@ -866,6 +893,165 @@ body:has(.osminok-dive) .osminok-bio {
   height: 100vh;
   pointer-events: none;
   z-index: 1;
+}
+
+/* Landing page — swirly stars background + CSS wave ring */
+
+.swirly-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+/* Hide storm surface on landing — stars replace it */
+body:has(.osminok-landing) .ocean-surface {
+  display: none;
+}
+
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(80vw, 600px);
+  aspect-ratio: 1;
+  border: 4px solid transparent;
+  border-radius: 50%;
+  z-index: 1;
+  transition: box-shadow 0.4s ease-out;
+}
+
+/* Radar sweep — conic gradient masked to a hollow ring */
+.ring::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    transparent 0%,
+    transparent 55%,
+    #64D2E6 75%,
+    #64D2E6 90%,
+    transparent 100%
+  );
+  padding: 14px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: blur(10px);
+  animation: radar-sweep 6s linear infinite;
+  pointer-events: none;
+}
+
+.ringwave {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #2a5575;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: inset 0 0 60px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Third wave — deep background swell, darker and slower */
+.ringswell {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  border-radius: 42%;
+  background: rgba(4, 8, 14, 0.7);
+  transform: translate(-50%, -75%);
+  animation: ring-swell-spin 14s linear infinite;
+}
+
+/* Pseudo-elements are the rotating "sky" — dark, with rounded edges
+   creating the wave boundary against the ocean background */
+.ringwave::before,
+.ringwave::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  transform: translate(-50%, -75%);
+}
+
+.ringwave::before {
+  border-radius: 45%;
+  background: rgba(4, 8, 14, 0.95);
+  animation: ring-wave-spin 5s linear infinite;
+}
+
+.ringwave::after {
+  border-radius: 40%;
+  background: rgba(4, 8, 14, 0.5);
+  animation: ring-wave-spin 10s linear infinite;
+}
+
+@keyframes ring-wave-spin {
+  from { transform: translate(-50%, -75%) rotate(0deg); }
+  to { transform: translate(-50%, -75%) rotate(360deg); }
+}
+
+@keyframes ring-swell-spin {
+  from { transform: translate(-50%, -75%) rotate(0deg); }
+  to { transform: translate(-50%, -75%) rotate(360deg); }
+}
+
+/* Content floats above the wave surface */
+.ring-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  padding: 2rem;
+  pointer-events: none;
+}
+
+.ring-content h1 {
+  font-family: "Gabriela", "Capriola", serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  color: #64D2E6;
+  margin: 0 0 1.5rem;
+  animation: osminok-glow-ripple 2.5s ease-in-out infinite;
+  pointer-events: auto;
+}
+
+.ring-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.ring-nav a {
+  font-family: "Capriola", sans-serif;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  color: #CCC3C1;
+  text-decoration: none;
+  text-shadow: 0 0 6px rgba(100, 210, 230, 0.2);
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+.ring-nav a:hover {
+  color: #78E6C8;
+  text-shadow: 0 0 12px rgba(100, 210, 230, 0.5);
 }
 
 /* Reduced motion */
@@ -887,5 +1073,11 @@ body:has(.osminok-dive) .osminok-bio {
   .osminok-bio,
   .marine-snow {
     display: none !important;
+  }
+
+  .ringwave::before,
+  .ringwave::after,
+  .ringswell {
+    animation: none !important;
   }
 }

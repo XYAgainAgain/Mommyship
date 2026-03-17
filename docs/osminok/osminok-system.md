@@ -1,4 +1,5 @@
 ---
+title: The Osminok System
 hide:
   - navigation
 search:

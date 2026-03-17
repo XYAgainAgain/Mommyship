@@ -79,15 +79,13 @@ document$.subscribe(function () {
     });
   })();
 
-  /* Dive: restyle "Back to top" as "Surface" with smooth scroll */
-  var topBtn = null;
-  if (isDive) {
-    topBtn = document.querySelector('.md-top');
-    if (topBtn) {
-      /* Replace "Back to top" text node, keep the SVG arrow */
-      topBtn.childNodes.forEach(function (n) {
-        if (n.nodeType === 3 && n.textContent.trim()) n.textContent = '\n  Surface\n';
-      });
+  /* Restyle "Back to top" as "Surface" on all Osminok pages */
+  var topBtn = document.querySelector('.md-top');
+  if (topBtn) {
+    topBtn.childNodes.forEach(function (n) {
+      if (n.nodeType === 3 && n.textContent.trim()) n.textContent = '\n  Surface\n';
+    });
+    if (isDive) {
       topBtn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -95,6 +93,126 @@ document$.subscribe(function () {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }, true);
     }
+  }
+
+  /* Landing page — swirly stars canvas */
+  var isLanding = !!document.querySelector('.osminok-landing');
+  var starsAnimId = null;
+  if (isLanding && !reducedMotion) {
+    (function () {
+      var c = document.querySelector('.swirly-stars');
+      if (!c) return;
+      var sctx = c.getContext('2d');
+      var sw = c.width = window.innerWidth;
+      var sh = c.height = window.innerHeight;
+      var maxStars = 1400;
+      var stars = [];
+
+      /* Matches the Mommyship starfield palette with identical weights */
+      var starPalette = [
+        {r: 255, g: 255, b: 255, w: 5},
+        {r: 220, g: 230, b: 255, w: 2},
+        {r: 170, g: 191, b: 255, w: 1},
+        {r: 255, g: 244, b: 232, w: 2},
+        {r: 255, g: 237, b: 151, w: 1.5},
+        {r: 255, g: 196, b: 107, w: 1},
+        {r: 255, g: 154, b: 92,  w: 0.5}
+      ];
+      var totalWeight = 0;
+      for (var p = 0; p < starPalette.length; p++) totalWeight += starPalette[p].w;
+
+      function pickColor() {
+        var roll = Math.random() * totalWeight, cum = 0;
+        for (var p = 0; p < starPalette.length; p++) {
+          cum += starPalette[p].w;
+          if (roll <= cum) return starPalette[p];
+        }
+        return starPalette[0];
+      }
+
+      /* Cache one gradient sprite per palette color */
+      var sprites = {};
+      function getSprite(col) {
+        var key = col.r + ',' + col.g + ',' + col.b;
+        if (sprites[key]) return sprites[key];
+        var sc = document.createElement('canvas');
+        var sx = sc.getContext('2d');
+        sc.width = 100; sc.height = 100;
+        var half = 50;
+        var grad = sx.createRadialGradient(half, half, 0, half, half, half);
+        grad.addColorStop(0.025, 'rgb(' + col.r + ',' + col.g + ',' + col.b + ')');
+        grad.addColorStop(0.1, 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',0.3)');
+        grad.addColorStop(0.25, 'transparent');
+        grad.addColorStop(1, 'transparent');
+        sx.fillStyle = grad;
+        sx.beginPath();
+        sx.arc(half, half, half, 0, Math.PI * 2);
+        sx.fill();
+        sprites[key] = sc;
+        return sc;
+      }
+
+      var maxOrbit = Math.round(Math.sqrt(sw * sw + sh * sh)) / 2;
+      for (var i = 0; i < maxStars; i++) {
+        var orbitR = rand(0, maxOrbit);
+        var col = pickColor();
+        stars.push({
+          orbitR: orbitR,
+          r: rand(60, orbitR || 60) / 12,
+          ox: sw / 2, oy: sh / 2,
+          t: rand(0, maxStars),
+          speed: rand(0, orbitR || 1) / 200000,
+          alpha: rand(0.2, 1),
+          sprite: getSprite(col)
+        });
+      }
+
+      function drawStars() {
+        sctx.globalCompositeOperation = 'source-over';
+        sctx.globalAlpha = 0.8;
+        sctx.fillStyle = '#000';
+        sctx.fillRect(0, 0, sw, sh);
+        sctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          var x = Math.sin(s.t) * s.orbitR + s.ox;
+          var y = Math.cos(s.t) * s.orbitR + s.oy;
+          var tw = randInt(0, 10);
+          if (tw === 1 && s.alpha > 0) s.alpha -= 0.05;
+          else if (tw === 2 && s.alpha < 1) s.alpha += 0.05;
+          sctx.globalAlpha = s.alpha;
+          sctx.drawImage(s.sprite, x - s.r / 2, y - s.r / 2, s.r, s.r);
+          s.t += s.speed;
+        }
+        starsAnimId = requestAnimationFrame(drawStars);
+      }
+      drawStars();
+
+      /* Lightning flashes on ring border — staccato pulses using storm colors */
+      var ring = document.querySelector('.ring');
+      var lightningColors = [
+        'rgba(153, 247, 244, 0.6)',
+        'rgba(212, 252, 255, 0.5)',
+        'rgba(252, 255, 163, 0.5)',
+        'rgba(252, 236, 96, 0.5)'
+      ];
+      var baseShadow = '0 0 10px 2px rgba(100, 210, 230, 0.12)';
+
+      function flashRing() {
+        if (!ring) return;
+        var col = pick(lightningColors);
+        var spread = randInt(15, 35);
+        var blur = randInt(20, 45);
+        ring.style.boxShadow = '0 0 ' + blur + 'px ' + spread + 'px ' + col;
+        ring.style.transition = 'box-shadow 0.08s ease-in';
+        setTimeout(function () {
+          ring.style.boxShadow = baseShadow;
+          ring.style.transition = 'box-shadow 0.5s ease-out';
+        }, randInt(60, 150));
+        setTimeout(flashRing, randInt(800, 3500));
+      }
+      setTimeout(flashRing, randInt(500, 2000));
+    })();
   }
 
   /* Bio layers — ecology uses scroll-percentage zones, dive uses depth-mapped */
@@ -669,6 +787,7 @@ document$.subscribe(function () {
       header.style.removeProperty('backdrop-filter');
       header.style.removeProperty('-webkit-backdrop-filter');
     }
+    if (starsAnimId) cancelAnimationFrame(starsAnimId);
     if (stormAnimId) cancelAnimationFrame(stormAnimId);
     if (stormResizeHandler) window.removeEventListener('resize', stormResizeHandler);
     if (rainCanvas) rainCanvas.remove();

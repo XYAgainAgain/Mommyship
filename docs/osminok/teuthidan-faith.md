@@ -1,4 +1,5 @@
 ---
+title: The Teuthidan Faith
 hide:
   - navigation
 search:
