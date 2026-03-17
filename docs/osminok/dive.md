@@ -261,6 +261,7 @@ search:
 
 ### ??????
 
+<!-- Abyss V-funnel — disabled until animation is finalized
 <div class="ocean-abyss ocean-abyss--dive">
   <div class="abyss-wall abyss-wall--left">
     <div class="abyss-blob abyss-blob-1"></div>
@@ -274,5 +275,6 @@ search:
   </div>
   <div class="abyss-singularity"></div>
 </div>
+-->
 
 </div>

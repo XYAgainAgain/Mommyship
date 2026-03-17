@@ -55,5 +55,202 @@
   });
 </script>
 <script src="assets/masshole.js"></script>
+<script>
+(function() {
+  var audio = new Audio('assets/audio/Muse - Supermassive Black Hole.ogg');
+  audio.loop = true;
+  audio.preload = 'auto';
+
+  var IR_PATHS = [
+    'assets/audio/ir/ShortDecay.ogg',
+    'assets/audio/ir/MedDecay.ogg',
+    'assets/audio/ir/LongDecay.ogg',
+    'assets/audio/ir/EchoBounce.ogg'
+  ];
+
+  var ctx, masterGain, dryGain, irGains, started = false;
+
+  function loadIR(url) {
+    return fetch(url)
+      .then(function(r) { return r.arrayBuffer(); })
+      .then(function(buf) { return ctx.decodeAudioData(buf); });
+  }
+
+  function initAudio() {
+    if (started) return;
+    started = true;
+
+    ctx = new AudioContext();
+    var source = ctx.createMediaElementSource(audio);
+
+    masterGain = ctx.createGain();
+    masterGain.gain.value = computeVolume(getNormalizedDist());
+    masterGain.connect(ctx.destination);
+
+    dryGain = ctx.createGain();
+    dryGain.connect(masterGain);
+    source.connect(dryGain);
+
+    /* Four parallel convolvers, one per IR, each with its own gain for crossfading */
+    irGains = IR_PATHS.map(function() {
+      var g = ctx.createGain();
+      g.gain.value = 0;
+      g.connect(masterGain);
+      return g;
+    });
+
+    /* Load IRs individually so one failure doesn't block the others */
+    IR_PATHS.forEach(function(url, i) {
+      loadIR(url).then(function(buf) {
+        var conv = ctx.createConvolver();
+        conv.buffer = buf;
+        source.connect(conv);
+        conv.connect(irGains[i]);
+      }).catch(function() {});
+    });
+
+    audio.play().catch(function() {});
+    tick();
+  }
+
+  /* OrbitControls applies one fixed 0.95^zoomSpeed factor per input event,
+     ignoring delta magnitude. We mirror all three dolly inputs: scroll wheel,
+     middle-mouse drag, and touch pinch */
+  var ZOOM_FACTOR = Math.pow(0.95, 0.25);
+  var distance = 7.4; /* sqrt(5^2 + 2^2 + 5^2), matching camera start position */
+  var NEAR = 1.5;
+  var FAR = 350; /* just inside the 400-unit starfield sphere */
+  var MAX_DIST = FAR;
+  var MAX_VOL = 0.65;
+  var MIN_VOL = 0.02;
+
+  function clampDist() { distance = Math.max(0.1, Math.min(MAX_DIST, distance)); }
+
+  /* Returns true if a zoom-out input should be blocked (at the wall) */
+  function atZoomOutLimit() { return distance >= MAX_DIST; }
+
+  /* Capture-phase listeners intercept events before OrbitControls sees them,
+     letting us enforce the zoom-out ceiling on the actual camera too */
+  document.addEventListener('wheel', function(e) {
+    if (e.deltaY > 0 && atZoomOutLimit()) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+    if (e.deltaY < 0) distance *= ZOOM_FACTOR;
+    else if (e.deltaY > 0) distance /= ZOOM_FACTOR;
+    clampDist();
+  }, { capture: true });
+
+  /* Middle-mouse dolly: OrbitControls applies one factor per pointermove
+     that has any vertical delta, regardless of how many pixels moved */
+  var dollyActive = false;
+  var lastDollyY = 0;
+
+  document.addEventListener('pointerdown', function(e) {
+    if (e.button !== 1) return;
+    dollyActive = true;
+    lastDollyY = e.clientY;
+  });
+
+  document.addEventListener('pointermove', function(e) {
+    if (!dollyActive) return;
+    var dy = e.clientY - lastDollyY;
+    if (dy > 0 && atZoomOutLimit()) {
+      e.stopPropagation();
+      lastDollyY = e.clientY;
+      return;
+    }
+    if (dy > 0) distance /= ZOOM_FACTOR;
+    else if (dy < 0) distance *= ZOOM_FACTOR;
+    lastDollyY = e.clientY;
+    clampDist();
+  }, { capture: true });
+
+  document.addEventListener('pointerup', function(e) {
+    if (e.button === 1) dollyActive = false;
+  });
+
+  /* Touch pinch-zoom */
+  var lastPinchDist = 0;
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 2) {
+      var dx = e.touches[0].pageX - e.touches[1].pageX;
+      var dy = e.touches[0].pageY - e.touches[1].pageY;
+      lastPinchDist = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length !== 2) return;
+    var dx = e.touches[0].pageX - e.touches[1].pageX;
+    var dy = e.touches[0].pageY - e.touches[1].pageY;
+    var pinchDist = Math.sqrt(dx * dx + dy * dy);
+    if (lastPinchDist > 0) {
+      /* Block pinch-zoom-out at the limit */
+      if (pinchDist < lastPinchDist && atZoomOutLimit()) {
+        lastPinchDist = pinchDist;
+        return;
+      }
+      distance *= lastPinchDist / pinchDist;
+      clampDist();
+    }
+    lastPinchDist = pinchDist;
+  }, { passive: true });
+
+  /* Shared normalized distance (0 = closest, 1 = farthest) */
+  var MAX_WET = 0.7;
+
+  function getNormalizedDist() {
+    var t = (distance - NEAR) / (FAR - NEAR);
+    return Math.max(0, Math.min(1, t));
+  }
+
+  function computeVolume(t) {
+    return MIN_VOL + (MAX_VOL - MIN_VOL) * (1 - t) * (1 - t);
+  }
+
+  /* Crossfade 4 IRs across the distance range. At any point, at most two
+     adjacent IRs are active with gains that sum to 1.0. Dry signal fades
+     as wet increases so the reverb doesn't just pile on top */
+  function computeReverbMix(t) {
+    var wet = t * MAX_WET;
+    var dry = 1.0 - wet;
+
+    /* Position within the 4 IRs (0–3 range). Each IR owns a unit-width zone;
+       the fractional part drives the crossfade between neighbors */
+    var pos = t * 3;
+    var lo = Math.min(Math.floor(pos), 3);
+    var hi = Math.min(lo + 1, 3);
+    var blend = pos - lo;
+
+    var gains = [0, 0, 0, 0];
+    gains[lo] += (1 - blend) * wet;
+    gains[hi] += blend * wet;
+
+    return { dry: dry, ir: gains };
+  }
+
+  function tick() {
+    requestAnimationFrame(tick);
+    if (!masterGain) return;
+
+    var now = ctx.currentTime;
+    var smooth = 0.05;
+    var t = getNormalizedDist();
+    masterGain.gain.setTargetAtTime(computeVolume(t), now, smooth);
+
+    if (!irGains) return;
+    var mix = computeReverbMix(t);
+    dryGain.gain.setTargetAtTime(mix.dry, now, smooth);
+    for (var i = 0; i < 4; i++) {
+      irGains[i].gain.setTargetAtTime(mix.ir[i], now, smooth);
+    }
+  }
+
+  document.addEventListener('pointerdown', initAudio, { once: true });
+  document.addEventListener('wheel', initAudio, { once: true });
+})();
+</script>
 </body>
 </html>

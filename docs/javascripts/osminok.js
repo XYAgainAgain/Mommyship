@@ -219,6 +219,8 @@ document$.subscribe(function () {
   function makeBioLayer() {
     var el = document.createElement('div');
     el.className = 'osminok-bio';
+    el.style.willChange = 'transform, opacity';
+    el.style.contain = 'layout style paint';
     document.body.appendChild(el);
     return el;
   }
@@ -227,11 +229,11 @@ document$.subscribe(function () {
   if (isDive) {
     /* Phase 5: Depth-mapped zones with meter-based fade bands */
     layers = [
-      { el: makeBioLayer(), pal: palettes.shallow, dive: true,
+      { el: makeBioLayer(), pal: palettes.shallow, dive: true, hidden: false,
         fadeIn: [250, 350], peak: [400, 800], fadeOut: [800, 1200], rate: 0.06 },
-      { el: makeBioLayer(), pal: palettes.twilight, dive: true,
+      { el: makeBioLayer(), pal: palettes.twilight, dive: true, hidden: false,
         fadeIn: [800, 1200], peak: [1500, 3000], fadeOut: [3000, 4500], rate: 0.025 },
-      { el: makeBioLayer(), pal: palettes.abyss, dive: true,
+      { el: makeBioLayer(), pal: palettes.abyss, dive: true, hidden: false,
         fadeIn: [3500, 5000], peak: [5000, 10000], fadeOut: [10000, 12000], rate: 0.01 }
     ];
     if (!reducedMotion) {
@@ -260,9 +262,9 @@ document$.subscribe(function () {
     }
   } else {
     layers = [
-      { el: makeBioLayer(), start: 0.01, rate: 0.08, pal: palettes.shallow },
-      { el: makeBioLayer(), start: 0.10, rate: 0.04, pal: palettes.twilight },
-      { el: makeBioLayer(), start: 0.50, rate: 0.015, pal: palettes.abyss }
+      { el: makeBioLayer(), start: 0.01, rate: 0.08, pal: palettes.shallow, hidden: false },
+      { el: makeBioLayer(), start: 0.10, rate: 0.04, pal: palettes.twilight, hidden: false },
+      { el: makeBioLayer(), start: 0.50, rate: 0.015, pal: palettes.abyss, hidden: false }
     ];
     if (!reducedMotion) {
       populate(layers[0].el, layers[0].pal, {
@@ -457,7 +459,8 @@ document$.subscribe(function () {
         d.y += d.speed;
         if (d.y >= d.triggerY) {
           spawnSplash(drawX, d.y);
-          raindrops.splice(i, 1);
+          raindrops[i] = raindrops[raindrops.length - 1];
+          raindrops.pop();
         }
       }
 
@@ -475,7 +478,8 @@ document$.subscribe(function () {
         sp.radius -= 0.075;
         sp.alpha -= 0.005;
         if (sp.radius < 0) {
-          splashes.splice(i, 1);
+          splashes[i] = splashes[splashes.length - 1];
+          splashes.pop();
         }
       }
 
@@ -543,7 +547,10 @@ document$.subscribe(function () {
           bolt.y = ny;
           bolt.segments++;
         }
-        if (bolt.segments >= bolt.maxSegments) altBolts.splice(i, 1);
+        if (bolt.segments >= bolt.maxSegments) {
+          altBolts[i] = altBolts[altBolts.length - 1];
+          altBolts.pop();
+        }
       }
     }
 
@@ -598,6 +605,7 @@ document$.subscribe(function () {
   if (isDive && !reducedMotion) {
     snowContainer = document.createElement('div');
     snowContainer.className = 'marine-snow';
+    snowContainer.style.willChange = 'transform, opacity';
     document.body.appendChild(snowContainer);
 
     for (var i = 0; i < 320; i++) {
@@ -621,12 +629,559 @@ document$.subscribe(function () {
         { transform: 'translateY(' + vh + 'px) translateX(0)', opacity: 0 }
       ], {
         duration: rand(8000, 22000),
-        delay: rand(0, 10000),
+        delay: -rand(0, 20000),
         iterations: Infinity,
         easing: 'linear'
       });
 
       snowContainer.appendChild(flake);
+    }
+  }
+
+  /* Pseudo-random noise from layered sines at irrational-ratio frequencies —
+     shared by bubbles (Phase 6b) and ?????? distortion (Phase 7) */
+  function noise(t, seed) {
+    return Math.sin(t * 1.7 + seed * 3.1) * 0.4
+         + Math.sin(t * 0.9 + seed * 7.3) * 0.3
+         + Math.sin(t * 2.3 + seed * 1.9) * 0.3;
+  }
+
+  /* Half-res canvases — soft particle effects don't need full pixel fill.
+     ctx.scale maps drawing coordinates to viewport space so all math is unchanged. */
+  var canvasScale = 0.5;
+
+  /* Phase 6b: Bubbles — canvas overlay with formations.
+     Solo bubbles + occasional streams, clusters, and rings.
+     Count thins from surface to 10,000m with per-bubble opacity fade-out. */
+  var bubbleCanvas = null;
+  var bubbleCtx = null;
+  var bubbles = [];
+  var formations = [];
+  var bubbleAnimId = null;
+  if (isDive && !reducedMotion) {
+    bubbleCanvas = document.createElement('canvas');
+    bubbleCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:3;will-change:transform;';
+    document.body.appendChild(bubbleCanvas);
+    bubbleCanvas.width = Math.round(vw * canvasScale);
+    bubbleCanvas.height = Math.round(vh * canvasScale);
+    bubbleCtx = bubbleCanvas.getContext('2d');
+    bubbleCtx.scale(canvasScale, canvasScale);
+
+    function makeBubble() {
+      return {
+        x: Math.random() * vw,
+        y: vh + Math.random() * 300,
+        speed: 4 + Math.random() * 10,
+        radius: 0.5 + Math.random() * 7.5,
+        opacity: 0.05 + Math.random() * 0.25,
+        maxDepth: Math.random() * 10000
+      };
+    }
+
+    for (var bi = 0; bi < 100; bi++) bubbles.push(makeBubble());
+
+    /* Formations spawn periodically — streams, clusters, and rings */
+    var formationTimer = 0;
+    var nextFormationDelay = rand(3000, 8000);
+    function spawnFormation() {
+      var type = Math.random();
+      var cx = rand(vw * 0.1, vw * 0.9);
+      var cy = vh + rand(50, 200);
+      var f = { type: '', bubbles: [], maxDepth: rand(500, 8000), born: 0 };
+
+      if (type < 0.4) {
+        /* Stream — vertical column of 8–15 bubbles with staggered starts */
+        f.type = 'stream';
+        var count = randInt(8, 15);
+        for (var si = 0; si < count; si++) {
+          f.bubbles.push({
+            x: cx + rand(-8, 8), y: cy + si * rand(15, 30),
+            speed: 5 + Math.random() * 6,
+            radius: 0.8 + Math.random() * 4,
+            opacity: 0.06 + Math.random() * 0.2
+          });
+        }
+      } else if (type < 0.75) {
+        /* Cluster — tight radial group, like an exhaust burst */
+        f.type = 'cluster';
+        var dots = randInt(6, 14);
+        for (var ci = 0; ci < dots; ci++) {
+          var angle = Math.random() * Math.PI * 2;
+          var dist = Math.random() * rand(12, 30);
+          f.bubbles.push({
+            x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist,
+            speed: 3 + Math.random() * 8,
+            radius: 0.5 + Math.random() * 5,
+            opacity: 0.06 + Math.random() * 0.2
+          });
+        }
+      } else {
+        /* Ring — hollow ellipse of evenly-spaced bubbles */
+        f.type = 'ring';
+        var ringDots = randInt(10, 20);
+        var ringRx = rand(20, 50);
+        var ringRy = rand(14, 35);
+        for (var ri = 0; ri < ringDots; ri++) {
+          var a = (ri / ringDots) * Math.PI * 2;
+          f.bubbles.push({
+            x: cx + Math.cos(a) * ringRx, y: cy + Math.sin(a) * ringRy,
+            speed: 4 + Math.random() * 5,
+            radius: 0.6 + Math.random() * 3,
+            opacity: 0.06 + Math.random() * 0.18
+          });
+        }
+      }
+      formations.push(f);
+    }
+
+    function drawOneBubble(b, t, seed, depthFade) {
+      var wobbleX = noise(t * 0.8, seed) * 8;
+      var wobbleY = noise(t * 0.7, seed + 5) * 3;
+      var rx = Math.max(0.3, b.radius * (1 + noise(t * 0.5, seed + 70) * 0.55));
+      var ry = Math.max(0.3, b.radius * (1 + noise(t * 0.6, seed + 80) * 0.55));
+      var rot = noise(t * 0.4, seed + 90) * Math.PI;
+      var alpha = b.opacity * depthFade;
+      if (alpha < 0.005) return;
+      bubbleCtx.beginPath();
+      bubbleCtx.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(3) + ')';
+      bubbleCtx.ellipse(b.x + wobbleX, b.y + wobbleY, rx, ry, rot, 0, Math.PI * 2);
+      bubbleCtx.fill();
+    }
+
+    function drawBubbles(currentDepth, now) {
+      bubbleCtx.clearRect(0, 0, vw, vh);
+      var t = now * 0.001;
+
+      /* Solo bubbles */
+      for (var i = 0; i < bubbles.length; i++) {
+        var b = bubbles[i];
+        /* Smooth fade over last 20% of bubble's depth range */
+        var fadeZone = b.maxDepth * 0.2;
+        var depthFade = currentDepth > b.maxDepth ? 0
+          : currentDepth > b.maxDepth - fadeZone ? (b.maxDepth - currentDepth) / fadeZone : 1;
+        if (depthFade <= 0) continue;
+        drawOneBubble(b, t, i, depthFade);
+        b.y -= b.speed;
+        if (b.y <= -10) {
+          var nb = makeBubble();
+          bubbles[i].x = nb.x; bubbles[i].y = nb.y; bubbles[i].speed = nb.speed;
+          bubbles[i].radius = nb.radius; bubbles[i].opacity = nb.opacity;
+          bubbles[i].maxDepth = nb.maxDepth;
+        }
+      }
+
+      /* Formations */
+      for (var fi = formations.length - 1; fi >= 0; fi--) {
+        var f = formations[fi];
+        var fFadeZone = f.maxDepth * 0.2;
+        var fDepthFade = currentDepth > f.maxDepth ? 0
+          : currentDepth > f.maxDepth - fFadeZone ? (f.maxDepth - currentDepth) / fFadeZone : 1;
+        var allGone = true;
+        for (var fb = 0; fb < f.bubbles.length; fb++) {
+          var fb2 = f.bubbles[fb];
+          if (fb2.y > -10) allGone = false;
+          if (fDepthFade <= 0) continue;
+          drawOneBubble(fb2, t, fi * 100 + fb, fDepthFade);
+          fb2.y -= fb2.speed;
+        }
+        if (allGone || fDepthFade <= 0) formations.splice(fi, 1);
+      }
+
+      /* Spawn new formations every 3–8 seconds */
+      if (now - formationTimer > nextFormationDelay && currentDepth < 10000) {
+        spawnFormation();
+        formationTimer = now;
+        nextFormationDelay = rand(3000, 8000);
+      }
+    }
+
+    var lastBubbleMask = '';
+    function bubbleLoop(now) {
+      if (document.hidden) { bubbleAnimId = requestAnimationFrame(bubbleLoop); return; }
+      var depth = window.scrollY / 10;
+      /* Dynamic mask tracks ocean surface — 100px fade (bottom 10% of 0m div) */
+      var surfaceOnScreen = vh * 0.66 - window.scrollY;
+      var fadeStart = Math.max(0, surfaceOnScreen).toFixed(0);
+      var fadeEnd = (Math.max(0, surfaceOnScreen) + 100).toFixed(0);
+      var mask = 'linear-gradient(to bottom, transparent ' + fadeStart + 'px, black ' + fadeEnd + 'px)';
+      if (mask !== lastBubbleMask) {
+        bubbleCanvas.style.maskImage = mask;
+        bubbleCanvas.style.webkitMaskImage = mask;
+        lastBubbleMask = mask;
+      }
+      drawBubbles(depth, now);
+      bubbleAnimId = requestAnimationFrame(bubbleLoop);
+    }
+    bubbleAnimId = requestAnimationFrame(bubbleLoop);
+  }
+
+  /* Phase 6c: Shimmerfish — mouse-following school, 200–3000m.
+     Tapered streaks that flicker silver/green/teal. Gradually accumulate
+     200–500m, scatter upward at 3000m, re-accumulate at 2× on scroll-back. */
+  var fishCanvas = null;
+  var fishCtx = null;
+  var fish = [];
+  var fishAnimId = null;
+  var fishScattered = false;
+  var fishWasScattered = false;
+  var fishMousePos = [vw / 2, vh / 2];
+  var fishMouseHandler = null;
+  if (isDive && !reducedMotion) {
+    fishCanvas = document.createElement('canvas');
+    fishCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:4;will-change:transform;';
+    document.body.appendChild(fishCanvas);
+    fishCanvas.width = Math.round(vw * canvasScale);
+    fishCanvas.height = Math.round(vh * canvasScale);
+    fishCtx = fishCanvas.getContext('2d');
+    fishCtx.scale(canvasScale, canvasScale);
+
+    fishMouseHandler = function (e) { fishMousePos = [e.clientX, e.clientY]; };
+    document.addEventListener('mousemove', fishMouseHandler);
+
+    /* Shimmerfish color palette — silver/green/teal with per-fish noise flicker */
+    var fishPalette = [
+      [180, 200, 210],
+      [160, 210, 195],
+      [140, 195, 180],
+      [170, 215, 200],
+      [190, 210, 190]
+    ];
+
+    function makeFish(scatter) {
+      var pal = fishPalette[Math.floor(Math.random() * fishPalette.length)];
+      return {
+        x: Math.random() * vw, y: Math.random() * vh,
+        angle: Math.random() * 360,
+        prevAngle: 0,
+        newAngle: 0,
+        speed: 3 + Math.random() * 3,
+        speedMult: 1,
+        size: 3 + Math.random() * 5,
+        curve: rand(-2, 2),
+        pull: rand(200, 450),
+        strokeSpeed: randInt(8, 22),
+        tick: 0,
+        flash: 0,
+        baseColor: pal,
+        active: !scatter,
+        scattered: false,
+        scatterAngle: 0
+      };
+    }
+
+    for (var fi = 0; fi < 100; fi++) fish.push(makeFish(false));
+
+    function angleFromVector(x, y) {
+      var a = Math.atan2(y, x) * 180 / Math.PI;
+      return (a + 360) % 360;
+    }
+
+    function drawFish(f, t, idx) {
+      var rad = f.angle * Math.PI / 180;
+      var cosR = Math.cos(rad);
+      var sinR = Math.sin(rad);
+      var len = f.size * 2.5;
+      var halfW = f.size * 0.4;
+      var tipX = f.x + cosR * len;
+      var tipY = f.y + sinR * len;
+      var perpX = -sinR * halfW;
+      var perpY = cosR * halfW;
+
+      /* Direction-change flash — decays over ~15 frames */
+      var flashBoost = f.flash > 0 ? f.flash : 0;
+      if (f.flash > 0) f.flash -= 0.07;
+
+      /* Color flicker — noise shifts RGB channels, flash spikes to silver */
+      var flickR = f.baseColor[0] + noise(t * 1.2, idx) * 30 + flashBoost * 80;
+      var flickG = f.baseColor[1] + noise(t * 0.9, idx + 20) * 25 + flashBoost * 70;
+      var flickB = f.baseColor[2] + noise(t * 1.1, idx + 40) * 20 + flashBoost * 60;
+      var flickA = 0.2 + (noise(t * 0.6, idx + 60) + 1) * 0.15 + flashBoost * 0.3;
+
+      var r = Math.floor(Math.max(0, Math.min(255, flickR)));
+      var g = Math.floor(Math.max(0, Math.min(255, flickG)));
+      var b = Math.floor(Math.max(0, Math.min(255, flickB)));
+      var a = Math.min(flickA, 0.85);
+
+      /* Inner glow — larger, softer triangle behind the body */
+      fishCtx.beginPath();
+      fishCtx.moveTo(tipX, tipY);
+      var glowW = halfW * 2.2;
+      fishCtx.lineTo(f.x + sinR * glowW, f.y - cosR * glowW);
+      fishCtx.lineTo(f.x - sinR * glowW, f.y + cosR * glowW);
+      fishCtx.closePath();
+      fishCtx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.15).toFixed(3) + ')';
+      fishCtx.fill();
+
+      /* Body */
+      fishCtx.beginPath();
+      fishCtx.moveTo(tipX, tipY);
+      fishCtx.lineTo(f.x - perpX, f.y - perpY);
+      fishCtx.lineTo(f.x + perpX, f.y + perpY);
+      fishCtx.closePath();
+      fishCtx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')';
+      fishCtx.fill();
+    }
+
+    function updateFish(f, t, idx) {
+      if (f.scattered) {
+        var rad = f.scatterAngle * Math.PI / 180;
+        f.x += Math.cos(rad) * f.speed * 4;
+        f.y += Math.sin(rad) * f.speed * 4;
+        return;
+      }
+      f.prevAngle = f.angle;
+      f.tick++;
+      /* Autonomous wandering — noise-driven angle drift */
+      var wander = noise(t * 0.3, idx * 7) * 90;
+      f.angle += f.curve;
+      if (f.tick % f.strokeSpeed === 0) {
+        /* Blend: 90% cursor influence, 10% wander — cohesive school */
+        f.angle = f.newAngle * 0.9 + (f.angle + wander) * 0.1;
+      }
+      /* Detect direction change → trigger flash */
+      var angleDelta = Math.abs(f.angle - f.prevAngle) % 360;
+      if (angleDelta > 180) angleDelta = 360 - angleDelta;
+      if (angleDelta > 15) f.flash = Math.min(1, angleDelta / 60);
+
+      var rad = f.angle * Math.PI / 180;
+      var move = f.speed * (0.5 + f.speedMult / f.pull);
+      f.x += Math.cos(rad) * move;
+      f.y += Math.sin(rad) * move;
+      /* Wrap around viewport edges */
+      if (f.x < -20) f.x = vw + 20;
+      if (f.x > vw + 20) f.x = -20;
+      if (f.y < -20) f.y = vh + 20;
+      if (f.y > vh + 20) f.y = -20;
+    }
+
+    var lastFishMask = '';
+    function fishLoop(now) {
+      if (document.hidden) { fishAnimId = requestAnimationFrame(fishLoop); return; }
+      var depth = window.scrollY / 10;
+      var t = now * 0.001;
+      fishCtx.clearRect(0, 0, vw, vh);
+
+      /* Same surface mask as bubbles */
+      var surfaceOnScreen = vh * 0.66 - window.scrollY;
+      var fadeStart = Math.max(0, surfaceOnScreen).toFixed(0);
+      var fadeEnd = (Math.max(0, surfaceOnScreen) + 100).toFixed(0);
+      var mask = 'linear-gradient(to bottom, transparent ' + fadeStart + 'px, black ' + fadeEnd + 'px)';
+      if (mask !== lastFishMask) {
+        fishCanvas.style.maskImage = mask;
+        fishCanvas.style.webkitMaskImage = mask;
+        lastFishMask = mask;
+      }
+
+      /* Determine how many fish should be active based on depth */
+      var targetCount;
+      if (depth < 200) targetCount = 0;
+      else if (depth < 500) targetCount = Math.floor(((depth - 200) / 300) * 100);
+      else if (depth < 3000) targetCount = 100;
+      else targetCount = 0;
+
+      /* Scatter at 3000m — fish jet upward in random directions */
+      if (depth >= 3000 && !fishScattered) {
+        fishScattered = true;
+        for (var si = 0; si < fish.length; si++) {
+          if (!fish[si].active) continue;
+          fish[si].scattered = true;
+          fish[si].scatterAngle = rand(220, 320);
+        }
+      }
+
+      /* Re-accumulate when scrolling back above 3000m (2× rate) */
+      if (depth < 3000 && fishScattered) {
+        fishScattered = false;
+        fishWasScattered = true;
+        for (var ri = 0; ri < fish.length; ri++) {
+          fish[ri].scattered = false;
+          fish[ri].active = false;
+          fish[ri].x = Math.random() * vw;
+          fish[ri].y = Math.random() * vh;
+        }
+      }
+
+      /* Gradually activate/deactivate fish to match target */
+      if (!fishScattered) {
+        var activeCount = 0;
+        for (var ci = 0; ci < fish.length; ci++) if (fish[ci].active) activeCount++;
+        /* 2× activation rate when re-accumulating after scatter */
+        var activateRate = fishWasScattered ? 2 : 1;
+        if (activeCount < targetCount) {
+          var toAdd = Math.min(activateRate, targetCount - activeCount);
+          for (var ai = 0; ai < fish.length && toAdd > 0; ai++) {
+            if (!fish[ai].active) { fish[ai].active = true; toAdd--; }
+          }
+        }
+        if (fishWasScattered && activeCount >= targetCount) fishWasScattered = false;
+      }
+
+      /* Steer toward mouse + draw */
+      for (var i = 0; i < fish.length; i++) {
+        var f = fish[i];
+        if (!f.active) continue;
+        if (f.scattered) {
+          updateFish(f, t, i);
+          if (f.x < -50 || f.x > vw + 50 || f.y < -50 || f.y > vh + 50) {
+            f.active = false;
+            continue;
+          }
+          drawFish(f, t, i);
+          continue;
+        }
+        var dx = fishMousePos[0] - f.x;
+        var dy = fishMousePos[1] - f.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        /* Comfort zone — fish ignore cursor when within 80px, avoiding clustering */
+        if (dist > 80) {
+          f.newAngle = angleFromVector(dx, dy);
+          f.speedMult = 1 + dist * 0.5;
+        } else {
+          f.speedMult = 1;
+        }
+        updateFish(f, t, i);
+        drawFish(f, t, i);
+      }
+
+      fishAnimId = requestAnimationFrame(fishLoop);
+    }
+    fishAnimId = requestAnimationFrame(fishLoop);
+  }
+
+  /* Resize handler for dive canvases — keeps bubble/fish rendering crisp */
+  var diveResizeHandler = null;
+  if (isDive && !reducedMotion) {
+    diveResizeHandler = function () {
+      vw = window.innerWidth;
+      vh = window.innerHeight;
+      /* Setting canvas dimensions resets context state — re-apply scale */
+      if (bubbleCanvas) {
+        bubbleCanvas.width = Math.round(vw * canvasScale);
+        bubbleCanvas.height = Math.round(vh * canvasScale);
+        bubbleCtx.scale(canvasScale, canvasScale);
+      }
+      if (fishCanvas) {
+        fishCanvas.width = Math.round(vw * canvasScale);
+        fishCanvas.height = Math.round(vh * canvasScale);
+        fishCtx.scale(canvasScale, canvasScale);
+      }
+    };
+    window.addEventListener('resize', diveResizeHandler);
+  }
+
+  /* Phase 7: Abyss unknown — underwater distortion on the "??????" heading.
+     Splits into per-character spans, then rAF applies sine wave flow (R→L)
+     plus layered-sine noise for organic scale/skew jitter. */
+  var abyssUnknownAnimId = null;
+  if (isDive && !reducedMotion) {
+    /* attr_list can't parse headings made entirely of punctuation */
+    var unknownH3 = null;
+    var h3s = document.querySelectorAll('h3');
+    for (var hi = 0; hi < h3s.length; hi++) {
+      if (/^\?{3,}/.test(h3s[hi].textContent.replace(/¶/g, '').trim())) { unknownH3 = h3s[hi]; break; }
+    }
+    if (unknownH3) {
+      unknownH3.style.userSelect = 'none';
+      var text = unknownH3.textContent.replace(/¶/g, '').trim();
+      var permalink = unknownH3.querySelector('.headerlink');
+      unknownH3.textContent = '';
+      var charSpans = [];
+      var dotEls = [];
+      for (var ci = 0; ci < text.length; ci++) {
+        var cs = document.createElement('span');
+        cs.textContent = text[ci];
+        cs.style.cssText = 'display:inline-block;position:relative;text-align:center;';
+        unknownH3.appendChild(cs);
+        charSpans.push(cs);
+        /* Tiny glow dot aligned with the period of each ? glyph */
+        var dot = document.createElement('span');
+        dot.style.cssText = 'position:absolute;bottom:27.5%;left:25.3%;width:4.5px;height:4.5px;border-radius:50%;transform:translateX(-50%);opacity:0;pointer-events:none;';
+        cs.appendChild(dot);
+        dotEls.push(dot);
+      }
+      if (permalink) unknownH3.appendChild(permalink);
+
+      /* Dot pulse state — 2–3 rapid sweeps in a random direction, long pause */
+      var dotPulse = { active: false, start: 0, dir: 1, sweeps: 0 };
+      var nextDotPulse = performance.now() + rand(2000, 5000);
+
+      var unknownFrame = 0;
+      function animateUnknown(now) {
+        unknownFrame++;
+        var t = now * 0.001;
+        var updateGlow = unknownFrame % 3 === 0;
+        for (var i = 0; i < charSpans.length; i++) {
+          var phase = i * 0.8;
+          var wave = Math.sin(t * 1.2 - phase) * 6;
+          var sx = 1 + noise(t * 0.7, i) * 0.15;
+          var sy = 1 + noise(t * 0.6, i + 10) * 0.2;
+          var skewX = noise(t * 0.5, i + 20) * 8;
+          var skewY = noise(t * 0.4, i + 30) * 4;
+          var dx = noise(t * 0.8, i + 40) * 3;
+
+          charSpans[i].style.transform =
+            'translateY(' + wave.toFixed(1) + 'px) ' +
+            'translateX(' + dx.toFixed(1) + 'px) ' +
+            'scale(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ') ' +
+            'skew(' + skewX.toFixed(1) + 'deg,' + skewY.toFixed(1) + 'deg)';
+
+          if (updateGlow) {
+            var glowStr = (noise(t * 0.35, i + 50) + 1) * 0.5;
+            var r1 = (15 + glowStr * 25).toFixed(0);
+            var a1 = (0.08 + glowStr * 0.12).toFixed(2);
+            var r2 = (40 + glowStr * 40).toFixed(0);
+            var a2 = (0.03 + glowStr * 0.06).toFixed(2);
+            charSpans[i].style.textShadow =
+              '0 0 ' + r1 + 'px rgba(120,35,170,' + a1 + '),' +
+              '0 0 ' + r2 + 'px rgba(90,20,130,' + a2 + ')';
+          }
+        }
+
+        /* Bioluminescent dot pulse — sweeps across the ? dots in sequence */
+        if (!dotPulse.active && now > nextDotPulse) {
+          dotPulse.active = true;
+          dotPulse.start = now;
+          dotPulse.dir = Math.random() < 0.5 ? 1 : -1;
+          dotPulse.sweeps = randInt(2, 3);
+        }
+        if (dotPulse.active) {
+          var sweepDur = 450;
+          var sweepGap = 350;
+          var elapsed = now - dotPulse.start;
+          var totalDur = dotPulse.sweeps * (sweepDur + sweepGap);
+          if (elapsed > totalDur) {
+            dotPulse.active = false;
+            nextDotPulse = now + rand(3000, 9000);
+            for (var di = 0; di < dotEls.length; di++) {
+              dotEls[di].style.opacity = '0';
+              dotEls[di].style.boxShadow = 'none';
+            }
+          } else {
+            var sweepT = elapsed % (sweepDur + sweepGap);
+            for (var di = 0; di < dotEls.length; di++) {
+              var orderIdx = dotPulse.dir > 0 ? di : (dotEls.length - 1 - di);
+              var stagger = orderIdx * (sweepDur / dotEls.length);
+              var dotT = sweepT - stagger;
+              var glow = (dotT > 0 && dotT < 280) ? Math.sin(dotT / 280 * Math.PI) : 0;
+              if (glow > 0.01) {
+                var ga = (glow * 0.8).toFixed(2);
+                dotEls[di].style.opacity = '1';
+                dotEls[di].style.background = 'rgba(180,100,230,' + ga + ')';
+                dotEls[di].style.boxShadow =
+                  '0 0 ' + (8 + glow * 12).toFixed(0) + 'px rgba(150,60,200,' + ga + '),' +
+                  '0 0 ' + (14 + glow * 22).toFixed(0) + 'px rgba(120,35,170,' + (glow * 0.4).toFixed(2) + ')';
+              } else {
+                dotEls[di].style.opacity = '0';
+                dotEls[di].style.background = 'none';
+                dotEls[di].style.boxShadow = 'none';
+              }
+            }
+          }
+        }
+
+        abyssUnknownAnimId = requestAnimationFrame(animateUnknown);
+      }
+      abyssUnknownAnimId = requestAnimationFrame(animateUnknown);
     }
   }
 
@@ -656,9 +1211,21 @@ document$.subscribe(function () {
   var abyssWaveOverhang = 150;
   var header = document.querySelector('.md-header');
 
-  /* Phase 4: TOC depth meter — re-queries DOM each update to survive
-     Material's instant-nav DOM manipulation. Only runs every 25m. */
+  /* Phase 4: TOC depth meter — cached once per page lifecycle (instant-nav
+     reinits everything via document$.subscribe, so no stale refs). */
   var lastTocDepth = -999;
+  var tocEntries = [];
+  if (isDive) {
+    var rawTocLinks = document.querySelectorAll('.md-nav--secondary .md-nav__link');
+    for (var ti = 0; ti < rawTocLinks.length; ti++) {
+      var tocHref = rawTocLinks[ti].getAttribute('href');
+      if (!tocHref || tocHref.charAt(0) !== '#') continue;
+      var tocSlug = tocHref.slice(1);
+      var tocD = parseInt(tocSlug);
+      if (isNaN(tocD)) { if (tocSlug === '_1') tocD = 12500; else continue; }
+      tocEntries.push({ el: rawTocLinks[ti], depth: tocD });
+    }
+  }
 
   function onScroll() {
     var scrollMax = document.documentElement.scrollHeight - vh;
@@ -675,8 +1242,20 @@ document$.subscribe(function () {
         else if (depth <= L.peak[1]) opacity = 1;
         else if (depth < L.fadeOut[1]) opacity = 1 - (depth - L.fadeOut[0]) / (L.fadeOut[1] - L.fadeOut[0]);
         else opacity = 0;
-        L.el.style.opacity = Math.min(Math.max(opacity, 0), 1).toFixed(2);
-        L.el.style.transform = 'translateY(' + (-window.scrollY * L.rate).toFixed(0) + 'px)';
+        /* Pull invisible layers out of the render tree so the compositor
+           skips their ~550 child animations entirely */
+        var visible = opacity > 0;
+        if (!visible && !L.hidden) {
+          L.el.style.display = 'none';
+          L.hidden = true;
+        } else if (visible && L.hidden) {
+          L.el.style.display = '';
+          L.hidden = false;
+        }
+        if (!L.hidden) {
+          L.el.style.opacity = Math.min(Math.max(opacity, 0), 1).toFixed(2);
+          L.el.style.transform = 'translateY(' + (-window.scrollY * L.rate).toFixed(0) + 'px)';
+        }
       }
 
       /* Marine snow parallax + clip below ocean surface.
@@ -688,35 +1267,38 @@ document$.subscribe(function () {
         var surfacePx = vh * 0.66;
         var clipTop = Math.max(0, surfacePx - window.scrollY);
         snowContainer.style.clipPath = clipTop > 0 ? 'inset(' + clipTop.toFixed(0) + 'px 0 0 0)' : 'none';
+        /* Fade in 100–500m, full 500–10,000m, fade out 10,000–12,000m */
+        var snowFade;
+        if (depth < 100) snowFade = 0;
+        else if (depth < 500) snowFade = (depth - 100) / 400;
+        else if (depth < 10000) snowFade = 1;
+        else snowFade = Math.max(0.03, 1 - (depth - 10000) / 2000);
+        snowContainer.style.opacity = snowFade.toFixed(2);
       }
 
-      /* Phase 4: TOC depth meter — re-queries DOM each update to avoid stale refs.
-         Quadratic falloff: bright at current depth, transparent at ±2000m. */
       if (Math.abs(depth - lastTocDepth) > 25) {
         lastTocDepth = depth;
-        var tocLinks = document.querySelectorAll('.md-nav--secondary .md-nav__link');
-        for (var i = 0; i < tocLinks.length; i++) {
-          var href = tocLinks[i].getAttribute('href');
-          if (!href || href.charAt(0) !== '#') continue;
-          var slug = href.slice(1);
-          var d = parseInt(slug);
-          if (isNaN(d)) { if (slug === '_1') d = 12500; else continue; }
-          var distance = Math.abs(depth - d);
+        for (var i = 0; i < tocEntries.length; i++) {
+          var distance = Math.abs(depth - tocEntries[i].depth);
           var t = Math.min(distance / 2000, 1);
-          var op = 1 - t * t;
-          tocLinks[i].style.setProperty('opacity', op.toFixed(2), 'important');
+          tocEntries[i].el.style.setProperty('opacity', (1 - t * t).toFixed(2), 'important');
         }
       }
     } else {
       /* Ecology: scroll-percentage bio zones */
       for (var i = 0; i < layers.length; i++) {
         var L = layers[i];
-        if (pct < L.start) {
-          L.el.style.opacity = '0';
-        } else {
-          var progress = (pct - L.start) / (1 - L.start);
-          L.el.style.opacity = Math.min(progress * 2.2, 1).toFixed(2);
+        var visible = pct >= L.start;
+        if (!visible && !L.hidden) {
+          L.el.style.display = 'none';
+          L.hidden = true;
+        } else if (visible && L.hidden) {
+          L.el.style.display = '';
+          L.hidden = false;
         }
+        if (L.hidden) continue;
+        var progress = (pct - L.start) / (1 - L.start);
+        L.el.style.opacity = Math.min(progress * 2.2, 1).toFixed(2);
         var layerScroll = Math.max(window.scrollY - (L.start * scrollMax), 0);
         L.el.style.transform = 'translateY(' + (-layerScroll * L.rate).toFixed(0) + 'px)';
       }
@@ -790,19 +1372,24 @@ document$.subscribe(function () {
     if (starsAnimId) cancelAnimationFrame(starsAnimId);
     if (stormAnimId) cancelAnimationFrame(stormAnimId);
     if (stormResizeHandler) window.removeEventListener('resize', stormResizeHandler);
+    if (diveResizeHandler) window.removeEventListener('resize', diveResizeHandler);
     if (rainCanvas) rainCanvas.remove();
     if (subBtn) subBtn.remove();
     if (paletteForm) paletteForm.style.display = '';
     if (snowContainer) snowContainer.remove();
+    if (bubbleAnimId) cancelAnimationFrame(bubbleAnimId);
+    if (bubbleCanvas) bubbleCanvas.remove();
+    if (fishAnimId) cancelAnimationFrame(fishAnimId);
+    if (fishMouseHandler) document.removeEventListener('mousemove', fishMouseHandler);
+    if (fishCanvas) fishCanvas.remove();
+    if (abyssUnknownAnimId) cancelAnimationFrame(abyssUnknownAnimId);
     /* Restore Back to Top button text */
     if (topBtn) {
       topBtn.childNodes.forEach(function (n) {
         if (n.nodeType === 3 && n.textContent.trim()) n.textContent = '\n  Back to top\n';
       });
     }
-    /* Reset TOC link opacities */
-    var tocCleanup = document.querySelectorAll('.md-nav--secondary .md-nav__link');
-    for (var i = 0; i < tocCleanup.length; i++) tocCleanup[i].style.removeProperty('opacity');
+    for (var i = 0; i < tocEntries.length; i++) tocEntries[i].el.style.removeProperty('opacity');
   };
 
   /* Creature generation functions */
