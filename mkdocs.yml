@@ -20,6 +20,7 @@ theme:
         name: Switch to dark mode (AKA correct mode)
   features:
     - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.sections
     - navigation.top
@@ -27,6 +28,7 @@ theme:
     - toc.follow
     - search.suggest
     - search.highlight
+    - search.share
     - content.tooltips
   icon:
     logo: material/rocket-launch
@@ -48,6 +50,11 @@ nav:
     - Operating Costs: shipbreakers-toolkit/operating-costs.md
     - Ship Quick Guide: shipbreakers-toolkit/ship-quick-guide.md
   - D.A.V.E. Pilot Manual: dave-pilot-manual.md
+  - Osminok:
+    - The Osminok System: osminok/osminok-system.md
+    - The Osminoki: osminok/osminoki.md
+    - Ecology: osminok/ecology.md
+    - The Teuthidan Faith: osminok/teuthidan-faith.md
 
 plugins:
   - search
@@ -60,6 +67,8 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.mark
+  - pymdownx.caret
+  - pymdownx.tilde
   - pymdownx.critic
   - pymdownx.keys
   - pymdownx.snippets:

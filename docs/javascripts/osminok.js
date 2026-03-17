@@ -172,7 +172,7 @@ document$.subscribe(function () {
   }
 
   /* Megastorm canvas + Phase 3: rain and alt-lightning (dive only) */
-  var stormCanvas = ocean.querySelector('.storm-canvas');
+  var stormCanvas = document.querySelector('.storm-canvas');
   var stormAnimId = null;
   var stormResizeHandler = null;
 
@@ -512,22 +512,22 @@ document$.subscribe(function () {
     }
   }
 
-  /* Reparent abyss outside isolation context for z-index layering */
-  var abyss = ocean.querySelector('.ocean-abyss');
-  var abyssParent = abyss ? abyss.parentNode : null;
-  var abyssNext = abyss ? abyss.nextSibling : null;
-  if (abyss) ocean.after(abyss);
+  var abyss = document.querySelector('.ocean-abyss');
+  var abyssParent = null;
+  var abyssNext = null;
 
-  /* Pressure squeeze — 7% narrowing per h3 (ecology only) */
+  /* Pressure squeeze — 2% narrowing per h3 (ecology only) */
   var squeezedEls = [];
   if (!isDive) {
     (function () {
-      var children = ocean.querySelectorAll(':scope > :not(.ocean-surface):not(.ocean-abyss)');
+      var contentInner = document.querySelector('.md-content__inner');
+      if (!contentInner) return;
+      var children = contentInner.querySelectorAll(':scope > :not(.ocean-surface):not(.ocean-abyss):not(.osminok-ocean)');
       var h3Count = 0;
       children.forEach(function (el) {
         if (el.tagName === 'H3') h3Count++;
         if (h3Count > 0) {
-          el.style.marginInline = (h3Count * 3.5) + '%';
+          el.style.marginInline = (h3Count * 1) + '%';
           squeezedEls.push(el);
         }
       });
@@ -668,10 +668,6 @@ document$.subscribe(function () {
       header.style.removeProperty('border-bottom-color');
       header.style.removeProperty('backdrop-filter');
       header.style.removeProperty('-webkit-backdrop-filter');
-    }
-    if (abyss && abyssParent) {
-      if (abyssNext) abyssParent.insertBefore(abyss, abyssNext);
-      else abyssParent.appendChild(abyss);
     }
     if (stormAnimId) cancelAnimationFrame(stormAnimId);
     if (stormResizeHandler) window.removeEventListener('resize', stormResizeHandler);
