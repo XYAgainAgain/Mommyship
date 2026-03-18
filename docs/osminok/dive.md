@@ -6,6 +6,19 @@ search:
 ---
 
 <div class="osminok-ocean osminok-dive" markdown>
+<div class="dive-overlay" id="dive-overlay">
+<div class="dive-overlay__card">
+<div class="dive-overlay__title">Osminok Deep Dive</div>
+<p>Scroll through 12,000 meters of alien ocean. Enjoy the peaceful glowing creatures swishing around in the dark. Things swim all around you, and terrors unknown wait far below.</p>
+<p class="dive-overlay__hint">Headphones or big speakers recommended. Press F11 (fullscreen) to maximize immersion.<br>Oh, and hold your breath.</p>
+<div class="dive-overlay__volume">
+<label for="dive-volume">Volume</label>
+<input type="range" id="dive-volume" min="0" max="100" value="50">
+</div>
+<button class="dive-overlay__btn" id="dive-btn">Dive!</button>
+</div>
+</div>
+
 
 <div class="ocean-surface">
 <canvas class="storm-light-canvas"></canvas>

@@ -545,10 +545,27 @@ body:has(.osminok-dive) .md-sidebar__scrollwrap::-webkit-scrollbar {
    flex collapse when all children are hidden */
 body:has(.osminok-dive) .md-header {
   min-height: 2.4rem;
+  position: relative;
 }
 
 body:has(.osminok-dive) .md-header__inner {
   min-height: 2.4rem;
+}
+
+/* Break controls out of md-grid's max-width so they pin to viewport edge */
+body:has(.osminok-dive) .submarine-toggle {
+  position: absolute;
+  right: 3.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+}
+
+body:has(.osminok-dive) .dive-volume-header {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Strip header contents down to bare cloud ceiling */
@@ -1054,6 +1071,173 @@ body:has(.osminok-landing) .ocean-surface {
   text-shadow: 0 0 12px rgba(100, 210, 230, 0.5);
 }
 
+/* Dive Overlay — intro screen with volume + Dive button */
+.dive-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 12, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+}
+
+.dive-overlay--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dive-overlay__card {
+  max-width: 420px;
+  padding: 2.5rem 2rem;
+  background: rgba(18, 25, 38, 0.92);
+  border: 1px solid rgba(100, 210, 230, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(100, 210, 230, 0.08);
+  text-align: center;
+}
+
+.dive-overlay__card p {
+  font-family: "Capriola", sans-serif;
+  font-size: 0.9rem;
+  color: #CCC3C1;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+  text-indent: 0 !important;
+}
+
+.dive-overlay__title {
+  font-family: "Gabriela", "Capriola", serif;
+  font-size: 1.8rem;
+  color: #64D2E6;
+  margin: 0 0 1.2rem;
+  font-weight: 400;
+  animation: osminok-glow-ripple 2.5s ease-in-out infinite;
+}
+
+.dive-overlay__hint {
+  font-size: 0.78rem !important;
+  color: rgba(204, 195, 193, 0.6) !important;
+}
+
+.dive-overlay__volume {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 1.2rem 0 1.5rem;
+  padding: 0 0.5rem;
+}
+
+.dive-overlay__volume label {
+  font-family: "Capriola", sans-serif;
+  font-size: 0.75rem;
+  color: rgba(204, 195, 193, 0.5);
+  flex-shrink: 0;
+}
+
+.dive-overlay__volume input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(42, 122, 181, 0.3);
+  border-radius: 2px;
+  outline: none;
+}
+
+.dive-overlay__volume input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #64D2E6;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(100, 210, 230, 0.4);
+}
+
+.dive-overlay__volume input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #64D2E6;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(100, 210, 230, 0.4);
+}
+
+.dive-overlay__btn {
+  font-family: "Gabriela", "Capriola", serif;
+  font-size: 1.1rem;
+  color: #0a1520;
+  background: #64D2E6;
+  border: none;
+  border-radius: 24px;
+  padding: 0.6rem 2.4rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 12px rgba(100, 210, 230, 0.2);
+}
+
+.dive-overlay__btn:hover {
+  background: #78E6C8;
+  box-shadow: 0 0 20px rgba(100, 210, 230, 0.4);
+}
+
+.dive-overlay__btn:focus-visible {
+  outline: 2px solid #64D2E6;
+  outline-offset: 3px;
+}
+
+/* Lock scroll while overlay is visible */
+body:has(.dive-overlay:not(.dive-overlay--hidden)) {
+  overflow: hidden !important;
+}
+
+/* Header volume slider — ghostly, compact, next to submarine button */
+.dive-volume-header {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.4rem 0 auto;
+  opacity: 0.3;
+  transition: opacity 0.25s;
+}
+
+.dive-volume-header:hover {
+  opacity: 0.85;
+}
+
+.dive-volume-header input[type="range"] {
+  width: 70px;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(100, 210, 230, 0.25);
+  border-radius: 2px;
+  outline: none;
+}
+
+.dive-volume-header input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64D2E6;
+  cursor: pointer;
+}
+
+.dive-volume-header input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64D2E6;
+  border: none;
+  cursor: pointer;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .wave,
@@ -1078,6 +1262,10 @@ body:has(.osminok-landing) .ocean-surface {
   .ringwave::before,
   .ringwave::after,
   .ringswell {
+    animation: none !important;
+  }
+
+  .dive-overlay__title {
     animation: none !important;
   }
 }

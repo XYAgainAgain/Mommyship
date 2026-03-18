@@ -60,7 +60,7 @@ document$.subscribe(function () {
 
     subBtn = document.createElement('button');
     subBtn.className = 'submarine-toggle';
-    subBtn.title = isDive ? 'Surface' : 'Dive';
+    subBtn.title = isDive ? 'GTFO' : 'Dive';
     subBtn.setAttribute('aria-label', subBtn.title);
     subBtn.innerHTML = '<span class="submarine-icon"></span>';
 
@@ -90,7 +90,19 @@ document$.subscribe(function () {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        /* Ascend at 1000m/s (10,000px/s) so the scenery whizzes by */
+        var startY = window.scrollY;
+        var duration = (startY / 10000) * 1000;
+        var startTime = null;
+        function step(ts) {
+          if (!startTime) startTime = ts;
+          var t = Math.min((ts - startTime) / duration, 1);
+          /* Ease-out so it decelerates approaching the surface */
+          var ease = 1 - (1 - t) * (1 - t);
+          window.scrollTo(0, startY * (1 - ease));
+          if (t < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
       }, true);
     }
   }
@@ -1227,6 +1239,495 @@ document$.subscribe(function () {
     }
   }
 
+  /* Dive Audio — scroll-reactive spatial audio with depth-mapped crossfades.
+     All state lives inside the closure returned by initDiveAudio(). */
+  var diveAudio = null;
+  var audioBasePath = '../../assets/audio/';
+
+  /* Double-buffer loop track — two <audio> elements crossfade at loop points
+     so there's no click/gap at the seam */
+  function createLoopTrack(ctx, src, outputNode) {
+    var XFADE = 2.0;
+    var elA = new Audio();
+    var elB = new Audio();
+    elA.preload = 'auto';
+    elB.preload = 'auto';
+    var srcA = ctx.createMediaElementSource(elA);
+    var srcB = ctx.createMediaElementSource(elB);
+    var gainA = ctx.createGain();
+    var gainB = ctx.createGain();
+    gainA.gain.value = 1;
+    gainB.gain.value = 0;
+    srcA.connect(gainA);
+    srcB.connect(gainB);
+    gainA.connect(outputNode);
+    gainB.connect(outputNode);
+
+    var active = 'A';
+    var crossfading = false;
+    var xfadeTimer = null;
+
+    function onTimeUpdate() {
+      if (crossfading) return;
+      var el = active === 'A' ? elA : elB;
+      if (!el.duration || el.duration === Infinity) return;
+      if (el.currentTime >= el.duration - XFADE) startCrossfade();
+    }
+
+    function startCrossfade() {
+      crossfading = true;
+      var now = ctx.currentTime;
+      var fadingOut, fadingIn, gOut, gIn;
+      if (active === 'A') {
+        fadingOut = elA; fadingIn = elB; gOut = gainA; gIn = gainB;
+      } else {
+        fadingOut = elB; fadingIn = elA; gOut = gainB; gIn = gainA;
+      }
+      fadingIn.currentTime = 0;
+      fadingIn.play().catch(function() {});
+      gOut.gain.setTargetAtTime(0, now, XFADE / 4);
+      gIn.gain.setTargetAtTime(1, now, XFADE / 4);
+
+      xfadeTimer = setTimeout(function() {
+        xfadeTimer = null;
+        fadingOut.pause();
+        fadingOut.currentTime = 0;
+        active = active === 'A' ? 'B' : 'A';
+        crossfading = false;
+      }, XFADE * 1000 + 200);
+    }
+
+    elA.addEventListener('timeupdate', onTimeUpdate);
+    elB.addEventListener('timeupdate', onTimeUpdate);
+
+    var ready = false;
+    var pendingPlay = false;
+    elA.addEventListener('canplaythrough', function() {
+      ready = true;
+      if (pendingPlay) { pendingPlay = false; doPlay(); }
+    }, { once: true });
+
+    function doPlay() {
+      var el = active === 'A' ? elA : elB;
+      var g = active === 'A' ? gainA : gainB;
+      g.gain.value = 1;
+      (active === 'A' ? gainB : gainA).gain.value = 0;
+      crossfading = false;
+      el.play().catch(function() {});
+    }
+
+    return {
+      load: function() {
+        elA.src = src;
+        elB.src = src;
+        elA.load();
+        elB.load();
+      },
+      isReady: function() { return ready; },
+      play: function() {
+        if (!ready) { pendingPlay = true; return; }
+        doPlay();
+      },
+      pause: function() {
+        elA.pause();
+        elB.pause();
+        elA.currentTime = 0;
+        elB.currentTime = 0;
+        crossfading = false;
+        active = 'A';
+        gainA.gain.value = 1;
+        gainB.gain.value = 0;
+      },
+      cleanup: function() {
+        if (xfadeTimer) clearTimeout(xfadeTimer);
+        elA.removeEventListener('timeupdate', onTimeUpdate);
+        elB.removeEventListener('timeupdate', onTimeUpdate);
+        elA.pause(); elB.pause();
+        elA.src = ''; elB.src = '';
+      }
+    };
+  }
+
+  function initDiveAudio(initialVolume) {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+
+    var masterGain = ctx.createGain();
+    masterGain.gain.value = initialVolume;
+    masterGain.connect(ctx.destination);
+
+    /* Storm track — has a low-pass filter for the underwater transition */
+    var stormFilter = ctx.createBiquadFilter();
+    stormFilter.type = 'lowpass';
+    stormFilter.frequency.value = 22050;
+    var stormGain = ctx.createGain();
+    stormGain.gain.value = 0;
+    stormFilter.connect(stormGain);
+    stormGain.connect(masterGain);
+    var storm = createLoopTrack(ctx, audioBasePath + 'surface/OsminokMegastorm.ogg', stormFilter);
+
+    /* Depth ambient tracks */
+    var nearSurfGain = ctx.createGain();
+    nearSurfGain.gain.value = 0;
+    nearSurfGain.connect(masterGain);
+    var nearSurf = createLoopTrack(ctx, audioBasePath + 'below/1-NearSurface.ogg', nearSurfGain);
+
+    var lurkingGain = ctx.createGain();
+    lurkingGain.gain.value = 0;
+    lurkingGain.connect(masterGain);
+    var lurking = createLoopTrack(ctx, audioBasePath + 'below/2-ThingsLurking.ogg', lurkingGain);
+
+    var depthsGain = ctx.createGain();
+    depthsGain.gain.value = 0;
+    depthsGain.connect(masterGain);
+    var depths = createLoopTrack(ctx, audioBasePath + 'below/3-DepthsBelow.ogg', depthsGain);
+
+    var abyssGain = ctx.createGain();
+    abyssGain.gain.value = 0;
+    abyssGain.connect(masterGain);
+    var abyss = createLoopTrack(ctx, audioBasePath + 'below/4-Abyss.ogg', abyssGain);
+
+    /* Track play/pause state to avoid redundant calls */
+    var tracks = [
+      { loop: storm, gain: stormGain, playing: false },
+      { loop: nearSurf, gain: nearSurfGain, playing: false },
+      { loop: lurking, gain: lurkingGain, playing: false },
+      { loop: depths, gain: depthsGain, playing: false },
+      { loop: abyss, gain: abyssGain, playing: false }
+    ];
+
+    /* One-shot buffer storage */
+    var buffers = {};
+    var loading = {};
+
+    function loadBuffer(key, url) {
+      if (buffers[key] || loading[key]) return;
+      loading[key] = true;
+      fetch(url)
+        .then(function(r) { return r.arrayBuffer(); })
+        .then(function(buf) { return ctx.decodeAudioData(buf); })
+        .then(function(decoded) { buffers[key] = decoded; })
+        .catch(function() {})
+        .then(function() { delete loading[key]; });
+    }
+
+    function playBuffer(key, dest) {
+      var buf = buffers[key];
+      if (!buf) return;
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(dest || masterGain);
+      src.start();
+      return src;
+    }
+
+    /* One-shot state */
+    var hasPlunged = false;
+    var lastPlungeIdx = -1;
+    var lastSurfacingIdx = -1;
+    var lastSurfaceTime = 0;
+    var lastPassbyDepth = 0;
+    var nextPassbyDist = 500 + Math.random() * 1000;
+    var prevDepth = 0;
+
+    /* Lazy load flags */
+    var lurkingLoaded = false;
+    var depthsLoaded = false;
+    var abyssLoaded = false;
+
+    /* Passby pool config — add new rows to extend.
+       Overlapping depth ranges get weighted random selection. */
+    var passbyPools = [
+      { id: 'A', count: 18, min: 200,  max: 4000  },
+      { id: 'B', count: 14, min: 3000, max: 7000  },
+      { id: 'C', count: 13, min: 6000, max: 10000 },
+      { id: 'D', count: 12, min: 9000, max: 11000 },
+      { id: 'E', count: 7,  min: 200,  max: 11000 }
+    ];
+
+    function loadEarly() {
+      nearSurf.load();
+      passbyPools.forEach(function(p) {
+        for (var i = 1; i <= p.count; i++)
+          loadBuffer('Passby' + p.id + i, audioBasePath + 'passby/Passby' + p.id + i + '.ogg');
+      });
+    }
+
+    /* Depth-to-gain mapping + one-shot triggers */
+    /* Direct .value assignment avoids bloating the AudioParam automation
+       timeline — at 60fps the per-frame changes are tiny enough to be click-free */
+    var filterSlammed = false;
+
+    function updateDepth(depth) {
+      /* Storm: full at surface, gone by 500m */
+      var stormVol = depth < 500 ? 1 - depth / 500 : 0;
+      stormGain.gain.value = stormVol;
+
+      /* Low-pass: wide open at surface, then gradual taper after the plunge slam.
+         The slam itself fires in the plunge trigger below (hard cut to 400Hz). */
+      if (!filterSlammed) {
+        stormFilter.frequency.value = 22050;
+      } else if (depth < 500) {
+        stormFilter.frequency.value = 400 - (400 - 200) * (depth / 500);
+      } else {
+        stormFilter.frequency.value = 200;
+      }
+
+      /* NearSurface: fade in 100–400m, peak 400–800m, fade out 800–1200m */
+      var nsVol;
+      if (depth < 100) nsVol = 0;
+      else if (depth < 400) nsVol = (depth - 100) / 300;
+      else if (depth <= 800) nsVol = 1;
+      else if (depth < 1200) nsVol = 1 - (depth - 800) / 400;
+      else nsVol = 0;
+      nearSurfGain.gain.value = nsVol;
+
+      /* ThingsLurking: fade in 800–1200m, peak 1500–3000m, fade out 3000–4500m */
+      var lkVol;
+      if (depth < 800) lkVol = 0;
+      else if (depth < 1200) lkVol = (depth - 800) / 400;
+      else if (depth <= 3000) lkVol = 1;
+      else if (depth < 4500) lkVol = 1 - (depth - 3000) / 1500;
+      else lkVol = 0;
+      lurkingGain.gain.value = lkVol;
+
+      /* DepthsBelow: fade in 3500–5000m, peak 5000–10000m, fade out 10000–12000m */
+      var dpVol;
+      if (depth < 3500) dpVol = 0;
+      else if (depth < 5000) dpVol = (depth - 3500) / 1500;
+      else if (depth <= 10000) dpVol = 1;
+      else if (depth < 12000) dpVol = 1 - (depth - 10000) / 2000;
+      else dpVol = 0;
+      depthsGain.gain.value = dpVol;
+
+      /* Abyss: fade in 10000–12000m, peak 12000m+ */
+      var abVol;
+      if (depth < 10000) abVol = 0;
+      else if (depth < 12000) abVol = (depth - 10000) / 2000;
+      else abVol = 1;
+      abyssGain.gain.value = abVol;
+
+      /* Play/pause optimization — start/stop tracks based on audibility.
+         Skip play() if the track hasn't buffered yet (isReady check). */
+      var vols = [stormVol, nsVol, lkVol, dpVol, abVol];
+      for (var i = 0; i < tracks.length; i++) {
+        var audible = vols[i] > 0.01;
+        if (audible && !tracks[i].playing && tracks[i].loop.isReady()) {
+          tracks[i].loop.play();
+          tracks[i].playing = true;
+        } else if (!audible && tracks[i].playing) {
+          tracks[i].loop.pause();
+          tracks[i].playing = false;
+        }
+      }
+
+      /* Lazy load deeper tracks well before their fade-in zones */
+      if (!lurkingLoaded && depth > 100) {
+        lurkingLoaded = true;
+        lurking.load();
+      }
+      if (!depthsLoaded && depth > 1500) {
+        depthsLoaded = true;
+        depths.load();
+      }
+      if (!abyssLoaded && depth > 6000) {
+        abyssLoaded = true;
+        abyss.load();
+      }
+
+      /* Plunge one-shot — triggers at 50% of the surface zone for earlier impact */
+      var surfacePx = vh * 0.5;
+      if (!hasPlunged && window.scrollY > surfacePx) {
+        hasPlunged = true;
+        filterSlammed = true;
+        /* SLAM the low-pass filter — hard cut, then updateDepth tapers gradually */
+        stormFilter.frequency.cancelScheduledValues(ctx.currentTime);
+        stormFilter.frequency.setTargetAtTime(400, ctx.currentTime, 0.05);
+        var idx;
+        do { idx = randInt(1, 4); } while (idx === lastPlungeIdx);
+        lastPlungeIdx = idx;
+        playBuffer('plunge' + idx, masterGain);
+      }
+
+      /* Surfacing one-shot — random 1-of-2, no repeat, with cooldown */
+      if (hasPlunged && window.scrollY <= surfacePx && Date.now() - lastSurfaceTime > 3000) {
+        lastSurfaceTime = Date.now();
+        hasPlunged = false;
+        filterSlammed = false;
+        stormFilter.frequency.cancelScheduledValues(ctx.currentTime);
+        var sIdx;
+        do { sIdx = randInt(1, 2); } while (sIdx === lastSurfacingIdx);
+        lastSurfacingIdx = sIdx;
+        playBuffer('surfacing' + sIdx, masterGain);
+      }
+
+      /* Passby creatures — weighted random from overlapping depth pools */
+      var scrollingDown = depth > prevDepth;
+      if (scrollingDown) {
+        var depthDelta = depth - lastPassbyDepth;
+        if (depthDelta >= nextPassbyDist && depth > 200) {
+          /* Build weighted list of eligible pools at this depth */
+          var eligible = [];
+          var totalWeight = 0;
+          for (var pi = 0; pi < passbyPools.length; pi++) {
+            var pp = passbyPools[pi];
+            if (pp.count < 1 || depth < pp.min || depth > pp.max) continue;
+            /* Weight peaks at midpoint of range, falls to 0.1 at edges */
+            var mid = (pp.min + pp.max) / 2;
+            var half = (pp.max - pp.min) / 2;
+            var w = 0.1 + 0.9 * (1 - Math.abs(depth - mid) / half);
+            eligible.push({ pool: pp, weight: w });
+            totalWeight += w;
+          }
+          if (eligible.length > 0) {
+            lastPassbyDepth = depth;
+            nextPassbyDist = 500 + Math.random() * 1000;
+            /* Weighted random pick */
+            var roll = Math.random() * totalWeight;
+            var picked = eligible[0].pool;
+            for (var ei = 0; ei < eligible.length; ei++) {
+              roll -= eligible[ei].weight;
+              if (roll <= 0) { picked = eligible[ei].pool; break; }
+            }
+            var key = 'Passby' + picked.id + randInt(1, picked.count);
+            var buf = buffers[key];
+            if (buf) {
+              var src = ctx.createBufferSource();
+              src.buffer = buf;
+              src.detune.value = (Math.random() - 0.5) * 600;
+              var passbyVol = ctx.createGain();
+              passbyVol.gain.value = 0.5 + Math.random() * 0.5;
+              var pan = ctx.createStereoPanner();
+              pan.pan.value = -0.8 + Math.random() * 1.6;
+              src.connect(passbyVol);
+              passbyVol.connect(pan);
+              pan.connect(masterGain);
+              src.start();
+              src.onended = function() { passbyVol.disconnect(); pan.disconnect(); };
+            }
+          }
+        }
+      } else {
+        lastPassbyDepth = depth;
+      }
+
+      prevDepth = depth;
+    }
+
+    return {
+      updateDepth: updateDepth,
+      loadEarly: loadEarly,
+      _buffers: buffers,
+      _ctx: ctx,
+      startStorm: function() {
+        storm.load();
+        storm.play();
+        /* Gentle 2s ramp — the track opens with a huge thunderclap */
+        stormGain.gain.setTargetAtTime(1, ctx.currentTime, 0.7);
+        tracks[0].playing = true;
+      },
+      setVolume: function(v) {
+        masterGain.gain.setTargetAtTime(v, ctx.currentTime, 0.1);
+      },
+      cleanup: function() {
+        tracks.forEach(function(t) { t.loop.cleanup(); });
+        if (ctx.state !== 'closed') ctx.close();
+      }
+    };
+  }
+
+  /* Overlay wiring — "Dive!" button starts audio, dismisses overlay */
+  if (isDive) {
+    var overlay = document.getElementById('dive-overlay');
+    var diveBtn = document.getElementById('dive-btn');
+    var volSlider = document.getElementById('dive-volume');
+
+    if (overlay && diveBtn && volSlider) {
+      /* Read saved volume */
+      var savedVol = localStorage.getItem('mommyship-dive-volume');
+      if (savedVol !== null) volSlider.value = savedVol;
+
+      /* Pre-fetch raw audio bytes while user reads overlay (Batch 1).
+         Decoded later on the real AudioContext after "Dive!" click. */
+      var prefetched = {};
+      var prefetchFiles = {
+        plunge1: 'surface/Plunge1.ogg', plunge2: 'surface/Plunge2.ogg',
+        plunge3: 'surface/Plunge3.ogg', plunge4: 'surface/Plunge4.ogg',
+        surfacing1: 'surface/Surfacing1.ogg',
+        surfacing2: 'surface/Surfacing2.ogg'
+      };
+      Object.keys(prefetchFiles).forEach(function(key) {
+        fetch(audioBasePath + prefetchFiles[key])
+          .then(function(r) { return r.arrayBuffer(); })
+          .then(function(buf) { prefetched[key] = buf; })
+          .catch(function() {});
+      });
+
+      diveBtn.addEventListener('click', function() {
+        if (reducedMotion) {
+          overlay.classList.add('dive-overlay--hidden');
+          return;
+        }
+
+        var vol = parseInt(volSlider.value, 10) / 100;
+        localStorage.setItem('mommyship-dive-volume', volSlider.value);
+
+        diveAudio = initDiveAudio(vol);
+
+        /* Decode pre-fetched buffers on the live AudioContext.
+           Fallback re-fetch for any that haven't arrived yet. */
+        Object.keys(prefetchFiles).forEach(function(key) {
+          var raw = prefetched[key];
+          if (raw) {
+            delete prefetched[key];
+            diveAudio._ctx.decodeAudioData(raw)
+              .then(function(decoded) { diveAudio._buffers[key] = decoded; })
+              .catch(function() {});
+          } else if (!diveAudio._buffers[key]) {
+            /* Pre-fetch still in flight or failed — re-fetch via the engine's loader */
+            fetch(audioBasePath + prefetchFiles[key])
+              .then(function(r) { return r.arrayBuffer(); })
+              .then(function(buf) { return diveAudio._ctx.decodeAudioData(buf); })
+              .then(function(decoded) { if (diveAudio) diveAudio._buffers[key] = decoded; })
+              .catch(function() {});
+          }
+        });
+
+        diveAudio.startStorm();
+        diveAudio.loadEarly();
+
+        /* Dismiss overlay */
+        overlay.classList.add('dive-overlay--hidden');
+        overlay.addEventListener('transitionend', function() {
+          overlay.style.display = 'none';
+        }, { once: true });
+
+        /* Migrate volume slider to header */
+        var headerInner = document.querySelector('.md-header__inner');
+        if (headerInner && subBtn) {
+          var headerVol = document.createElement('div');
+          headerVol.className = 'dive-volume-header';
+          var hSlider = document.createElement('input');
+          hSlider.type = 'range';
+          hSlider.min = '0';
+          hSlider.max = '100';
+          hSlider.value = volSlider.value;
+          hSlider.setAttribute('aria-label', 'Dive volume');
+          headerVol.appendChild(hSlider);
+          /* Place after submarine button so all controls group together */
+          subBtn.after(headerVol);
+
+          hSlider.addEventListener('input', function() {
+            var v = parseInt(hSlider.value, 10) / 100;
+            if (diveAudio) diveAudio.setVolume(v);
+            localStorage.setItem('mommyship-dive-volume', hSlider.value);
+          });
+        }
+      });
+    }
+
+  }
+
   function onScroll() {
     var scrollMax = document.documentElement.scrollHeight - vh;
     var pct = scrollMax > 0 ? window.scrollY / scrollMax : 0;
@@ -1283,6 +1784,19 @@ document$.subscribe(function () {
           var t = Math.min(distance / 2000, 1);
           tocEntries[i].el.style.setProperty('opacity', (1 - t * t).toFixed(2), 'important');
         }
+      }
+
+      if (diveAudio) diveAudio.updateDepth(depth);
+
+      /* Submarine + volume fade toward ghost by shimmerfish scatter depth */
+      if (subBtn) {
+        var subAlpha = depth < 3000 ? 1 - (depth / 3000) * 0.85 : 0.15;
+        subBtn.style.opacity = subAlpha.toFixed(2);
+      }
+      var hVol = document.querySelector('.dive-volume-header');
+      if (hVol) {
+        var volAlpha = depth < 3000 ? 0.3 - (depth / 3000) * 0.15 : 0.15;
+        hVol.style.opacity = volAlpha.toFixed(2);
       }
     } else {
       /* Ecology: scroll-percentage bio zones */
@@ -1390,6 +1904,11 @@ document$.subscribe(function () {
       });
     }
     for (var i = 0; i < tocEntries.length; i++) tocEntries[i].el.style.removeProperty('opacity');
+    if (diveAudio) { diveAudio.cleanup(); diveAudio = null; }
+    var diveOverlay = document.getElementById('dive-overlay');
+    if (diveOverlay) diveOverlay.remove();
+    var headerVol = document.querySelector('.dive-volume-header');
+    if (headerVol) headerVol.remove();
   };
 
   /* Creature generation functions */
