@@ -545,7 +545,6 @@ body:has(.osminok-dive) .md-sidebar__scrollwrap::-webkit-scrollbar {
    flex collapse when all children are hidden */
 body:has(.osminok-dive) .md-header {
   min-height: 2.4rem;
-  position: relative;
 }
 
 body:has(.osminok-dive) .md-header__inner {

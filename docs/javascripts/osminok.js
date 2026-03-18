@@ -686,7 +686,7 @@ document$.subscribe(function () {
         speed: 4 + Math.random() * 10,
         radius: 0.5 + Math.random() * 7.5,
         opacity: 0.05 + Math.random() * 0.25,
-        maxDepth: Math.random() * 10000
+        maxDepth: Math.random() < 0.12 ? rand(14000, 18000) : Math.random() * 10000
       };
     }
 
@@ -699,7 +699,7 @@ document$.subscribe(function () {
       var type = Math.random();
       var cx = rand(vw * 0.1, vw * 0.9);
       var cy = vh + rand(50, 200);
-      var f = { type: '', bubbles: [], maxDepth: rand(500, 8000), born: 0 };
+      var f = { type: '', bubbles: [], maxDepth: rand(500, 18000), born: 0 };
 
       if (type < 0.4) {
         /* Stream — vertical column of 8–15 bubbles with staggered starts */
@@ -800,7 +800,7 @@ document$.subscribe(function () {
       }
 
       /* Spawn new formations every 3–8 seconds */
-      if (now - formationTimer > nextFormationDelay && currentDepth < 10000) {
+      if (now - formationTimer > nextFormationDelay) {
         spawnFormation();
         formationTimer = now;
         nextFormationDelay = rand(3000, 8000);
@@ -1066,19 +1066,750 @@ document$.subscribe(function () {
     diveResizeHandler = function () {
       vw = window.innerWidth;
       vh = window.innerHeight;
-      /* Setting canvas dimensions resets context state — re-apply scale */
+      /* Resizing resets context state — setTransform avoids stacking scales */
       if (bubbleCanvas) {
         bubbleCanvas.width = Math.round(vw * canvasScale);
         bubbleCanvas.height = Math.round(vh * canvasScale);
-        bubbleCtx.scale(canvasScale, canvasScale);
+        bubbleCtx.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
       }
       if (fishCanvas) {
         fishCanvas.width = Math.round(vw * canvasScale);
         fishCanvas.height = Math.round(vh * canvasScale);
-        fishCtx.scale(canvasScale, canvasScale);
+        fishCtx.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
+      }
+      if (creatureCanvas) {
+        creatureCanvas.width = Math.round(vw * creatureScale);
+        creatureCanvas.height = Math.round(vh * creatureScale);
+        creatureCtx.setTransform(creatureScale, 0, 0, creatureScale, 0, 0);
       }
     };
     window.addEventListener('resize', diveResizeHandler);
+  }
+
+  /* Creature canvas — shared by Longlightning, Darkmaws, Glowspirals,
+     Thoughtwater, and algae blooms. Higher res than bubble/fish canvases
+     because these creatures have fine detail (spiral paths, noise textures). */
+  var creatureCanvas = null;
+  var creatureCtx = null;
+  var creatureAnimId = null;
+  var creatureScale = 0.75;
+  if (isDive && !reducedMotion) {
+    creatureCanvas = document.createElement('canvas');
+    creatureCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2;will-change:transform;';
+    document.body.appendChild(creatureCanvas);
+    creatureCanvas.width = Math.round(vw * creatureScale);
+    creatureCanvas.height = Math.round(vh * creatureScale);
+    creatureCtx = creatureCanvas.getContext('2d');
+    creatureCtx.scale(creatureScale, creatureScale);
+
+    /* Color interpolation for Thoughtwater mood cycling */
+    function lerpColor(a, b, t) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t)
+      ];
+    }
+
+    /* Depth-to-opacity for creatures with min/max depth ranges */
+    function depthAlpha(depth, minD, maxD) {
+      var fadeIn = (maxD - minD) * 0.1;
+      var fadeOut = (maxD - minD) * 0.1;
+      if (depth < minD || depth > maxD) return 0;
+      if (depth < minD + fadeIn) return (depth - minD) / fadeIn;
+      if (depth > maxD - fadeOut) return (maxD - depth) / fadeOut;
+      return 1;
+    }
+
+    /* Longlightning — bioluminescent eels */
+    var eels = [];
+    var nextEelTime = 0;
+
+    function spawnEel(depth) {
+      var params;
+      if (depth < 1200) {
+        params = { len: rand(80, 150), segs: randInt(12, 18), w: rand(2, 4),
+          pal: palettes.shallow, speed: rand(300, 500), min: 200, max: 1200, interval: rand(2500, 5000) };
+      } else if (depth < 4500) {
+        params = { len: rand(250, 500), segs: randInt(20, 30), w: rand(3, 6),
+          pal: palettes.twilight, speed: rand(180, 350), min: 800, max: 4500, interval: rand(6000, 12000) };
+      } else {
+        params = { len: rand(600, 1400), segs: randInt(35, 60), w: rand(4, 10),
+          pal: palettes.abyss, speed: rand(120, 250), min: 3500, max: 11000, interval: rand(5000, 12000) };
+      }
+      var dir = Math.random() < 0.5 ? 1 : -1;
+      /* Swim direction — mostly lateral but can angle diagonally or even steeply */
+      var angle = dir > 0 ? rand(-0.7, 0.7) : rand(Math.PI - 0.7, Math.PI + 0.7);
+      var startX = dir > 0 ? -params.len : vw + params.len;
+      var startY = rand(vh * 0.1, vh * 0.9);
+      var color = pick(params.pal);
+
+      function makeEel(yOff, phaseOff) {
+        var segments = [];
+        for (var s = 0; s < params.segs; s++) segments.push({ x: startX, y: startY + yOff });
+        return {
+          segments: segments, speed: params.speed, width: params.w,
+          color: color, waveAmp: rand(6, 14), waveFreq: rand(2, 4),
+          angle: angle, direction: dir, age: 0, phaseOff: phaseOff,
+          spacing: params.len / params.segs, baseAlpha: rand(0.65, 1.0),
+          scale: 1, fleeing: false, partner: null,
+          minDepth: params.min, maxDepth: params.max
+        };
+      }
+
+      var primary = makeEel(0, 0);
+      eels.push(primary);
+      /* 40% chance of a mated pair — store cross-references */
+      if (Math.random() < 0.4) {
+        var mate = makeEel(rand(15, 30) * (Math.random() < 0.5 ? 1 : -1), rand(0.5, 1.5));
+        primary.partner = mate;
+        mate.partner = primary;
+        eels.push(mate);
+      }
+      return params.interval;
+    }
+
+    function updateEels(depth, now) {
+      var t = now * 0.001;
+      if (now > nextEelTime && depth >= 200 && depth <= 11000) {
+        var interval = spawnEel(depth);
+        nextEelTime = now + interval;
+      }
+
+      for (var i = eels.length - 1; i >= 0; i--) {
+        var e = eels[i];
+        var da = depthAlpha(depth, e.minDepth, e.maxDepth);
+        e.depthAlpha = e.depthAlpha !== undefined ? e.depthAlpha + (da - e.depthAlpha) * 0.05 : da;
+        if (e.depthAlpha < 0.01 && da <= 0) { eels.splice(i, 1); continue; }
+
+        /* Fleeing eels move 3× faster with bigger wiggles */
+        var speedMult = e.fleeing ? 3 : 1;
+        var ampMult = e.fleeing ? 2.5 : 1;
+
+        var head = e.segments[0];
+        var spd = e.speed * speedMult / 60;
+        head.x += Math.cos(e.angle) * spd;
+        head.y += Math.sin(e.angle) * spd;
+
+        /* Full-body sine undulation — gentle wave propagates head→tail */
+        var headY0 = head.y;
+        for (var s = 0; s < e.segments.length; s++) {
+          if (s === 0) {
+            head.y += Math.sin(t * e.waveFreq + e.phaseOff) * e.waveAmp * ampMult * 0.04;
+          } else {
+            var prev = e.segments[s - 1];
+            var cur = e.segments[s];
+            var tdx = prev.x - cur.x;
+            var tdy = prev.y - cur.y;
+            var dist = Math.sqrt(tdx * tdx + tdy * tdy);
+            if (dist > e.spacing) {
+              var pull = (dist - e.spacing) / dist;
+              cur.x += tdx * pull;
+              cur.y += tdy * pull;
+            }
+            /* Perpendicular sine offset — relative to travel direction */
+            var wavePhase = t * e.waveFreq + e.phaseOff - s * 0.3;
+            var perpAmt = Math.sin(wavePhase) * e.waveAmp * ampMult * Math.min(s / 6, 1);
+            var perpX = -Math.sin(e.angle) * perpAmt;
+            var perpY = Math.cos(e.angle) * perpAmt;
+            cur.x += (prev.x + perpX - cur.x) * 0.06;
+            cur.y += (prev.y + perpY - cur.y) * 0.06;
+          }
+        }
+        e.scale = 0.85 + Math.sin(t * 0.4 + e.phaseOff * 3) * 0.15;
+
+        e.age++;
+        /* Small chance of getting eaten — vanish suddenly, partner flees */
+        if (!e.fleeing && e.age > 60 && Math.random() < 0.0003) {
+          if (e.partner && eels.indexOf(e.partner) !== -1) {
+            e.partner.fleeing = true;
+            e.partner.partner = null;
+          }
+          eels.splice(i, 1);
+          continue;
+        }
+        /* Only remove once head has crossed the far edge AND tail has followed.
+           Generous y-bounds because angled eels travel vertically too. */
+        var tail = e.segments[e.segments.length - 1];
+        var headGone = (e.direction > 0 && head.x > vw + 50) || (e.direction < 0 && head.x < -50) ||
+                       head.y > vh + 400 || head.y < -400;
+        var tailGone = tail.x > vw + 200 || tail.x < -200 || tail.y > vh + 500 || tail.y < -500;
+        if (headGone && tailGone) {
+          eels.splice(i, 1);
+          continue;
+        }
+
+        var edgeFade = 1;
+        if (e.age < 30) edgeFade = e.age / 30;
+
+        /* Draw with scale transform for approach/recede illusion */
+        var alpha = e.depthAlpha * edgeFade * e.baseAlpha;
+        if (alpha < 0.01) continue;
+        /* Desaturate toward pale reddish-white with depth */
+        var eelDepthFrac = Math.min(1, Math.max(0, (depth - 200) / 10800));
+        var ec = e.color;
+        var c = [
+          Math.round(ec[0] + (210 - ec[0]) * eelDepthFrac * 0.6),
+          Math.round(ec[1] + (190 - ec[1]) * eelDepthFrac * 0.7),
+          Math.round(ec[2] + (200 - ec[2]) * eelDepthFrac * 0.5)
+        ];
+        var sc = e.scale || 1;
+        var midX = (head.x + e.segments[e.segments.length - 1].x) * 0.5;
+        var midY = (head.y + e.segments[e.segments.length - 1].y) * 0.5;
+        creatureCtx.save();
+        creatureCtx.translate(midX, midY);
+        creatureCtx.scale(sc, sc);
+        creatureCtx.translate(-midX, -midY);
+        for (var pass = 0; pass < 2; pass++) {
+          creatureCtx.beginPath();
+          creatureCtx.moveTo(e.segments[0].x, e.segments[0].y);
+          for (var s = 1; s < e.segments.length; s++) {
+            creatureCtx.lineTo(e.segments[s].x, e.segments[s].y);
+          }
+          if (pass === 0) {
+            creatureCtx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (alpha * 0.15).toFixed(3) + ')';
+            creatureCtx.lineWidth = e.width * 4 * sc;
+          } else {
+            creatureCtx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (alpha * 0.7).toFixed(3) + ')';
+            creatureCtx.lineWidth = e.width * sc;
+          }
+          creatureCtx.lineCap = 'round';
+          creatureCtx.lineJoin = 'round';
+          creatureCtx.stroke();
+        }
+        /* Eye — bright dot at head */
+        creatureCtx.beginPath();
+        creatureCtx.arc(head.x, head.y, e.width * 0.8 * sc, 0, Math.PI * 2);
+        creatureCtx.fillStyle = 'rgba(' + Math.min(c[0] + 60, 255) + ',' + Math.min(c[1] + 60, 255) + ',' + Math.min(c[2] + 60, 255) + ',' + (alpha * 0.9).toFixed(3) + ')';
+        creatureCtx.fill();
+        creatureCtx.restore();
+      }
+    }
+
+    /* Darkmaws — nearly invisible anglerfish; only the lure is visible.
+       Pale silvery-blue, max 1 on screen, fishhook-shaped stalk. */
+    var darkmaws = [];
+    var nextDarkmawCheck = 0;
+    var darkmawColor = [170, 190, 210];
+
+    function spawnDarkmaw() {
+      var dir = Math.random() < 0.5 ? 1 : -1;
+      var bw = rand(700, 1200);
+      /* Offset spawn so the lure (which extends forward) enters the viewport first */
+      var stalk = bw * rand(0.5, 0.9);
+      darkmaws.push({
+        x: dir > 0 ? -(bw + stalk) : vw + bw + stalk, y: rand(vh * 0.15, vh * 0.85),
+        vx: rand(10, 30) * dir / 60,
+        bodyW: bw, bodyH: bw * rand(0.5, 0.6),
+        alpha: 0, seed: Math.random() * 1000,
+        stalkLen: stalk,
+        lureAspect: rand(1.4, 1.8),
+        lurePhase: Math.random() * 100,
+        bobPhase: Math.random() * 100,
+        minDepth: 3500, maxDepth: 11000
+      });
+    }
+
+    function updateDarkmaws(depth, now) {
+      var t = now * 0.001;
+      var da = depthAlpha(depth, 3500, 11000);
+
+      var daDeep = depthAlpha(depth, 9000, 11000);
+      if (now > nextDarkmawCheck) {
+        nextDarkmawCheck = now + 5000;
+        /* Only 1 on screen at a time — territorial. Spawn from different zones. */
+        if (darkmaws.length < 1) {
+          if (daDeep > 0 && Math.random() < 0.4) {
+            /* Massive deep-abyss variant — bigger and faster */
+            var bw2 = rand(1400, 2400);
+            var stalk2 = bw2 * rand(0.5, 0.9);
+            darkmaws.push({
+              x: -(bw2 + stalk2), y: rand(vh * 0.15, vh * 0.85),
+              vx: rand(30, 60) / 60,
+              bodyW: bw2, bodyH: bw2 * rand(0.5, 0.6),
+              alpha: 0, seed: Math.random() * 1000,
+              stalkLen: stalk2, lureAspect: rand(1.4, 1.8),
+              lurePhase: Math.random() * 100,
+              bobPhase: Math.random() * 100,
+              minDepth: 9000, maxDepth: 11000
+            });
+          } else if (da > 0) {
+            spawnDarkmaw();
+          }
+        }
+      }
+
+      for (var i = darkmaws.length - 1; i >= 0; i--) {
+        var d = darkmaws[i];
+        if (da <= 0) { darkmaws.splice(i, 1); continue; }
+
+        d.x += d.vx;
+        d.y += Math.sin(t * 0.3 + d.bobPhase) * 0.25;
+        d.alpha += (da - d.alpha) * 0.02;
+
+        if (d.x < -d.bodyW * 2 || d.x > vw + d.bodyW * 2) {
+          darkmaws.splice(i, 1);
+          continue;
+        }
+
+        if (d.alpha < 0.01) continue;
+        var c = darkmawColor;
+        var a = d.alpha;
+        var facing = d.vx >= 0 ? 1 : -1;
+
+        /* Partial front outline — just a hint of the jaw, very faint */
+        creatureCtx.beginPath();
+        var jawStart = -Math.PI * 0.3;
+        var jawEnd = Math.PI * 0.3;
+        for (var s = 0; s <= 12; s++) {
+          var angle = jawStart + (s / 12) * (jawEnd - jawStart);
+          var rx = d.bodyW * 0.5 * (1 + noise(angle * 2 + t * 0.4, d.seed) * 0.1);
+          var ry = d.bodyH * 0.5 * (1 + noise(angle * 2 + t * 0.5, d.seed + 50) * 0.1);
+          var px = d.x + Math.cos(angle) * rx * facing;
+          var py = d.y + Math.sin(angle) * ry;
+          if (s === 0) creatureCtx.moveTo(px, py);
+          else creatureCtx.lineTo(px, py);
+        }
+        creatureCtx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a * 0.06).toFixed(3) + ')';
+        creatureCtx.lineWidth = 1.5;
+        creatureCtx.lineCap = 'round';
+        creatureCtx.stroke();
+
+        /* Fishhook lure stalk — extends forward then curves downward like a sideways J */
+        var stalkBaseX = d.x + facing * d.bodyW * 0.4;
+        var stalkBaseY = d.y - d.bodyH * 0.1;
+        var lureSway = noise(t * 0.6, d.seed + 100) * 18;
+        var lureWobbleY = noise(t * 0.4, d.seed + 120) * 12;
+        /* Stalk goes forward-and-slightly-up, then hooks downward */
+        var midX = stalkBaseX + facing * d.stalkLen * 0.5 + lureSway * 0.3;
+        var midY = stalkBaseY - d.stalkLen * 0.15;
+        var lureX = midX + facing * d.stalkLen * 0.1 + lureSway;
+        var lureY = midY + d.stalkLen * 0.55 + lureWobbleY;
+
+        creatureCtx.beginPath();
+        creatureCtx.moveTo(stalkBaseX, stalkBaseY);
+        creatureCtx.bezierCurveTo(
+          stalkBaseX + facing * d.stalkLen * 0.3, stalkBaseY - d.stalkLen * 0.2,
+          midX, midY,
+          lureX, lureY
+        );
+        creatureCtx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a * 0.12).toFixed(3) + ')';
+        creatureCtx.lineWidth = 1;
+        creatureCtx.stroke();
+
+        /* Lure blob — bigger, twitchier, actively hunting */
+        var lurePulse = (noise(t * 2.5, d.lurePhase) + 1) * 0.5;
+        /* Fast jitter — high-frequency noise for twitchy movement */
+        var jitterX = noise(t * 4, d.lurePhase + 200) * 8;
+        var jitterY = noise(t * 3.5, d.lurePhase + 250) * 6;
+        lureX += jitterX;
+        lureY += jitterY;
+        var lureAlpha = a * (0.4 + lurePulse * 0.6);
+        var lureW = 10 + lurePulse * 8;
+        var lureH = lureW * d.lureAspect;
+
+        /* Wide soft glow halo */
+        creatureCtx.beginPath();
+        creatureCtx.ellipse(lureX, lureY, lureW * 4, lureH * 3, 0, 0, Math.PI * 2);
+        creatureCtx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.06).toFixed(3) + ')';
+        creatureCtx.fill();
+        /* Medium glow */
+        creatureCtx.beginPath();
+        creatureCtx.ellipse(lureX, lureY, lureW * 2.2, lureH * 1.8, 0, 0, Math.PI * 2);
+        creatureCtx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.15).toFixed(3) + ')';
+        creatureCtx.fill();
+        /* Bright blobby core — noise-deformed ellipse */
+        creatureCtx.beginPath();
+        var lSteps = 16;
+        for (var ls = 0; ls <= lSteps; ls++) {
+          var la = (ls / lSteps) * Math.PI * 2;
+          var lrx = lureW * (1 + noise(la * 3 + t * 1.5, d.lurePhase) * 0.25);
+          var lry = lureH * (1 + noise(la * 3 + t * 1.2, d.lurePhase + 30) * 0.2);
+          var lpx = lureX + Math.cos(la) * lrx;
+          var lpy = lureY + Math.sin(la) * lry;
+          if (ls === 0) creatureCtx.moveTo(lpx, lpy);
+          else creatureCtx.lineTo(lpx, lpy);
+        }
+        creatureCtx.closePath();
+        var lureGrad = creatureCtx.createRadialGradient(lureX, lureY - lureH * 0.2, 0, lureX, lureY, lureH);
+        lureGrad.addColorStop(0, 'rgba(230, 240, 250,' + lureAlpha.toFixed(3) + ')');
+        lureGrad.addColorStop(0.5, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.7).toFixed(3) + ')');
+        lureGrad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.2).toFixed(3) + ')');
+        creatureCtx.fillStyle = lureGrad;
+        creatureCtx.fill();
+      }
+    }
+
+    /* Glowspirals — logarithmic spiral nautilus in small groups */
+    var spiralGroups = [];
+    var nextSpiralCheck = 0;
+
+    function spawnSpiralGroup() {
+      var cx = Math.random() < 0.5 ? -80 : vw + 80;
+      var cy = rand(vh * 0.1, vh * 0.9);
+      var dir = cx < 0 ? 1 : -1;
+      var count = randInt(2, 4);
+      var spirals = [];
+      /* Distribute around a ring so shells don't overlap */
+      var ringRadius = rand(50, 80);
+      var angleStart = rand(0, Math.PI * 2);
+      /* Shared orientation — all members face the same way (ballast-stabilized) */
+      var groupRotation = rand(0, Math.PI * 2);
+      var groupRotSpeed = rand(0.05, 0.15) * (Math.random() < 0.5 ? 1 : -1);
+      for (var s = 0; s < count; s++) {
+        var angle = angleStart + (s / count) * Math.PI * 2 + rand(-0.3, 0.3);
+        spirals.push({
+          offsetX: Math.cos(angle) * ringRadius + rand(-8, 8),
+          offsetY: Math.sin(angle) * ringRadius + rand(-8, 8),
+          size: rand(20, 45), bobPhase: rand(0, 10), seed: Math.random() * 1000
+        });
+      }
+      /* Per-group color variation — randomly bluer or greener than base cyan */
+      var colorShift = Math.random() < 0.5
+        ? [rand(30, 65), rand(200, 234), rand(212, 240)]
+        : [rand(65, 100), rand(234, 255), rand(180, 212)];
+      spiralGroups.push({
+        cx: cx, cy: cy, vx: rand(15, 40) * dir / 60, vy: rand(-8, 8) / 60,
+        spirals: spirals, color: colorShift,
+        groupRotation: groupRotation, groupRotSpeed: groupRotSpeed,
+        minDepth: 200, maxDepth: 1200
+      });
+    }
+
+    function drawSpiral(ctx, x, y, size, rotation, seed, color, alpha, t) {
+      if (alpha < 0.01) return;
+      var a = size * 0.08;
+      var b = 0.18;
+      var c = color;
+      /* Subtle alpha variation via noise */
+      var glowAlpha = alpha * (0.85 + noise(t * 0.3, seed) * 0.15);
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+
+      /* Glow pass */
+      ctx.beginPath();
+      for (var th = 0.5; th < Math.PI * 4; th += 0.15) {
+        var r = a * Math.exp(b * th);
+        var px = Math.cos(th) * r;
+        var py = Math.sin(th) * r;
+        if (th < 0.6) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (glowAlpha * 0.15).toFixed(3) + ')';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      /* Bright core */
+      ctx.beginPath();
+      for (var th = 0.5; th < Math.PI * 4; th += 0.15) {
+        var r = a * Math.exp(b * th);
+        var px = Math.cos(th) * r;
+        var py = Math.sin(th) * r;
+        if (th < 0.6) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (glowAlpha * 0.6).toFixed(3) + ')';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      /* Bright dot at the spiral opening — the creature peering out */
+      var openR = a * Math.exp(b * Math.PI * 4);
+      var dotX = Math.cos(Math.PI * 4) * openR;
+      var dotY = Math.sin(Math.PI * 4) * openR;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (glowAlpha * 0.9).toFixed(3) + ')';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function updateGlowspirals(depth, now) {
+      var t = now * 0.001;
+      var da = depthAlpha(depth, 200, 1200);
+
+      if (now > nextSpiralCheck) {
+        nextSpiralCheck = now + 3000;
+        while (da > 0 && spiralGroups.length < 3) spawnSpiralGroup();
+        if (da > 0 && spiralGroups.length < 5 && Math.random() < 0.4) spawnSpiralGroup();
+      }
+
+      for (var i = spiralGroups.length - 1; i >= 0; i--) {
+        var g = spiralGroups[i];
+        if (da <= 0) { spiralGroups.splice(i, 1); continue; }
+
+        g.cx += g.vx;
+        g.cy += g.vy;
+        /* Glowspirals sometimes randomly turn around (they're kinda dumb) */
+        if (Math.random() < 0.0008) { g.vx = -g.vx; g.vy = -g.vy; }
+        /* Small chance one gets gobbled — group flees in the opposite direction */
+        if (!g.fleeing && g.spirals.length > 1 && Math.random() < 0.0002) {
+          g.spirals.splice(randInt(0, g.spirals.length - 1), 1);
+          g.fleeing = true;
+          g.vx = -g.vx * 3;
+          g.vy = -g.vy * 3;
+        }
+        if (g.cx < -150 || g.cx > vw + 150) { spiralGroups.splice(i, 1); continue; }
+
+        /* All members share the group's orientation */
+        g.groupRotation += g.groupRotSpeed / 60;
+        for (var s = 0; s < g.spirals.length; s++) {
+          var sp = g.spirals[s];
+          var bobY = Math.sin(t * 0.8 + sp.bobPhase) * 6;
+          drawSpiral(creatureCtx,
+            g.cx + sp.offsetX, g.cy + sp.offsetY + bobY,
+            sp.size, g.groupRotation, sp.seed, g.color, da, t);
+        }
+      }
+    }
+
+    /* Thoughtwater — mood-shifting jellyfish clusters */
+    var jellyClusters = [];
+    var nextJellyCheck = 0;
+    var moodColors = [
+      [220, 60, 80],
+      [80, 100, 255],
+      [160, 60, 200]
+    ];
+
+    function spawnJellyCluster() {
+      var cx = Math.random() < 0.5 ? -100 : vw + 100;
+      var cy = rand(vh * 0.1, vh * 0.9);
+      var dir = cx < 0 ? 1 : -1;
+      var count = randInt(3, 5);
+      var jellies = [];
+      for (var j = 0; j < count; j++) {
+        var tentCount = randInt(3, 5);
+        var tents = [];
+        for (var ti = 0; ti < tentCount; ti++) {
+          tents.push({ segments: randInt(4, 6), seed: Math.random() * 1000 });
+        }
+        jellies.push({
+          offsetX: rand(-60, 60), offsetY: rand(-45, 45),
+          bellSize: rand(30, 60), contractPhase: rand(0, 10),
+          contractSpeed: rand(0.8, 1.5), tentacles: tents
+        });
+      }
+      jellyClusters.push({
+        cx: cx, cy: cy, vx: rand(20, 50) * dir / 60, vy: rand(-5, 5) / 60,
+        phaseOffset: Math.random() * 100, transitionDur: rand(8, 15),
+        tilt: rand(-0.15, 0.15), tiltSpeed: rand(0.08, 0.2),
+        jellies: jellies, minDepth: 800, maxDepth: 4500
+      });
+    }
+
+    function updateThoughtwater(depth, now) {
+      var t = now * 0.001;
+      var da = depthAlpha(depth, 800, 4500);
+
+      if (now > nextJellyCheck) {
+        nextJellyCheck = now + 5000;
+        while (da > 0 && jellyClusters.length < 2) spawnJellyCluster();
+        if (da > 0 && jellyClusters.length < 4 && Math.random() < 0.25) spawnJellyCluster();
+      }
+
+      for (var i = jellyClusters.length - 1; i >= 0; i--) {
+        var cl = jellyClusters[i];
+        if (da <= 0) { jellyClusters.splice(i, 1); continue; }
+
+        cl.cx += cl.vx;
+        cl.cy += cl.vy;
+        /* Small chance to veer slightly — favors current direction */
+        if (Math.random() < 0.001) {
+          cl.vx += (Math.random() - 0.3) * cl.vx * 0.5;
+          cl.vy += (Math.random() - 0.5) * 0.3;
+        }
+        if (cl.cx < -200 || cl.cx > vw + 200) { jellyClusters.splice(i, 1); continue; }
+
+        /* Synchronized mood color */
+        var moodT = (t + cl.phaseOffset) % (moodColors.length * cl.transitionDur);
+        var moodIdx = Math.floor(moodT / cl.transitionDur);
+        var moodFrac = (moodT % cl.transitionDur) / cl.transitionDur;
+        /* Smooth ease for color transitions */
+        moodFrac = moodFrac * moodFrac * (3 - 2 * moodFrac);
+        var mc = lerpColor(moodColors[moodIdx % 3], moodColors[(moodIdx + 1) % 3], moodFrac);
+
+        /* Per-group tilt — whole cluster sways gently as if caught in a current */
+        var groupTilt = cl.tilt + Math.sin(t * cl.tiltSpeed) * 0.08;
+        creatureCtx.save();
+        creatureCtx.translate(cl.cx, cl.cy);
+        creatureCtx.rotate(groupTilt);
+        creatureCtx.translate(-cl.cx, -cl.cy);
+
+        for (var j = 0; j < cl.jellies.length; j++) {
+          var jf = cl.jellies[j];
+          var jx = cl.cx + jf.offsetX + noise(t * 0.2, j * 7) * 15;
+          var jy = cl.cy + jf.offsetY + noise(t * 0.25, j * 11) * 10;
+
+          /* Bell contraction */
+          var contract = 0.7 + Math.sin(t * jf.contractSpeed + jf.contractPhase) * 0.15;
+          var bw = jf.bellSize * 0.5;
+          var bh = jf.bellSize * 0.35 * contract;
+
+          /* Bell dome — top half of an ellipse via arc */
+          var bellAlpha = da * 0.5;
+          creatureCtx.beginPath();
+          creatureCtx.ellipse(jx, jy, bw, bh, 0, Math.PI, 0, true);
+          creatureCtx.closePath();
+          var bellGrad = creatureCtx.createRadialGradient(jx, jy - bh * 0.3, 0, jx, jy, bw);
+          bellGrad.addColorStop(0, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.6).toFixed(3) + ')');
+          bellGrad.addColorStop(0.7, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.25).toFixed(3) + ')');
+          bellGrad.addColorStop(1, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.05).toFixed(3) + ')');
+          creatureCtx.fillStyle = bellGrad;
+          creatureCtx.fill();
+
+          /* Tentacles — wavy lines trailing below the bell */
+          for (var ti = 0; ti < jf.tentacles.length; ti++) {
+            var tent = jf.tentacles[ti];
+            var tentSpread = (ti / (jf.tentacles.length - 1 || 1) - 0.5) * bw * 1.4;
+            creatureCtx.beginPath();
+            var tx = jx + tentSpread;
+            var ty = jy;
+            creatureCtx.moveTo(tx, ty);
+            for (var ts = 1; ts <= tent.segments; ts++) {
+              var segLen = jf.bellSize * 0.25;
+              tx += noise(t * 0.6 + ts * 0.5, tent.seed) * 8;
+              ty += segLen;
+              creatureCtx.lineTo(tx, ty);
+            }
+            creatureCtx.strokeStyle = 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (da * 0.25).toFixed(3) + ')';
+            creatureCtx.lineWidth = 1.2;
+            creatureCtx.lineCap = 'round';
+            creatureCtx.stroke();
+          }
+        }
+        creatureCtx.restore();
+      }
+    }
+
+    /* Algae blooms — overlapping soft radial gradient circles whose positions
+       drift via noise, creating organic nebula-like shapes without per-pixel work.
+       Each bloom is a cluster of 6–12 "lobes" sharing one color. */
+    var blooms = [];
+    var nextBloomCheck = 0;
+
+    function spawnBloom(depth) {
+      var params;
+      if (depth < 1200) {
+        params = { size: rand(80, 140), lobes: randInt(6, 9), pal: palettes.shallow,
+          min: 200, max: 1200, speed: rand(10, 25), drift: 0.5 };
+      } else if (depth < 4500) {
+        params = { size: rand(120, 200), lobes: randInt(7, 10), pal: palettes.twilight,
+          min: 800, max: 4500, speed: rand(8, 18), drift: 0.35 };
+      } else {
+        params = { size: rand(150, 260), lobes: randInt(8, 12), pal: palettes.abyss,
+          min: 3500, max: 11000, speed: rand(5, 12), drift: 0.25 };
+      }
+      var dir = Math.random() < 0.5 ? 1 : -1;
+      var lobes = [];
+      for (var l = 0; l < params.lobes; l++) {
+        lobes.push({
+          offsetX: rand(-params.size * 0.4, params.size * 0.4),
+          offsetY: rand(-params.size * 0.3, params.size * 0.3),
+          radius: rand(params.size * 0.3, params.size * 0.7),
+          seed: Math.random() * 1000,
+          alphaBase: rand(0.03, 0.1)
+        });
+      }
+      blooms.push({
+        x: dir > 0 ? -params.size : vw + params.size, y: rand(vh * 0.1, vh * 0.9),
+        vx: params.speed * dir / 60, vy: rand(-2, 2) / 60,
+        size: params.size, color: pick(params.pal), alpha: 0,
+        seed: Math.random() * 1000, drift: params.drift,
+        lobes: lobes, minDepth: params.min, maxDepth: params.max
+      });
+    }
+
+    function updateBlooms(depth, now) {
+      var t = now * 0.001;
+
+      if (now > nextBloomCheck) {
+        nextBloomCheck = now + 5000;
+        if (depth >= 200 && depth <= 11000 && blooms.length < 3) spawnBloom(depth);
+        if (depth >= 200 && depth <= 11000 && blooms.length < 5 && Math.random() < 0.3) spawnBloom(depth);
+      }
+
+      for (var i = blooms.length - 1; i >= 0; i--) {
+        var b = blooms[i];
+        var da = depthAlpha(depth, b.minDepth, b.maxDepth);
+        if (da <= 0) { blooms.splice(i, 1); continue; }
+
+        b.x += b.vx;
+        b.y += b.vy;
+        /* Algae drift randomly — they're the most free-floating */
+        if (Math.random() < 0.002) {
+          b.vx += (Math.random() - 0.4) * b.vx * 0.6;
+          b.vy += (Math.random() - 0.5) * 0.5;
+        }
+        b.alpha += (da - b.alpha) * 0.02;
+
+        if (b.x < -b.size * 3 || b.x > vw + b.size * 3) {
+          blooms.splice(i, 1);
+          continue;
+        }
+        if (b.alpha < 0.01) continue;
+
+        /* Desaturate toward white as depth increases — deep algae are pale ghostly patches */
+        var depthFrac = Math.min(1, Math.max(0, (depth - 200) / 10800));
+        var bc = b.color;
+        var c = [
+          Math.round(bc[0] + (220 - bc[0]) * depthFrac * 0.7),
+          Math.round(bc[1] + (225 - bc[1]) * depthFrac * 0.7),
+          Math.round(bc[2] + (230 - bc[2]) * depthFrac * 0.7)
+        ];
+        /* More transparent overall, fading further with depth */
+        var alphaScale = 0.6 - depthFrac * 0.3;
+
+        for (var l = 0; l < b.lobes.length; l++) {
+          var lb = b.lobes[l];
+          /* Strong noise warping on positions — algae are free-floating */
+          var lx = b.x + lb.offsetX + noise(t * b.drift, lb.seed) * b.size * 0.5;
+          var ly = b.y + lb.offsetY + noise(t * b.drift * 0.8, lb.seed + 50) * b.size * 0.4;
+          var lr = lb.radius * (1 + noise(t * 0.3, lb.seed + 100) * 0.35);
+          var la = lb.alphaBase * b.alpha * alphaScale;
+
+          var grad = creatureCtx.createRadialGradient(lx, ly, 0, lx, ly, lr);
+          grad.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (la * 0.7).toFixed(3) + ')');
+          grad.addColorStop(0.35, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (la * 0.3).toFixed(3) + ')');
+          grad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+          creatureCtx.beginPath();
+          creatureCtx.arc(lx, ly, lr, 0, Math.PI * 2);
+          creatureCtx.fillStyle = grad;
+          creatureCtx.fill();
+        }
+      }
+    }
+
+    /* Creature canvas rAF loop */
+    var lastCreatureMask = '';
+    function creatureLoop(now) {
+      if (document.hidden) { creatureAnimId = requestAnimationFrame(creatureLoop); return; }
+      var depth = window.scrollY / 10;
+      creatureCtx.clearRect(0, 0, vw, vh);
+
+      /* Surface mask — same as bubbles/shimmerfish */
+      var surfaceOnScreen = vh * 0.66 - window.scrollY;
+      var fadeStart = Math.max(0, surfaceOnScreen).toFixed(0);
+      var fadeEnd = (Math.max(0, surfaceOnScreen) + 100).toFixed(0);
+      var mask = 'linear-gradient(to bottom, transparent ' + fadeStart + 'px, black ' + fadeEnd + 'px)';
+      if (mask !== lastCreatureMask) {
+        creatureCanvas.style.maskImage = mask;
+        creatureCanvas.style.webkitMaskImage = mask;
+        lastCreatureMask = mask;
+      }
+
+      creatureCtx.save(); updateEels(depth, now); creatureCtx.restore();
+      creatureCtx.save(); updateDarkmaws(depth, now); creatureCtx.restore();
+      creatureCtx.save(); updateGlowspirals(depth, now); creatureCtx.restore();
+      creatureCtx.save(); updateThoughtwater(depth, now); creatureCtx.restore();
+      creatureCtx.save(); updateBlooms(depth, now); creatureCtx.restore();
+
+      creatureAnimId = requestAnimationFrame(creatureLoop);
+    }
+    creatureAnimId = requestAnimationFrame(creatureLoop);
   }
 
   /* Phase 7: Abyss unknown — underwater distortion on the "??????" heading.
@@ -1217,6 +1948,98 @@ document$.subscribe(function () {
         }
       });
     })();
+  }
+
+  /* Predation system — any DOM creature can be eaten. Works on both
+     dive and ecology pages. Wrappers (chains/clusters/siphons) get
+     sequential wink-out; individual elements vanish instantly. */
+  var eatTimers = [];
+  var eatCheckInterval = null;
+  if (!reducedMotion && layers.length > 0) {
+    var nextEatTimes = [];
+    for (var ei = 0; ei < layers.length; ei++) {
+      nextEatTimes.push(Date.now() + rand(3000, 10000));
+    }
+
+    /* Fade out an element — cancel its animations first for the "lights out" look */
+    function eatElement(el, duration) {
+      var anims = el.getAnimations ? el.getAnimations() : [];
+      for (var a = 0; a < anims.length; a++) anims[a].cancel();
+      el.style.transition = 'opacity ' + duration + 'ms ease-out';
+      el.style.opacity = '0';
+    }
+
+    /* Respawn a fresh replacement creature after a delay */
+    function scheduleRespawn(layerEl, pal, deadEl, delay) {
+      var tid = setTimeout(function() {
+        if (deadEl.parentNode) deadEl.parentNode.removeChild(deadEl);
+        /* Spawn one fresh replacement — particles are the simplest and most
+           versatile stand-in regardless of original creature type */
+        var dot = document.createElement('div');
+        var size = rand(2, 8);
+        var alpha = rand(0.3, 0.8);
+        var blur = rand(2, 10);
+        var color = pick(pal);
+        dot.style.cssText =
+          'position:absolute;border-radius:50%;' +
+          'left:' + rand(0, vw).toFixed(0) + 'px;' +
+          'top:' + rand(0, vh).toFixed(0) + 'px;' +
+          'width:' + size.toFixed(1) + 'px;height:' + size.toFixed(1) + 'px;' +
+          'background:' + rgba(color, alpha) + ';' +
+          'box-shadow:0 0 ' + blur.toFixed(0) + 'px ' + rgba(color, alpha * 0.7) + ';' +
+          'opacity:0;transition:opacity 2s ease-in;';
+        layerEl.appendChild(dot);
+        /* Fade in */
+        requestAnimationFrame(function() { dot.style.opacity = '1'; });
+        var dr = rand(20, 50);
+        dot.animate([
+          { translate: '0 0' },
+          { translate: rand(-dr, dr).toFixed(0) + 'px ' + rand(-dr, dr).toFixed(0) + 'px' },
+          { translate: rand(-dr, dr).toFixed(0) + 'px ' + rand(-dr, dr).toFixed(0) + 'px' },
+          { translate: '0 0' }
+        ], { duration: rand(10000, 22000), iterations: Infinity, easing: 'ease-in-out' });
+        dot.animate([
+          { opacity: alpha * 0.3, scale: '0.8' },
+          { opacity: Math.min(alpha * 1.5, 0.9), scale: String(1 + rand(0.1, 0.4)) },
+          { opacity: alpha * 0.3, scale: '0.8' }
+        ], { duration: rand(2000, 5000), iterations: Infinity, easing: 'ease-in-out' });
+      }, delay);
+      eatTimers.push(tid);
+    }
+
+    function checkEat() {
+      var now = Date.now();
+      for (var li = 0; li < layers.length; li++) {
+        if (now < nextEatTimes[li]) continue;
+        /* Only eat from visible layers */
+        if (layers[li].hidden) continue;
+        nextEatTimes[li] = now + rand(3000, 10000);
+
+        var container = layers[li].el;
+        var children = container.children;
+        if (children.length < 2) continue;
+        var target = children[randInt(0, children.length - 1)];
+
+        var isWrapper = target.children.length > 0;
+        if (isWrapper) {
+          /* Sequential wink-out — each child fades with a stagger */
+          var dots = target.children;
+          var stagger = rand(30, 60);
+          for (var d = 0; d < dots.length; d++) {
+            (function(el, delay) {
+              var tid = setTimeout(function() { eatElement(el, 50); }, delay);
+              eatTimers.push(tid);
+            })(dots[d], d * stagger);
+          }
+          scheduleRespawn(container, layers[li].pal, target, rand(10000, 30000) + dots.length * stagger);
+        } else {
+          eatElement(target, 80);
+          scheduleRespawn(container, layers[li].pal, target, rand(10000, 30000));
+        }
+      }
+    }
+
+    eatCheckInterval = setInterval(checkEat, 1000);
   }
 
   var abyssFadeZone = 300;
@@ -1428,6 +2251,8 @@ document$.subscribe(function () {
     var lastSurfaceTime = 0;
     var lastPassbyDepth = 0;
     var nextPassbyDist = 500 + Math.random() * 1000;
+    var lastAmbientPassby = Date.now();
+    var nextAmbientInterval = rand(8000, 20000);
     var prevDepth = 0;
 
     /* Lazy load flags */
@@ -1561,54 +2386,57 @@ document$.subscribe(function () {
         playBuffer('surfacing' + sIdx, masterGain);
       }
 
-      /* Passby creatures — weighted random from overlapping depth pools */
-      var scrollingDown = depth > prevDepth;
-      if (scrollingDown) {
-        var depthDelta = depth - lastPassbyDepth;
-        if (depthDelta >= nextPassbyDist && depth > 200) {
-          /* Build weighted list of eligible pools at this depth */
-          var eligible = [];
-          var totalWeight = 0;
-          for (var pi = 0; pi < passbyPools.length; pi++) {
-            var pp = passbyPools[pi];
-            if (pp.count < 1 || depth < pp.min || depth > pp.max) continue;
-            /* Weight peaks at midpoint of range, falls to 0.1 at edges */
-            var mid = (pp.min + pp.max) / 2;
-            var half = (pp.max - pp.min) / 2;
-            var w = 0.1 + 0.9 * (1 - Math.abs(depth - mid) / half);
-            eligible.push({ pool: pp, weight: w });
-            totalWeight += w;
-          }
-          if (eligible.length > 0) {
-            lastPassbyDepth = depth;
-            nextPassbyDist = 500 + Math.random() * 1000;
-            /* Weighted random pick */
-            var roll = Math.random() * totalWeight;
-            var picked = eligible[0].pool;
-            for (var ei = 0; ei < eligible.length; ei++) {
-              roll -= eligible[ei].weight;
-              if (roll <= 0) { picked = eligible[ei].pool; break; }
-            }
-            var key = 'Passby' + picked.id + randInt(1, picked.count);
-            var buf = buffers[key];
-            if (buf) {
-              var src = ctx.createBufferSource();
-              src.buffer = buf;
-              src.detune.value = (Math.random() - 0.5) * 600;
-              var passbyVol = ctx.createGain();
-              passbyVol.gain.value = 0.5 + Math.random() * 0.5;
-              var pan = ctx.createStereoPanner();
-              pan.pan.value = -0.8 + Math.random() * 1.6;
-              src.connect(passbyVol);
-              passbyVol.connect(pan);
-              pan.connect(masterGain);
-              src.start();
-              src.onended = function() { passbyVol.disconnect(); pan.disconnect(); };
-            }
-          }
+      /* Passby creatures — plays on both scroll directions + ambient random triggers */
+      function tryPassby() {
+        if (depth < 200) return;
+        var eligible = [];
+        var totalWeight = 0;
+        for (var pi = 0; pi < passbyPools.length; pi++) {
+          var pp = passbyPools[pi];
+          if (pp.count < 1 || depth < pp.min || depth > pp.max) continue;
+          var mid = (pp.min + pp.max) / 2;
+          var half = (pp.max - pp.min) / 2;
+          var w = 0.1 + 0.9 * (1 - Math.abs(depth - mid) / half);
+          eligible.push({ pool: pp, weight: w });
+          totalWeight += w;
         }
-      } else {
+        if (eligible.length === 0) return;
+        var roll = Math.random() * totalWeight;
+        var picked = eligible[0].pool;
+        for (var ei = 0; ei < eligible.length; ei++) {
+          roll -= eligible[ei].weight;
+          if (roll <= 0) { picked = eligible[ei].pool; break; }
+        }
+        var key = 'Passby' + picked.id + randInt(1, picked.count);
+        var buf = buffers[key];
+        if (!buf) return;
+        var src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.detune.value = (Math.random() - 0.5) * 600;
+        var passbyVol = ctx.createGain();
+        passbyVol.gain.value = 0.5 + Math.random() * 0.5;
+        var pan = ctx.createStereoPanner();
+        pan.pan.value = -0.8 + Math.random() * 1.6;
+        src.connect(passbyVol);
+        passbyVol.connect(pan);
+        pan.connect(masterGain);
+        src.start();
+        src.onended = function() { passbyVol.disconnect(); pan.disconnect(); };
+      }
+
+      /* Scroll-triggered passbys — either direction */
+      var depthDelta = Math.abs(depth - lastPassbyDepth);
+      if (depthDelta >= nextPassbyDist) {
         lastPassbyDepth = depth;
+        nextPassbyDist = 500 + Math.random() * 1000;
+        tryPassby();
+      }
+
+      /* Ambient passbys — the ocean is always alive, even when you stop scrolling */
+      if (Date.now() - lastAmbientPassby > nextAmbientInterval) {
+        lastAmbientPassby = Date.now();
+        nextAmbientInterval = rand(8000, 20000);
+        tryPassby();
       }
 
       prevDepth = depth;
@@ -1897,6 +2725,10 @@ document$.subscribe(function () {
     if (fishMouseHandler) document.removeEventListener('mousemove', fishMouseHandler);
     if (fishCanvas) fishCanvas.remove();
     if (abyssUnknownAnimId) cancelAnimationFrame(abyssUnknownAnimId);
+    if (creatureAnimId) cancelAnimationFrame(creatureAnimId);
+    if (creatureCanvas) creatureCanvas.remove();
+    if (eatCheckInterval) clearInterval(eatCheckInterval);
+    for (var et = 0; et < eatTimers.length; et++) clearTimeout(eatTimers[et]);
     /* Restore Back to Top button text */
     if (topBtn) {
       topBtn.childNodes.forEach(function (n) {
