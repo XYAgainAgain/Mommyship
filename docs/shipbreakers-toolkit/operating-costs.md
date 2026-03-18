@@ -68,7 +68,7 @@ For crews without ships, Debt could instead represent a sum they owe a loan shar
 It's not all bad! When a crew has Debt, their creditors pay for the following costs:
 
 - Fuel and Warp Cores  
-- Basic repairs and maintenance  
+- Basic Minor and Major Repairs and maintenance  
 - Contractor salaries (but not signing bonuses)
 
 Additionally, more Debt can be taken on by the crew for various benefits:

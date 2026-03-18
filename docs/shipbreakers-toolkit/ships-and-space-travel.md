@@ -175,11 +175,11 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Reinforced Plating** | 4.5mcr | 1 month | Grants +1 Maximum Hull. |
 | **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check.  If you roll a Critical Success on your Battle Check, the target Critical Fails their next Thrusters Check. |
 | **WEAPON HARDPOINTS** | ———— | ———— | ———————————— |
-| **Autocannon** | 4.5mcr | 2 weeks | Grants +10 to Battle. Kinetic ballistic weaponry. |
+| **Autocannon** | 4mcr | 2 weeks | Grants +10 to Battle. Kinetic ballistic weaponry. |
 |  **Extra Hardpoint** | 3mcr | 2 weeks | Grants +1 Hardpoint. Each additional Hardpoint costs 2× the previous. |
-| **Heavy Missile Launcher** | 6mcr | 2 weeks | Grants +15 to Battle. Grants +1 MDMG. |
+| **Heavy Missile Launcher** | 6mcr | 2 weeks | Grants +15 to Battle. Grants +1 MDMG. One big explosive. |
 | **Laser Cannon** | 1.5mcr | 2 weeks | Grants +5 to Battle. Powerful laser beam used for scrapping hulks and cutting asteroids. |
-| **Light Missile Launcher** | 4.5mcr | 2 weeks | Grants +15 to Battle. |
+| **Light Missile Launcher** | 5mcr | 2 weeks | Grants +15 to Battle. Many smaller explosives. |
 | **Particle Beam** | 2mcr | 2 weeks | Grants +5 to Battle. Enemy must make a Systems Check or increase their Radiation Level by 1. |
 | **Railgun** | 7mcr | 2 weeks | Grants +15 to Battle. Can be fired at Detection Range. |
 
