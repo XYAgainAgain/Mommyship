@@ -5,3 +5,4 @@ docs/*.canvas
 .dev/
 .claude/
 CLAUDE.md
+.superpowers/
