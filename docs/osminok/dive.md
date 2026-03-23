@@ -3,6 +3,9 @@ hide:
   - navigation
 search:
   exclude: true
+# DO NOT add a title here. The missing title is intentional — the page's
+# depth-based structure, scroll behavior, and visual design all depend on
+# the first heading being ### 0m. Adding a title breaks the dive aesthetic.
 ---
 
 <div class="osminok-ocean osminok-dive" markdown>

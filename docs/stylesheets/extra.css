@@ -16,6 +16,10 @@
 .md-footer-meta {
   height: 100%;
   padding: 0;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-md-color-scheme="slate"] .md-footer-meta {
   background: rgba(13, 13, 26, 0.7);
 }
 
@@ -30,6 +34,10 @@
   text-align: center;
   padding: 0.6rem 0;
   font-size: 0.7rem;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+[data-md-color-scheme="slate"] .shortcut-legend {
   color: rgba(255, 250, 255, 0.45);
 }
 
@@ -43,12 +51,19 @@
   font-family: inherit;
   font-size: 0.85em;
   line-height: 1;
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  vertical-align: baseline;
+}
+
+[data-md-color-scheme="slate"] .shortcut-legend kbd {
   color: #fffaff;
   background: rgba(255, 250, 255, 0.1);
-  border: 1px solid rgba(255, 250, 255, 0.2);
-  border-radius: 3px;
+  border-color: rgba(255, 250, 255, 0.2);
   box-shadow: 0 1px 0 rgba(255, 250, 255, 0.15);
-  vertical-align: baseline;
 }
 
 @font-face {
@@ -85,7 +100,8 @@
   --md-default-fg-color--lightest: rgba(0, 0, 0, 0.12);
 }
 
-[data-md-color-scheme="slate"] {
+/* Doubled attribute selector beats Material's palette CSS (loads after extra.css) */
+[data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
   --md-hue: 280;
   --md-default-bg-color: #0d0d1a;
   --md-default-fg-color: #fffaff;
@@ -171,6 +187,11 @@
   padding: 0.3rem 0.5rem;
   transition: background-color 0.15s ease;
   outline-color: var(--md-accent-fg-color);
+}
+
+.text-size-rocker__btn:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: -2px;
 }
 
 .text-size-rocker__btn:hover {
@@ -743,6 +764,15 @@ body:has(.homepage-hero) #starfield {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .md-typeset h1,
+  .md-header__topic .md-ellipsis {
+    animation: none !important;
+  }
+
+  .homepage-hero::after {
+    animation: none !important;
+  }
+
   #starfield .stars-layer {
     animation: none !important;
     transform: scale(1.2);

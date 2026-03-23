@@ -89,7 +89,8 @@ for (let i = 0; i < 3; i++) {
 }
 
 function pickColor(rng, table) {
-  const idx = table.cumulative.findIndex(w => rng.next() <= w);
+  const r = rng.next();
+  const idx = table.cumulative.findIndex(w => r <= w);
   return table.palette[Math.max(0, idx)];
 }
 

@@ -132,7 +132,6 @@ body:has(.osminok-ocean) .md-typeset h2,
 body:has(.osminok-ocean) .md-typeset h3,
 body:has(.osminok-ocean) .md-typeset h4 {
   font-family: "Gabriela", "Capriola", serif;
-  font-size: 115%;
 }
 
 /* Stacking context so waves (z-index: -1) sit behind text */
@@ -1239,8 +1238,13 @@ body:has(.dive-overlay:not(.dive-overlay--hidden)) {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  body:has(.osminok-ocean) .md-typeset h1,
+  body:has(.osminok-ocean) .md-typeset h2 {
+    animation: none !important;
+  }
+
   .wave,
-  .abyss-parallax > use {
+  .abyss-parallax > path {
     animation: none !important;
   }
 

@@ -192,7 +192,7 @@ After any Ship Round where an enemy takes MDMG, they must make a Morale Check. T
 
 ### *2.7.6 AFTER BATTLE REPORT*
 
-After any violent confrontation where your ship takes MDMG, make a Systems Check. On a failure, roll on the Maintenance Issues table**.** On a Critical Failure, roll on the table twice.
+After any violent confrontation where your ship takes MDMG, make a Systems Check. On a failure, roll on the Maintenance Issues table. On a Critical Failure, roll on the table twice.
 
 ## 2.8 REPAIRING YOUR SHIP
 

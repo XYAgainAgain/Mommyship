@@ -45,6 +45,10 @@ async function init() {
   const compositor = await createCompositor(renderer);
   const audio = createAudio(cam.camera);
 
+  /* Catch accidental Ctrl+W — browsers block preventDefault on it,
+     but beforeunload triggers a "Leave site?" confirmation dialog */
+  window.addEventListener('beforeunload', e => { e.preventDefault(); });
+
   window.addEventListener('resize', () => {
     cam.resize();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -55,7 +59,7 @@ async function init() {
 
   function animate() {
     requestAnimationFrame(animate);
-    const delta = clock.getDelta();
+    const delta = Math.min(clock.getDelta(), 0.1);
     const elapsed = clock.getElapsedTime();
 
     cam.update(delta);
@@ -80,4 +84,8 @@ async function init() {
   animate();
 }
 
-init();
+init().catch(err => {
+  console.error('Galaxy init failed:', err);
+  const el = document.querySelector('.experience');
+  if (el) el.textContent = 'Failed to load galaxy map. Check console for details.';
+});

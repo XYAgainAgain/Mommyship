@@ -156,6 +156,15 @@ function handleNavBottom() {
   window.scrollTo({ top: pos - headerH, behavior: "auto" });
 }
 
+var scrollListenerBound = false;
+var scrollTicking = false;
+
+function onScrollThrottled() {
+  if (scrollTicking) return;
+  scrollTicking = true;
+  requestAnimationFrame(function() { updateCurrentTocItem(); scrollTicking = false; });
+}
+
 var keyboardShortcutsBound = false;
 
 function bindKeyboardShortcuts() {
@@ -672,7 +681,10 @@ function applyQuickGuideWidth() {
 
 document$.subscribe(function() {
   updateCurrentTocItem();
-  window.addEventListener("scroll", updateCurrentTocItem, { passive: true });
+  if (!scrollListenerBound) {
+    scrollListenerBound = true;
+    window.addEventListener("scroll", onScrollThrottled, { passive: true });
+  }
   applyTextScale(getTextScale());
   bindTextSizeRocker();
   bindKeyboardShortcuts();

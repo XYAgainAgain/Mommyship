@@ -110,6 +110,7 @@ document$.subscribe(function () {
   /* Landing page — swirly stars canvas */
   var isLanding = !!document.querySelector('.osminok-landing');
   var starsAnimId = null;
+  var flashTimers = [];
   if (isLanding && !reducedMotion) {
     (function () {
       var c = document.querySelector('.swirly-stars');
@@ -217,13 +218,13 @@ document$.subscribe(function () {
         var blur = randInt(20, 45);
         ring.style.boxShadow = '0 0 ' + blur + 'px ' + spread + 'px ' + col;
         ring.style.transition = 'box-shadow 0.08s ease-in';
-        setTimeout(function () {
+        flashTimers.push(setTimeout(function () {
           ring.style.boxShadow = baseShadow;
           ring.style.transition = 'box-shadow 0.5s ease-out';
-        }, randInt(60, 150));
-        setTimeout(flashRing, randInt(800, 3500));
+        }, randInt(60, 150)));
+        flashTimers.push(setTimeout(flashRing, randInt(800, 3500)));
       }
-      setTimeout(flashRing, randInt(500, 2000));
+      flashTimers.push(setTimeout(flashRing, randInt(500, 2000)));
     })();
   }
 
@@ -2472,7 +2473,8 @@ document$.subscribe(function () {
 
     if (overlay && diveBtn && volSlider) {
       /* Read saved volume */
-      var savedVol = localStorage.getItem('mommyship-dive-volume');
+      try { var savedVol = localStorage.getItem('mommyship-dive-volume'); }
+      catch (e) { var savedVol = null; }
       if (savedVol !== null) volSlider.value = savedVol;
 
       /* Pre-fetch raw audio bytes while user reads overlay (Batch 1).
@@ -2498,7 +2500,8 @@ document$.subscribe(function () {
         }
 
         var vol = parseInt(volSlider.value, 10) / 100;
-        localStorage.setItem('mommyship-dive-volume', volSlider.value);
+        try { localStorage.setItem('mommyship-dive-volume', volSlider.value); }
+        catch (e) { /* private browsing */ }
 
         diveAudio = initDiveAudio(vol);
 
@@ -2548,7 +2551,8 @@ document$.subscribe(function () {
           hSlider.addEventListener('input', function() {
             var v = parseInt(hSlider.value, 10) / 100;
             if (diveAudio) diveAudio.setVolume(v);
-            localStorage.setItem('mommyship-dive-volume', hSlider.value);
+            try { localStorage.setItem('mommyship-dive-volume', hSlider.value); }
+            catch (e) { /* private browsing */ }
           });
         }
       });
@@ -2712,6 +2716,7 @@ document$.subscribe(function () {
       header.style.removeProperty('-webkit-backdrop-filter');
     }
     if (starsAnimId) cancelAnimationFrame(starsAnimId);
+    for (var ft = 0; ft < flashTimers.length; ft++) clearTimeout(flashTimers[ft]);
     if (stormAnimId) cancelAnimationFrame(stormAnimId);
     if (stormResizeHandler) window.removeEventListener('resize', stormResizeHandler);
     if (diveResizeHandler) window.removeEventListener('resize', diveResizeHandler);

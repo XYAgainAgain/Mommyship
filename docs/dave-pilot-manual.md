@@ -28,7 +28,7 @@ While piloting D.A.V.E., the pilot uses their own Stats and Skills to operate it
 </div>
 </div>
 
-### **DESIGNING YOUR D.A.V.E.**
+### DESIGNING YOUR D.A.V.E.
 
 D.A.V.E. has four customizable components: Handhelds, Softpoints™, Utilities, and Paint Jobs. All costs listed are in addition to the base unit construction cost of 20mcr.
 
