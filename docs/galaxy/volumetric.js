@@ -308,7 +308,7 @@ export async function createVolumetric(scene, renderer) {
     }
   }
 
-  function update(delta, elapsed, rotationTime, camera) {
+  function update(delta, elapsed, rotationTime, camera, cinemaMode) {
     if (!active) return;
 
     for (const v of volumes) {
@@ -330,7 +330,15 @@ export async function createVolumetric(scene, renderer) {
 
       v.sphere.material.uniforms.uTime.value = elapsed;
       v.sphere.material.uniforms.uCameraPos.value.copy(camera.position);
-      v.sphere.material.uniforms.uCameraDist.value = dist;
+      v.sphere.material.uniforms.uCameraDist.value = cinemaMode ? 0 : dist;
+
+      /* Cinema mode: full raymarch on every volume, no quad fallback */
+      if (cinemaMode) {
+        v.sphere.material.uniforms.uOpacity.value = 1.0;
+        if (!v.boxInScene) { scene.add(v.sphere); v.boxInScene = true; }
+        if (v.quadInScene) { scene.remove(v.quad); v.quadInScene = false; }
+        continue;
+      }
 
       if (dist < LOD_FULL) {
         v.sphere.material.uniforms.uOpacity.value = 1.0;

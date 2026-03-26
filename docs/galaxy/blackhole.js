@@ -155,13 +155,17 @@ export async function createBlackHole(scene, renderer) {
     fragmentShader: `
       precision highp float;
       uniform float uOpacity;
-      uniform vec3 uInnerColor;
-      uniform vec3 uMidColor;
-      uniform vec3 uOuterColor;
       varying float vRadial;
       void main() {
-        vec3 color = mix(uInnerColor, uMidColor, smoothstep(0.0, 0.4, vRadial));
-        color = mix(color, uOuterColor, smoothstep(0.4, 1.0, vRadial));
+        vec3 c0 = vec3(1.0, 0.90, 0.97);
+        vec3 c1 = vec3(0.95, 0.30, 0.60);
+        vec3 c2 = vec3(0.12, 0.30, 0.55);
+        vec3 c3 = vec3(0.51, 0.20, 0.67);
+        vec3 c4 = vec3(0.80, 0.65, 0.30);
+        vec3 color = mix(c0, c1, smoothstep(0.0, 0.15, vRadial));
+        color = mix(color, c2, smoothstep(0.15, 0.35, vRadial));
+        color = mix(color, c3, smoothstep(0.35, 0.60, vRadial));
+        color = mix(color, c4, smoothstep(0.60, 0.90, vRadial));
         float edgeFade = smoothstep(0.0, 0.15, vRadial) * smoothstep(1.0, 0.7, vRadial);
         gl_FragColor = vec4(color, edgeFade * uOpacity);
       }

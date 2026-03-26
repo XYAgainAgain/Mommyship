@@ -31,6 +31,16 @@ export function createCamera(renderer) {
   controls.rotateSpeed = 0.5;
   controls.panSpeed = 1.0;
 
+  let museMode = false;
+  let museAnim = null;
+  let museExit = null;
+  let preMuse = null;
+
+  /* 120 BPM, audio at 2730ms — land one quarter note (500ms) before the downbeat */
+  const SUCK_DURATION = 2230;
+  const SUCK_TARGET_DIST = 1;
+  const SUCK_REVOLUTIONS = 1.5;
+
   /* WASD keyboard movement */
   const keys = {};
   window.addEventListener('keydown', e => {
@@ -57,11 +67,20 @@ export function createCamera(renderer) {
   }
 
   function handleKeyboard(delta) {
+    /* Q/E orbit works in both normal and Muse Mode */
+    const rotateDir = (keys['KeyE'] ? 1 : 0) - (keys['KeyQ'] ? 1 : 0);
+    if (rotateDir) {
+      const angle = rotateDir * ROTATE_SPEED_QE * delta;
+      const offset = camera.position.clone().sub(controls.target);
+      offset.applyAxisAngle(camera.up, angle);
+      camera.position.copy(controls.target).add(offset);
+    }
+
+    if (museMode) return;
+
     const sprint = keys['ShiftLeft'] || keys['ShiftRight'] ? 1.75 : 1.0;
     const speed = PAN_SPEED_WASD * delta * sprint;
 
-    /* WASD always pans on the galactic plane (XZ). Forward = look direction
-       projected to XZ; at the poles, fall back to orbit azimuth (Homeworld-style) */
     camera.getWorldDirection(_forward);
     _forward.y = 0;
     if (_forward.lengthSq() < 0.001) {
@@ -84,21 +103,88 @@ export function createCamera(renderer) {
       camera.position.add(_move);
       controls.target.add(_move);
     }
-
-    /* Q/E orbit around the target (yaw rotation on the galactic plane) */
-    const rotateDir = (keys['KeyE'] ? 1 : 0) - (keys['KeyQ'] ? 1 : 0);
-    if (rotateDir) {
-      const angle = rotateDir * ROTATE_SPEED_QE * delta;
-      const offset = camera.position.clone().sub(controls.target);
-      offset.applyAxisAngle(camera.up, angle);
-      camera.position.copy(controls.target).add(offset);
-    }
   }
 
+  const _suckSph = new THREE.Spherical();
+
   function update(delta) {
+    if (museAnim) {
+      const raw = Math.min(1, (performance.now() - museAnim.start) / SUCK_DURATION);
+
+      /* Linear zoom — smooth constant pull toward the singularity */
+      const r = museAnim.startR + (SUCK_TARGET_DIST - museAnim.startR) * raw;
+      /* Quadratic spin — angular velocity ramps up as you fall deeper */
+      const spin = raw * raw * SUCK_REVOLUTIONS * Math.PI * 2;
+      const theta = museAnim.startTheta - spin;
+
+      _suckSph.set(r, museAnim.startPhi, theta);
+      camera.position.setFromSpherical(_suckSph);
+      controls.target.set(0, 0, 0);
+
+      if (raw >= 1) {
+        museAnim = null;
+        controls.enabled = true;
+        controls.minDistance = 0.5;
+        controls.maxDistance = 40;
+      }
+    }
+
+    if (museExit) {
+      const raw = Math.min(1, (performance.now() - museExit.start) / 1000);
+      const t = raw * (2 - raw);
+      camera.position.lerpVectors(museExit.from, museExit.to, t);
+      controls.target.lerpVectors(museExit.fromTarget, museExit.toTarget, t);
+      if (raw >= 1) {
+        museExit = null;
+        controls.enabled = true;
+      }
+    }
+
+    if (museMode) controls.target.set(0, 0, 0);
+
     handleKeyboard(delta);
     controls.update();
     enforceBounds();
+  }
+
+  function setMuseMode(enabled) {
+    museMode = enabled;
+    if (enabled) {
+      preMuse = {
+        pos: camera.position.clone(),
+        target: controls.target.clone(),
+        minDist: controls.minDistance,
+        maxDist: controls.maxDistance
+      };
+      controls.enablePan = false;
+      /* Disable controls entirely during the spiral so they don't clamp mid-animation */
+      controls.enabled = false;
+
+      const sph = new THREE.Spherical().setFromVector3(camera.position);
+      museAnim = {
+        startR: sph.radius,
+        startPhi: sph.phi,
+        startTheta: sph.theta,
+        start: performance.now()
+      };
+    } else {
+      museAnim = null;
+      controls.enablePan = true;
+      controls.minDistance = preMuse ? preMuse.minDist : 0;
+      controls.maxDistance = preMuse ? preMuse.maxDist : Infinity;
+
+      if (preMuse) {
+        controls.enabled = false;
+        museExit = {
+          from: camera.position.clone(),
+          to: preMuse.pos,
+          fromTarget: controls.target.clone(),
+          toTarget: preMuse.target,
+          start: performance.now()
+        };
+        preMuse = null;
+      }
+    }
   }
 
   function resize() {
@@ -106,5 +192,5 @@ export function createCamera(renderer) {
     camera.updateProjectionMatrix();
   }
 
-  return { camera, controls, update, resize };
+  return { camera, controls, update, resize, setMuseMode };
 }

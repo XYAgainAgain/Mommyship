@@ -61,6 +61,60 @@ canvas { display: block; }
   gap: 0.4rem;
 }
 
+.gx-controls-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.gx-controls-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gx-cinema-toggle {
+  display: none;
+}
+
+.gx-cinema-toggle.visible {
+  display: flex;
+}
+
+.gx-volume {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.2rem;
+  border-radius: 1rem;
+  background: rgba(13, 13, 26, 0.4);
+  filter: drop-shadow(0 0 6px rgba(131, 50, 172, 0.3));
+}
+
+.gx-volume.visible {
+  display: flex;
+}
+
+.gx-volume input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 4rem;
+  width: 3px;
+  accent-color: var(--gx-accent);
+  cursor: pointer;
+}
+
+.cinema-active .fly-home,
+.cinema-active .gx-controls,
+.cinema-active .gx-hud {
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.cinema-active .fly-home:hover,
+.cinema-active .gx-controls:hover {
+  opacity: 1;
+}
+
 .gx-toggle {
   display: flex;
   align-items: center;

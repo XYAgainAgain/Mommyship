@@ -28,16 +28,21 @@ export function createAudio(camera) {
     window.addEventListener(evt, initOnGesture, { once: true });
   });
 
+  var externalGain = 1.0;
+
+  function setGain(v) {
+    externalGain = v;
+  }
+
   function update() {
     if (!ctx || ctx.state === 'suspended') return;
     var dist = camera.position.length();
     var t = Math.max(0, Math.min(1, (dist - MIN_DIST) / (MAX_DIST - MIN_DIST)));
-    /* Quadratic falloff — loud near hole, fades quickly at mid-range */
     var vol = MIN_VOL + (MAX_VOL - MIN_VOL) * Math.pow(1 - t, 2);
-    masterGain.gain.value = vol;
+    masterGain.gain.value = vol * externalGain;
   }
 
-  return { update };
+  return { update, setGain };
 }
 
 function createLoopTrack(ctx, src, outputNode) {

@@ -13,7 +13,7 @@ void main() {
   vBrightness = aBrightness;
 
   /* Rigid-body spin + core boost that decays before reaching arm territory */
-  float coreBoost = 0.18 * exp(-aRadius * 0.05);
+  float coreBoost = 0.30 * exp(-aRadius * 0.05);
   float angularSpeed = 0.06 + 0.008 / (aRadius + 60.0) + coreBoost;
   float angle = uTime * angularSpeed;
   float cosA = cos(angle);
