@@ -37,7 +37,6 @@ export async function bakeNoiseTexture(renderer) {
   rt.texture.wrapS = THREE.RepeatWrapping;
   rt.texture.wrapT = THREE.RepeatWrapping;
 
-  /* Clean up bake resources */
   mat.dispose();
   quad.geometry.dispose();
 

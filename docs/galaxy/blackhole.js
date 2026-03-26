@@ -52,11 +52,11 @@ export async function createBlackHole(scene, renderer) {
   discMesh.renderOrder = 2;
   group.add(discMesh);
 
-  const positions = new Float32Array(PARTICLE_COUNT);
+  const progresses = new Float32Array(PARTICLE_COUNT);
   const pSizes    = new Float32Array(PARTICLE_COUNT);
   const pRandoms  = new Float32Array(PARTICLE_COUNT);
   for (let i = 0; i < PARTICLE_COUNT; i++) {
-    positions[i] = Math.random();
+    progresses[i] = Math.random();
     pSizes[i]    = Math.random();
     pRandoms[i]  = Math.random();
   }
@@ -64,7 +64,7 @@ export async function createBlackHole(scene, renderer) {
   /* Dummy position attribute — Three.js requires it for draw calls.
      Real orbit positions are computed in the vertex shader from aProgress. */
   particleGeo.setAttribute('position',  new THREE.BufferAttribute(new Float32Array(PARTICLE_COUNT * 3), 3));
-  particleGeo.setAttribute('aProgress', new THREE.BufferAttribute(positions, 1));
+  particleGeo.setAttribute('aProgress', new THREE.BufferAttribute(progresses, 1));
   particleGeo.setAttribute('aSize',     new THREE.BufferAttribute(pSizes, 1));
   particleGeo.setAttribute('aRandom',   new THREE.BufferAttribute(pRandoms, 1));
 
@@ -76,8 +76,6 @@ export async function createBlackHole(scene, renderer) {
       uOpacity:    { value: 1.0 },
       uViewHeight: { value: window.innerHeight },
       uSize:       { value: 0.09 },
-      uInnerColor: { value: INNER_COLOR },
-      uOuterColor: { value: OUTER_COLOR }
     },
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -127,8 +125,7 @@ export async function createBlackHole(scene, renderer) {
   glowSprite.scale.set(28, 28, 1);
   group.add(glowSprite);
 
-  /* Opaque black disc — physically occludes stars at far LOD where lensing isn't running.
-     Fades out before compositor distortion gets strong (by lodFactor 0.4). */
+  /* Opaque black disc — occludes stars at far LOD, fades out by lodFactor 0.25 */
   const occluderGeo = new THREE.CircleGeometry(5.5, 32);
   const occluderMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
@@ -171,10 +168,7 @@ export async function createBlackHole(scene, renderer) {
       }
     `,
     uniforms: {
-      uOpacity:    { value: 1.0 },
-      uInnerColor: { value: INNER_COLOR },
-      uMidColor:   { value: MID_COLOR },
-      uOuterColor: { value: OUTER_COLOR }
+      uOpacity: { value: 1.0 }
     },
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,

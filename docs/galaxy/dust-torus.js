@@ -11,6 +11,7 @@ const TORUS_DEFS = [
     ySquash: 0.15,
     boxHalfXZ: 360, boxHalfY: 21,
     speedFraction: 0.95,
+    /* 1.0 = lightmap perfectly tracks galaxy rotation; lower = drift (outer tori are too diffuse to need exact tracking) */
     lightmapLag: 1.0,
     baseColor: new THREE.Color(0.45, 0.40, 0.30),
     densityScale: 0.7,
@@ -60,7 +61,7 @@ export async function createDustTorus(scene, renderer) {
 
   const [{ vert, frag }, volumeTex] = await Promise.all([
     loadShaderPair('dust-torus'),
-    Promise.resolve(bakeVolumeTexture({ seed: 55555, frequency: 5.0, octaves: 5 })),
+    bakeVolumeTexture({ seed: 55555, frequency: 5.0, octaves: 5 }),
   ]);
 
   const loader = new THREE.TextureLoader();

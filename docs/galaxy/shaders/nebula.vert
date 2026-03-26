@@ -21,7 +21,7 @@ void main() {
   vAngle = aAngle;
   vPhase = aPhase;
 
-  /* Same rigid+drag rotation as galaxy disk */
+  /* Differential rotation — lower coreBoost than disk stars (0.18 vs 0.30) so gas drifts slightly */
   float coreBoost = 0.18 * exp(-aRadius * 0.05);
   float angularSpeed = 0.06 + 0.008 / (aRadius + 60.0) + coreBoost;
   float angle = uTime * angularSpeed;

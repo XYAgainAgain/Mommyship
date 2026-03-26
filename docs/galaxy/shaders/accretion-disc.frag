@@ -3,9 +3,6 @@ precision highp float;
 uniform float uTime;
 uniform float uOpacity;
 uniform sampler2D uNoiseTexture;
-uniform vec3 uInnerColor;
-uniform vec3 uMidColor;
-uniform vec3 uOuterColor;
 
 varying vec2 vUv;
 

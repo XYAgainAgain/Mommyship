@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { loadShaderPair, loadShader } from './shaders.js';
 
 /* Multi-pass composition pipeline for black hole lensing.
-   When active: scene -> spaceRT, distortion planes -> distortionRT,
+   When active: scene → spaceRT, distortion planes → distortionRT,
    full-screen quad composites with UV displacement + chromatic aberration.
    When LOD = 0 (camera far away), none of this runs. */
 
@@ -106,23 +106,21 @@ export async function createCompositor(renderer) {
 
     composeMat.uniforms.uBlackHolePosition.value.copy(bhScreenPos);
     composeMat.uniforms.uDistortionStrength.value = lodFactor;
-    /* Static radius matching reference — very subtle rainbow fringe at distortion edges */
-    composeMat.uniforms.uRGBShiftRadius.value = 0.00001;
 
     /* Active plane tracks camera so lensing works from any angle */
     activePlane.lookAt(camera.position);
 
-    /* Pass 1: entire galaxy scene -> spaceRT */
+    /* Pass 1: entire galaxy scene → spaceRT */
     renderer.setRenderTarget(spaceRT);
     renderer.clear();
     renderer.render(scene, camera);
 
-    /* Pass 2: distortion planes -> distortionRT */
+    /* Pass 2: distortion planes → distortionRT */
     renderer.setRenderTarget(distortionRT);
     renderer.clear();
     renderer.render(distortionScene, camera);
 
-    /* Pass 3: composition quad -> screen */
+    /* Pass 3: composition quad → screen */
     renderer.setRenderTarget(null);
     renderer.clear();
     renderer.render(composeScene, orthoCamera);

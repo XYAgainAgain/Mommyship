@@ -41,7 +41,6 @@ export function createCamera(renderer) {
   const SUCK_TARGET_DIST = 1;
   const SUCK_REVOLUTIONS = 1.5;
 
-  /* WASD keyboard movement */
   const keys = {};
   window.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;

@@ -11,7 +11,7 @@ import { createCoreStorm } from './core-storm.js';
 import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
 
-/* Reusable vector for projecting BH position to screen space */
+/* Avoids per-frame allocation for BH screen-space projection */
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
 
@@ -125,7 +125,6 @@ async function init() {
     cam.setMuseMode(museActive);
 
     if (museActive) {
-      /* Fade drone out over ~400ms, then start Muse */
       audio.setGain(0);
       museAudio.setVolume(parseInt(museVolumeSlider.value) / 100);
       museAudio.start();
@@ -135,8 +134,7 @@ async function init() {
     }
   });
 
-  /* Catch accidental Ctrl+W — browsers block preventDefault on it,
-     but beforeunload triggers a "Leave site?" confirmation dialog */
+  /* Confirmation dialog on any navigation away — prevents accidental tab close */
   window.addEventListener('beforeunload', e => { e.preventDefault(); });
 
   window.addEventListener('resize', () => {

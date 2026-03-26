@@ -3,8 +3,6 @@
 uniform float uTime;
 uniform float uViewHeight;
 uniform float uSize;
-uniform vec3 uInnerColor;
-uniform vec3 uOuterColor;
 
 attribute float aProgress;
 attribute float aSize;

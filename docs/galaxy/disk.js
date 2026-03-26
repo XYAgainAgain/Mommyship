@@ -84,16 +84,12 @@ function angleDist(a, b) {
   return Math.abs(d);
 }
 
-function gaussRandom() {
-  return rng.gauss();
-}
-
 function smoothstep(edge0, edge1, x) {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
 }
 
-/* Arm definitions: 3 major + 6 minor (shorter, wispier, some with Y-offsets) */
+/* Arm definitions: 3 major + 12 minor (shorter, wispier, some with Y-offsets) */
 const arms = [];
 for (let i = 0; i < MAJOR_ARM_COUNT; i++) {
   arms.push({
@@ -158,7 +154,7 @@ function generateDiskParticles() {
     const spiralAngle = SPIRAL_FACTOR * Math.log(r / 10 + 1);
 
     const thetaBase = rng.next() * Math.PI * 2;
-    const thetaScatter = gaussRandom() * 0.12 * t;
+    const thetaScatter = rng.gauss() * 0.12 * t;
     const theta = thetaBase + thetaScatter;
 
     let density;
@@ -223,7 +219,7 @@ function generateDiskParticles() {
     const bulge = Math.exp(-t * 3.5);
     const sigmaY = 1.2 + 18.0 * bulge;
     const armYShift = (bestArm.yOffset || 0) * t;
-    const y = gaussRandom() * sigmaY + armYShift;
+    const y = rng.gauss() * sigmaY + armYShift;
 
     positions[placed * 3]     = r * Math.cos(theta);
     positions[placed * 3 + 1] = y;
@@ -252,7 +248,7 @@ function generateDiskParticles() {
     sizes[placed] = baseSize * Math.max(edgeFade, 0.3);
 
     let bright = 0.2 + rng.next() * 0.5;
-    if (t < CORE_FRACTION) bright *= 1.0;
+    if (t < CORE_FRACTION) { /* core brightness unchanged */ }
     else if (t < INNER_DISK_FRACTION) bright *= 0.9 - (t - CORE_FRACTION) * 0.3;
     else if (isArm) bright *= 0.85;
     else bright *= 0.55;

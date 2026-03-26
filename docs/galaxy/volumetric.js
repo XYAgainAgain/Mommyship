@@ -72,6 +72,8 @@ function angleDist(a, b) {
   return Math.abs(d);
 }
 
+/* WARNING: nebula.js mirrors this function's RNG consumption order to align billboard positions.
+   Any changes to the number or order of rng calls here MUST be replicated in nebula.js. */
 function generatePlacements(count, rng, opts) {
   const placements = [];
   let attempts = 0;
@@ -263,6 +265,7 @@ export async function createVolumetric(scene, renderer) {
     const ySquash = p.isDark ? 0.25 : 0.35;
     sphere.scale.set(p.scale, p.scale * ySquash, p.scale);
     sphere.renderOrder = p.isDark ? 0.5 : -1.5;
+    /* BackSide rendering confuses Three.js bounding sphere culling */
     sphere.frustumCulled = false;
 
     const quadMat = new THREE.ShaderMaterial({
