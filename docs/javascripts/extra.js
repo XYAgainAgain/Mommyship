@@ -698,7 +698,7 @@ document$.subscribe(function() {
   bindMassholeNav();
 });
 
-/* Header title click → Supermassive Masshole (Mommyship pages only) */
+/* Header title click → Galaxy Map (Mommyship pages only) */
 function bindMassholeNav() {
   if (document.querySelector('.osminok-ocean')) return;
   var topic = document.querySelector('.md-header__topic');
@@ -706,7 +706,7 @@ function bindMassholeNav() {
   topic.style.cursor = 'pointer';
   topic.addEventListener('click', function() {
     sessionStorage.setItem('mommyship-return-url', window.location.href);
-    window.location.href = location.pathname.replace(/[^/]*$/, '') + 'masshole.html';
+    window.location.href = location.pathname.replace(/[^/]*$/, '') + 'galaxy.html';
   });
   topic._massholebound = true;
 }

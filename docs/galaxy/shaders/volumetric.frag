@@ -67,10 +67,11 @@ void main() {
     float density = texture(uVolume, samplePos).r;
     density = smoothstep(0.35, 0.75, density);
 
-    /* Y edge fade keeps volumes flat in the disk plane */
+    /* Radial + Y edge fade: softens sphere boundary, keeps volumes flat in disk plane */
     float radialDist = length(pos * 2.0);
+    float radialFade = 1.0 - smoothstep(0.5, 1.0, radialDist);
     float yEdge = 1.0 - smoothstep(0.3, 0.5, abs(pos.y * 2.0));
-    density *= yEdge;
+    density *= radialFade * yEdge;
 
     density *= uDensity;
 

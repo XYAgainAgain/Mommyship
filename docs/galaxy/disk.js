@@ -150,6 +150,7 @@ function generateDiskParticles() {
     attempts++;
 
     const r = GALAXY_RADIUS * Math.pow(rng.next(), 0.45);
+    if (r < 35) continue;
     const t = r / GALAXY_RADIUS;
 
     /* Pre-apply spiral offset so arms are spiral-shaped at t=0.

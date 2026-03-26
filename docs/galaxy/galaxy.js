@@ -7,6 +7,7 @@ import { createBlackHole } from './blackhole.js';
 import { createCompositor } from './compositor.js';
 import { createAudio } from './audio.js';
 import { createVolumetric } from './volumetric.js';
+import { createCoreStorm } from './core-storm.js';
 
 /* Reusable vector for projecting BH position to screen space */
 const _bhScreen = new THREE.Vector3();
@@ -46,6 +47,7 @@ async function init() {
   const compositor = await createCompositor(renderer);
   const audio = createAudio(cam.camera);
   const volumetric = await createVolumetric(scene, renderer);
+  const coreStorm = await createCoreStorm(scene, renderer);
 
   /* Nebula toggle: both systems in memory, swap via localStorage */
   let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
@@ -115,6 +117,7 @@ async function init() {
     disk.update(delta, rotationTime);
     nebula.update(delta, rotationTime);
     volumetric.update(delta, elapsed, rotationTime, cam.camera);
+    coreStorm.update(elapsed, rotationTime);
     audio.update();
 
     const lodFactor = computeLOD(cam.camera);
