@@ -32,6 +32,7 @@ export function createCamera(renderer) {
   controls.panSpeed = 1.0;
 
   let museMode = false;
+  let trackMode = false;
   let museAnim = null;
   let museExit = null;
   let preMuse = null;
@@ -66,13 +67,29 @@ export function createCamera(renderer) {
   }
 
   function handleKeyboard(delta) {
-    /* Q/E orbit works in both normal and Muse Mode */
-    const rotateDir = (keys['KeyE'] ? 1 : 0) - (keys['KeyQ'] ? 1 : 0);
-    if (rotateDir) {
-      const angle = rotateDir * ROTATE_SPEED_QE * delta;
+    /* Horizontal orbit: Q/E always, A/D when tracking */
+    const orbitDir = (keys['KeyE'] ? 1 : 0) - (keys['KeyQ'] ? 1 : 0)
+      + (trackMode ? (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) : 0);
+    if (orbitDir) {
+      const angle = orbitDir * ROTATE_SPEED_QE * delta;
       const offset = camera.position.clone().sub(controls.target);
       offset.applyAxisAngle(camera.up, angle);
       camera.position.copy(controls.target).add(offset);
+    }
+
+    /* Vertical orbit: Space/Ctrl when tracking */
+    if (trackMode) {
+      const vertDir = (keys['Space'] ? 1 : 0)
+        - ((keys['ControlLeft'] || keys['ControlRight']) ? 1 : 0);
+      if (vertDir) {
+        const angle = vertDir * ROTATE_SPEED_QE * delta;
+        const offset = camera.position.clone().sub(controls.target);
+        _forward.crossVectors(offset, camera.up).normalize();
+        offset.applyAxisAngle(_forward, angle);
+        const polar = offset.angleTo(camera.up);
+        if (polar > 0.1 && polar < Math.PI - 0.1)
+          camera.position.copy(controls.target).add(offset);
+      }
     }
 
     if (museMode) return;
@@ -92,10 +109,14 @@ export function createCamera(renderer) {
     _move.set(0, 0, 0);
     if (keys['KeyW']) _move.add(_forward);
     if (keys['KeyS']) _move.sub(_forward);
-    if (keys['KeyD']) _move.add(_right);
-    if (keys['KeyA']) _move.sub(_right);
-    if (keys['Space']) _move.y += 1;
-    if (keys['ControlLeft'] || keys['ControlRight']) _move.y -= 1;
+    if (!trackMode) {
+      if (keys['KeyD']) _move.add(_right);
+      if (keys['KeyA']) _move.sub(_right);
+    }
+    if (!trackMode) {
+      if (keys['Space']) _move.y += 1;
+      if (keys['ControlLeft'] || keys['ControlRight']) _move.y -= 1;
+    }
 
     if (_move.lengthSq() > 0) {
       _move.normalize().multiplyScalar(speed);
@@ -191,5 +212,5 @@ export function createCamera(renderer) {
     camera.updateProjectionMatrix();
   }
 
-  return { camera, controls, update, resize, setMuseMode };
+  return { camera, controls, update, resize, setMuseMode, setTrackMode: (v) => { trackMode = v; } };
 }

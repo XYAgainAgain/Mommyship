@@ -10,6 +10,7 @@ import { createVolumetric } from './volumetric.js';
 import { createCoreStorm } from './core-storm.js';
 import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
+import { createSystems } from './systems.js';
 
 /* Avoids per-frame allocation for BH screen-space projection */
 const _bhScreen = new THREE.Vector3();
@@ -52,6 +53,8 @@ async function init() {
   const coreStorm = await createCoreStorm(scene, renderer);
   const dustTorus = await createDustTorus(scene, renderer);
 
+  const systems = await createSystems(scene, cam.camera, renderer);
+
   /* Nebula toggle: both systems in memory, swap via localStorage */
   let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
   const fancyCheckbox = document.getElementById('fancy-nebulae');
@@ -82,6 +85,7 @@ async function init() {
   cinemaCheckbox.addEventListener('change', () => {
     cinemaMode = cinemaCheckbox.checked;
     document.body.classList.toggle('cinema-active', cinemaMode);
+    systems.setClickDisabled(museActive);
   });
 
   fancyCheckbox.addEventListener('change', () => {
@@ -125,6 +129,11 @@ async function init() {
     cam.setMuseMode(museActive);
 
     if (museActive) {
+      trackedId = null;
+      trackedLastPos = null;
+      cam.controls.enablePan = true;
+      cam.setTrackMode(false);
+      systems.hideOrbits();
       audio.setGain(0);
       museAudio.setVolume(parseInt(museVolumeSlider.value) / 100);
       museAudio.start();
@@ -132,6 +141,8 @@ async function init() {
       museAudio.stop();
       audio.setGain(1);
     }
+    systems.setClickDisabled(museActive);
+    systems.setMuseActive(museActive);
   });
 
   /* Confirmation dialog on any navigation away — prevents accidental tab close */
@@ -143,7 +154,48 @@ async function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     compositor.resize();
     if (bh.resize) bh.resize();
+    systems.resize();
   });
+
+  /* Scale bar — frustum width at orbit target depth, stable and zoom-correlated */
+  const NICE_CONSTANT = 69;
+  const NICE_DISTANCES = [
+    1, 2, 5, 10, 20, 50, 69, 100, 200, 500,
+    1000, 2000, 4000, 7000, 10000, 20000, 40000, 62100
+  ];
+  const scaleBarEl = document.getElementById('scale-bar');
+  const scaleBarLine = document.getElementById('scale-bar-line');
+  const scaleBarLabel = document.getElementById('scale-bar-label');
+  let scaleBarFrame = 0;
+
+  function updateScaleBar() {
+    const dist = cam.camera.position.distanceTo(cam.controls.target);
+    const vFov = cam.camera.fov * (Math.PI / 180);
+    const visibleWidth = 2 * dist * Math.tan(vFov / 2) * cam.camera.aspect;
+    const totalLy = visibleWidth * NICE_CONSTANT;
+    const lyPerPx = totalLy / window.innerWidth;
+    const maxBarPx = window.innerWidth * 0.5;
+
+    /* Largest nice distance that fits under half the screen */
+    let bestLy = null;
+    for (let i = NICE_DISTANCES.length - 1; i >= 0; i--) {
+      if (NICE_DISTANCES[i] / lyPerPx <= maxBarPx) {
+        bestLy = NICE_DISTANCES[i];
+        break;
+      }
+    }
+
+    if (!bestLy) {
+      scaleBarEl.style.visibility = 'hidden';
+      return;
+    }
+
+    scaleBarEl.style.visibility = 'visible';
+    scaleBarLine.style.width = Math.round(bestLy / lyPerPx) + 'px';
+    scaleBarLabel.textContent = bestLy === 69
+      ? '69 ly (1 map unit)'
+      : bestLy.toLocaleString() + ' ly';
+  }
 
   /* Debug HUD — FPS + camera position */
   const hudEl = document.getElementById('gx-hud');
@@ -169,6 +221,11 @@ async function init() {
     if (!rotationPaused) rotationTime += delta;
 
     cam.update(delta);
+
+    if (++scaleBarFrame >= 10) {
+      scaleBarFrame = 0;
+      updateScaleBar();
+    }
     bg.update(elapsed, cam.camera.position);
     disk.update(delta, rotationTime);
     nebula.update(delta, rotationTime);
@@ -181,6 +238,28 @@ async function init() {
     const lodFactor = cinemaMode ? 1 : computeLOD(cam.camera);
     bh.update(elapsed, lodFactor, cam.camera);
 
+    systems.update(delta, rotationTime);
+
+    /* Camera physically follows tracked body through galactic rotation + orbits */
+    if (trackedId) {
+      const wp = systems.getBodyWorldPos(trackedId);
+      if (wp) {
+        if (trackedLastPos) {
+          cam.camera.position.x += wp.x - trackedLastPos.x;
+          cam.camera.position.y += wp.y - trackedLastPos.y;
+          cam.camera.position.z += wp.z - trackedLastPos.z;
+        }
+        cam.controls.target.set(wp.x, wp.y, wp.z);
+        trackedLastPos = { x: wp.x, y: wp.y, z: wp.z };
+      } else {
+        trackedId = null;
+        trackedLastPos = null;
+        cam.controls.enablePan = true;
+        cam.setTrackMode(false);
+        systems.hideOrbits();
+      }
+    }
+
     if (lodFactor > 0) {
       const screenPos = projectToScreen(cam.camera);
       compositor.render(scene, cam.camera, screenPos, lodFactor);
@@ -189,8 +268,48 @@ async function init() {
       renderer.clear();
       renderer.render(scene, cam.camera);
     }
+
+    /* Markers rendered post-compositor with depth occlusion */
+    renderer.setRenderTarget(null);
+    renderer.clear(false, true, false);
+    renderer.render(systems.markerScene, cam.camera);
+
+    systems.labelRenderer.render(scene, cam.camera);
   }
 
+  let trackedId = null;
+  let trackedLastPos = null;
+
+  systems.initClickDetection(renderer.domElement, (result) => {
+    if (museActive) return;
+
+    /* Right-click: track/untrack body as camera orbit center */
+    if (result.button === 2) {
+      if (result.type === 'select') {
+        trackedId = result.bodyId;
+        trackedLastPos = null;
+        cam.controls.enablePan = false;
+        cam.setTrackMode(true);
+        systems.showOrbitsForBody(result.bodyId);
+      } else {
+        trackedId = null;
+        trackedLastPos = null;
+        cam.controls.enablePan = true;
+        cam.setTrackMode(false);
+        systems.hideOrbits();
+      }
+      return;
+    }
+
+    if (cinemaMode) return;
+    if (result?.type === 'select') {
+      console.log('Selected:', result.bodyId, result.body?.name);
+    } else if (result?.type === 'deselect') {
+      console.log('Deselected');
+    }
+  });
+
+  updateScaleBar();
   animate();
 }
 

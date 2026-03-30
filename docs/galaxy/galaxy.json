@@ -1,0 +1,6005 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "name": "The Known Galaxy",
+    "lastModified": "2026-03-27T00:00:00.000Z",
+    "authors": [
+      "Sam",
+      "Jaz"
+    ]
+  },
+  "zones": {
+    "asteroid-bubble": {
+      "name": "Asteroid Bubble"
+    },
+    "core-worlds": {
+      "name": "Core Worlds"
+    },
+    "rim-east": {
+      "name": "Rim, East"
+    },
+    "rim-north": {
+      "name": "Rim, North"
+    },
+    "rim-south": {
+      "name": "Rim, South"
+    },
+    "rim-west": {
+      "name": "Rim, West"
+    }
+  },
+  "factions": {
+    "boc-bloc": {
+      "name": "BOC Bloc",
+      "color": "#e7191f"
+    },
+    "business-de-borto": {
+      "name": "Business de Borto",
+      "color": "#dd7733"
+    },
+    "cuck": {
+      "name": "C.U.C.K.",
+      "color": "#7ed957"
+    },
+    "comexo": {
+      "name": "Comexo Corp",
+      "color": "#8aceff"
+    },
+    "criminal": {
+      "name": "Criminal",
+      "color": "#aa4466"
+    },
+    "grippiani": {
+      "name": "Grippiani Enterprises",
+      "color": "#6a696b"
+    },
+    "independent": {
+      "name": "Independent",
+      "color": "#a6a6a6"
+    },
+    "neo-gio": {
+      "name": "Neo-Giovanni",
+      "color": "#35538f"
+    },
+    "shrike-co": {
+      "name": "Shrike Co.",
+      "color": "#9f2101"
+    },
+    "the-board": {
+      "name": "The Board",
+      "color": "#9966cc"
+    },
+    "the-hawke-consortium": {
+      "name": "The Hawke Consortium",
+      "color": "#cc8844"
+    },
+    "unowned": {
+      "name": "Unowned",
+      "color": "#555555"
+    }
+  },
+  "bodies": {
+    "smbh": {
+      "type": "anomaly",
+      "subtype": "black-hole",
+      "name": "The Supermassive Black Hole",
+      "description": "",
+      "notes": "",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#8332ac",
+        "size": 30,
+        "glow": 1
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "landmark"
+      ],
+      "hasFuddruckers": false
+    },
+    "broken-arm-nebula": {
+      "type": "nebula",
+      "subtype": "emission",
+      "name": "The Broken Arm Nebula",
+      "description": "Largest nebula in the galaxy that also happens to have the lowest stellar density.",
+      "notes": "",
+      "position": {
+        "x": 84,
+        "y": 0,
+        "z": -342
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#ff6b8a",
+        "size": 50,
+        "glow": 0.6
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "landmark"
+      ],
+      "hasFuddruckers": false
+    },
+    "brighton": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Brighton",
+      "description": "Commecha Station, ultra-elite rec station for the uber wealthy. Closest to Supermassive Black Hole, between Nimbus and Verdessa.",
+      "notes": "",
+      "position": {
+        "x": 40,
+        "y": 0,
+        "z": -40
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "nimbus": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Nimbus",
+      "description": "Closest to Grupp, between Supermassive Black Hole and Sapphire Fields.",
+      "notes": "",
+      "position": {
+        "x": -41,
+        "y": 0,
+        "z": -35
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "verdessa": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Verdessa",
+      "description": "Closest to Smelt Worlds, between Sublex and Gas-N-Gripe 12.",
+      "notes": "",
+      "position": {
+        "x": 105,
+        "y": 0,
+        "z": -30
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": true
+    },
+    "mornell": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Mornell",
+      "description": "Between Celebros and Oshien.",
+      "notes": "",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": 65
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "tuskan": {
+      "type": "star",
+      "subtype": "orange-dwarf",
+      "name": "Tuskan",
+      "description": "Between Oshien, Grupp, and Propheta.",
+      "notes": "",
+      "position": {
+        "x": -87,
+        "y": 0,
+        "z": 29
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1,
+        "glow": 0.5,
+        "spectralColor": "#ff8c00"
+      },
+      "spectralClass": "K",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "celebros": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Celebros",
+      "description": "Closest to Brighton, between Verdessa and Mornell.",
+      "notes": "",
+      "position": {
+        "x": 54,
+        "y": 0,
+        "z": 26
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "oshien": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Oshien",
+      "description": "Between Mornell and Tuskan.",
+      "notes": "",
+      "position": {
+        "x": -56,
+        "y": 0,
+        "z": 72
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "grupp": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Grupp",
+      "description": "Between Nimbus and Propheta.",
+      "notes": "",
+      "position": {
+        "x": -68,
+        "y": 0,
+        "z": -20
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": "core-worlds",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "sublex": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Sublex",
+      "description": "Closest to Smelt Worlds, between Verdessa and Flipsulon.",
+      "notes": "",
+      "position": {
+        "x": 89,
+        "y": 0,
+        "z": -98
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "propheta": {
+      "type": "star",
+      "subtype": "white-dwarf",
+      "name": "Propheta",
+      "description": "Executive Suite - a small ultra urban planet where the Board administration is housed. Closest to Cerulean Plains, rimward of Tuskan.",
+      "notes": "",
+      "position": {
+        "x": -132,
+        "y": 0,
+        "z": 19
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.5,
+        "glow": 0.7,
+        "spectralColor": "#e0e8ff"
+      },
+      "spectralClass": "DA",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "flipsulon": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Flipsulon",
+      "description": "Between Sapphire Fields and Smelt Worlds.",
+      "notes": "",
+      "position": {
+        "x": 21,
+        "y": 0,
+        "z": -146
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "the-hawke-consortium",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "nj12": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "NJ12",
+      "description": "Closest to Cerulean Plains, spinward of Walprug.",
+      "notes": "",
+      "position": {
+        "x": -146,
+        "y": 0,
+        "z": 109
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "walpurg": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Walpurg",
+      "description": "Closest to First Galactic War Ruin Zone, spinward of Coward's Crossing.",
+      "notes": "",
+      "position": {
+        "x": -98,
+        "y": 0,
+        "z": 146
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "mercgolia": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Mercgolia",
+      "description": "Rimward of Padania, spinward of Kipple.",
+      "notes": "",
+      "position": {
+        "x": 252,
+        "y": 0,
+        "z": 73
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "dunroid": {
+      "type": "star",
+      "subtype": "red-supergiant",
+      "name": "Dunroid",
+      "description": "Between Vopva and Plopidor. Closest Gas N Gripe 16.",
+      "notes": "",
+      "position": {
+        "x": -236,
+        "y": 0,
+        "z": -80
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 3,
+        "glow": 0.8,
+        "spectralColor": "#ff2222"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "criminal",
+      "zoneId": "rim-west",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "wodden": {
+      "type": "star",
+      "subtype": "blue-giant",
+      "name": "Wodden",
+      "description": "Multiple massive stations in orbit around high-resource planets. Rimward of Propheta, spinward of Fonox.",
+      "notes": "System-wide blockade in effect.",
+      "position": {
+        "x": -244,
+        "y": 0,
+        "z": 39
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 2,
+        "glow": 0.9,
+        "spectralColor": "#4488ff"
+      },
+      "spectralClass": "B",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": "rim-west",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "ivutlis": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Ivutlis",
+      "description": "Between Halcyon, Durury, and the Hungry Sun.",
+      "notes": "",
+      "position": {
+        "x": 98,
+        "y": 0,
+        "z": 191
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "vadfiner": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Vadfiner",
+      "description": "Rimward of Gas N Gripe 6",
+      "notes": "",
+      "position": {
+        "x": 131,
+        "y": 0,
+        "z": -214
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "caronia": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Caronia",
+      "description": "Closest to Rho Bees, between Rho Bees and Phytos.",
+      "notes": "",
+      "position": {
+        "x": -77,
+        "y": 0,
+        "z": -176
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "rho-bees": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Rho Bees",
+      "description": "Between Alfpas and Caronia.",
+      "notes": "Planetary territory in contention between independent X-faction and NGC. Active conflict zone.",
+      "position": {
+        "x": -38,
+        "y": 0,
+        "z": -191
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "messier": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Messier",
+      "description": "Between Steepborto and Walpurg.",
+      "notes": "",
+      "position": {
+        "x": -69,
+        "y": 0,
+        "z": 207
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "kipple": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Kipple",
+      "description": "Rimward of Unclaimed Territory.",
+      "notes": "",
+      "position": {
+        "x": 289,
+        "y": 0,
+        "z": 21
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "los-kuaran": {
+      "type": "star",
+      "subtype": "orange-dwarf",
+      "name": "Los Kuaran",
+      "description": "Rimward of Vamburdia Lesser.",
+      "notes": "",
+      "position": {
+        "x": 274,
+        "y": 0,
+        "z": -96
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1,
+        "glow": 0.5,
+        "spectralColor": "#ff8c00"
+      },
+      "spectralClass": "K",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "phytos": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Phytos",
+      "description": "Between Gas N Gripe Premium and Gas N Gripe 15.",
+      "notes": "",
+      "position": {
+        "x": -180,
+        "y": 0,
+        "z": -163
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "padania": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Padania",
+      "description": "Between Durury and Cholyoke.",
+      "notes": "",
+      "position": {
+        "x": 175,
+        "y": 0,
+        "z": 116
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "durury": {
+      "type": "star",
+      "subtype": "binary",
+      "name": "Durury",
+      "description": "Neotypian: brown dwarf, with 7 orbitting moons. Closest to Bruminax, spinward of Padania.",
+      "notes": "",
+      "position": {
+        "x": 156,
+        "y": 0,
+        "z": 171
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.8,
+        "glow": 0.7,
+        "spectralColor": "#ff88cc"
+      },
+      "spectralClass": "mixed",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "bruminax": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Bruminax",
+      "description": "Between Halcyon and Durury, rimward of Coward's Crossing.",
+      "notes": "",
+      "position": {
+        "x": 109,
+        "y": 0,
+        "z": 148
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "gunonine": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Gunonine",
+      "description": "Rimward of Padania.",
+      "notes": "",
+      "position": {
+        "x": 237,
+        "y": 0,
+        "z": 137
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "alfpas": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Alfpas",
+      "description": "Closest to Rho Bees, between Rho Bees and Gas N Gripe 5.",
+      "notes": "",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": -184
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-north",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "steepborto": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Steepborto",
+      "description": "Closest to Gantropic, between Gantropic and Comoda.",
+      "notes": "",
+      "position": {
+        "x": -13,
+        "y": 0,
+        "z": 217
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "fonox": {
+      "type": "star",
+      "subtype": "blue-giant",
+      "name": "Fonox",
+      "description": "Between Wodden and Gas N Gripe 14, rimward of NJ12.",
+      "notes": "",
+      "position": {
+        "x": -208,
+        "y": 0,
+        "z": 129
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 2,
+        "glow": 0.9,
+        "spectralColor": "#4488ff"
+      },
+      "spectralClass": "B",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-west",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "vamburdia-lesser": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Vamburdia Lesser",
+      "description": "Between Los Kuaran and Vamburdia Greater.",
+      "notes": "",
+      "position": {
+        "x": 249,
+        "y": 0,
+        "z": -100
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "vamburdia-greater": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Vamburdia Greater",
+      "description": "Between Vamburdia Lesser and Gas N Gripe 7.",
+      "notes": "",
+      "position": {
+        "x": 237,
+        "y": 0,
+        "z": -120
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-east",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "plopidor": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Plopidor",
+      "description": "Rimward of Dunroid.",
+      "notes": "",
+      "position": {
+        "x": -251,
+        "y": 0,
+        "z": -88
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-west",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "vopva": {
+      "type": "star",
+      "subtype": "brown-dwarf",
+      "name": "Vopva",
+      "description": "Coreward of Dunroid, closest to Sapphire Fields.",
+      "notes": "Equal share of system between the big 3.",
+      "position": {
+        "x": -160,
+        "y": 0,
+        "z": -41
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.6,
+        "glow": 0.2,
+        "spectralColor": "#8B5A2B"
+      },
+      "spectralClass": "L",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "the-board",
+      "zoneId": "asteroid-bubble",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "gantropic": {
+      "type": "star",
+      "subtype": "yellow-subgiant",
+      "name": "Gantropic",
+      "description": "Closest to Steepborto, rimward of Halcyon.",
+      "notes": "",
+      "position": {
+        "x": 21,
+        "y": 0,
+        "z": 221
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.5,
+        "glow": 0.7,
+        "spectralColor": "#ffcc00"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "the-hungry-sun": {
+      "type": "star",
+      "subtype": "red-giant",
+      "name": "The Hungry Sun",
+      "description": "Closest to Ivutlis, rimward of Halcyon.",
+      "notes": "Orbital destablization leading to planetary destruction underway.",
+      "position": {
+        "x": 52,
+        "y": 0,
+        "z": 246
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 2.5,
+        "glow": 0.6,
+        "spectralColor": "#cc3333",
+        "color": "#ff4422"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "comoda": {
+      "type": "star",
+      "subtype": "yellow-dwarf",
+      "name": "Comoda",
+      "description": "Spinward of Homi Eaomi.",
+      "notes": "",
+      "position": {
+        "x": -97,
+        "y": 0,
+        "z": 217
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 1.2,
+        "glow": 0.6,
+        "spectralColor": "#ffdd44"
+      },
+      "spectralClass": "G",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "ligroman": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Ligroman",
+      "description": "Closest to the Hungry Sun, between Ivutlis and Sunurdan.",
+      "notes": "",
+      "position": {
+        "x": 73,
+        "y": 0,
+        "z": 236
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "sunurdan": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Sunurdan",
+      "description": "Rimward of Ligroman.",
+      "notes": "",
+      "position": {
+        "x": 97,
+        "y": 0,
+        "z": 240
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "homi-eaomi": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Homi Eaomi",
+      "description": "Closest to Comoda, spinward of Majestlon.",
+      "notes": "",
+      "position": {
+        "x": -39,
+        "y": 0,
+        "z": 232
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "majestlon": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Majestlon",
+      "description": "Closest to Homi Eaomi, rimward of Steepborto.",
+      "notes": "",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 236
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "halcyon": {
+      "type": "star",
+      "subtype": "red-dwarf",
+      "name": "Halcyon",
+      "description": "Closest to Gantropic, spinward of Bruminax.",
+      "notes": "",
+      "position": {
+        "x": 61,
+        "y": 0,
+        "z": 171
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "size": 0.8,
+        "glow": 0.4,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": "rim-south",
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "pugiot-the-pug": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Pugiot \"The Pug\"",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": {
+        "x": 165,
+        "y": 0,
+        "z": -11
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#cbc6d4"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden I",
+      "description": "",
+      "notes": "Class U; Habitability: 0.15",
+      "class": "U",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden II",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden III",
+      "description": "",
+      "notes": "X-Class; Habitability: 0.05",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden IV",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-5": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden V",
+      "description": "",
+      "notes": "Class U; Habitability: 0.15",
+      "class": "U",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 5
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-6": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden VI",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 6
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-7": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden VII",
+      "description": "",
+      "notes": "Class U; Habitability: 0.1",
+      "class": "U",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 7
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-8": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden VIII",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 8
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-planet-9": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Wodden IX",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": {
+        "a": 9
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Wodden Moon 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-station-1": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Wodden OSS 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-station-2": {
+      "type": "station",
+      "subtype": "military",
+      "name": "Wodden OSS 2",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "military"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Wodden Moon 2",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden-planet-2",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-moon-3": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Wodden Moon 3",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden-planet-3",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "wodden-moon-4": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Wodden Moon 4",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "wodden-planet-4",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "boc-bloc",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "steepborto-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Steepborto I",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "steepborto",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "business-de-borto",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "steepborto-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Steepborto II",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "steepborto",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "business-de-borto",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "steepborto-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Steepborto III",
+      "description": "",
+      "notes": "Class U; Habitability: 15.0",
+      "class": "U",
+      "position": null,
+      "parentId": "steepborto",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "business-de-borto",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "majestlon-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Majestlon I",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "majestlon",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "business-de-borto",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "phrunteer": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Phrunteer",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "brighton",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "westwood": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Westwood",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "brighton",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "alamasis": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Alamasis",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "brighton",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "sweetwater": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Sweetwater",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "verdessa",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "icewater": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Icewater",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "verdessa",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "the-heights": {
+      "type": "planet",
+      "subtype": null,
+      "name": "The Heights",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "verdessa",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "the-shore": {
+      "type": "planet",
+      "subtype": null,
+      "name": "The Shore",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "verdessa",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "midona": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Midona",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "mornell",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "yebba-dim": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Yebba Dim",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "celebros",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "pilates": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Pilates",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "celebros",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "new-reno": {
+      "type": "planet",
+      "subtype": null,
+      "name": "New Reno",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "celebros",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "executive-suite": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Executive Suite",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "propheta",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "flipsulon-gryme": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Flipsulon Gryme",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "flipsulon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "caronia-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Caronia I",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "caronia",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "caronia-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Caronia II",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "caronia",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "caronia-station-1": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Caronia OSS 1",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "caronia",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "caronia-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Caronia III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "caronia",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "kipple-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Kipple I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "kipple",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "kipple-station-1": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Kipple OSS",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "kipple",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotypian": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Neotypian",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "durury",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-lesser-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Lesser I",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "vamburdia-lesser",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-lesser-station-1": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Vamburdia Lesser OSS",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "vamburdia-lesser",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-greater-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Greater I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "vamburdia-greater",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-greater-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Greater II",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "vamburdia-greater",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-greater-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Greater III",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "vamburdia-greater",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "vopva-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vopva I",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "vopva",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "halcyon-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Halcyon 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "halcyon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "halcyon-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Halcyon 2",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "halcyon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "halcyon-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Halcyon 3",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "halcyon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "halcyon-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Halcyon 4",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "halcyon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "commecha": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Commecha",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "westwood",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "caronia-station-2": {
+      "type": "station",
+      "subtype": "recreation",
+      "name": "Caronia OSS 2",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "caronia",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "recreation"
+      ],
+      "hasFuddruckers": false
+    },
+    "kipple-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Kipple Moon 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "kipple-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 2",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-3": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 3",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-4": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 4",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-5": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 5",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-6": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 6",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "neotyp-7": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Neotyp 7",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "neotypian",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-lesser-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Vamburdia Lesser Moon 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "vamburdia-lesser-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "modina": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Modina",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "midona",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "halcyon-1-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Halcyon 1 Moon 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "halcyon-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "damocles": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Damocles",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "minos": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Minos",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "limbus": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Limbus",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "terminal-titan": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Terminal Titan",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "new-name": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Parcae",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "grupp-prime": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Grupp Prime",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "grupp",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran I",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-station-1": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Los Kuaran OSS",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran IV",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-5": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran V",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 5
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-station-1": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Phytos OSS 1",
+      "description": "",
+      "notes": "",
+      "position": null,
+      "parentId": "phytos",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Phytos I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "phytos",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "padania-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Padania I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "padania",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "padania-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Padania II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "padania",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "vopva-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vopva II",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "vopva",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Phytos Moon 1",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "phytos-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-station-2": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Phytos OSS 2",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "phytos",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "padania-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Padania Moon 1",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "padania-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-1": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 1",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": -91,
+        "y": 0,
+        "z": 91
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-10": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 10",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "messier",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-11": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 11",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": {
+        "x": -133,
+        "y": 0,
+        "z": 166
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-13": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 13",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": {
+        "x": -164,
+        "y": 0,
+        "z": 133
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-15": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 15",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": {
+        "x": -214,
+        "y": 0,
+        "z": -132
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-16": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 16",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": {
+        "x": -255,
+        "y": 0,
+        "z": -58
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-17": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 17",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "durury",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-2": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 2",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 136,
+        "y": 0,
+        "z": -22
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-3": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 3",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 65,
+        "y": 0,
+        "z": -98
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-4": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 4",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 201,
+        "y": 0,
+        "z": -77
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-5": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 5",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 24,
+        "y": 0,
+        "z": -169
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-6": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 6",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 102,
+        "y": 0,
+        "z": -183
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-7": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 7",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "vamburdia-greater",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-8": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 8",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 57,
+        "y": 0,
+        "z": 203
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-9": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 9",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "comoda",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-alpha": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Gas-n-Gripe Alpha",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-premium": {
+      "type": "station",
+      "subtype": "recreation",
+      "name": "Gas-n-Gripe Premium",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": {
+        "x": -130,
+        "y": 0,
+        "z": -174
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "recreation"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-world": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gas-n-Gripe World",
+      "description": "",
+      "notes": "Class D",
+      "class": "D",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "grippiani-grove": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Grippiani Grove",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-14": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 14",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "fonox",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-12": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 12",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "walpurg",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "flipsulon-ollie": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Flipsulon Ollie",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "flipsulon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "the-hawke-consortium",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "flipsulon-shuvit": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Flipsulon Shuvit",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "flipsulon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "the-hawke-consortium",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "cholyoke": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Cholyoke",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": {
+        "x": 182,
+        "y": 0,
+        "z": 49
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#cbc6d4"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "subastrid": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Subastrid",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "sublex",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "elysium": {
+      "type": "station",
+      "subtype": null,
+      "name": "Elysium",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "nj12",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "bastion-4-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bastion 4/1",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "walpurg",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "ivutlis-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ivutlis I",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "ivutlis",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "ivutlis-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ivutlis II",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "ivutlis",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "ivutlis-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ivutlis III",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "ivutlis",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "los-kuaran-planet-6": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Los Kuaran VI",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "los-kuaran",
+      "orbital": {
+        "a": 6
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-lesser-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Lesser II",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "vamburdia-lesser",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "vamburdia-greater-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vamburdia Greater IV",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "vamburdia-greater",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "plopidor-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Plopidor I",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "plopidor",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "amary": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Amary",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "the-hungry-sun",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "loncere": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Loncere",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "the-hungry-sun",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "gypsum": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gypsum",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "the-hungry-sun",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "othos": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Othos",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "the-hungry-sun",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "comoda-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Comoda I",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "comoda",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "zarthura": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Zarthura",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "comoda",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "dunroid-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Dunroid Moon 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "dunroid-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "dunroid-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Dunroid Moon 2",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "dunroid-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "rho-bees-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Rho Bees Moon 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "hostage-situation",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "rho-bees-station-1": {
+      "type": "station",
+      "subtype": "military",
+      "name": "Rho Bees OSS 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "rho-bees",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "military"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Phytos Moon 2",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "phytos-planet-2",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "alfpas-station-1": {
+      "type": "station",
+      "subtype": "military",
+      "name": "Alfpas OSS 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "alfpas",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "military"
+      ],
+      "hasFuddruckers": false
+    },
+    "sunurdan-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Sunurdan Moon 1",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "sunurdan-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "horozant": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Horozant",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "majestlon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "matrycya": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Matrycya",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "tuskan",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "ryvyyra": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ryvyyra",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "tuskan",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "halythorpe": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Halythorpe",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "oshien",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "dabin-seaport": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Dabin Seaport",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "oshien",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "hostage-situation": {
+      "type": "planet",
+      "subtype": null,
+      "name": "\"hostage situation\"",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "rho-bees",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "gunonine-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gunonine I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "gunonine",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "planet"
+      ],
+      "hasFuddruckers": false
+    },
+    "gunonine-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gunonine II",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "gunonine",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "gunonine-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gunonine III",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "gunonine",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "encaged-in-stations": {
+      "type": "station",
+      "subtype": null,
+      "name": "\"encaged in stations\"",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "gunonine",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "vopva-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Vopva III",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "vopva",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "ligroman-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ligroman I",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "ligroman",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "ligroman-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ligroman II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "ligroman",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "ligroman-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ligroman III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "ligroman",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "ligroman-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ligroman IV",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "ligroman",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "ligroman-planet-5": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Ligroman V",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "ligroman",
+      "orbital": {
+        "a": 5
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "sunurdan-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Sunurdan I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "sunurdan",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "sunurdan-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Sunurdan II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "sunurdan",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "sunurdan-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Sunurdan III",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "sunurdan",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "settlement"
+      ],
+      "hasFuddruckers": false
+    },
+    "gantropic-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gantropic I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "gantropic",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "gantropic-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Gantropic II",
+      "description": "",
+      "notes": "Class U; Habitability: 0.05",
+      "class": "U",
+      "position": null,
+      "parentId": "gantropic",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "rho-bees-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Rho Bees Moon 2",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "hostage-situation",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "rho-bees-station-2": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Rho Bees OSS 2",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "rho-bees",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "alfpas-station-2": {
+      "type": "station",
+      "subtype": "military",
+      "name": "Alfpas OSS 2",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "alfpas",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "military"
+      ],
+      "hasFuddruckers": false
+    },
+    "alfpas-station-3": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Alfpas OSS 3",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "alfpas",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "gantropic-station-1": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gantropic OSS 1",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "gantropic",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "gantropic-station-2": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gantropic OSS 2",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "gantropic",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    },
+    "sunurdan-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Sunurdan Moon 2",
+      "description": "",
+      "notes": "C-Class",
+      "class": "C",
+      "position": null,
+      "parentId": "sunurdan-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "homi-eaomi-moon-1": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Homi Eaomi Moon 1",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "homi-eaomi-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "homi-eaomi-moon-2": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Homi Eaomi Moon 2",
+      "description": "",
+      "notes": "S-Class",
+      "class": "S",
+      "position": null,
+      "parentId": "homi-eaomi-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "channel-carnage": {
+      "type": "station",
+      "subtype": "recreation",
+      "name": "Channel Carnage",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "majestlon",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "shrike-co",
+      "zoneId": null,
+      "tags": [
+        "recreation"
+      ],
+      "hasFuddruckers": true
+    },
+    "xamskaro": {
+      "type": "moon",
+      "subtype": null,
+      "name": "Xamskaro",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "majestlon-planet-1",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "shrike-co",
+      "zoneId": null,
+      "tags": [
+        "colony"
+      ],
+      "hasFuddruckers": false
+    },
+    "dunroid-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Dunroid I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "dunroid",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Phytos II",
+      "description": "",
+      "notes": "Class U; Habitability: 0.15",
+      "class": "U",
+      "position": null,
+      "parentId": "phytos",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "phytos-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Phytos III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "phytos",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax IV",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-5": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax V",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 5
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "bruminax-planet-6": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Bruminax VI",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "bruminax",
+      "orbital": {
+        "a": 6
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "steepborto-planet-4": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Steepborto IV",
+      "description": "",
+      "notes": "Class U; Habitability: 10.0",
+      "class": "U",
+      "position": null,
+      "parentId": "steepborto",
+      "orbital": {
+        "a": 4
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "steepborto-planet-5": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Steepborto V",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "steepborto",
+      "orbital": {
+        "a": 5
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "plopidor-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Plopidor II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "plopidor",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "comoda-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Comoda II",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "comoda",
+      "orbital": {
+        "a": 2
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "comoda-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Comoda III",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "comoda",
+      "orbital": {
+        "a": 3
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "homi-eaomi-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Homi Eaomi I",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "homi-eaomi",
+      "orbital": {
+        "a": 1
+      },
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "toxic-but-beautiful": {
+      "type": "planet",
+      "subtype": null,
+      "name": "\"toxic but beautiful\"",
+      "description": "",
+      "notes": "Class U",
+      "class": "U",
+      "position": null,
+      "parentId": "homi-eaomi",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "unowned",
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "xen-draco": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Xen Draco",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "propheta",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "homi-eaomi-station-1": {
+      "type": "station",
+      "subtype": null,
+      "name": "Homi Eaomi OSS",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": null,
+      "parentId": "homi-eaomi",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "cowards-crossing": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Coward's Crossing",
+      "description": "",
+      "notes": "X-Class",
+      "class": "X",
+      "position": {
+        "x": 71,
+        "y": 0,
+        "z": 125
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#cbc6d4"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [
+        "port"
+      ],
+      "hasFuddruckers": false
+    },
+    "osminok": {
+      "type": "star",
+      "subtype": "orange-dwarf",
+      "name": "Osminok",
+      "description": "K5V orange dwarf. Gaby's homeworld system. Far outer rim, galactic halo region.",
+      "notes": "0.7 solar masses, 0.3 solar luminosities, ~6 billion years old. 20-40 billion year lifespan.",
+      "position": {
+        "x": 93,
+        "y": 0,
+        "z": -379
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#e8872b",
+        "size": 1,
+        "glow": 0.5
+      },
+      "spectralClass": "K",
+      "luminosity": 0.3,
+      "mass": 0.7,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "osminok-i": {
+      "type": "planet",
+      "subtype": "rocky",
+      "name": "Little Shadow",
+      "description": "The Persistent Little Shadow That Chases The Light And Avoids Our Gaze. Tidally locked rocky world baked on one side, frozen on the other. Geometric scars matching Tsunari's. Ancient automated mining infrastructure sits dormant.",
+      "notes": "0.6 Earth masses, 0.25 AU. Day side 450C, night side -180C. Depleted resource zone.",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 1
+      },
+      "visual": {
+        "color": "#6a6a78"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "osminok-prime": {
+      "type": "planet",
+      "subtype": "ocean-world",
+      "name": "Osminok Prime",
+      "description": "Ocean Home. 99%+ ocean coverage, perpetual planetary megastorms. Homeworld of the Osminoki.",
+      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180-day orbit, 18-hour day, 35 deg axial tilt, 2.5 bar atmosphere.",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 2
+      },
+      "visual": {
+        "color": "#1a5276"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "homeworld"
+      ],
+      "hasFuddruckers": false
+    },
+    "tsunari": {
+      "type": "moon",
+      "subtype": "rocky",
+      "name": "Tsunari",
+      "description": "Waving Sister. Massive moon with geometric surface scars of unknown origin. Dark basaltic plains, heavily cratered, pulverized regolith.",
+      "notes": "0.3 Earth masses (25x Luna), ~180,000 km orbit, ~8 malton unit period. No atmosphere, no magnetic field.",
+      "position": null,
+      "parentId": "osminok-prime",
+      "orbital": null,
+      "visual": {
+        "color": "#4a4a50"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "osminok-iii": {
+      "type": "planet",
+      "subtype": "sub-giant",
+      "name": "Red Wanderer",
+      "description": "The Wanderer Of Red And Orange Whose Calls Still Echo In The Black. Failed gas giant with thick nitrogen-methane atmosphere, reddish-orange from iron oxide aerosols. Nine moons. Upper atmosphere stripped of hydrogen-helium by unknown means.",
+      "notes": "4 Earth masses, 1.8 AU, 50+ bar, 11-hour rotation. 9 moons (8 captured asteroids + 1 icy body 0.1 Earth masses).",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 3
+      },
+      "visual": {
+        "color": "#c44b2f"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "osminok-iv": {
+      "type": "planet",
+      "subtype": "ice-giant",
+      "name": "Blue Watcher",
+      "description": "The Bright Blue Eye That Watches Us Fondly From A Great Distance. Ice giant with brilliant blue-white methane atmosphere and spectacular natural ice rings. 23 known moons, several with cryovolcanism. Brightest object in Osminok's night sky after Tsunari.",
+      "notes": "14 Earth masses, 3.5 AU. Ice rings span 160,000 km, formed ~100M years ago from a tidally disrupted moon.",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 4
+      },
+      "visual": {
+        "color": "#5ba8ff"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "osminok-v": {
+      "type": "planet",
+      "subtype": "dwarf-planet",
+      "name": "Ossuary",
+      "description": "Hidden Rock. Small cold dwarf planet on a highly elliptical orbit, invisible from Osminok Prime. Coloration of sun-bleached bones.",
+      "notes": "0.08 Earth masses, 8 AU. Known only from galactic survey data and Starsinger flight records.",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 5
+      },
+      "visual": {
+        "color": "#d4c9a8"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "osminok-vi": {
+      "type": "planet",
+      "subtype": "dwarf-planet",
+      "name": "Silent Stone",
+      "description": "A small, ancient, pristine world drifting at the far edge of the Outer Dark. Appears to have never been touched by anything or anyone.",
+      "notes": "45 AU. The Osminoki have begun planning an expedition.",
+      "position": null,
+      "parentId": "osminok",
+      "orbital": {
+        "a": 6
+      },
+      "visual": {
+        "color": "#8a8a8a"
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "uninhabited"
+      ],
+      "hasFuddruckers": false
+    },
+    "inebrax-station": {
+      "type": "station",
+      "subtype": null,
+      "name": "Inebrax Station",
+      "description": "Where the player crew is currently docked. In the Homi Eaomi system.",
+      "notes": "",
+      "position": null,
+      "parentId": "homi-eaomi",
+      "orbital": null,
+      "visual": {
+        "color": "#cbc6d4",
+        "size": 0.6,
+        "glow": 0.3
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "independent",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "nimbus-prycian-orbital": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Prycian Orbital",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "nimbus",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "grupp-prycian-orbital": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Prycian Orbital",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "grupp",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "cuck",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "tuskan-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Tuskan OSS",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "tuskan",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "oshien-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Oshien OSS",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "oshien",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "mornell-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Mornell OSS",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "mornell",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "brighton-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Brighton OSS",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "brighton",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "celebros-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Celebros OSS",
+      "description": "",
+      "notes": "A-Class",
+      "class": "A",
+      "position": null,
+      "parentId": "celebros",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "verdessa-oss": {
+      "type": "station",
+      "subtype": "port",
+      "name": "Verdessa OSS",
+      "description": "",
+      "notes": "B-Class",
+      "class": "B",
+      "position": null,
+      "parentId": "verdessa",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "gas-n-gripe-18": {
+      "type": "station",
+      "subtype": "fueling",
+      "name": "Gas-n-Gripe 18",
+      "description": "",
+      "notes": "",
+      "position": {
+        "x": 282,
+        "y": 0,
+        "z": -38
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "grippiani",
+      "zoneId": null,
+      "tags": [
+        "fueling"
+      ],
+      "hasFuddruckers": false
+    }
+  },
+  "hyperlanes": {
+    "brighton--verdessa": {
+      "fromId": "brighton",
+      "toId": "verdessa",
+      "via": []
+    },
+    "brighton--celebros": {
+      "fromId": "brighton",
+      "toId": "celebros",
+      "via": []
+    },
+    "brighton--nimbus": {
+      "fromId": "brighton",
+      "toId": "nimbus",
+      "via": []
+    },
+    "nimbus--propheta": {
+      "fromId": "nimbus",
+      "toId": "propheta",
+      "via": []
+    },
+    "nimbus--tuskan": {
+      "fromId": "nimbus",
+      "toId": "tuskan",
+      "via": []
+    },
+    "nimbus--oshien": {
+      "fromId": "nimbus",
+      "toId": "oshien",
+      "via": []
+    },
+    "gas-n-gripe-1--nimbus": {
+      "fromId": "gas-n-gripe-1",
+      "toId": "nimbus",
+      "via": []
+    },
+    "celebros--verdessa": {
+      "fromId": "celebros",
+      "toId": "verdessa",
+      "via": []
+    },
+    "gas-n-gripe-3--verdessa": {
+      "fromId": "gas-n-gripe-3",
+      "toId": "verdessa",
+      "via": []
+    },
+    "gas-n-gripe-2--verdessa": {
+      "fromId": "gas-n-gripe-2",
+      "toId": "verdessa",
+      "via": []
+    },
+    "celebros--mornell": {
+      "fromId": "celebros",
+      "toId": "mornell",
+      "via": []
+    },
+    "mornell--oshien": {
+      "fromId": "mornell",
+      "toId": "oshien",
+      "via": []
+    },
+    "propheta--tuskan": {
+      "fromId": "propheta",
+      "toId": "tuskan",
+      "via": []
+    },
+    "gas-n-gripe-1--tuskan": {
+      "fromId": "gas-n-gripe-1",
+      "toId": "tuskan",
+      "via": []
+    },
+    "gas-n-gripe-1--oshien": {
+      "fromId": "gas-n-gripe-1",
+      "toId": "oshien",
+      "via": []
+    },
+    "grupp--nimbus": {
+      "fromId": "grupp",
+      "toId": "nimbus",
+      "via": []
+    },
+    "grupp--propheta": {
+      "fromId": "grupp",
+      "toId": "propheta",
+      "via": []
+    },
+    "gas-n-gripe-3--sublex": {
+      "fromId": "gas-n-gripe-3",
+      "toId": "sublex",
+      "via": []
+    },
+    "flipsulon--gas-n-gripe-5": {
+      "fromId": "flipsulon",
+      "toId": "gas-n-gripe-5",
+      "via": []
+    },
+    "flipsulon--gas-n-gripe-3": {
+      "fromId": "flipsulon",
+      "toId": "gas-n-gripe-3",
+      "via": []
+    },
+    "gas-n-gripe-1--walpurg": {
+      "fromId": "gas-n-gripe-1",
+      "toId": "walpurg",
+      "via": []
+    },
+    "gas-n-gripe-11--walpurg": {
+      "fromId": "gas-n-gripe-11",
+      "toId": "walpurg",
+      "via": []
+    },
+    "ivutlis--ligroman": {
+      "fromId": "ivutlis",
+      "toId": "ligroman",
+      "via": []
+    },
+    "halcyon--ivutlis": {
+      "fromId": "halcyon",
+      "toId": "ivutlis",
+      "via": []
+    },
+    "gas-n-gripe-8--ivutlis": {
+      "fromId": "gas-n-gripe-8",
+      "toId": "ivutlis",
+      "via": []
+    },
+    "gas-n-gripe-17--ivutlis": {
+      "fromId": "gas-n-gripe-17",
+      "toId": "ivutlis",
+      "via": []
+    },
+    "caronia--rho-bees": {
+      "fromId": "caronia",
+      "toId": "rho-bees",
+      "via": []
+    },
+    "caronia--gas-n-gripe-premium": {
+      "fromId": "caronia",
+      "toId": "gas-n-gripe-premium",
+      "via": []
+    },
+    "alfpas--rho-bees": {
+      "fromId": "alfpas",
+      "toId": "rho-bees",
+      "via": []
+    },
+    "gas-n-gripe-11--messier": {
+      "fromId": "gas-n-gripe-11",
+      "toId": "messier",
+      "via": []
+    },
+    "comoda--messier": {
+      "fromId": "comoda",
+      "toId": "messier",
+      "via": []
+    },
+    "los-kuaran--vamburdia-lesser": {
+      "fromId": "los-kuaran",
+      "toId": "vamburdia-lesser",
+      "via": []
+    },
+    "gas-n-gripe-premium--phytos": {
+      "fromId": "gas-n-gripe-premium",
+      "toId": "phytos",
+      "via": []
+    },
+    "gas-n-gripe-15--phytos": {
+      "fromId": "gas-n-gripe-15",
+      "toId": "phytos",
+      "via": []
+    },
+    "cholyoke--padania": {
+      "fromId": "cholyoke",
+      "toId": "padania",
+      "via": []
+    },
+    "durury--gas-n-gripe-17": {
+      "fromId": "durury",
+      "toId": "gas-n-gripe-17",
+      "via": []
+    },
+    "durury--ivutlis": {
+      "fromId": "durury",
+      "toId": "ivutlis",
+      "via": []
+    },
+    "durury--gunonine": {
+      "fromId": "durury",
+      "toId": "gunonine",
+      "via": []
+    },
+    "bruminax--cowards-crossing": {
+      "fromId": "bruminax",
+      "toId": "cowards-crossing",
+      "via": []
+    },
+    "bruminax--halcyon": {
+      "fromId": "bruminax",
+      "toId": "halcyon",
+      "via": []
+    },
+    "gantropic--steepborto": {
+      "fromId": "gantropic",
+      "toId": "steepborto",
+      "via": []
+    },
+    "homi-eaomi--steepborto": {
+      "fromId": "homi-eaomi",
+      "toId": "steepborto",
+      "via": []
+    },
+    "comoda--steepborto": {
+      "fromId": "comoda",
+      "toId": "steepborto",
+      "via": []
+    },
+    "fonox--gas-n-gripe-13": {
+      "fromId": "fonox",
+      "toId": "gas-n-gripe-13",
+      "via": []
+    },
+    "vamburdia-greater--vamburdia-lesser": {
+      "fromId": "vamburdia-greater",
+      "toId": "vamburdia-lesser",
+      "via": []
+    },
+    "gas-n-gripe-4--vamburdia-lesser": {
+      "fromId": "gas-n-gripe-4",
+      "toId": "vamburdia-lesser",
+      "via": []
+    },
+    "gas-n-gripe-6--vamburdia-greater": {
+      "fromId": "gas-n-gripe-6",
+      "toId": "vamburdia-greater",
+      "via": []
+    },
+    "gantropic--gas-n-gripe-8": {
+      "fromId": "gantropic",
+      "toId": "gas-n-gripe-8",
+      "via": []
+    },
+    "homi-eaomi--majestlon": {
+      "fromId": "homi-eaomi",
+      "toId": "majestlon",
+      "via": []
+    },
+    "gas-n-gripe-8--halcyon": {
+      "fromId": "gas-n-gripe-8",
+      "toId": "halcyon",
+      "via": []
+    },
+    "gas-n-gripe-alpha--halcyon": {
+      "fromId": "gas-n-gripe-alpha",
+      "toId": "halcyon",
+      "via": []
+    },
+    "pugiot-the-pug--gas-n-gripe-2": {
+      "fromId": "pugiot-the-pug",
+      "toId": "gas-n-gripe-2",
+      "via": []
+    },
+    "pugiot-the-pug--gas-n-gripe-3": {
+      "fromId": "pugiot-the-pug",
+      "toId": "gas-n-gripe-3",
+      "via": []
+    },
+    "pugiot-the-pug--los-kuaran": {
+      "fromId": "pugiot-the-pug",
+      "toId": "los-kuaran",
+      "via": []
+    },
+    "pugiot-the-pug--cholyoke": {
+      "fromId": "pugiot-the-pug",
+      "toId": "cholyoke",
+      "via": []
+    },
+    "gas-n-gripe-17--padania": {
+      "fromId": "gas-n-gripe-17",
+      "toId": "padania",
+      "via": []
+    },
+    "messier--steepborto": {
+      "fromId": "messier",
+      "toId": "steepborto",
+      "via": []
+    },
+    "gas-n-gripe-15--gas-n-gripe-16": {
+      "fromId": "gas-n-gripe-15",
+      "toId": "gas-n-gripe-16",
+      "via": []
+    },
+    "gas-n-gripe-4--pugiot-the-pug": {
+      "fromId": "gas-n-gripe-4",
+      "toId": "pugiot-the-pug",
+      "via": []
+    },
+    "alfpas--gas-n-gripe-5": {
+      "fromId": "alfpas",
+      "toId": "gas-n-gripe-5",
+      "via": []
+    },
+    "gas-n-gripe-5--gas-n-gripe-6": {
+      "fromId": "gas-n-gripe-5",
+      "toId": "gas-n-gripe-6",
+      "via": []
+    },
+    "gas-n-gripe-13--gas-n-gripe-11": {
+      "fromId": "gas-n-gripe-13",
+      "toId": "gas-n-gripe-11",
+      "via": []
+    },
+    "kipple--gas-n-gripe-18": {
+      "fromId": "kipple",
+      "toId": "gas-n-gripe-18",
+      "via": []
+    },
+    "gas-n-gripe-18--los-kuaran": {
+      "fromId": "gas-n-gripe-18",
+      "toId": "los-kuaran",
+      "via": []
+    }
+  },
+  "regions": {
+    "asteroid-bubble": {
+      "name": "Asteroid Bubble"
+    },
+    "cuck-space": {
+      "name": "C.U.C.K. Space"
+    },
+    "cerulean-plains": {
+      "name": "Cerulean Plains"
+    },
+    "comexo-lifestyle-planets": {
+      "name": "Comexo Lifestyle Planets"
+    },
+    "first-galactic-war-ruin-zone": {
+      "name": "First Galactic War Ruin Zone"
+    },
+    "hawke-consortium": {
+      "name": "Hawke Consortium"
+    },
+    "neo-giovanni-core-worlds": {
+      "name": "Neo-Giovanni Core Worlds"
+    },
+    "rim-east": {
+      "name": "Rim, East"
+    },
+    "rim-north": {
+      "name": "Rim, North"
+    },
+    "rim-south": {
+      "name": "Rim, South"
+    },
+    "rim-west": {
+      "name": "Rim, West"
+    },
+    "sapphire-fields": {
+      "name": "Sapphire Fields"
+    },
+    "smelt-worlds": {
+      "name": "Smelt Worlds"
+    }
+  }
+}

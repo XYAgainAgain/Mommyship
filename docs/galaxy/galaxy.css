@@ -1,5 +1,13 @@
 /* Galaxy Map — Mommyship */
 
+@font-face {
+  font-family: "League Spartan";
+  src: url("../assets/fonts/LeagueSpartan-VariableFont_wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
@@ -155,4 +163,86 @@ canvas { display: block; }
   line-height: 1.4;
   pointer-events: none;
   white-space: pre;
+}
+
+.system-label {
+  color: var(--gx-text);
+  font-family: 'League Spartan', system-ui, sans-serif;
+  font-size: 22px;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+  text-align: center;
+}
+
+.label-class {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: -2px;
+}
+
+.system-label.selected {
+  color: var(--gx-accent);
+  font-weight: bold;
+  font-size: 26px;
+}
+
+.system-label.label-landmark {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(131, 50, 172, 0.6), 0 0 16px rgba(0, 0, 0, 0.8);
+}
+
+.system-label.label-landmark.selected {
+  font-size: 28px;
+}
+
+.scale-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--gx-text);
+  font-family: 'League Spartan', system-ui, sans-serif;
+  font-size: 11px;
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s;
+}
+
+.scale-bar-line {
+  height: 1px;
+  background: var(--gx-text);
+  position: relative;
+}
+
+.scale-bar-line::before,
+.scale-bar-line::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 7px;
+  background: var(--gx-text);
+}
+
+.scale-bar-line::before { left: 0; }
+.scale-bar-line::after  { right: 0; }
+
+.scale-bar-label {
+  margin-top: 4px;
+}
+
+.cinema-active .scale-bar,
+.cinema-active .system-label {
+  opacity: 0.4;
 }
