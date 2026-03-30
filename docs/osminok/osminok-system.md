@@ -108,7 +108,7 @@ At this mass ratio (0.3:0.9), Tsunari was arguably once part of a **binary plane
 - **The Vitrified Plains:** Regions where surface rock was flash-melted and cooled into glass
 - **The Missing Mass:** Gravitational surveys indicate ~0.05 Earth masses of material has been removed
 
-No known natural process accounts for this geometry. The scars pre-date the Osminoki by a wide margin; the last major surface disturbance dates to roughly 200,000–400,000 cycles ago, around when the megastorms began. What caused them remains an open question (see Cosmic Mysteries).
+No known natural process accounts for this geometry. The scars pre-date the Osminoki by a wide margin; the last major surface disturbance dates to roughly 200,000–400,000 cycles ago, around when the megastorms began. What caused them remains an open question.
 
 **Tides:** Tsunari drives tidal ranges of 40–100 meters in Osminok's open ocean (Earth's open-ocean range is 0.5–1m). This creates massive tidal currents the Osminoki use for navigation, regular nutrient upwelling, and islands that flood completely during high tide.
 
@@ -169,7 +169,7 @@ Galactic surveys designated this place "Ossuary" due to its coloration, which is
 
 The system's cold outer reaches, far beyond anything the Osminoki can observe. The Fragment Field (15–20 AU) is an unusually dense metallic asteroid cluster, its composition heavy on processed alloys and refined metals in concentrations that don't occur naturally.
 
-Galactic surveyors have noted that the Osminok system is unusually poor in accessible heavy elements for a system of its age and stellar class. The reasons for this are a matter of some interest (see Cosmic Mysteries).
+Galactic surveyors have noted that the Osminok system is unusually poor in accessible heavy elements for a system of its age and stellar class. The reasons for this are a matter of some interest.
 
 ### Osminok VI (45 AU) — Silent Stone
 *"The Unturned Stone That Waits In Silence At The Edge Of The Shelf"*

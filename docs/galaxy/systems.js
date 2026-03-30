@@ -181,6 +181,16 @@ export async function createSystems(scene, camera, renderer) {
   labelRenderer.domElement.style.pointerEvents = 'none';
   document.querySelector('.experience').appendChild(labelRenderer.domElement);
 
+  /* Zone labels — faction-colored or turquoise, rotate with galaxy */
+  const ZONE_FACTIONS = { 'cuck-core': 'cuck', 'neo-gio-core': '#6b8cbf', 'clp': 'comexo', 'gulch': '#a54739' };
+  const ZONE_BREAKS = {
+    'cuck-core': 'C.U.C.K. Space',
+    '1gwrz': 'First Galactic\nWar Ruin Zone',
+    'dead-zone': 'Unexplained\nDead Zone',
+    'unclaimed': 'Unclaimed\nTerritory'
+  };
+  const zoneLabels = [];
+
   /* Separate scene for markers — rendered post-compositor with depth occlusion */
   const markerScene = new THREE.Scene();
 
@@ -205,13 +215,23 @@ export async function createSystems(scene, camera, renderer) {
 
   /* Hyperlane lines — always visible, thick Line2 */
   const hyperlaneLines = [];
-  const _hlOrange = new THREE.Color('#ff914d');
-  const _hlYellow = new THREE.Color('#ffdd59');
   const hyperlaneMat = new LineMaterial({
-    vertexColors: true, transparent: true, opacity: 0.69,
+    color: 0xffffff, transparent: true, opacity: 0.69,
     depthWrite: false, worldUnits: true, linewidth: 0.8
   });
   hyperlaneMat.resolution.set(window.innerWidth, window.innerHeight);
+  hyperlaneMat.onBeforeCompile = (shader) => {
+    shader.uniforms.uHlA = { value: new THREE.Color('#ff914d') };
+    shader.uniforms.uHlB = { value: new THREE.Color('#ffdd59') };
+    shader.vertexShader = 'varying float vLineT;\n' + shader.vertexShader.replace(
+      /}\s*$/, 'vLineT = position.y < 0.5 ? 1.0 : 0.0;\n}'
+    );
+    shader.fragmentShader = 'varying float vLineT;\nuniform vec3 uHlA;\nuniform vec3 uHlB;\n' +
+      shader.fragmentShader.replace(
+        'vec4 diffuseColor = vec4( diffuse, alpha );',
+        'float gT = 1.0 - abs(vLineT * 2.0 - 1.0);\nfloat nearFade = smoothstep(0.0, 0.002, gl_FragCoord.z);\nvec4 diffuseColor = vec4(mix(uHlA, uHlB, gT), alpha * nearFade);'
+      );
+  };
 
   /* Two InstancedMesh groups: spheres (stars/stations) and cubes (Gas-n-Gripes) */
   const sphereGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
@@ -386,7 +406,7 @@ export async function createSystems(scene, camera, renderer) {
         let minR, spacing;
         if (depth === 1) {
           minR = ORBIT_RADIUS[1][0];
-          spacing = 1.5;
+          spacing = 2.0;
         } else {
           const parentA = bodyMeta.get(parentId)?.orbital?.a || 3;
           const maxR = parentA * 0.35;
@@ -400,17 +420,20 @@ export async function createSystems(scene, camera, renderer) {
           const defaults = generateOrbitalDefaults(id, depth);
           return { id, orbital: body.orbital ? { ...defaults, ...body.orbital } : defaults };
         });
-        /* Stations always outermost — maximizes clearance for docking */
+        /* Sort: explicit order → random a, stations always outermost */
         orbitals.sort((a, b) => {
           const aS = galaxyData.bodies[a.id]?.type === 'station' ? 1 : 0;
           const bS = galaxyData.bodies[b.id]?.type === 'station' ? 1 : 0;
           if (aS !== bS) return aS - bS;
-          return a.orbital.a - b.orbital.a;
+          const aO = galaxyData.bodies[a.id]?.orbital?.order ?? a.orbital.a;
+          const bO = galaxyData.bodies[b.id]?.orbital?.order ?? b.orbital.a;
+          return aO - bO;
         });
 
-        /* Even spacing with eccentricity cap */
+        /* Even spacing with eccentricity cap — preserve explicit JSON overrides */
         for (let i = 0; i < orbitals.length; i++) {
-          const a = minR + (i + 0.5) * spacing;
+          const hasExplicitA = galaxyData.bodies[orbitals[i].id]?.orbital?.a != null;
+          const a = hasExplicitA ? orbitals[i].orbital.a : minR + (i + 0.5) * spacing;
           orbitals[i].orbital.a = a;
           orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e, spacing / (2 * a + spacing));
         }
@@ -427,9 +450,12 @@ export async function createSystems(scene, camera, renderer) {
             orbitals[i].orbital.Omega = baseAz + scatter.gauss() * 1 * (Math.PI / 180);
           }
         } else {
-          /* Planets: shared orbital plane from star's random pole axis */
+          /* Planets: shared orbital plane from star's pole axis (overridable via poleAngle) */
           const poleRng = createRng(hashString(parentId) + 42);
-          const poleTilt = (15 + poleRng.next() * 35) * (Math.PI / 180);
+          const parentBody = galaxyData.bodies[parentId];
+          const poleTilt = parentBody?.poleAngle != null
+            ? parentBody.poleAngle * (Math.PI / 180)
+            : (15 + poleRng.next() * 35) * (Math.PI / 180);
           const poleAzimuth = poleRng.next() * TWO_PI;
           for (let i = 0; i < orbitals.length; i++) {
             const scatter = createRng(hashString(orbitals[i].id) + 99);
@@ -576,12 +602,7 @@ export async function createSystems(scene, camera, renderer) {
     for (const [, hl] of Object.entries(galaxyData.hyperlanes)) {
       if (!bodyMeta.has(hl.fromId) || !bodyMeta.has(hl.toId)) continue;
       const geo = new LineGeometry();
-      geo.setPositions([0,0,0, 0,0,0, 0,0,0]);
-      geo.setColors([
-        _hlOrange.r, _hlOrange.g, _hlOrange.b,
-        _hlYellow.r, _hlYellow.g, _hlYellow.b,
-        _hlOrange.r, _hlOrange.g, _hlOrange.b
-      ]);
+      geo.setPositions([0,0,0, 0,0,0]);
       const line = new Line2(geo, hyperlaneMat);
       line.renderOrder = 6;
       line.frustumCulled = false;
@@ -632,15 +653,15 @@ export async function createSystems(scene, camera, renderer) {
       const body = galaxyData.bodies[id];
       if (!body) continue;
 
-      /* SMBH: only labeled when camera is far — up close it speaks for itself */
-      if (id === 'smbh' && id !== selectedId && id !== hoveredId) {
-        if (camPos.length() <= 400) continue;
-      }
-
       const wp = bodyWorldPos.get(id);
       if (!wp) continue;
       const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+      /* Landmarks: skip if camera is very close to them */
+      if (body.tags?.includes('landmark') && id !== selectedId && id !== hoveredId) {
+        if (dist < (id === 'smbh' ? 100 : 60)) continue;
+      }
       const tier = getLabelTier(id);
       const depth = bodyMeta.get(id)?.depth || 0;
       const fadeFar = LABEL_FADE[Math.min(depth, 2)][1];
@@ -664,11 +685,17 @@ export async function createSystems(scene, camera, renderer) {
         if (entry.bodyId !== id) {
           entry.bodyId = id;
           entry.el.textContent = '';
+          entry.el.style.textDecoration = body.tags?.includes('destroyed') ? 'line-through' : 'none';
           entry.el.appendChild(document.createTextNode(body.name || id));
           if (body.type === 'station' && body.class) {
             const sub = document.createElement('div');
             sub.className = 'label-class';
             sub.textContent = body.class + '-Class';
+            entry.el.appendChild(sub);
+          } else if (body.subtitle) {
+            const sub = document.createElement('div');
+            sub.className = 'label-class';
+            sub.textContent = '(' + body.subtitle + ')';
             entry.el.appendChild(sub);
           }
           entry.labelColor = getLabelColor(id, body);
@@ -713,7 +740,17 @@ export async function createSystems(scene, camera, renderer) {
 
       const tier = getLabelTier(entry.bodyId);
       if (tier === 1) {
-        el.style.opacity = '1';
+        /* Landmarks fade when camera approaches them */
+        const body = galaxyData.bodies[entry.bodyId];
+        if (body?.tags?.includes('landmark')) {
+          const dx2 = camPos.x - wp.x, dy2 = camPos.y - wp.y, dz2 = camPos.z - wp.z;
+          const bodyDist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+          const fadeStart = entry.bodyId === 'smbh' ? 100 : 60;
+          const fadeEnd = entry.bodyId === 'smbh' ? 200 : 150;
+          el.style.opacity = String(smoothstep(fadeStart, fadeEnd, bodyDist));
+        } else {
+          el.style.opacity = '1';
+        }
         el.classList.add('label-landmark');
         continue;
       }
@@ -825,14 +862,21 @@ export async function createSystems(scene, camera, renderer) {
       }
       if (blocked) { hl.line.visible = false; continue; }
 
-      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2, mz = (from.z + to.z) / 2;
       const arr = hl.posBuffer.array;
       arr[0] = from.x; arr[1] = from.y; arr[2] = from.z;
-      arr[3] = mx; arr[4] = my; arr[5] = mz;
-      arr[6] = mx; arr[7] = my; arr[8] = mz;
-      arr[9] = to.x; arr[10] = to.y; arr[11] = to.z;
+      arr[3] = to.x; arr[4] = to.y; arr[5] = to.z;
       hl.posBuffer.needsUpdate = true;
+
       hl.line.visible = true;
+    }
+
+    /* Zone labels rotate with galaxy, fade when close */
+    const camDist = camera.position.length();
+    const zoneFade = smoothstep(150, 350, camDist);
+    for (const zl of zoneLabels) {
+      const rot = canonicalToRotated(zl.cx, zl.cz, rotationTime);
+      zl.css2d.position.set(rot.x, 0, rot.z);
+      zl.el.style.opacity = String(zoneFade * 0.8);
     }
 
     /* Label pool: reassign every N frames, update positions every frame */
@@ -967,9 +1011,29 @@ export async function createSystems(scene, camera, renderer) {
     autosave();
   }
 
+  function initZoneLabels() {
+    for (const [zid, zone] of Object.entries(galaxyData.zones)) {
+      if (zid === 'core' || !zone.position) continue;
+      const div = document.createElement('div');
+      div.className = 'zone-label';
+      const displayName = ZONE_BREAKS[zid] || zone.name;
+      displayName.split('\n').forEach((line, i) => {
+        if (i > 0) div.appendChild(document.createElement('br'));
+        div.appendChild(document.createTextNode(line));
+      });
+      const fc = ZONE_FACTIONS[zid];
+      if (fc) div.style.color = fc.startsWith('#') ? fc : (galaxyData.factions[fc]?.color || '#5ce1e6');
+      const obj = new CSS2DObject(div);
+      obj.position.set(zone.position.x, 0, zone.position.z);
+      scene.add(obj);
+      zoneLabels.push({ css2d: obj, el: div, cx: zone.position.x, cz: zone.position.z });
+    }
+  }
+
   /* Init */
   await loadData();
   initLabelPool();
+  initZoneLabels();
   rebuildMarkers();
 
   return {

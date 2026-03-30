@@ -111,6 +111,37 @@ canvas { display: block; }
   cursor: pointer;
 }
 
+.gx-controls-guide {
+  position: fixed;
+  top: 5.5rem;
+  left: 1.2rem;
+  z-index: 100;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.5rem;
+  background: rgba(13, 13, 26, 0.4);
+  font-family: 'League Spartan', system-ui, sans-serif;
+  font-size: 0.68rem;
+  color: var(--gx-text);
+  line-height: 1.5;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.gx-controls-guide b {
+  color: var(--gx-accent);
+  font-weight: 600;
+  margin-right: 0.3em;
+}
+
+.gx-controls-guide .guide-track {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.cinema-active .gx-controls-guide {
+  display: none;
+}
+
 .cinema-active .fly-home,
 .cinema-active .gx-controls,
 .cinema-active .gx-hud {
@@ -240,6 +271,21 @@ canvas { display: block; }
 
 .scale-bar-label {
   margin-top: 4px;
+}
+
+.zone-label {
+  color: #5ce1e6;
+  font-family: 'League Spartan', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 24px rgba(0, 0, 0, 0.7);
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0.8;
 }
 
 .cinema-active .scale-bar,
