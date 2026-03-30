@@ -22,7 +22,16 @@
       "rotation": 0
     },
     "a-b": {
-      "name": "Asteroid Bubble"
+      "name": "Asteroid Bubble",
+      "position": {
+        "x": 0,
+        "z": 0
+      },
+      "radius": {
+        "rx": 200,
+        "rz": 200
+      },
+      "rotation": 0
     },
     "rim": {
       "name": "Outer Rim"
@@ -6103,11 +6112,6 @@
     "pugiot-the-pug--gas-n-gripe-3": {
       "fromId": "pugiot-the-pug",
       "toId": "gas-n-gripe-3",
-      "via": []
-    },
-    "pugiot-the-pug--los-kuaran": {
-      "fromId": "pugiot-the-pug",
-      "toId": "los-kuaran",
       "via": []
     },
     "pugiot-the-pug--cholyoke": {

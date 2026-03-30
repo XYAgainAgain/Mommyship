@@ -101,7 +101,7 @@ export async function createCompositor(renderer) {
     distortionRT.setSize(Math.floor(w * 0.5), Math.floor(h * 0.5));
   }
 
-  function render(scene, camera, bhScreenPos, lodFactor) {
+  function render(scene, camera, bhScreenPos, lodFactor, markerScene) {
     ensureRTs();
 
     composeMat.uniforms.uBlackHolePosition.value.copy(bhScreenPos);
@@ -114,6 +114,12 @@ export async function createCompositor(renderer) {
     renderer.setRenderTarget(spaceRT);
     renderer.clear();
     renderer.render(scene, camera);
+
+    /* Pass 1b: markers into same RT so they get UV-distorted by the BH.
+       Depth is NOT cleared — asteroid depth occludes markers behind them */
+    if (markerScene) {
+      renderer.render(markerScene, camera);
+    }
 
     /* Pass 2: distortion planes → distortionRT */
     renderer.setRenderTarget(distortionRT);

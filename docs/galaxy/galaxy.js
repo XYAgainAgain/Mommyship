@@ -11,6 +11,7 @@ import { createCoreStorm } from './core-storm.js';
 import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
 import { createSystems } from './systems.js';
+import * as asteroids from './asteroids.js';
 
 /* Avoids per-frame allocation for BH screen-space projection */
 const _bhScreen = new THREE.Vector3();
@@ -54,6 +55,7 @@ async function init() {
   const dustTorus = await createDustTorus(scene, renderer);
 
   const systems = await createSystems(scene, cam.camera, renderer);
+  await asteroids.init(scene, systems.getData());
 
   /* Nebula toggle: both systems in memory, swap via localStorage */
   let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
@@ -232,13 +234,14 @@ async function init() {
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);
     coreStorm.update(elapsed, rotationTime);
     dustTorus.update(elapsed, rotationTime, cam.camera, cinemaMode);
+    asteroids.update(delta, rotationTime);
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
     const lodFactor = cinemaMode ? 1 : computeLOD(cam.camera);
     bh.update(elapsed, lodFactor, cam.camera);
 
-    systems.update(delta, rotationTime);
+    systems.update(delta, rotationTime, lodFactor);
 
     /* Camera physically follows tracked body through galactic rotation + orbits */
     if (trackedId) {
@@ -262,17 +265,15 @@ async function init() {
 
     if (lodFactor > 0) {
       const screenPos = projectToScreen(cam.camera);
-      compositor.render(scene, cam.camera, screenPos, lodFactor);
+      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene);
     } else {
       renderer.setRenderTarget(null);
       renderer.clear();
       renderer.render(scene, cam.camera);
-    }
 
-    /* Markers rendered post-compositor with depth occlusion */
-    renderer.setRenderTarget(null);
-    renderer.clear(false, true, false);
-    renderer.render(systems.markerScene, cam.camera);
+      /* Markers share depth with main scene — asteroids occlude them */
+      renderer.render(systems.markerScene, cam.camera);
+    }
 
     systems.labelRenderer.render(scene, cam.camera);
   }

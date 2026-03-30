@@ -276,6 +276,7 @@ export async function createSystems(scene, camera, renderer) {
   const _mouse = new THREE.Vector2();
   const _placementPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const _planeHit = new THREE.Vector3();
+  const _proj = new THREE.Vector3();
 
   /* Click detection state */
   let pointerDownPos = null;
@@ -710,7 +711,7 @@ export async function createSystems(scene, camera, renderer) {
   }
 
   /* Per-frame pool update: positions, opacity, selected styling */
-  function updatePool(rotationTime) {
+  function updatePool(rotationTime, bhNdcX, bhNdcY, bhScreenR) {
     const camPos = camera.position;
     for (const entry of labelPool) {
       if (!entry.bodyId || !entry.css2d.visible) continue;
@@ -722,49 +723,56 @@ export async function createSystems(scene, camera, renderer) {
       entry.css2d.position.set(wp.x, wp.y + MARKER_RADIUS * scale + 0.5, wp.z);
 
       const el = entry.el;
+      const isSelected = entry.bodyId === selectedId;
+      let opacity;
 
-      /* Selected: white text + faction glow */
-      if (entry.bodyId === selectedId) {
-        el.style.opacity = '1';
+      if (isSelected) {
         el.style.color = '#ffffff';
         const dark = darkenHex(entry.factionColor, 0.55);
         el.style.textShadow = '0 0 10px ' + dark + ', 0 0 20px ' + dark;
         el.classList.add('selected');
         el.classList.remove('label-landmark');
-        continue;
-      }
+        opacity = 1;
+      } else {
+        el.style.color = entry.labelColor;
+        el.style.textShadow = '';
+        el.classList.remove('selected');
 
-      el.style.color = entry.labelColor;
-      el.style.textShadow = '';
-      el.classList.remove('selected');
-
-      const tier = getLabelTier(entry.bodyId);
-      if (tier === 1) {
-        /* Landmarks fade when camera approaches them */
-        const body = galaxyData.bodies[entry.bodyId];
-        if (body?.tags?.includes('landmark')) {
-          const dx2 = camPos.x - wp.x, dy2 = camPos.y - wp.y, dz2 = camPos.z - wp.z;
-          const bodyDist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
-          const fadeStart = entry.bodyId === 'smbh' ? 100 : 60;
-          const fadeEnd = entry.bodyId === 'smbh' ? 200 : 150;
-          el.style.opacity = String(smoothstep(fadeStart, fadeEnd, bodyDist));
+        const tier = getLabelTier(entry.bodyId);
+        if (tier === 1) {
+          const body = galaxyData.bodies[entry.bodyId];
+          if (body?.tags?.includes('landmark')) {
+            const dx2 = camPos.x - wp.x, dy2 = camPos.y - wp.y, dz2 = camPos.z - wp.z;
+            const bodyDist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+            const fadeStart = entry.bodyId === 'smbh' ? 100 : 60;
+            const fadeEnd = entry.bodyId === 'smbh' ? 200 : 150;
+            opacity = smoothstep(fadeStart, fadeEnd, bodyDist);
+          } else {
+            opacity = 1;
+          }
+          el.classList.add('label-landmark');
         } else {
-          el.style.opacity = '1';
+          el.classList.remove('label-landmark');
+          const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          const [fadeNear, fadeFar] = LABEL_FADE[Math.min(meta?.depth || 0, 2)];
+          opacity = 1 - smoothstep(fadeNear, fadeFar, dist);
         }
-        el.classList.add('label-landmark');
-        continue;
       }
 
-      el.classList.remove('label-landmark');
-      const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      const [fadeNear, fadeFar] = LABEL_FADE[Math.min(meta?.depth || 0, 2)];
-      el.style.opacity = String(1 - smoothstep(fadeNear, fadeFar, dist));
+      /* Fade ALL labels (including selected) that overlap the BH's lensed disc */
+      if (bhScreenR > 0) {
+        _proj.set(wp.x, wp.y, wp.z).project(camera);
+        const d = Math.hypot(_proj.x - bhNdcX, _proj.y - bhNdcY);
+        opacity *= smoothstep(bhScreenR * 0.5, bhScreenR, d);
+      }
+
+      el.style.opacity = String(opacity);
     }
   }
 
   /* Per-frame update: rotate markers + labels to match galactic disk */
-  function update(delta, rotationTime) {
+  function update(delta, rotationTime, lodFactor) {
     lastRotationTime = rotationTime;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
     const hasCubes = cubeMarkers && cubeIds.length > 0;
@@ -870,13 +878,30 @@ export async function createSystems(scene, camera, renderer) {
       hl.line.visible = true;
     }
 
+    /* Screen-space BH disc radius for hiding labels behind the lensing */
+    /* Measure BH disc in screen space along camera-right so it's correct at any angle */
+    let bhNdcX = 0, bhNdcY = 0, bhScreenR = 0;
+    if (lodFactor > 0) {
+      _proj.set(0, 0, 0).project(camera);
+      bhNdcX = _proj.x; bhNdcY = _proj.y;
+      _proj.setFromMatrixColumn(camera.matrixWorld, 0).normalize().multiplyScalar(60);
+      _proj.project(camera);
+      bhScreenR = Math.hypot(_proj.x - bhNdcX, _proj.y - bhNdcY);
+    }
+
     /* Zone labels rotate with galaxy, fade when close */
     const camDist = camera.position.length();
     const zoneFade = smoothstep(150, 350, camDist);
     for (const zl of zoneLabels) {
       const rot = canonicalToRotated(zl.cx, zl.cz, rotationTime);
       zl.css2d.position.set(rot.x, 0, rot.z);
-      zl.el.style.opacity = String(zoneFade * 0.8);
+      let opacity = zoneFade * 0.8;
+      if (bhScreenR > 0) {
+        _proj.set(rot.x, 0, rot.z).project(camera);
+        const d = Math.hypot(_proj.x - bhNdcX, _proj.y - bhNdcY);
+        opacity *= smoothstep(bhScreenR * 0.5, bhScreenR, d);
+      }
+      zl.el.style.opacity = String(opacity);
     }
 
     /* Label pool: reassign every N frames, update positions every frame */
@@ -884,7 +909,7 @@ export async function createSystems(scene, camera, renderer) {
       labelAssignFrame = 0;
       reassignLabels();
     }
-    updatePool(rotationTime);
+    updatePool(rotationTime, bhNdcX, bhNdcY, bhScreenR);
   }
 
   function getLabelTier(bodyId) {
