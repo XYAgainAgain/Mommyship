@@ -51,6 +51,25 @@ function rayleighSample(rng, sigma) {
   return sigma * Math.sqrt(-2 * Math.log(1 - rng.next()));
 }
 
+const RESONANCES = [
+  { ratio: 2,     weight: 0.35 },
+  { ratio: 3/2,   weight: 0.30 },
+  { ratio: 5/3,   weight: 0.15 },
+  { ratio: 4,     weight: 0.10 },
+  { ratio: 5/2,   weight: 0.10 }
+];
+
+/* Probabilistically lock a period ratio toward a simple integer resonance */
+function nudgeToResonance(ratio, rng, strength) {
+  let best = null, bestDist = Infinity;
+  for (const r of RESONANCES) {
+    const dist = Math.abs(ratio - r.ratio);
+    if (dist < bestDist) { bestDist = dist; best = r; }
+  }
+  if (rng.next() > best.weight) return ratio;
+  return ratio + (best.ratio - ratio) * (strength || 0.6);
+}
+
 function generateOrbitalDefaults(bodyId, depth) {
   const d = Math.min(depth, 3);
   const rng = createRng(hashString(bodyId));
@@ -438,6 +457,25 @@ export async function createSystems(scene, camera, renderer) {
           const a = hasExplicitA ? orbitals[i].orbital.a : minR + (i + 0.5) * spacing;
           orbitals[i].orbital.a = a;
           orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e, spacing / (2 * a + spacing));
+        }
+
+        /* Nudge adjacent period ratios toward integer resonances (Kepler T ∝ a^1.5).
+           Weaker strength for crowded systems so compounding doesn't blow out outer orbits */
+        const resStrength = orbitals.length <= 4 ? 0.6 : 0.3;
+        for (let i = 1; i < orbitals.length; i++) {
+          if (galaxyData.bodies[orbitals[i].id]?.orbital?.a != null) continue;
+          const inner = orbitals[i - 1].orbital.a;
+          const outer = orbitals[i].orbital.a;
+          const ratio = Math.pow(outer / inner, 1.5);
+          const resRng = createRng(hashString(orbitals[i].id) + 314);
+          const nudged = nudgeToResonance(ratio, resRng, resStrength);
+          if (nudged === ratio) continue;
+          /* Clamp so nudging can't push beyond 1.5× the original spacing */
+          const maxA = minR + (i + 0.5) * spacing * 1.5;
+          const newA = Math.min(inner * Math.pow(nudged, 2 / 3), maxA);
+          orbitals[i].orbital.a = newA;
+          orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e,
+            spacing / (2 * newA + spacing));
         }
 
         if (depth >= 2) {
