@@ -11,10 +11,20 @@ uniform float uRows;
 uniform float uTotalFrames;
 uniform float uFPS;
 
-varying vec2 vUv;
+varying vec2 vUv0;
+varying vec2 vUv1;
+varying float vBlend;
 varying float vTint;
 varying float vRadius;
 varying vec2 vCanonicalXZ;
+
+/* Map a frame index to sprite sheet UVs for this quad corner */
+vec2 frameUV(float frame, vec2 corner) {
+  float col = mod(frame, uColumns);
+  float row = floor(frame / uColumns);
+  return vec2((col + corner.x) / uColumns,
+              1.0 - (row + (1.0 - corner.y)) / uRows);
+}
 
 void main() {
   /* Differential rotation — matches disk.js core boost (0.30) */
@@ -36,12 +46,16 @@ void main() {
     + camRight * position.x * aScale
     + camUp    * position.y * aScale;
 
-  /* Sprite sheet UV animation */
-  float frame = mod(floor((uTime + aTimeOffset) * uFPS), uTotalFrames);
-  float col = mod(frame, uColumns);
-  float row = floor(frame / uColumns);
-  vUv.x = (col + uv.x) / uColumns;
-  vUv.y = 1.0 - (row + (1.0 - uv.y)) / uRows;
+  /* Sprite sheet: per-instance speed variation derived from time offset */
+  float speed = 0.7 + 0.6 * fract(aTimeOffset * 0.1234);
+  float rawFrame = (uTime + aTimeOffset) * uFPS * speed;
+  float frame0 = mod(floor(rawFrame), uTotalFrames);
+  float frame1 = mod(frame0 + 1.0, uTotalFrames);
+  vUv0 = frameUV(frame0, uv);
+  vUv1 = frameUV(frame1, uv);
+  /* Sharp crossfade: hold each frame ~85% of duration, transition over ~15% */
+  float t = fract(rawFrame);
+  vBlend = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 
   vTint = aTint;
   vRadius = aRadius;

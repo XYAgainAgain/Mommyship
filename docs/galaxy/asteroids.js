@@ -199,7 +199,7 @@ const BIGBOI = {
   columns: 12, rows: 10, totalFrames: 120,
   count: 4000,
   sizeMin: 1.5, sizeMax: 4.0,
-  fps: 10,
+  fps: 12,
   seed: 'nevertellmetheodds'
 };
 
@@ -208,7 +208,7 @@ const LILGUY = {
   columns: 10, rows: 6, totalFrames: 60,
   count: 11000,
   sizeMin: 0.3, sizeMax: 1.2,
-  fps: 12,
+  fps: 14,
   seed: 372021
 };
 
@@ -217,7 +217,7 @@ const MEGA = {
   columns: 12, rows: 10, totalFrames: 120,
   count: 5,
   sizeMin: 10.0, sizeMax: 18.0,
-  fps: 5,
+  fps: 6,
   seed: 'absoluteunit'
 };
 
@@ -319,7 +319,10 @@ function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMod
     side: THREE.DoubleSide,
     depthWrite: true,
     depthTest: true,
-    transparent: false
+    transparent: false,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1
   });
 
   const mesh = new THREE.Mesh(instGeo, mat);

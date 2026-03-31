@@ -118,12 +118,13 @@ canvas { display: block; }
   z-index: 100;
   padding: 0.4rem 0.7rem;
   border-radius: 0.5rem;
-  background: rgba(13, 13, 26, 0.4);
+  background: rgba(13, 13, 26, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-family: 'League Spartan', system-ui, sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   color: var(--gx-text);
   line-height: 1.5;
-  opacity: 0.7;
   pointer-events: none;
 }
 

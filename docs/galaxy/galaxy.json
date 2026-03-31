@@ -129,18 +129,6 @@
       },
       "rotation": 0
     },
-    "gulch": {
-      "name": "Gantropic Gulch",
-      "position": {
-        "x": 21,
-        "z": 221
-      },
-      "radius": {
-        "rx": 17,
-        "rz": 14
-      },
-      "rotation": 0
-    },
     "clp": {
       "name": "Comexo Lifestyle Planets",
       "position": {
@@ -274,6 +262,34 @@
         "color": "#ff6b8a",
         "size": 50,
         "glow": 0.6
+      },
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": null,
+      "zoneId": null,
+      "tags": [
+        "landmark"
+      ],
+      "hasFuddruckers": false
+    },
+    "gantropic-gulch": {
+      "type": "region",
+      "subtype": "gulch",
+      "name": "Gantropic Gulch",
+      "description": "",
+      "notes": "",
+      "position": {
+        "x": 21,
+        "y": 0,
+        "z": 221
+      },
+      "parentId": null,
+      "orbital": null,
+      "visual": {
+        "color": "#a54739",
+        "size": 0,
+        "glow": 0
       },
       "spectralClass": null,
       "luminosity": null,
@@ -4877,7 +4893,7 @@
     "gantropic-station-1": {
       "type": "station",
       "subtype": "fueling",
-      "name": "Gantropic OSS 1",
+      "name": "Zexatron Phive",
       "description": "",
       "notes": "A-Class",
       "class": "A",
@@ -6049,11 +6065,6 @@
       "toId": "halcyon",
       "via": []
     },
-    "gantropic--steepborto": {
-      "fromId": "gantropic",
-      "toId": "steepborto",
-      "via": []
-    },
     "homi-eaomi--steepborto": {
       "fromId": "homi-eaomi",
       "toId": "steepborto",
@@ -6162,6 +6173,16 @@
     "gas-n-gripe-18--los-kuaran": {
       "fromId": "gas-n-gripe-18",
       "toId": "los-kuaran",
+      "via": []
+    },
+    "steepborto--gantropic-station-1": {
+      "fromId": "steepborto",
+      "toId": "gantropic-station-1",
+      "via": []
+    },
+    "gas-n-gripe-8--gantropic-station-2": {
+      "fromId": "gas-n-gripe-8",
+      "toId": "gantropic-station-2",
       "via": []
     }
   },

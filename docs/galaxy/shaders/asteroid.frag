@@ -3,13 +3,16 @@ precision highp float;
 uniform sampler2D uSpriteSheet;
 uniform sampler2D uLightmap;
 
-varying vec2 vUv;
+varying vec2 vUv0;
+varying vec2 vUv1;
+varying float vBlend;
 varying float vTint;
 varying float vRadius;
 varying vec2 vCanonicalXZ;
 
 void main() {
-  vec4 tex = texture2D(uSpriteSheet, vUv);
+  /* Cross-fade between current and next sprite frame */
+  vec4 tex = mix(texture2D(uSpriteSheet, vUv0), texture2D(uSpriteSheet, vUv1), vBlend);
   if (tex.a < 0.35) discard;
 
   /* Sample galactic lightmap at canonical position (+-500 map units -> 0-1 UV) */

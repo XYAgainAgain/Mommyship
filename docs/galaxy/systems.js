@@ -21,7 +21,7 @@ const SPHERE_VOL = (4 / 3) * Math.PI * Math.pow(MARKER_RADIUS, 3);
 const CUBE_SMALL = Math.cbrt(SPHERE_VOL * 2 / 3);
 const CUBE_FULL = Math.cbrt(SPHERE_VOL);
 
-const LANDMARK_IDS = new Set(['smbh', 'broken-arm-nebula']);
+const LANDMARK_IDS = new Set(['smbh', 'broken-arm-nebula', 'gantropic-gulch']);
 const FULL_SIZE_CUBES = new Set(['gas-n-gripe-alpha', 'gas-n-gripe-premium']);
 
 function isGasNGripe(id) { return id.startsWith('gas-n-gripe'); }
@@ -182,7 +182,7 @@ export async function createSystems(scene, camera, renderer) {
   document.querySelector('.experience').appendChild(labelRenderer.domElement);
 
   /* Zone labels — faction-colored or turquoise, rotate with galaxy */
-  const ZONE_FACTIONS = { 'cuck-core': 'cuck', 'neo-gio-core': '#6b8cbf', 'clp': 'comexo', 'gulch': '#a54739' };
+  const ZONE_FACTIONS = { 'cuck-core': 'cuck', 'neo-gio-core': '#6b8cbf', 'clp': 'comexo' };
   const ZONE_BREAKS = {
     'cuck-core': 'C.U.C.K. Space',
     '1gwrz': 'First Galactic\nWar Ruin Zone',
@@ -265,7 +265,8 @@ export async function createSystems(scene, camera, renderer) {
 
   /* Landmark hitboxes (invisible, raycastable) */
   const LANDMARKS = [
-    { bodyId: 'smbh', radius: 30 }
+    { bodyId: 'smbh', radius: 30 },
+    { bodyId: 'gantropic-gulch', radius: 15 }
   ];
   const hitboxGeo = new THREE.SphereGeometry(1, 8, 6);
   const hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
