@@ -234,7 +234,7 @@ async function init() {
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);
     coreStorm.update(elapsed, rotationTime);
     dustTorus.update(elapsed, rotationTime, cam.camera, cinemaMode);
-    asteroids.update(delta, rotationTime);
+    asteroids.update(delta, rotationTime, cam.camera.position);
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 

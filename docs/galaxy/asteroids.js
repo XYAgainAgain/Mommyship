@@ -67,6 +67,32 @@ const BODY_SCAN_INNER = 80;
 const BODY_SCAN_OUTER = 250;
 const HYPERLANE_HALF_WIDTH = 8;
 
+/* Drift/collision physics */
+const DRIFT_ACTIVATION_R = 100;
+const DRIFT_DEACTIVATION_R = 120;
+const DRIFT_BELT_INNER = 80;
+const DRIFT_BELT_OUTER = 240;
+const DRIFT_MAX_ACTIVE = 500;
+const DRIFT_SPEED_MIN = 0.03;
+const DRIFT_SPEED_MAX = 0.15;
+const DRIFT_RESTORE_K = 0.003;
+const DRIFT_DAMPING = 0.97;
+const DRIFT_MAX_VEL = 0.5;
+const DRIFT_EASE_IN = 0.5;
+const DRIFT_EASE_OUT = 2.0;
+const DRIFT_REBUILD_INTERVAL = 30;
+const COLL_RESTITUTION = 0.6;
+const COLL_GRID_SIZE = 10;
+const COLL_MAX_PER_FRAME = 2;
+const COLL_RADIUS_FACTOR = 0.4;
+const ANIM_REVERSE_CHANCE_LIGHT = 0.6;
+const ANIM_REVERSE_CHANCE_HEAVY = 0.3;
+const COLLISION_COOLDOWN = 5.0;
+const SPLIT_CHANCE = 0.4;
+const SPLIT_MIN = 3;
+const SPLIT_MAX = 5;
+const LILGUY_SPARES = 200;
+
 function radialDensity(r) {
   const rampUp = smoothstep(INNER_R, PEAK_LO, r);
   const rampDown = 1.0 - smoothstep(PEAK_HI, OUTER_R, r);
@@ -194,6 +220,16 @@ let bigBoiMat = null;
 let lilGuyMat = null;
 let megaMat = null;
 
+/* Per-population refs needed for drift system buffer mutation */
+const populations = {};
+
+/* Active asteroid tracking — keyed by "pop-index" (e.g. "big-42") */
+const activeSet = new Map();
+const deadSet = new Set();
+const spareIndices = [];
+let driftActive = false;
+let rebuildCounter = 0;
+
 const BIGBOI = {
   texture: 'galaxy/textures/BigBoi.webp',
   columns: 12, rows: 10, totalFrames: 120,
@@ -272,33 +308,54 @@ function generateMegaPositions(count, rng, exclusionZones) {
   return { offsets, radii, tints, timeOffsets, placed };
 }
 
-function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMode) {
+function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMode, spareCount) {
   const { offsets, radii, tints, timeOffsets, placed } = megaMode
     ? generateMegaPositions(cfg.count, rng, exclusionZones)
     : generatePositions(cfg.count, rng, exclusionZones);
 
-  /* Per-instance scale */
-  const scaleArr = new Float32Array(placed);
+  const total = placed + (spareCount || 0);
+
+  /* Per-instance scale — spares start at 0 (invisible) */
+  const scaleArr = new Float32Array(total);
   for (let i = 0; i < placed; i++)
     scaleArr[i] = cfg.sizeMin + (cfg.sizeMax - cfg.sizeMin) * rng.next();
+
+  /* Per-instance animation direction — all forward initially */
+  const animDirArr = new Float32Array(total);
+  animDirArr.fill(1.0);
+
+  /* Extend placement buffers for spares (zeroed positions, mid-belt radius) */
+  const finalOffsets = new Float32Array(total * 3);
+  finalOffsets.set(offsets.subarray(0, placed * 3));
+  const finalRadii = new Float32Array(total);
+  finalRadii.set(radii.subarray(0, placed));
+  for (let i = placed; i < total; i++) finalRadii[i] = 160;
+  const finalTints = new Float32Array(total);
+  finalTints.set(tints.subarray(0, placed));
+  for (let i = placed; i < total; i++) finalTints[i] = 1.0;
+  const finalTimeOffsets = new Float32Array(total);
+  finalTimeOffsets.set(timeOffsets.subarray(0, placed));
+  for (let i = placed; i < total; i++) finalTimeOffsets[i] = rng.next() * 100.0;
 
   const geo = new THREE.PlaneGeometry(1, 1);
   const instGeo = new THREE.InstancedBufferGeometry();
   instGeo.index = geo.index;
   instGeo.attributes.position = geo.attributes.position;
   instGeo.attributes.uv = geo.attributes.uv;
-  instGeo.instanceCount = placed;
+  instGeo.instanceCount = total;
 
   instGeo.setAttribute('aOffset',
-    new THREE.InstancedBufferAttribute(offsets.slice(0, placed * 3), 3));
+    new THREE.InstancedBufferAttribute(finalOffsets, 3));
   instGeo.setAttribute('aScale',
     new THREE.InstancedBufferAttribute(scaleArr, 1));
   instGeo.setAttribute('aTimeOffset',
-    new THREE.InstancedBufferAttribute(timeOffsets.slice(0, placed), 1));
+    new THREE.InstancedBufferAttribute(finalTimeOffsets, 1));
   instGeo.setAttribute('aRadius',
-    new THREE.InstancedBufferAttribute(radii.slice(0, placed), 1));
+    new THREE.InstancedBufferAttribute(finalRadii, 1));
   instGeo.setAttribute('aTint',
-    new THREE.InstancedBufferAttribute(tints.slice(0, placed), 1));
+    new THREE.InstancedBufferAttribute(finalTints, 1));
+  instGeo.setAttribute('aAnimDir',
+    new THREE.InstancedBufferAttribute(animDirArr, 1));
 
   const tex = new THREE.TextureLoader().load(cfg.texture);
   tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -327,7 +384,7 @@ function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMod
 
   const mesh = new THREE.Mesh(instGeo, mat);
   mesh.frustumCulled = false;
-  return { mesh, mat, count: placed };
+  return { mesh, mat, count: placed, scaleArr, spareStart: placed, spareCount: spareCount || 0 };
 }
 
 export async function init(scene, data) {
@@ -346,27 +403,471 @@ export async function init(scene, data) {
   bigBoiMesh = big.mesh;
   bigBoiMat = big.mat;
   scene.add(bigBoiMesh);
+  const bigGeo = big.mesh.geometry;
+  populations.big = {
+    mesh: big.mesh, count: big.count, scales: big.scaleArr,
+    offsetAttr: bigGeo.getAttribute('aOffset'),
+    scaleAttr: bigGeo.getAttribute('aScale'),
+    animDirAttr: bigGeo.getAttribute('aAnimDir'),
+    timeOffsetAttr: bigGeo.getAttribute('aTimeOffset')
+  };
 
   const lilRng = createRng(typeof LILGUY.seed === 'number'
     ? LILGUY.seed : hashString(LILGUY.seed));
-  const lil = createAsteroidMesh(LILGUY, shaders, lilRng, exclusionZones, lightmap, false);
+  const lil = createAsteroidMesh(LILGUY, shaders, lilRng, exclusionZones, lightmap, false, LILGUY_SPARES);
   lilGuyMesh = lil.mesh;
   lilGuyMat = lil.mat;
   scene.add(lilGuyMesh);
+  const lilGeo = lil.mesh.geometry;
+  populations.lil = {
+    mesh: lil.mesh, count: lil.count, scales: lil.scaleArr,
+    offsetAttr: lilGeo.getAttribute('aOffset'),
+    scaleAttr: lilGeo.getAttribute('aScale'),
+    animDirAttr: lilGeo.getAttribute('aAnimDir'),
+    radiusAttr: lilGeo.getAttribute('aRadius'),
+    tintAttr: lilGeo.getAttribute('aTint'),
+    timeOffsetAttr: lilGeo.getAttribute('aTimeOffset')
+  };
+  /* Fill spare pool with indices after placed LilGuys */
+  for (let i = lil.spareStart; i < lil.spareStart + lil.spareCount; i++)
+    spareIndices.push(i);
 
   const megaRng = createRng(hashString(MEGA.seed));
   const mega = createAsteroidMesh(MEGA, shaders, megaRng, exclusionZones, lightmap, true);
   megaMesh = mega.mesh;
   megaMat = mega.mat;
   scene.add(megaMesh);
+  const megaGeo = mega.mesh.geometry;
+  populations.mega = {
+    mesh: mega.mesh, count: mega.count, scales: mega.scaleArr,
+    offsetAttr: megaGeo.getAttribute('aOffset'),
+    scaleAttr: megaGeo.getAttribute('aScale'),
+    animDirAttr: megaGeo.getAttribute('aAnimDir'),
+    timeOffsetAttr: megaGeo.getAttribute('aTimeOffset')
+  };
 
   console.log(`Asteroids: ${big.count} BigBoi + ${lil.count} LilGuy + ${mega.count} Mega = ${big.count + lil.count + mega.count} total`);
 }
 
-export function update(_delta, rotationTime) {
+/* Matches the vertex shader's differential rotation formula */
+function asteroidAngularSpeed(r) {
+  return 0.06 + 0.008 / (r + 60.0) + 0.30 * Math.exp(-r * 0.05);
+}
+
+/* XZ distance² from camera to each asteroid's rotated world position */
+function getCandidates(pop, camX, camZ, rotationTime) {
+  const attr = populations[pop].offsetAttr;
+  const radiusAttr = populations[pop].mesh.geometry.getAttribute('aRadius');
+  const count = populations[pop].count;
+  const r2 = DRIFT_ACTIVATION_R * DRIFT_ACTIVATION_R;
+  const candidates = [];
+  for (let i = 0; i < count; i++) {
+    if (pop === 'big' && deadSet.has(i)) continue;
+    const cx = attr.getX(i), cz = attr.getZ(i);
+    const r = radiusAttr.getX(i);
+    const angle = rotationTime * asteroidAngularSpeed(r);
+    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+    /* Canonical → world rotation (same as vertex shader) */
+    const wx = cx * cosA - cz * sinA;
+    const wz = cx * sinA + cz * cosA;
+    const dx = wx - camX, dz = wz - camZ;
+    const d2 = dx * dx + dz * dz;
+    if (d2 < r2) candidates.push({ pop, index: i, distSq: d2 });
+  }
+  return candidates;
+}
+
+function rebuildActiveSet(camX, camZ, now, rotationTime) {
+  const candidates = [
+    ...getCandidates('mega', camX, camZ, rotationTime),
+    ...getCandidates('big', camX, camZ, rotationTime),
+    ...getCandidates('lil', camX, camZ, rotationTime)
+  ];
+
+  /* Mega always first, then closest to camera */
+  candidates.sort((a, b) => {
+    if (a.pop === 'mega' && b.pop !== 'mega') return -1;
+    if (b.pop === 'mega' && a.pop !== 'mega') return 1;
+    return a.distSq - b.distSq;
+  });
+
+  const desired = new Set();
+  const kept = candidates.slice(0, DRIFT_MAX_ACTIVE);
+  for (const c of kept) {
+    const key = c.pop + '-' + c.index;
+    desired.add(key);
+
+    if (!activeSet.has(key)) {
+      const attr = populations[c.pop].offsetAttr;
+      const scale = populations[c.pop].scales[c.index];
+      const rng = createRng(c.index * 7919 + c.pop.charCodeAt(0));
+      const speed = DRIFT_SPEED_MIN + (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN) * rng.next();
+      const angle = rng.next() * Math.PI * 2;
+
+      const radiusAttr = populations[c.pop].mesh.geometry.getAttribute('aRadius');
+      activeSet.set(key, {
+        pop: c.pop,
+        index: c.index,
+        origX: attr.getX(c.index), origY: attr.getY(c.index), origZ: attr.getZ(c.index),
+        origR: radiusAttr.getX(c.index),
+        x: attr.getX(c.index), y: attr.getY(c.index), z: attr.getZ(c.index),
+        vx: Math.cos(angle) * speed,
+        vy: (rng.next() - 0.5) * 0.6 * speed,
+        vz: Math.sin(angle) * speed,
+        radius: scale * COLL_RADIUS_FACTOR,
+        mass: c.pop === 'mega' ? Infinity : scale * scale * scale,
+        activationTime: now,
+        lastCollisionTime: 0,
+        easeComplete: false,
+        deactivating: false,
+        deactivationTime: 0,
+        collisionsThisFrame: 0
+      });
+    } else {
+      /* Re-entered range — cancel pending deactivation */
+      const rec = activeSet.get(key);
+      if (rec.deactivating) rec.deactivating = false;
+    }
+  }
+
+  /* Begin deactivating asteroids that left the desired set (spare fragments exempt) */
+  for (const [key, rec] of activeSet) {
+    if (!desired.has(key) && !rec.deactivating && !rec.isSpare) {
+      rec.deactivating = true;
+      rec.deactivationTime = now;
+    }
+  }
+}
+
+function easeInQuad(t) { return t * t; }
+function easeOutQuad(t) { return t * (2 - t); }
+
+function stepDrift(delta, now) {
+  /* Normalize to 60fps equivalent so behavior is consistent across framerates */
+  const dampFactor = Math.pow(DRIFT_DAMPING, delta * 60);
+  const keysToRemove = [];
+
+  for (const [key, rec] of activeSet) {
+    rec.collisionsThisFrame = 0;
+
+    if (rec.deactivating) {
+      /* Ease back toward original position */
+      const t = Math.min(1, (now - rec.deactivationTime) / DRIFT_EASE_OUT);
+      const e = Math.min(1, easeOutQuad(t) * delta * 3);
+      rec.x += (rec.origX - rec.x) * e;
+      rec.y += (rec.origY - rec.y) * e;
+      rec.z += (rec.origZ - rec.z) * e;
+      rec.vx *= 0.9;
+      rec.vy *= 0.9;
+      rec.vz *= 0.9;
+
+      const dx = rec.x - rec.origX, dy = rec.y - rec.origY, dz = rec.z - rec.origZ;
+      if (t >= 1 || (dx * dx + dy * dy + dz * dz) < 0.001) {
+        rec.x = rec.origX;
+        rec.y = rec.origY;
+        rec.z = rec.origZ;
+        keysToRemove.push(key);
+        continue;
+      }
+    } else if (rec.mass !== Infinity) {
+      /* Spring toward original position (normalized to 60fps) */
+      const springK = DRIFT_RESTORE_K * delta * 60;
+      rec.vx -= (rec.x - rec.origX) * springK;
+      rec.vy -= (rec.y - rec.origY) * springK;
+      rec.vz -= (rec.z - rec.origZ) * springK;
+
+      rec.vx *= dampFactor;
+      rec.vy *= dampFactor;
+      rec.vz *= dampFactor;
+
+      /* Velocity cap */
+      const speed = Math.sqrt(rec.vx * rec.vx + rec.vy * rec.vy + rec.vz * rec.vz);
+      if (speed > DRIFT_MAX_VEL) {
+        const s = DRIFT_MAX_VEL / speed;
+        rec.vx *= s; rec.vy *= s; rec.vz *= s;
+      }
+
+      rec.x += rec.vx * delta;
+      rec.y += rec.vy * delta;
+      rec.z += rec.vz * delta;
+    }
+
+    /* Activation ease-in blend — skip collisions until complete */
+    if (!rec.deactivating && !rec.easeComplete) {
+      const t = Math.min(1, (now - rec.activationTime) / DRIFT_EASE_IN);
+      if (t < 1) {
+        const e = easeInQuad(t);
+        rec.x = rec.origX + (rec.x - rec.origX) * e;
+        rec.y = rec.origY + (rec.y - rec.origY) * e;
+        rec.z = rec.origZ + (rec.z - rec.origZ) * e;
+      } else {
+        rec.easeComplete = true;
+      }
+    }
+  }
+
+  for (const key of keysToRemove) {
+    const rec = activeSet.get(key);
+    if (rec.isSpare) {
+      /* Return spare to pool — hide it */
+      populations.lil.scaleAttr.setX(rec.index, 0);
+      populations.lil.scaleAttr.needsUpdate = true;
+      spareIndices.push(rec.index);
+    } else {
+      populations[rec.pop].offsetAttr.setXYZ(rec.index, rec.origX, rec.origY, rec.origZ);
+    }
+    activeSet.delete(key);
+  }
+}
+
+function splitBigBoi(rec, now) {
+  const count = SPLIT_MIN + Math.floor(Math.random() * (SPLIT_MAX - SPLIT_MIN + 1));
+  const available = Math.min(count, spareIndices.length);
+  if (available === 0) return;
+
+  /* Hide the BigBoi */
+  populations.big.scaleAttr.setX(rec.index, 0);
+  populations.big.scaleAttr.needsUpdate = true;
+  deadSet.add(rec.index);
+
+  const pop = populations.lil;
+  for (let i = 0; i < available; i++) {
+    const si = spareIndices.pop();
+    const angle = (i / available) * Math.PI * 2 + Math.random() * 0.5;
+    const spread = rec.radius * 0.5 + Math.random() * rec.radius * 0.3;
+    const fragScale = LILGUY.sizeMin + Math.random() * (LILGUY.sizeMax - LILGUY.sizeMin);
+    const speed = DRIFT_SPEED_MIN + Math.random() * DRIFT_SPEED_MAX;
+
+    /* Position fragments around the split point with outward velocity */
+    const fx = rec.x + Math.cos(angle) * spread;
+    const fy = rec.y + (Math.random() - 0.5) * spread * 0.4;
+    const fz = rec.z + Math.sin(angle) * spread;
+
+    /* Write buffer attributes for this spare */
+    pop.offsetAttr.setXYZ(si, fx, fy, fz);
+    pop.scaleAttr.setX(si, fragScale);
+    pop.radiusAttr.setX(si, rec.origR || 160);
+    pop.tintAttr.setX(si, 0.7 + Math.random() * 0.3);
+    pop.animDirAttr.setX(si, Math.random() < 0.5 ? -1.0 : 1.0);
+
+    const key = 'lil-' + si;
+    activeSet.set(key, {
+      pop: 'lil', index: si,
+      origX: fx, origY: fy, origZ: fz,
+      x: fx, y: fy, z: fz,
+      vx: Math.cos(angle) * speed + rec.vx * 0.5,
+      vy: (Math.random() - 0.5) * speed * 0.3 + rec.vy * 0.5,
+      vz: Math.sin(angle) * speed + rec.vz * 0.5,
+      radius: fragScale * COLL_RADIUS_FACTOR,
+      mass: fragScale * fragScale * fragScale,
+      activationTime: now,
+      lastCollisionTime: 0,
+      easeComplete: true,
+      deactivating: false,
+      deactivationTime: 0,
+      collisionsThisFrame: 0,
+      isSpare: true
+    });
+  }
+
+  /* Mark dirty */
+  pop.offsetAttr.needsUpdate = true;
+  pop.scaleAttr.needsUpdate = true;
+  pop.radiusAttr.needsUpdate = true;
+  pop.tintAttr.needsUpdate = true;
+  pop.animDirAttr.needsUpdate = true;
+}
+
+/* Flip animation direction while preserving the current frame (no visual discontinuity).
+   Continuity: (T + offset_old) * dir_old = (T + offset_new) * dir_new
+   Since dir_new = -dir_old: offset_new = -2T - offset_old */
+function flipAnimDir(pop, index, rotationTime) {
+  const p = populations[pop];
+  const oldOffset = p.timeOffsetAttr.getX(index);
+  p.timeOffsetAttr.setX(index, -2 * rotationTime - oldOffset);
+  p.timeOffsetAttr.needsUpdate = true;
+  p.animDirAttr.setX(index, -p.animDirAttr.getX(index));
+  p.animDirAttr.needsUpdate = true;
+}
+
+/* Collisions in canonical space — valid because nearby asteroids rotate nearly identically */
+function resolveCollisions(now, rotationTime) {
+  const grid = new Map();
+  const pendingSplits = [];
+  const inv = 1 / COLL_GRID_SIZE;
+
+  for (const [, rec] of activeSet) {
+    if (rec.deactivating || !rec.easeComplete) continue;
+    const cellKey = (Math.floor(rec.x * inv) << 16) | (Math.floor(rec.z * inv) & 0xFFFF);
+    if (!grid.has(cellKey)) grid.set(cellKey, []);
+    grid.get(cellKey).push(rec);
+  }
+
+  for (const [cellKey, cell] of grid) {
+    const cx = cellKey >> 16;
+    const cz = (cellKey << 16) >> 16;
+
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const nk = ((cx + dx) << 16) | ((cz + dz) & 0xFFFF);
+        const neighbor = grid.get(nk);
+        if (!neighbor) continue;
+
+        const isSelf = dx === 0 && dz === 0;
+
+        for (let i = 0; i < cell.length; i++) {
+          const a = cell[i];
+          if (a.collisionsThisFrame >= COLL_MAX_PER_FRAME) continue;
+
+          const jStart = isSelf ? i + 1 : 0;
+          for (let j = jStart; j < neighbor.length; j++) {
+            const b = neighbor[j];
+            if (b.collisionsThisFrame >= COLL_MAX_PER_FRAME) continue;
+
+            const ex = b.x - a.x, ey = b.y - a.y, ez = b.z - a.z;
+            const distSq = ex * ex + ey * ey + ez * ez;
+            const minDist = a.radius + b.radius;
+            if (distSq >= minDist * minDist || distSq < 0.0001) continue;
+
+            const dist = Math.sqrt(distSq);
+            const nx = ex / dist, ny = ey / dist, nz = ez / dist;
+            const overlap = minDist - dist;
+
+            /* Two immovable objects can't resolve — skip */
+            if (a.mass === Infinity && b.mass === Infinity) continue;
+
+            /* Separate — weighted by inverse mass */
+            if (a.mass === Infinity) {
+              b.x += nx * overlap; b.y += ny * overlap; b.z += nz * overlap;
+            } else if (b.mass === Infinity) {
+              a.x -= nx * overlap; a.y -= ny * overlap; a.z -= nz * overlap;
+            } else {
+              const total = a.mass + b.mass;
+              const aS = b.mass / total, bS = a.mass / total;
+              a.x -= nx * overlap * aS; a.y -= ny * overlap * aS; a.z -= nz * overlap * aS;
+              b.x += nx * overlap * bS; b.y += ny * overlap * bS; b.z += nz * overlap * bS;
+            }
+
+            /* Impulse-based elastic bounce */
+            const relVn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny + (a.vz - b.vz) * nz;
+            if (relVn <= 0) { a.collisionsThisFrame++; b.collisionsThisFrame++; continue; }
+
+            const invA = a.mass === Infinity ? 0 : 1 / a.mass;
+            const invB = b.mass === Infinity ? 0 : 1 / b.mass;
+            const impulse = relVn * (1 + COLL_RESTITUTION) / (invA + invB);
+
+            if (a.mass !== Infinity) {
+              a.vx -= impulse * invA * nx;
+              a.vy -= impulse * invA * ny;
+              a.vz -= impulse * invA * nz;
+            }
+            if (b.mass !== Infinity) {
+              b.vx += impulse * invB * nx;
+              b.vy += impulse * invB * ny;
+              b.vz += impulse * invB * nz;
+            }
+
+            a.collisionsThisFrame++;
+            b.collisionsThisFrame++;
+
+            /* Cooldown prevents rapid re-collision jitter */
+            const aReady = (now - a.lastCollisionTime) > COLLISION_COOLDOWN;
+            const bReady = (now - b.lastCollisionTime) > COLLISION_COOLDOWN;
+            if (!aReady && !bReady) continue;
+
+            if (aReady) a.lastCollisionTime = now;
+            if (bReady) b.lastCollisionTime = now;
+
+            /* Lighter rock: 60% reversal, heavier: 30% */
+            const aIsLighter = a.mass <= b.mass;
+            const aChance = aIsLighter ? ANIM_REVERSE_CHANCE_LIGHT : ANIM_REVERSE_CHANCE_HEAVY;
+            const bChance = aIsLighter ? ANIM_REVERSE_CHANCE_HEAVY : ANIM_REVERSE_CHANCE_LIGHT;
+
+            if (aReady && a.mass !== Infinity && Math.random() < aChance) {
+              flipAnimDir(a.pop, a.index, rotationTime);
+            }
+            if (bReady && b.mass !== Infinity && Math.random() < bChance) {
+              flipAnimDir(b.pop, b.index, rotationTime);
+            }
+
+            /* 40% chance for BigBoi to split on collision */
+            if (a.pop === 'big' && aReady && Math.random() < SPLIT_CHANCE)
+              pendingSplits.push(a);
+            if (b.pop === 'big' && bReady && Math.random() < SPLIT_CHANCE)
+              pendingSplits.push(b);
+          }
+        }
+      }
+    }
+  }
+
+  /* Process splits after iteration (modifies activeSet) */
+  for (const rec of pendingSplits) {
+    const key = 'big-' + rec.index;
+    if (!activeSet.has(key)) continue;
+    splitBigBoi(rec, now);
+    activeSet.delete(key);
+  }
+}
+
+/* Write active positions to GPU buffers */
+function flushBuffers() {
+  const dirty = { big: false, lil: false, mega: false };
+
+  for (const [, rec] of activeSet) {
+    populations[rec.pop].offsetAttr.setXYZ(rec.index, rec.x, rec.y, rec.z);
+    dirty[rec.pop] = true;
+  }
+
+  for (const pop of ['big', 'lil', 'mega']) {
+    if (dirty[pop]) populations[pop].offsetAttr.needsUpdate = true;
+  }
+}
+
+export function update(delta, rotationTime, cameraPos) {
   if (bigBoiMat) bigBoiMat.uniforms.uTime.value = rotationTime;
   if (lilGuyMat) lilGuyMat.uniforms.uTime.value = rotationTime;
   if (megaMat) megaMat.uniforms.uTime.value = rotationTime;
+
+  if (!cameraPos || !populations.big) return;
+
+  const camR = Math.sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z);
+  const inBelt = camR > DRIFT_BELT_INNER && camR < DRIFT_BELT_OUTER;
+  const now = performance.now() / 1000;
+
+  if (inBelt && !driftActive) {
+    driftActive = true;
+    rebuildActiveSet(cameraPos.x, cameraPos.z, now, rotationTime);
+    rebuildCounter = 0;
+  }
+
+  if (!inBelt && driftActive && activeSet.size === 0) {
+    driftActive = false;
+  }
+
+  if (!driftActive && activeSet.size === 0) return;
+
+  /* Periodic active set rebuild while in belt */
+  if (driftActive) {
+    if (++rebuildCounter >= DRIFT_REBUILD_INTERVAL) {
+      rebuildCounter = 0;
+      rebuildActiveSet(cameraPos.x, cameraPos.z, now, rotationTime);
+    }
+  } else {
+    /* Camera left belt — deactivate everything */
+    for (const [, rec] of activeSet) {
+      if (!rec.deactivating) {
+        rec.deactivating = true;
+        rec.deactivationTime = now;
+      }
+    }
+  }
+
+  if (activeSet.size === 0) return;
+
+  stepDrift(delta, now);
+  resolveCollisions(now, rotationTime);
+  flushBuffers();
 }
 
 export function dispose() {

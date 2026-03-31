@@ -12,7 +12,11 @@ varying vec2 vCanonicalXZ;
 
 void main() {
   /* Cross-fade between current and next sprite frame */
-  vec4 tex = mix(texture2D(uSpriteSheet, vUv0), texture2D(uSpriteSheet, vUv1), vBlend);
+  vec4 texA = texture2D(uSpriteSheet, vUv0);
+  vec4 texB = texture2D(uSpriteSheet, vUv1);
+  vec4 tex = mix(texA, texB, vBlend);
+  /* Use max alpha so blending between misaligned silhouettes can't dip below cutoff */
+  tex.a = max(texA.a, texB.a);
   if (tex.a < 0.35) discard;
 
   /* Sample galactic lightmap at canonical position (+-500 map units -> 0-1 UV) */
