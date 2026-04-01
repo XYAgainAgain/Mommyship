@@ -14,6 +14,7 @@ search:
 <div class="dive-overlay__title">Osminok Deep Dive</div>
 <p>Scroll through 12,000 meters of alien ocean. Enjoy the peaceful glowing creatures swishing around in the dark. Things swim all around you, and terrors unknown wait far below.</p>
 <p class="dive-overlay__hint">Headphones or big speakers recommended. Press F11 (fullscreen) to maximize immersion.<br>Oh, and hold your breath.</p>
+<p class="dive-overlay__motion-warning">This page relies heavily on motion, animation, and strobing light effects. It does not support reduced-motion mode.</p>
 <div class="dive-overlay__volume">
 <label for="dive-volume">Volume</label>
 <input type="range" id="dive-volume" min="0" max="100" value="50">
@@ -277,20 +278,5 @@ search:
 
 ### ??????
 
-<!-- Abyss V-funnel — disabled until animation is finalized
-<div class="ocean-abyss ocean-abyss--dive">
-  <div class="abyss-wall abyss-wall--left">
-    <div class="abyss-blob abyss-blob-1"></div>
-    <div class="abyss-blob abyss-blob-2"></div>
-    <div class="abyss-blob abyss-blob-3"></div>
-  </div>
-  <div class="abyss-wall abyss-wall--right">
-    <div class="abyss-blob abyss-blob-1"></div>
-    <div class="abyss-blob abyss-blob-2"></div>
-    <div class="abyss-blob abyss-blob-3"></div>
-  </div>
-  <div class="abyss-singularity"></div>
-</div>
--->
 
 </div>

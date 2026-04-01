@@ -11,7 +11,8 @@ document$.subscribe(function () {
   if (!ocean) { osminokCleanup = null; return; }
 
   var isDive = !!document.querySelector('.osminok-dive');
-  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* Dive page IS the motion — no reduced-motion on that page */
+  var reducedMotion = !isDive && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var vw = window.innerWidth;
   var vh = window.innerHeight;
 
@@ -2494,11 +2495,6 @@ document$.subscribe(function () {
       });
 
       diveBtn.addEventListener('click', function() {
-        if (reducedMotion) {
-          overlay.classList.add('dive-overlay--hidden');
-          return;
-        }
-
         var vol = parseInt(volSlider.value, 10) / 100;
         try { localStorage.setItem('mommyship-dive-volume', volSlider.value); }
         catch (e) { /* private browsing */ }

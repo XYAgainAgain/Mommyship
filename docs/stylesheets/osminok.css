@@ -373,98 +373,6 @@ body:has(.osminok-ocean) .md-typeset h1 {
   100% { transform: translateX(-1000px) translateY(0); }
 }
 
-/* Mid-content undercurrent — rotating blob technique from waves2 prototype.
-   Oversized rounded rectangles spin continuously; only their curved edges
-   are visible, creating organic undulating motion. Good starting point for
-   a subtle water-texture layer behind the content area.
-   HTML would go in the content body:
-   <div class="ocean-undercurrent">
-     <div class="undercurrent undercurrent-1"></div>
-     <div class="undercurrent undercurrent-2"></div>
-     <div class="undercurrent undercurrent-3"></div>
-     <div class="undercurrent undercurrent-4"></div>
-   </div>
-
-.ocean-undercurrent {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.undercurrent {
-  position: absolute;
-  left: 50%;
-  border-radius: 43%;
-  will-change: transform;
-}
-
-.undercurrent-1 {
-  width: 3000px;
-  height: 2600px;
-  top: -2250px;
-  margin-left: -1500px;
-  opacity: 0.07;
-  background: rgba(100, 160, 200, 1);
-  animation: undercurrent-swell 5s linear infinite;
-}
-
-.undercurrent-2 {
-  width: 2400px;
-  height: 2100px;
-  top: -1780px;
-  margin-left: -1200px;
-  opacity: 0.10;
-  background: rgba(60, 120, 160, 1);
-  animation: undercurrent-churn 3.5s linear infinite;
-}
-
-.undercurrent-3 {
-  width: 1800px;
-  height: 1500px;
-  top: -1220px;
-  margin-left: -900px;
-  opacity: 0.06;
-  background: rgba(160, 200, 225, 1);
-  animation: undercurrent-swell 2.5s linear infinite;
-}
-
-.undercurrent-4 {
-  width: 1400px;
-  height: 1200px;
-  top: -920px;
-  margin-left: -700px;
-  opacity: 0.05;
-  background: rgba(200, 225, 245, 1);
-  animation: undercurrent-churn 1.8s linear infinite;
-}
-
-@keyframes undercurrent-swell {
-  from { transform: rotate(80deg); }
-  to   { transform: rotate(440deg); }
-}
-
-@keyframes undercurrent-churn {
-  from { transform: rotate(280deg); }
-  to   { transform: rotate(-80deg); }
-}
-*/
-
-@keyframes undercurrent-swell {
-  from { transform: rotate(80deg); }
-  to   { transform: rotate(440deg); }
-}
-
-@keyframes undercurrent-churn {
-  from { transform: rotate(280deg); }
-  to   { transform: rotate(-80deg); }
-}
-
 /* Bioluminescence layers — three depth zones appended by osminok.js.
    Each has independent opacity, parallax, and creature morphology. */
 .osminok-bio {
@@ -646,131 +554,6 @@ body:has(.osminok-dive) .md-typeset h3#_1 {
 body:has(.osminok-dive) .md-typeset h3 .headerlink,
 body:has(.osminok-dive) .md-typeset h4 .headerlink {
   display: none;
-}
-
-/* Abyss V-funnel — two overflow:hidden wall containers, each holding
-   three spinning blobs (border-radius: 43%). Only the inner curved
-   edges are visible. Walls rotated 14deg to form V-funnel. */
-body:has(.osminok-dive) .ocean-abyss--dive {
-  position: relative;
-  height: 100vh;
-  overflow: hidden;
-  background: transparent;
-  margin-top: 0;
-}
-
-/* Wall containers — full-height overflow:hidden zones rotated from bottom-center */
-body:has(.osminok-dive) .abyss-wall {
-  position: absolute;
-  width: 120%;
-  height: 100%;
-  bottom: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-body:has(.osminok-dive) .abyss-wall--left {
-  right: calc(50% - 2vw);
-  transform-origin: right bottom;
-  transform: rotate(14deg);
-}
-
-body:has(.osminok-dive) .abyss-wall--right {
-  left: calc(50% - 2vw);
-  transform-origin: left bottom;
-  transform: rotate(-14deg);
-}
-
-/* Blob base — oversized rounded rectangles, offset so only inner curved edge visible */
-body:has(.osminok-dive) .abyss-blob {
-  position: absolute;
-  border-radius: 43%;
-  will-change: transform;
-  top: 50%;
-}
-
-/* Left wall: 300px of blob visible at the right (inner) edge */
-body:has(.osminok-dive) .abyss-wall--left .abyss-blob {
-  left: calc(100% - 300px);
-}
-
-/* Right wall: 300px of blob visible at the left (inner) edge */
-body:has(.osminok-dive) .abyss-wall--right .abyss-blob {
-  right: calc(100% - 300px);
-}
-
-/* Individual blob sizes + colors (inner to outer, deep purple palette) */
-body:has(.osminok-dive) .abyss-blob-1 {
-  width: 2800px;
-  height: 2400px;
-  margin-top: -1200px;
-  background: rgba(80, 20, 120, 0.18);
-  animation: undercurrent-swell 8s linear infinite;
-}
-
-body:has(.osminok-dive) .abyss-blob-2 {
-  width: 2200px;
-  height: 1900px;
-  margin-top: -950px;
-  background: rgba(55, 14, 85, 0.25);
-  animation: undercurrent-churn 6s linear infinite;
-}
-
-body:has(.osminok-dive) .abyss-blob-3 {
-  width: 1600px;
-  height: 1400px;
-  margin-top: -700px;
-  background: rgba(25, 6, 45, 0.55);
-  animation: undercurrent-swell 4.5s linear infinite;
-}
-
-/* Inset glow pseudo-element — soft purple light along the wall edges */
-body:has(.osminok-dive) .abyss-wall::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow: inset 0 0 80px 30px rgba(80, 20, 120, 0.15);
-  pointer-events: none;
-  z-index: 1;
-  animation: abyss-inner-glow 14s ease-in-out infinite;
-}
-
-@keyframes abyss-inner-glow {
-  0%, 100% { box-shadow: inset 0 0 60px 20px rgba(80, 20, 120, 0.12); }
-  50% { box-shadow: inset 0 0 120px 50px rgba(110, 30, 160, 0.25); }
-}
-
-/* Singularity — pulsing point at wall convergence */
-body:has(.osminok-dive) .abyss-singularity {
-  position: absolute;
-  bottom: 5%;
-  left: 50%;
-  transform: translate(-50%, 50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(130, 50, 172, 0.6);
-  box-shadow:
-    0 0 4px 2px rgba(130, 50, 172, 0.3),
-    0 0 20px 8px rgba(110, 30, 160, 0.15);
-  animation: abyss-singularity-pulse 5s ease-in-out infinite;
-  z-index: 2;
-  pointer-events: none;
-}
-
-@keyframes abyss-singularity-pulse {
-  0%, 100% {
-    opacity: 0.3;
-    box-shadow:
-      0 0 4px 2px rgba(130, 50, 172, 0.2),
-      0 0 8px 4px rgba(110, 30, 160, 0.1);
-  }
-  50% {
-    opacity: 0.8;
-    box-shadow:
-      0 0 12px 6px rgba(130, 50, 172, 0.5),
-      0 0 40px 16px rgba(110, 30, 160, 0.3);
-  }
 }
 
 /* Phase 2: Submarine toggle — replaces palette on osminok pages */
@@ -1122,6 +905,12 @@ body:has(.osminok-landing) .ocean-surface {
   color: rgba(204, 195, 193, 0.6) !important;
 }
 
+.dive-overlay__motion-warning {
+  font-size: 0.72rem !important;
+  color: rgba(204, 195, 193, 0.35) !important;
+  margin-top: -0.5rem !important;
+}
+
 .dive-overlay__volume {
   display: flex;
   align-items: center;
@@ -1236,39 +1025,26 @@ body:has(.dive-overlay:not(.dive-overlay--hidden)) {
   cursor: pointer;
 }
 
-/* Reduced motion */
+/* Reduced motion — dive page excluded (the page IS the motion) */
 @media (prefers-reduced-motion: reduce) {
-  body:has(.osminok-ocean) .md-typeset h1,
-  body:has(.osminok-ocean) .md-typeset h2 {
+  body:has(.osminok-ocean):not(:has(.osminok-dive)) .md-typeset h1,
+  body:has(.osminok-ocean):not(:has(.osminok-dive)) .md-typeset h2 {
     animation: none !important;
   }
 
-  .wave,
-  .abyss-parallax > path {
+  body:not(:has(.osminok-dive)) .wave,
+  body:not(:has(.osminok-dive)) .abyss-parallax > path {
     animation: none !important;
   }
 
-  .abyss-blob {
-    animation: none !important;
-  }
-
-  .abyss-singularity {
-    animation: none !important;
-    opacity: 0.5;
-  }
-
-  .osminok-bio,
-  .marine-snow {
+  body:not(:has(.osminok-dive)) .osminok-bio,
+  body:not(:has(.osminok-dive)) .marine-snow {
     display: none !important;
   }
 
   .ringwave::before,
   .ringwave::after,
   .ringswell {
-    animation: none !important;
-  }
-
-  .dive-overlay__title {
     animation: none !important;
   }
 }
