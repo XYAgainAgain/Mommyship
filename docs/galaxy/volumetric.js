@@ -13,6 +13,13 @@ const DARK_COUNT = 12;
 
 const LOD_FULL = 400;
 const LOD_QUAD = 800;
+const HYSTERESIS = 20;
+
+/* Squared thresholds for cheap comparison (avoids sqrt) */
+const LOD_FULL_SQ = LOD_FULL * LOD_FULL;
+const LOD_FULL_EXIT_SQ = (LOD_FULL + HYSTERESIS) * (LOD_FULL + HYSTERESIS);
+const LOD_QUAD_SQ = LOD_QUAD * LOD_QUAD;
+const LOD_QUAD_EXIT_SQ = (LOD_QUAD + HYSTERESIS) * (LOD_QUAD + HYSTERESIS);
 
 const ARM_OFFSETS = [0, (Math.PI * 2) / 3, (Math.PI * 2 * 2) / 3];
 
@@ -293,7 +300,8 @@ export async function createVolumetric(scene, renderer) {
       radius: p.radius,
       baseY: p.y,
       boxInScene: false,
-      quadInScene: false
+      quadInScene: false,
+      lodState: 'quad'
     });
   }
 
@@ -329,26 +337,42 @@ export async function createVolumetric(scene, renderer) {
 
       v.quad.quaternion.copy(camera.quaternion);
 
-      const dist = camera.position.distanceTo(v.sphere.position);
+      const distSq = camera.position.distanceToSquared(v.sphere.position);
 
       v.sphere.material.uniforms.uTime.value = elapsed;
       v.sphere.material.uniforms.uCameraPos.value.copy(camera.position);
-      v.sphere.material.uniforms.uCameraDist.value = cinemaMode ? 0 : dist;
 
       /* Cinema mode: full raymarch on every volume, no quad fallback */
       if (cinemaMode) {
+        v.sphere.material.uniforms.uCameraDist.value = 0;
         v.sphere.material.uniforms.uOpacity.value = 1.0;
         if (!v.boxInScene) { scene.add(v.sphere); v.boxInScene = true; }
         if (v.quadInScene) { scene.remove(v.quad); v.quadInScene = false; }
+        v.lodState = 'full';
         continue;
       }
 
-      if (dist < LOD_FULL) {
+      /* Hysteresis: enter a state at the tight threshold, exit at threshold + HYSTERESIS */
+      const prevState = v.lodState;
+      if (prevState === 'full' && distSq > LOD_FULL_EXIT_SQ) {
+        v.lodState = distSq > LOD_QUAD_EXIT_SQ ? 'quad' : 'crossfade';
+      } else if (prevState === 'crossfade') {
+        if (distSq < LOD_FULL_SQ) v.lodState = 'full';
+        else if (distSq > LOD_QUAD_EXIT_SQ) v.lodState = 'quad';
+      } else if (prevState === 'quad' && distSq < LOD_QUAD_SQ) {
+        v.lodState = distSq < LOD_FULL_SQ ? 'full' : 'crossfade';
+      }
+
+      if (v.lodState === 'full') {
+        v.sphere.material.uniforms.uCameraDist.value = Math.sqrt(distSq);
         v.sphere.material.uniforms.uOpacity.value = 1.0;
         if (!v.boxInScene) { scene.add(v.sphere); v.boxInScene = true; }
         if (v.quadInScene) { scene.remove(v.quad); v.quadInScene = false; }
-      } else if (dist < LOD_QUAD) {
+      } else if (v.lodState === 'crossfade') {
+        /* Only branch that needs actual distance for smoothstep */
+        const dist = Math.sqrt(distSq);
         const t = smoothstep(LOD_FULL, LOD_QUAD, dist);
+        v.sphere.material.uniforms.uCameraDist.value = dist;
         v.sphere.material.uniforms.uOpacity.value = 1.0 - t;
         v.quad.material.uniforms.uOpacity.value = t * 0.6;
         if (!v.boxInScene) { scene.add(v.sphere); v.boxInScene = true; }

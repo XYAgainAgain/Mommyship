@@ -13,6 +13,7 @@ import { createMuseAudio, preloadMuse } from './muse-audio.js';
 import { createSystems } from './systems.js';
 import * as asteroids from './asteroids.js';
 import * as ui from './galaxy-ui.js';
+import { createPerfMonitor } from './perf-monitor.js';
 
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
@@ -108,6 +109,7 @@ async function init() {
       fancyCheckbox.dispatchEvent(new Event('change'));
     }
     cinemaMode = cinemaCheckbox.checked;
+    perfMonitor.setBypass(cinemaMode || museActive);
   });
 
   fancyCheckbox.addEventListener('change', () => {
@@ -125,6 +127,31 @@ async function init() {
       volumetric.removeFromScene();
       scene.add(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
     }
+  });
+
+  /* Adaptive performance monitor — degrades quality settings when frame times spike */
+  let compositorForced = false;
+  const perfMonitor = createPerfMonitor((level, direction, p95) => {
+    const dpr = level >= 2 ? 1.0 : level >= 1 ? 1.5 : Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(dpr);
+
+    if (level >= 3 && volumetricActive) {
+      fancyCheckbox.checked = false;
+      fancyCheckbox.dispatchEvent(new Event('change'));
+    }
+
+    compositorForced = level >= 4;
+
+    if (direction === 'degrade') {
+      console.log('Perf watchdog: degraded to Q' + level + ' (p95: ' + p95.toFixed(1) + 'ms)');
+    } else {
+      console.log('Perf watchdog: restored to Q' + level + ' (p95: ' + p95.toFixed(1) + 'ms)');
+    }
+  });
+
+  /* Respect user overrides — if they re-enable Fancy after watchdog disabled it */
+  fancyCheckbox.addEventListener('change', () => {
+    if (fancyCheckbox.checked && perfMonitor.getLevel() >= 3) perfMonitor.userOverride();
   });
 
   /* Pause — galactic rotation only */
@@ -166,6 +193,7 @@ async function init() {
     }
     systems.setClickDisabled(museActive);
     systems.setMuseActive(museActive);
+    perfMonitor.setBypass(cinemaMode || museActive);
   });
 
   /* HUD — show/hide based on settings */
@@ -179,7 +207,10 @@ async function init() {
   window.addEventListener('resize', () => {
     cam.resize();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    /* Respect watchdog's current pixel ratio cap */
+    const level = perfMonitor.getLevel();
+    const dpr = level >= 2 ? 1.0 : level >= 1 ? 1.5 : Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(dpr);
     compositor.resize();
     if (bh.resize) bh.resize();
     systems.resize();
@@ -224,28 +255,24 @@ async function init() {
       : bestLy.toLocaleString() + ' ly';
   }
 
+  /* Camera dirty tracking — skip per-frame work when nothing has changed */
+  const lastCamPos = new THREE.Vector3();
+  const lastCamQuat = new THREE.Quaternion();
+
   /* FPS tracking */
   let fpsFrames = 0, fpsTime = 0, fpsDisplay = 0;
+  let hudDirty = true;
+
+  let lastFrameTime = performance.now();
 
   function animate() {
     requestAnimationFrame(animate);
 
-    /* Skip 3D rendering in 2D mode */
-    if (ui.getViewMode() === '2d') {
-      const delta = Math.min(clock.getDelta(), 0.1);
-      fpsFrames++;
-      fpsTime += delta;
-      if (fpsTime >= 0.5) {
-        fpsDisplay = Math.round(fpsFrames / fpsTime);
-        fpsFrames = 0;
-        fpsTime = 0;
-      }
-      updateHUD();
-      return;
-    }
+    const now = performance.now();
+    perfMonitor.sample(now - lastFrameTime);
+    lastFrameTime = now;
 
     const delta = Math.min(clock.getDelta(), 0.1);
-    const elapsed = clock.getElapsedTime();
 
     fpsFrames++;
     fpsTime += delta;
@@ -253,13 +280,28 @@ async function init() {
       fpsDisplay = Math.round(fpsFrames / fpsTime);
       fpsFrames = 0;
       fpsTime = 0;
+      hudDirty = true;
     }
 
-    updateHUD();
+    if (hudDirty) { updateHUD(); hudDirty = false; }
+
+    /* Skip 3D rendering in 2D mode */
+    if (ui.getViewMode() === '2d') return;
+
+    const elapsed = clock.getElapsedTime();
 
     if (!rotationPaused) rotationTime += delta;
 
     cam.update(delta);
+
+    const cameraMoved = !lastCamPos.equals(cam.camera.position)
+                     || !lastCamQuat.equals(cam.camera.quaternion);
+    const worldDirty = cameraMoved || !rotationPaused;
+    if (cameraMoved) {
+      lastCamPos.copy(cam.camera.position);
+      lastCamQuat.copy(cam.camera.quaternion);
+      hudDirty = true;
+    }
 
     if (++scaleBarFrame >= 10) {
       scaleBarFrame = 0;
@@ -275,10 +317,10 @@ async function init() {
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
-    const lodFactor = cinemaMode ? 1 : computeLOD(cam.camera);
+    const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
     bh.update(elapsed, lodFactor, cam.camera);
 
-    systems.update(delta, rotationTime, lodFactor);
+    systems.update(delta, rotationTime, lodFactor, worldDirty);
 
     /* Camera follows tracked body */
     if (trackedId) {
@@ -310,7 +352,10 @@ async function init() {
       renderer.render(systems.markerScene, cam.camera);
     }
 
-    systems.labelRenderer.render(scene, cam.camera);
+    if (worldDirty || systems.needsLabelRender) {
+      systems.labelRenderer.render(scene, cam.camera);
+      systems.needsLabelRender = false;
+    }
   }
 
   function updateHUD() {
@@ -325,7 +370,11 @@ async function init() {
     hudEl.style.display = '';
     const cp = cam.camera.position;
     let text = '';
-    if (showFps) text += 'FPS: ' + fpsDisplay;
+    if (showFps) {
+      text += 'FPS: ' + fpsDisplay;
+      const ql = perfMonitor.getLevel();
+      if (ql > 0) text += ' \u00b7 Q' + ql;
+    }
     if (showCoords && !cinemaMode && !museActive) {
       if (text) text += '\n';
       text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
@@ -406,6 +455,13 @@ async function init() {
 
   updateScaleBar();
   animate();
+
+  /* Dismiss loading overlay */
+  const loadingEl = document.getElementById('gx-loading');
+  if (loadingEl) {
+    loadingEl.classList.add('fade-out');
+    loadingEl.addEventListener('transitionend', () => loadingEl.remove());
+  }
 }
 
 init().catch(err => {

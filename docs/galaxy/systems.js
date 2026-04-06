@@ -225,6 +225,9 @@ export async function createSystems(scene, camera, renderer) {
   let lastRotationTime = 0;
   let starColorLerp = [];
   let cubeSpins = [];
+  let labelsDirty = false;
+  let needsLabelRender = false;
+  let hlThrottle = 0;
 
   /* Hyperlane endpoint redirect: star → outermost orbiting station */
   const preferStation = new Map();
@@ -820,13 +823,27 @@ export async function createSystems(scene, camera, renderer) {
     }
   }
 
+  /* Cached BH screen-space values for label occlusion (persist across idle frames) */
+  let cachedBhNdcX = 0, cachedBhNdcY = 0, cachedBhScreenR = 0;
+
   /* Per-frame update: rotate markers + labels to match galactic disk */
-  function update(delta, rotationTime, lodFactor) {
+  function update(delta, rotationTime, lodFactor, worldDirty) {
     lastRotationTime = rotationTime;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
     const hasCubes = cubeMarkers && cubeIds.length > 0;
 
     if (!hasSpheres && !hasCubes) return;
+
+    /* When nothing has moved, only refresh label styling if selection/hover changed */
+    if (!worldDirty) {
+      if (labelsDirty) {
+        labelsDirty = false;
+        needsLabelRender = true;
+        reassignLabels();
+        updatePool(rotationTime, cachedBhNdcX, cachedBhNdcY, cachedBhScreenR);
+      }
+      return;
+    }
 
     /* Compute world positions in depth order */
     for (const id of depthBuckets[0]) {
@@ -899,7 +916,8 @@ export async function createSystems(scene, camera, renderer) {
       if (pw) ol.line.position.set(pw.x, pw.y, pw.z);
     }
 
-    /* Hyperlane endpoints: prefer GnG stations over parent stars */
+    /* Hyperlane endpoints + throttled occlusion checks */
+    const runOcclusion = (++hlThrottle % 4) === 0;
     for (const hl of hyperlaneLines) {
       const fromId = preferStation.get(hl.fromId) || hl.fromId;
       const toId = preferStation.get(hl.toId) || hl.toId;
@@ -907,35 +925,36 @@ export async function createSystems(scene, camera, renderer) {
       const to = bodyWorldPos.get(toId);
       if (!from || !to) { hl.line.visible = false; continue; }
 
-      /* Hide lane if it passes through any body (orbital interference) */
-      let blocked = false;
-      for (const bid of depthBuckets[0]) {
-        if (bid === hl.fromId || bid === hl.toId || bid === fromId || bid === toId) continue;
-        const bwp = bodyWorldPos.get(bid);
-        const bm = bodyMeta.get(bid);
-        if (!bwp || !bm) continue;
-        const r = LANDMARK_IDS.has(bid) ? (bid === 'smbh' ? 15 : 0) : MARKER_RADIUS * bm.instanceScale * 1.5;
-        if (r > 0 && lineHitsSphere(from, to, bwp, r)) { blocked = true; break; }
+      /* Occlusion: check if lane passes through any body (throttled to every 4 frames) */
+      if (runOcclusion) {
+        let blocked = false;
+        for (const bid of depthBuckets[0]) {
+          if (bid === hl.fromId || bid === hl.toId || bid === fromId || bid === toId) continue;
+          const bwp = bodyWorldPos.get(bid);
+          const bm = bodyMeta.get(bid);
+          if (!bwp || !bm) continue;
+          const r = LANDMARK_IDS.has(bid) ? (bid === 'smbh' ? 15 : 0) : MARKER_RADIUS * bm.instanceScale * 1.5;
+          if (r > 0 && lineHitsSphere(from, to, bwp, r)) { blocked = true; break; }
+        }
+        if (blocked) { hl.line.visible = false; continue; }
+        hl.line.visible = true;
       }
-      if (blocked) { hl.line.visible = false; continue; }
 
+      if (!hl.line.visible) continue;
       const arr = hl.posBuffer.array;
       arr[0] = from.x; arr[1] = from.y; arr[2] = from.z;
       arr[3] = to.x; arr[4] = to.y; arr[5] = to.z;
       hl.posBuffer.needsUpdate = true;
-
-      hl.line.visible = true;
     }
 
     /* Screen-space BH disc radius for hiding labels behind the lensing */
-    /* Measure BH disc in screen space along camera-right so it's correct at any angle */
-    let bhNdcX = 0, bhNdcY = 0, bhScreenR = 0;
+    cachedBhNdcX = 0; cachedBhNdcY = 0; cachedBhScreenR = 0;
     if (lodFactor > 0) {
       _proj.set(0, 0, 0).project(camera);
-      bhNdcX = _proj.x; bhNdcY = _proj.y;
+      cachedBhNdcX = _proj.x; cachedBhNdcY = _proj.y;
       _proj.setFromMatrixColumn(camera.matrixWorld, 0).normalize().multiplyScalar(60);
       _proj.project(camera);
-      bhScreenR = Math.hypot(_proj.x - bhNdcX, _proj.y - bhNdcY);
+      cachedBhScreenR = Math.hypot(_proj.x - cachedBhNdcX, _proj.y - cachedBhNdcY);
     }
 
     /* Zone labels rotate with galaxy, fade when close */
@@ -945,10 +964,10 @@ export async function createSystems(scene, camera, renderer) {
       const rot = canonicalToRotated(zl.cx, zl.cz, rotationTime);
       zl.css2d.position.set(rot.x, 0, rot.z);
       let opacity = zoneFade * 0.8;
-      if (bhScreenR > 0) {
+      if (cachedBhScreenR > 0) {
         _proj.set(rot.x, 0, rot.z).project(camera);
-        const d = Math.hypot(_proj.x - bhNdcX, _proj.y - bhNdcY);
-        opacity *= smoothstep(bhScreenR * 0.5, bhScreenR, d);
+        const d = Math.hypot(_proj.x - cachedBhNdcX, _proj.y - cachedBhNdcY);
+        opacity *= smoothstep(cachedBhScreenR * 0.5, cachedBhScreenR, d);
       }
       zl.el.style.opacity = String(opacity);
     }
@@ -958,7 +977,8 @@ export async function createSystems(scene, camera, renderer) {
       labelAssignFrame = 0;
       reassignLabels();
     }
-    updatePool(rotationTime, bhNdcX, bhNdcY, bhScreenR);
+    labelsDirty = false;
+    updatePool(rotationTime, cachedBhNdcX, cachedBhNdcY, cachedBhScreenR);
   }
 
   function getLabelTier(bodyId) {
@@ -994,7 +1014,7 @@ export async function createSystems(scene, camera, renderer) {
       if (allHits.length > 0) {
         allHits.sort((a, b) => a.distance - b.distance);
         const hitId = allHits[0].bodyId;
-        if (mode !== 'track') { selectedId = hitId; reassignLabels(); }
+        if (mode !== 'track') { selectedId = hitId; labelsDirty = true; reassignLabels(); }
         return { type: 'select', bodyId: hitId, body: galaxyData.bodies[hitId] };
       }
 
@@ -1011,11 +1031,11 @@ export async function createSystems(scene, camera, renderer) {
         if (lmHits.length > 0) {
           lmHits.sort((a, b) => a.distance - b.distance);
           const lm = lmHits[0].object.userData;
-          if (mode !== 'track') { selectedId = lm.landmarkId; reassignLabels(); }
+          if (mode !== 'track') { selectedId = lm.landmarkId; labelsDirty = true; reassignLabels(); }
           return { type: 'select', bodyId: lm.landmarkId, body: galaxyData.bodies[lm.landmarkId] };
         }
       }
-      if (mode !== 'track') { selectedId = null; reassignLabels(); }
+      if (mode !== 'track') { selectedId = null; labelsDirty = true; reassignLabels(); }
       return { type: 'deselect' };
     }
 
@@ -1116,11 +1136,11 @@ export async function createSystems(scene, camera, renderer) {
     handleClick,
     initClickDetection,
     setClickDisabled: (v) => { clickDisabled = v; },
-    setMuseActive: (v) => { museActive = v; if (v) reassignLabels(); },
+    setMuseActive: (v) => { museActive = v; labelsDirty = true; if (v) reassignLabels(); },
     getData: () => galaxyData,
     getSelectedId: () => selectedId,
-    setSelectedId: (id) => { selectedId = id; reassignLabels(); },
-    setHoveredId: (id) => { hoveredId = id; },
+    setSelectedId: (id) => { selectedId = id; labelsDirty = true; reassignLabels(); },
+    setHoveredId: (id) => { hoveredId = id; labelsDirty = true; },
     addBody,
     updateBody,
     removeBody,
@@ -1136,6 +1156,8 @@ export async function createSystems(scene, camera, renderer) {
     getBodyWorldPos: (id) => bodyWorldPos.get(id) || null,
     showOrbitsForBody,
     hideOrbits,
+    get needsLabelRender() { return needsLabelRender; },
+    set needsLabelRender(v) { needsLabelRender = v; },
     labelRenderer,
     markerScene
   };

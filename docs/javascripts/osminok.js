@@ -23,6 +23,43 @@ document$.subscribe(function () {
     return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a.toFixed(2) + ')';
   }
 
+  /* Adaptive quality — probe hardware once, scale particle counts + canvas res */
+  var qualityTier = 'high';
+  if (isDive) {
+    var hw = navigator.hardwareConcurrency || 4;
+    var mem = navigator.deviceMemory || 8;
+    if (hw <= 4 || mem <= 4) qualityTier = 'medium';
+    if (hw <= 2 || mem <= 2) qualityTier = 'low';
+    var urlTier = new URLSearchParams(location.search).get('quality');
+    if (urlTier && ['low', 'medium', 'high'].indexOf(urlTier) !== -1) qualityTier = urlTier;
+  }
+  var QUALITY = {
+    low:    { snow: 160, rain: 250, bubbles: 60,  fish: 60,  creatureScale: 0.5,  bioScale: 0.5  },
+    medium: { snow: 240, rain: 375, bubbles: 80,  fish: 80,  creatureScale: 0.6,  bioScale: 0.75 },
+    high:   { snow: 320, rain: 500, bubbles: 100, fish: 100, creatureScale: 0.75, bioScale: 1    }
+  }[qualityTier];
+
+  /* Scale populate() count ranges without touching other properties */
+  function scalePopCfg(cfg) {
+    if (QUALITY.bioScale >= 1) return cfg;
+    var out = {};
+    for (var key in cfg) {
+      var entry = {};
+      for (var prop in cfg[key]) {
+        if (prop === 'count') {
+          entry.count = [
+            Math.max(1, Math.round(cfg[key].count[0] * QUALITY.bioScale)),
+            Math.max(1, Math.round(cfg[key].count[1] * QUALITY.bioScale))
+          ];
+        } else {
+          entry[prop] = cfg[key][prop];
+        }
+      }
+      out[key] = entry;
+    }
+    return out;
+  }
+
   /* Depth-zone color palettes */
   var palettes = {
     shallow: [
@@ -252,27 +289,27 @@ document$.subscribe(function () {
     ];
     if (!reducedMotion) {
       /* Sparser creature populations — spread across 12,000m of depth */
-      populate(layers[0].el, layers[0].pal, {
+      populate(layers[0].el, layers[0].pal, scalePopCfg({
         particles: { count: [50, 80], size: [2, 5], drift: [25, 50], alpha: [0.4, 0.8], blur: [2, 6], fast: true },
         chains:    { count: [6, 10], dots: [6, 12], spacing: [15, 22], amp: [10, 25], wl: [25, 50], undul: [4, 10], dotSize: [1.5, 3], dotAlpha: [0.4, 0.8], fast: true },
         clusters:  { count: [5, 8], dots: [5, 10], radius: 22, size: [2, 5], alpha: [0.4, 0.8], blur: [2, 7] },
         dashes:    { count: [15, 25], w: [4, 10], h: [1, 2], alpha: [0.3, 0.6] }
-      });
-      populate(layers[1].el, layers[1].pal, {
+      }));
+      populate(layers[1].el, layers[1].pal, scalePopCfg({
         particles: { count: [60, 100], size: [3, 6], drift: [30, 60], alpha: [0.5, 0.9], blur: [3, 9] },
         chains:    { count: [6, 10], dots: [12, 24], spacing: [20, 35], amp: [20, 50], wl: [40, 80], undul: [8, 20], dotSize: [2, 4], dotAlpha: [0.5, 0.9] },
         clusters:  { count: [5, 8], dots: [7, 16], radius: 38, size: [3, 7], alpha: [0.5, 0.9], blur: [4, 13] },
         dashes:    { count: [16, 28], w: [8, 20], h: [1.5, 3], alpha: [0.35, 0.7] },
         bells:     { count: [4, 7], size: [35, 70], alpha: [0.1, 0.28] }
-      });
-      populate(layers[2].el, layers[2].pal, {
+      }));
+      populate(layers[2].el, layers[2].pal, scalePopCfg({
         particles: { count: [18, 30], size: [4, 10], drift: [35, 80], alpha: [0.25, 0.65], blur: [5, 15] },
         chains:    { count: [3, 5], dots: [20, 38], spacing: [12, 20], amp: [30, 70], wl: [60, 120], undul: [12, 28], dotSize: [2.5, 5], dotAlpha: [0.3, 0.7] },
         clusters:  { count: [2, 4], dots: [12, 22], radius: 55, size: [4, 10], alpha: [0.3, 0.7], blur: [6, 18] },
         dashes:    { count: [6, 12], w: [12, 30], h: [2, 4], alpha: [0.15, 0.45] },
         lures:     { count: [2, 4], size: [6, 12], glow: [20, 40], alpha: [0.4, 0.8] },
         siphons:   { count: [1, 3], dots: [40, 70], spacing: [8, 14], amp: [40, 90], wl: [80, 160], dotSize: [3, 7], dotAlpha: [0.35, 0.75] }
-      });
+      }));
     }
   } else {
     layers = [
@@ -358,7 +395,7 @@ document$.subscribe(function () {
       splashes = [];
       var w = rainCanvas ? rainCanvas.width : stormCanvas.width;
       var h = rainCanvas ? rainCanvas.height : stormCanvas.height;
-      for (var i = 0; i < 500; i++) {
+      for (var i = 0; i < QUALITY.rain; i++) {
         raindrops.push(makeRaindrop(w, h, true));
       }
     }
@@ -571,7 +608,13 @@ document$.subscribe(function () {
     var lightningColors = ['#99f7f4', '#d4fcff', '#fcffa3', '#fcec60', '#fcd960'];
 
     function stormFrame() {
-      if (document.hidden) { stormAnimId = requestAnimationFrame(stormFrame); return; }
+      /* Skip all storm/rain/lightning draws once the dive surface scrolls off-screen.
+         Ecology pages have a cheap storm (no rain/alt-lightning) so no gating needed. */
+      var surfaceVisible = !isDive || window.scrollY < vh * 0.66 + 100;
+      if (document.hidden || !surfaceVisible) {
+        stormAnimId = requestAnimationFrame(stormFrame);
+        return;
+      }
 
       stormCtx.fillStyle = '#000';
       stormCtx.fillRect(0, 0, stormCanvas.width, stormCanvas.height);
@@ -622,7 +665,7 @@ document$.subscribe(function () {
     snowContainer.style.willChange = 'transform, opacity';
     document.body.appendChild(snowContainer);
 
-    for (var i = 0; i < 320; i++) {
+    for (var i = 0; i < QUALITY.snow; i++) {
       var flake = document.createElement('div');
       var size = rand(1.5, 7);
       var alpha = rand(0.2, 0.55);
@@ -692,7 +735,7 @@ document$.subscribe(function () {
       };
     }
 
-    for (var bi = 0; bi < 100; bi++) bubbles.push(makeBubble());
+    for (var bi = 0; bi < QUALITY.bubbles; bi++) bubbles.push(makeBubble());
 
     /* Formations spawn periodically — streams, clusters, and rings */
     var formationTimer = 0;
@@ -883,7 +926,7 @@ document$.subscribe(function () {
       };
     }
 
-    for (var fi = 0; fi < 100; fi++) fish.push(makeFish(false));
+    for (var fi = 0; fi < QUALITY.fish; fi++) fish.push(makeFish(false));
 
     function angleFromVector(x, y) {
       var a = Math.atan2(y, x) * 180 / Math.PI;
@@ -987,10 +1030,11 @@ document$.subscribe(function () {
       }
 
       /* Determine how many fish should be active based on depth */
+      var maxFish = QUALITY.fish;
       var targetCount;
       if (depth < 200) targetCount = 0;
-      else if (depth < 500) targetCount = Math.floor(((depth - 200) / 300) * 100);
-      else if (depth < 3000) targetCount = 100;
+      else if (depth < 500) targetCount = Math.floor(((depth - 200) / 300) * maxFish);
+      else if (depth < 3000) targetCount = maxFish;
       else targetCount = 0;
 
       /* Scatter at 3000m — fish jet upward in random directions */
@@ -1094,7 +1138,7 @@ document$.subscribe(function () {
   var creatureCanvas = null;
   var creatureCtx = null;
   var creatureAnimId = null;
-  var creatureScale = 0.75;
+  var creatureScale = QUALITY.creatureScale;
   if (isDive && !reducedMotion) {
     creatureCanvas = document.createElement('canvas');
     creatureCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2;will-change:transform;';
@@ -1852,6 +1896,7 @@ document$.subscribe(function () {
 
       var unknownFrame = 0;
       function animateUnknown(now) {
+        if (document.hidden) { abyssUnknownAnimId = requestAnimationFrame(animateUnknown); return; }
         unknownFrame++;
         var t = now * 0.001;
         var updateGlow = unknownFrame % 3 === 0;
@@ -2473,6 +2518,15 @@ document$.subscribe(function () {
     var volSlider = document.getElementById('dive-volume');
 
     if (overlay && diveBtn && volSlider) {
+      /* Show quality tier so users know they can override */
+      if (qualityTier !== 'high') {
+        var tierNote = document.createElement('p');
+        tierNote.className = 'dive-overlay__tier';
+        tierNote.textContent = 'Running in ' + qualityTier + ' quality. Add ?quality=high to the URL to override.';
+        var motionWarning = overlay.querySelector('.dive-overlay__motion-warning');
+        if (motionWarning) motionWarning.after(tierNote);
+      }
+
       /* Read saved volume */
       try { var savedVol = localStorage.getItem('mommyship-dive-volume'); }
       catch (e) { var savedVol = null; }

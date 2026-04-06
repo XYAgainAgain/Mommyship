@@ -54,6 +54,45 @@ canvas { display: block; }
   inset: 0;
 }
 
+/* Loading overlay */
+.gx-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--gx-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease-out;
+}
+
+.gx-loading.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gx-loading-spinner {
+  width: 120px;
+  height: 120px;
+}
+
+.gx-loading-star {
+  filter: drop-shadow(0 0 6px var(--gx-primary)) drop-shadow(0 0 12px var(--gx-primary));
+}
+
+.gx-loading-orbit {
+  transform-origin: 50px 50px;
+}
+
+.gx-orbit-1 { animation: gx-spin 2.4s linear infinite; }
+.gx-orbit-2 { animation: gx-spin 3.8s linear infinite reverse; }
+.gx-orbit-3 { animation: gx-spin 5.6s linear infinite; }
+.gx-orbit-4 { animation: gx-spin 8.0s linear infinite reverse; }
+
+@keyframes gx-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* UI overlay root */
 .gx-ui {
   position: fixed;

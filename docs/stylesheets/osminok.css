@@ -521,6 +521,8 @@ body:has(.osminok-dive) .md-typeset h4 {
   padding: 0;
   box-sizing: border-box;
   border-bottom: none;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1000px;
 }
 
 /* h4s (100m markers) — invisible spacers preserving scroll distance */
@@ -909,6 +911,13 @@ body:has(.osminok-landing) .ocean-surface {
   font-size: 0.72rem !important;
   color: rgba(204, 195, 193, 0.35) !important;
   margin-top: -0.5rem !important;
+}
+
+.dive-overlay__tier {
+  font-size: 0.65rem !important;
+  color: rgba(204, 195, 193, 0.3) !important;
+  margin-top: -0.3rem !important;
+  font-style: italic;
 }
 
 .dive-overlay__volume {
