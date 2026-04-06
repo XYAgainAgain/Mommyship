@@ -325,7 +325,8 @@
       "factionId": "comexo",
       "zoneId": "clp",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 1
     },
     "nimbus": {
       "type": "star",
@@ -351,7 +352,8 @@
       "factionId": "cuck",
       "zoneId": "cuck-core",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 2
     },
     "verdessa": {
       "type": "star",
@@ -377,7 +379,8 @@
       "factionId": "comexo",
       "zoneId": "clp",
       "tags": [],
-      "hasFuddruckers": true
+      "hasFuddruckers": true,
+      "colonizedCode": 3
     },
     "mornell": {
       "type": "star",
@@ -403,7 +406,8 @@
       "factionId": "comexo",
       "zoneId": "clp",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 4
     },
     "tuskan": {
       "type": "star",
@@ -429,7 +433,8 @@
       "factionId": "neo-gio",
       "zoneId": "neo-gio-core",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 5
     },
     "celebros": {
       "type": "star",
@@ -455,7 +460,8 @@
       "factionId": "comexo",
       "zoneId": "clp",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 6
     },
     "oshien": {
       "type": "star",
@@ -481,7 +487,8 @@
       "factionId": "neo-gio",
       "zoneId": "neo-gio-core",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 7
     },
     "grupp": {
       "type": "star",
@@ -507,7 +514,8 @@
       "factionId": "cuck",
       "zoneId": "cuck-core",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 8
     },
     "sublex": {
       "type": "star",
@@ -533,7 +541,8 @@
       "factionId": "independent",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 9
     },
     "propheta": {
       "type": "star",
@@ -559,7 +568,8 @@
       "factionId": "comexo",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 10
     },
     "flipsulon": {
       "type": "star",
@@ -586,7 +596,8 @@
       "factionId": "the-hawke-consortium",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 11
     },
     "nj12": {
       "type": "star",
@@ -612,7 +623,8 @@
       "factionId": "independent",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 12
     },
     "walpurg": {
       "type": "star",
@@ -638,7 +650,8 @@
       "factionId": "independent",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 13
     },
     "mercgolia": {
       "type": "star",
@@ -664,7 +677,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 14
     },
     "dunroid": {
       "type": "star",
@@ -690,7 +704,8 @@
       "factionId": "criminal",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 15
     },
     "wodden": {
       "type": "star",
@@ -716,7 +731,8 @@
       "factionId": "boc-bloc",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 16
     },
     "ivutlis": {
       "type": "star",
@@ -742,7 +758,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 17
     },
     "vadfiner": {
       "type": "star",
@@ -768,7 +785,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 18
     },
     "caronia": {
       "type": "star",
@@ -794,7 +812,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 19
     },
     "rho-bees": {
       "type": "star",
@@ -820,7 +839,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 20
     },
     "messier": {
       "type": "star",
@@ -846,7 +866,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 21
     },
     "kipple": {
       "type": "star",
@@ -872,7 +893,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 22
     },
     "los-kuaran": {
       "type": "star",
@@ -898,7 +920,8 @@
       "factionId": "cuck",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 23
     },
     "phytos": {
       "type": "star",
@@ -924,7 +947,8 @@
       "factionId": "cuck",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 24
     },
     "padania": {
       "type": "star",
@@ -950,7 +974,8 @@
       "factionId": "cuck",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 25
     },
     "durury": {
       "type": "star",
@@ -976,7 +1001,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 26
     },
     "bruminax": {
       "type": "star",
@@ -1002,7 +1028,8 @@
       "factionId": "grippiani",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 27
     },
     "gunonine": {
       "type": "star",
@@ -1028,7 +1055,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 28
     },
     "alfpas": {
       "type": "star",
@@ -1054,7 +1082,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 29
     },
     "steepborto": {
       "type": "star",
@@ -1080,7 +1109,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 30
     },
     "fonox": {
       "type": "star",
@@ -1106,7 +1136,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 31
     },
     "vamburdia-lesser": {
       "type": "star",
@@ -1132,7 +1163,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 32
     },
     "vamburdia-greater": {
       "type": "star",
@@ -1158,7 +1190,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 33
     },
     "plopidor": {
       "type": "star",
@@ -1184,7 +1217,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 34
     },
     "vopva": {
       "type": "star",
@@ -1210,7 +1244,8 @@
       "factionId": "the-board",
       "zoneId": "a-b",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 35
     },
     "gantropic": {
       "type": "star",
@@ -1236,7 +1271,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 36
     },
     "the-hungry-sun": {
       "type": "star",
@@ -1263,7 +1299,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 37
     },
     "comoda": {
       "type": "star",
@@ -1289,7 +1326,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 38
     },
     "ligroman": {
       "type": "star",
@@ -1315,7 +1353,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 39
     },
     "sunurdan": {
       "type": "star",
@@ -1341,7 +1380,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 40
     },
     "homi-eaomi": {
       "type": "star",
@@ -1367,7 +1407,8 @@
       "factionId": "neo-gio",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 41
     },
     "majestlon": {
       "type": "star",
@@ -1393,7 +1434,8 @@
       "factionId": "independent",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 42
     },
     "halcyon": {
       "type": "star",
@@ -1419,7 +1461,8 @@
       "factionId": "comexo",
       "zoneId": "rim",
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": false,
+      "colonizedCode": 43
     },
     "pugiot-the-pug": {
       "type": "station",
@@ -5535,7 +5578,7 @@
       "subtype": "ocean-world",
       "name": "Osminok Prime",
       "description": "The Endless Ocean That Is Our Treasured Home Despite Its Many Dangers. Gaby's homeworld!",
-      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35° axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
+      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35\u00c2\u00b0 axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
       "position": null,
       "parentId": "osminok",
       "orbital": {
@@ -5609,14 +5652,20 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 1, "incl": 0.21, "Omega": 0.8 },
+      "orbital": {
+        "order": 1,
+        "incl": 0.21,
+        "Omega": 0.8
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-2": {
@@ -5627,14 +5676,20 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 2, "incl": 0.35, "Omega": 1.4 },
+      "orbital": {
+        "order": 2,
+        "incl": 0.35,
+        "Omega": 1.4
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-3": {
@@ -5645,14 +5700,20 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 3, "incl": 0.18, "Omega": 2.1 },
+      "orbital": {
+        "order": 3,
+        "incl": 0.18,
+        "Omega": 2.1
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-4": {
@@ -5663,14 +5724,20 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 4, "incl": 0.44, "Omega": 3.5 },
+      "orbital": {
+        "order": 4,
+        "incl": 0.44,
+        "Omega": 3.5
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-5": {
@@ -5681,14 +5748,20 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 5, "incl": 0.28, "Omega": 4.7 },
+      "orbital": {
+        "order": 5,
+        "incl": 0.28,
+        "Omega": 4.7
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-6": {
@@ -5699,14 +5772,21 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 6, "incl": 0.52, "Omega": 5.3, "e": 0.08 },
+      "orbital": {
+        "order": 6,
+        "incl": 0.52,
+        "Omega": 5.3,
+        "e": 0.08
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-7": {
@@ -5717,14 +5797,21 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 7, "incl": 0.61, "Omega": 0.4, "e": 0.12 },
+      "orbital": {
+        "order": 7,
+        "incl": 0.61,
+        "Omega": 0.4,
+        "e": 0.12
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-8": {
@@ -5735,14 +5822,21 @@
       "notes": "Captured asteroid.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 8, "incl": 0.73, "Omega": 2.8, "e": 0.15 },
+      "orbital": {
+        "order": 8,
+        "incl": 0.73,
+        "Omega": 2.8,
+        "e": 0.15
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "rw-moon-9": {
@@ -5753,7 +5847,12 @@
       "notes": "0.1 Earth masses. Largest moon of Red Wanderer.",
       "position": null,
       "parentId": "osminok-iii",
-      "orbital": { "order": 9, "incl": 0.40, "Omega": 4.1, "e": 0.06 },
+      "orbital": {
+        "order": 9,
+        "incl": 0.4,
+        "Omega": 4.1,
+        "e": 0.06
+      },
       "visual": {
         "color": "#b8cce0"
       },
@@ -5762,7 +5861,9 @@
       "mass": null,
       "factionId": null,
       "zoneId": null,
-      "tags": ["uninhabited"],
+      "tags": [
+        "uninhabited"
+      ],
       "hasFuddruckers": false
     },
     "osminok-iv": {
@@ -5798,7 +5899,11 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 1, "incl": 0.30, "Omega": 1.2 },
+      "orbital": {
+        "order": 1,
+        "incl": 0.3,
+        "Omega": 1.2
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5816,7 +5921,11 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 2, "incl": 0.35, "Omega": 1.0 },
+      "orbital": {
+        "order": 2,
+        "incl": 0.35,
+        "Omega": 1.0
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5834,7 +5943,11 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 3, "incl": 0.28, "Omega": 1.4 },
+      "orbital": {
+        "order": 3,
+        "incl": 0.28,
+        "Omega": 1.4
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -5854,7 +5967,11 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 4, "incl": 0.42, "Omega": 1.1 },
+      "orbital": {
+        "order": 4,
+        "incl": 0.42,
+        "Omega": 1.1
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5872,7 +5989,11 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 5, "incl": 0.33, "Omega": 1.3 },
+      "orbital": {
+        "order": 5,
+        "incl": 0.33,
+        "Omega": 1.3
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -5892,7 +6013,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 6, "incl": 0.38, "Omega": 0.9, "e": 0.04 },
+      "orbital": {
+        "order": 6,
+        "incl": 0.38,
+        "Omega": 0.9,
+        "e": 0.04
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5910,7 +6036,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 10, "incl": 0.55, "Omega": 2.8, "e": 0.06 },
+      "orbital": {
+        "order": 10,
+        "incl": 0.55,
+        "Omega": 2.8,
+        "e": 0.06
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5928,7 +6059,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 11, "incl": 0.70, "Omega": 3.2, "e": 0.05 },
+      "orbital": {
+        "order": 11,
+        "incl": 0.7,
+        "Omega": 3.2,
+        "e": 0.05
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -5948,7 +6084,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 12, "incl": 0.48, "Omega": 2.5, "e": 0.08 },
+      "orbital": {
+        "order": 12,
+        "incl": 0.48,
+        "Omega": 2.5,
+        "e": 0.08
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5966,7 +6107,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 13, "incl": 0.82, "Omega": 3.8, "e": 0.07 },
+      "orbital": {
+        "order": 13,
+        "incl": 0.82,
+        "Omega": 3.8,
+        "e": 0.07
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -5986,7 +6132,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 14, "incl": 0.63, "Omega": 2.1, "e": 0.10 },
+      "orbital": {
+        "order": 14,
+        "incl": 0.63,
+        "Omega": 2.1,
+        "e": 0.1
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6004,7 +6155,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 18, "incl": 0.95, "Omega": 5.1, "e": 0.14 },
+      "orbital": {
+        "order": 18,
+        "incl": 0.95,
+        "Omega": 5.1,
+        "e": 0.14
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -6024,7 +6180,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 20, "incl": 1.10, "Omega": 0.6, "e": 0.18 },
+      "orbital": {
+        "order": 20,
+        "incl": 1.1,
+        "Omega": 0.6,
+        "e": 0.18
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6042,7 +6203,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 22, "incl": 0.85, "Omega": 3.4, "e": 0.12 },
+      "orbital": {
+        "order": 22,
+        "incl": 0.85,
+        "Omega": 3.4,
+        "e": 0.12
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -6062,7 +6228,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 25, "incl": 1.22, "Omega": 4.5, "e": 0.22 },
+      "orbital": {
+        "order": 25,
+        "incl": 1.22,
+        "Omega": 4.5,
+        "e": 0.22
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6080,7 +6251,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 27, "incl": 1.05, "Omega": 1.8, "e": 0.16 },
+      "orbital": {
+        "order": 27,
+        "incl": 1.05,
+        "Omega": 1.8,
+        "e": 0.16
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -6100,7 +6276,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 28, "incl": 1.35, "Omega": 5.8, "e": 0.25 },
+      "orbital": {
+        "order": 28,
+        "incl": 1.35,
+        "Omega": 5.8,
+        "e": 0.25
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6118,7 +6299,12 @@
       "notes": "Cryovolcanic.",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 30, "incl": 0.92, "Omega": 0.3, "e": 0.20 },
+      "orbital": {
+        "order": 30,
+        "incl": 0.92,
+        "Omega": 0.3,
+        "e": 0.2
+      },
       "visual": {
         "color": "#d4eeff"
       },
@@ -6138,7 +6324,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 32, "incl": 1.40, "Omega": 2.9, "e": 0.28 },
+      "orbital": {
+        "order": 32,
+        "incl": 1.4,
+        "Omega": 2.9,
+        "e": 0.28
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6156,7 +6347,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 34, "incl": 1.18, "Omega": 4.2, "e": 0.24 },
+      "orbital": {
+        "order": 34,
+        "incl": 1.18,
+        "Omega": 4.2,
+        "e": 0.24
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6174,7 +6370,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 36, "incl": 1.48, "Omega": 1.5, "e": 0.30 },
+      "orbital": {
+        "order": 36,
+        "incl": 1.48,
+        "Omega": 1.5,
+        "e": 0.3
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6192,7 +6393,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 38, "incl": 1.25, "Omega": 3.7, "e": 0.26 },
+      "orbital": {
+        "order": 38,
+        "incl": 1.25,
+        "Omega": 3.7,
+        "e": 0.26
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -6210,7 +6416,12 @@
       "notes": "",
       "position": null,
       "parentId": "osminok-iv",
-      "orbital": { "order": 40, "incl": 1.52, "Omega": 5.4, "e": 0.32 },
+      "orbital": {
+        "order": 40,
+        "incl": 1.52,
+        "Omega": 5.4,
+        "e": 0.32
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,

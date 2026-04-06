@@ -8,11 +8,25 @@ let callbacks = {};
 let mapScale = 1;
 let mapX = 0, mapY = 0;
 let isDragging = false;
+let lastColorT = -1;
 let dragStartX = 0, dragStartY = 0;
 let dragMapStartX = 0, dragMapStartY = 0;
 
 const map2d = document.getElementById('map-2d');
 const mapContainer = document.getElementById('map-container');
+
+/* Hex color lerp for zoom-based faction → spectral blending */
+function hexToRgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+function lerpColor(hex1, hex2, t) {
+  const a = hexToRgb(hex1), b = hexToRgb(hex2);
+  const r = Math.round(a[0] + (b[0] - a[0]) * t);
+  const g = Math.round(a[1] + (b[1] - a[1]) * t);
+  const bl = Math.round(a[2] + (b[2] - a[2]) * t);
+  return 'rgb(' + r + ',' + g + ',' + bl + ')';
+}
 
 /* Galactic coords to percentage on 800px map circle */
 function coordToPercent(x, z) {
@@ -117,6 +131,19 @@ function updateMapTransform() {
     }
   });
 
+  /* Star color lerp: faction → spectral as zoom increases (matches 3D behavior) */
+  const colorT = Math.max(0, Math.min(1, (mapScale - 4) / 11));
+  if (colorT !== lastColorT) {
+    lastColorT = colorT;
+    mapContainer.querySelectorAll('.gx-pin[data-spectral-color]').forEach(pin => {
+      const dot = pin.querySelector('.gx-pin-dot');
+      if (!dot) return;
+      dot.style.background = colorT <= 0 ? pin.dataset.factionColor
+        : colorT >= 1 ? pin.dataset.spectralColor
+        : lerpColor(pin.dataset.factionColor, pin.dataset.spectralColor, colorT);
+    });
+  }
+
   /* Zone labels: visible at low zoom, fade out as you zoom in */
   const zoneAlpha = Math.max(0, Math.min(1, (4 - mapScale) / 2));
   mapContainer.querySelectorAll('.gx-zone-label-2d').forEach(zl => {
@@ -125,6 +152,7 @@ function updateMapTransform() {
   });
 
   mapContainer.style.setProperty('--zone-stroke', (1.5 * vbInv));
+  mapContainer.style.setProperty('--zone-dash', (0.5 * vbInv) + ' ' + (0.4 * vbInv));
 
   update2DScaleBar();
 }
@@ -197,6 +225,7 @@ function build2DMap() {
   if (!galaxyData) return;
   posCache.clear();
   siblingCache = null;
+  lastColorT = -1;
   const clip = mapContainer.querySelector('.gx-map2d-clip');
   const svg = document.getElementById('lanes-svg');
 
@@ -208,6 +237,8 @@ function build2DMap() {
     const pos = coordToPercent(coords.x, coords.z);
     const faction = body.factionId ? galaxyData.factions[body.factionId] : null;
     const color = faction ? faction.color : (body.visual?.color || '#888');
+    /* Spectral color for zoom-based lerp (faction → true color as you zoom in) */
+    const spectral = body.visual?.spectralColor;
 
     const isMoon = body.type === 'moon';
     const dotSize = tier === 'landmark' ? 6 : tier === 'star' ? 4 : isMoon ? 0.5 : tier === 'station' ? 1 : tier === 'gng' ? 1 : 1.5;
@@ -216,6 +247,10 @@ function build2DMap() {
     pin.className = 'gx-pin';
     pin.dataset.id = id;
     pin.dataset.tier = tier;
+    if (spectral) {
+      pin.dataset.factionColor = color;
+      pin.dataset.spectralColor = spectral;
+    }
     pin.style.left = pos.left + '%';
     pin.style.top = pos.top + '%';
     const dotStyle = 'width:' + dotSize + 'px;height:' + dotSize + 'px;background:' + color +
@@ -226,6 +261,14 @@ function build2DMap() {
     pin.addEventListener('click', (e) => {
       e.stopPropagation();
       selectBody(id);
+    });
+    pin.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectBody(id);
+      flyTo2D(id);
+      /* Set up 3D tracking so it persists when switching views */
+      if (callbacks.onFlyTo) callbacks.onFlyTo(id);
     });
     clip.appendChild(pin);
   });
@@ -312,7 +355,7 @@ function build2DMap() {
     const rot = zone.rotation || 0;
     zones += '<ellipse class="gx-zone-ellipse" cx="' + cp.left + '" cy="' + cp.top + '" rx="' + rxVB + '" ry="' + rzVB + '" ' +
       'transform="rotate(' + rot + ' ' + cp.left + ' ' + cp.top + ')" ' +
-      'fill="none" stroke="rgba(92,225,230,0.15)" stroke-dasharray="0.5 0.4" />';
+      'fill="none" stroke="rgba(92,225,230,0.15)" />';
   });
 
   svg.innerHTML = defs + zones + orbits + lines;
@@ -430,7 +473,18 @@ function selectBody(id) {
   const typeEl = document.getElementById('panel-type');
   typeEl.style.color = typeColors[body.type] || 'var(--gx-text-dim)';
   typeEl.textContent = body.type.toUpperCase() + (body.subtype ? ' / ' + body.subtype.toUpperCase() : '');
-  document.getElementById('panel-name').textContent = body.name;
+  const nameEl = document.getElementById('panel-name');
+  if (body.colonizedCode != null) {
+    /* 3-pointed star badge — 3 outer tips + 3 inner valleys at 120-degree intervals */
+    nameEl.innerHTML = body.name + ' <span class="gx-colony-badge" title="Colonization order: System ' +
+      body.colonizedCode + '"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+      '<polygon points="12,1 15.6,10.4 22,18.2 12,16.7 2,18.2 8.4,10.4" fill="#f0a030"/>' +
+      '</svg><span class="gx-colony-num">' + body.colonizedCode + '</span></span>';
+  } else {
+    nameEl.textContent = body.name;
+  }
+  nameEl.style.cursor = 'context-menu';
+  nameEl.oncontextmenu = (e) => { e.preventDefault(); flyToBody(id); };
 
   const faction = body.factionId ? galaxyData.factions[body.factionId] : null;
   let html = '';
@@ -513,6 +567,11 @@ function selectBody(id) {
 
   document.querySelectorAll('.gx-p-child[data-id], .gx-p-lane[data-id]').forEach(el => {
     el.addEventListener('click', () => selectBody(el.dataset.id));
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      selectBody(el.dataset.id);
+      flyToBody(el.dataset.id);
+    });
   });
 
   if (callbacks.onSelect) callbacks.onSelect(id, body);
@@ -584,8 +643,19 @@ searchInput.addEventListener('input', () => {
   const q = searchInput.value.trim().toLowerCase();
   if (!q || !galaxyData) { searchResults.classList.remove('open'); return; }
 
+  const qNum = /^\d+$/.test(q) ? parseInt(q) : null;
   const matches = Object.entries(galaxyData.bodies)
-    .filter(([id, b]) => b.name.toLowerCase().includes(q) || id.includes(q))
+    .filter(([id, b]) => {
+      if (qNum !== null && b.colonizedCode === qNum) return true;
+      /* Pure-number queries only match colonization codes, not name substrings */
+      if (qNum !== null) return false;
+      return b.name.toLowerCase().includes(q) || id.includes(q);
+    })
+    .sort((a, b) => {
+      const aCode = qNum !== null && a[1].colonizedCode === qNum ? 0 : 1;
+      const bCode = qNum !== null && b[1].colonizedCode === qNum ? 0 : 1;
+      return aCode - bCode;
+    })
     .slice(0, 15);
 
   if (!matches.length) { searchResults.classList.remove('open'); return; }
@@ -594,9 +664,12 @@ searchInput.addEventListener('input', () => {
   searchResults.innerHTML = matches.map(([id, b]) => {
     const faction = b.factionId ? galaxyData.factions[b.factionId] : null;
     const color = faction ? faction.color : '#555';
+    const codeTag = b.colonizedCode != null
+      ? '<span class="gx-search-code">System ' + b.colonizedCode + '</span>' : '';
     return '<div class="gx-search-item" data-id="' + id + '">' +
       '<span class="gx-search-dot" style="background:' + color + '"></span>' +
       '<span class="gx-search-name">' + b.name + '</span>' +
+      codeTag +
       '<span class="gx-search-type">' + b.type + '</span></div>';
   }).join('');
   searchResults.classList.add('open');
@@ -706,6 +779,7 @@ function resetView() {
 
 /* Panel close */
 document.getElementById('panel-close').addEventListener('click', deselectBody);
+document.getElementById('context-panel').addEventListener('contextmenu', e => e.preventDefault());
 
 /* 2D scale bar — uses same elements as 3D */
 const NICE_CONSTANT = 69;
@@ -721,7 +795,8 @@ function update2DScaleBar() {
   const scaleBarLabel = document.getElementById('scale-bar-label');
   /* 800px container = 1000 map units. At mapScale, 1 screen px = 1000/(800*mapScale) map units */
   const lyPerPx = (1000 * NICE_CONSTANT) / (800 * mapScale);
-  const maxBarPx = window.innerWidth * 0.5;
+  /* Capped so high zoom picks useful distances (200 ly) instead of viewport-spanning ones (1000 ly) */
+  const maxBarPx = Math.min(window.innerWidth * 0.3, 280);
 
   let bestLy = null;
   for (let i = NICE_DISTANCES_2D.length - 1; i >= 0; i--) {
