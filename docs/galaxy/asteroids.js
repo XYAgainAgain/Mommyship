@@ -387,16 +387,10 @@ function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMod
   return { mesh, mat, count: placed, scaleArr, spareStart: placed, spareCount: spareCount || 0 };
 }
 
-export async function init(scene, data) {
+export async function init(scene, data, lightmap) {
   initPerlin(42069);
   const shaders = await loadShaderPair('asteroid');
   const exclusionZones = buildExclusionZones(data);
-
-  const loader = new THREE.TextureLoader();
-  const lightmap = await loader.loadAsync('galaxy/textures/galaxy-lightmap.webp');
-  lightmap.flipY = false;
-  lightmap.wrapS = THREE.ClampToEdgeWrapping;
-  lightmap.wrapT = THREE.ClampToEdgeWrapping;
 
   const bigRng = createRng(hashString(BIGBOI.seed));
   const big = createAsteroidMesh(BIGBOI, shaders, bigRng, exclusionZones, lightmap, false);

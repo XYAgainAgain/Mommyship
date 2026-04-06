@@ -53,7 +53,7 @@ const TORUS_DEFS = [
   },
 ];
 
-export async function createDustTorus(scene, renderer) {
+export async function createDustTorus(scene, renderer, lightmap) {
   if (!renderer.capabilities.isWebGL2) {
     console.warn('Dust torus requires WebGL2');
     return { update() {} };
@@ -63,12 +63,6 @@ export async function createDustTorus(scene, renderer) {
     loadShaderPair('dust-torus'),
     bakeVolumeTexture({ seed: 55555, frequency: 5.0, octaves: 5 }),
   ]);
-
-  const loader = new THREE.TextureLoader();
-  const lightmap = await loader.loadAsync('galaxy/textures/galaxy-lightmap.webp');
-  lightmap.flipY = false;
-  lightmap.wrapS = THREE.ClampToEdgeWrapping;
-  lightmap.wrapT = THREE.ClampToEdgeWrapping;
 
   const tori = [];
 

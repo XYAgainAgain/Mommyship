@@ -44,6 +44,19 @@ async function init() {
 
   const clock = new THREE.Clock();
 
+  /* 12k → 8k → 4k based on GPU max texture dimension */
+  const maxTex = renderer.capabilities.maxTextureSize;
+  const tier = maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
+  const lightmapUrl = 'galaxy/textures/galaxy-lightmap-' + tier + '.webp';
+
+  const lightmapImg = document.getElementById('lightmap-img');
+  if (lightmapImg) lightmapImg.src = lightmapUrl;
+
+  const lightmap = await new THREE.TextureLoader().loadAsync(lightmapUrl);
+  lightmap.flipY = false;
+  lightmap.wrapS = THREE.ClampToEdgeWrapping;
+  lightmap.wrapT = THREE.ClampToEdgeWrapping;
+
   const bg = await createBackground(scene);
   const disk = await createDisk(scene);
   const nebula = await createNebula(scene);
@@ -52,10 +65,10 @@ async function init() {
   const audio = createAudio(cam.camera);
   const volumetric = await createVolumetric(scene, renderer);
   const coreStorm = await createCoreStorm(scene, renderer);
-  const dustTorus = await createDustTorus(scene, renderer);
+  const dustTorus = await createDustTorus(scene, renderer, lightmap);
 
   const systems = await createSystems(scene, cam.camera, renderer);
-  await asteroids.init(scene, systems.getData());
+  await asteroids.init(scene, systems.getData(), lightmap);
 
   /* Volume — controls drone gain when Muse is off, Muse volume when on */
   let masterVolume = 0.5;
