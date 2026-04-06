@@ -128,6 +128,8 @@ export function createCamera(renderer) {
   const _suckSph = new THREE.Spherical();
 
   function update(delta) {
+    updateFly();
+
     if (museAnim) {
       const raw = Math.min(1, (performance.now() - museAnim.start) / SUCK_DURATION);
 
@@ -207,10 +209,52 @@ export function createCamera(renderer) {
     }
   }
 
+  /* Smooth fly-to animation for search/selection.
+     When tracking is active, we only animate the camera offset (distance + direction)
+     toward the target — the tracking code in galaxy.js handles controls.target. */
+  let flyAnim = null;
+
+  function flyTo(target, distance) {
+    if (museMode) return;
+    const d = distance || 30;
+    /* Offset from the NEW target (not current controls.target, which may be a different body) */
+    const startOffset = camera.position.clone().sub(target);
+    const endOffset = startOffset.clone().normalize().multiplyScalar(d);
+
+    flyAnim = {
+      startOffset,
+      endOffset,
+      targetPos: target.clone(),
+      startTarget: controls.target.clone(),
+      start: performance.now(),
+      duration: 1200
+    };
+  }
+
+  function updateFly() {
+    if (!flyAnim) return;
+    const raw = (performance.now() - flyAnim.start) / flyAnim.duration;
+    const t = raw >= 1 ? 1 : raw * raw * (3 - 2 * raw);
+
+    /* Interpolate the offset vector */
+    const offset = flyAnim.startOffset.clone().lerp(flyAnim.endOffset, t);
+
+    if (trackMode) {
+      /* Tracking updates controls.target each frame — just position the camera relative to it */
+      camera.position.copy(controls.target).add(offset);
+    } else {
+      /* No tracking — also lerp the target itself */
+      controls.target.lerpVectors(flyAnim.startTarget, flyAnim.targetPos, t);
+      camera.position.copy(controls.target).add(offset);
+    }
+
+    if (raw >= 1) flyAnim = null;
+  }
+
   function resize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   }
 
-  return { camera, controls, update, resize, setMuseMode, setTrackMode: (v) => { trackMode = v; } };
+  return { camera, controls, update, resize, setMuseMode, setTrackMode: (v) => { trackMode = v; }, flyTo };
 }

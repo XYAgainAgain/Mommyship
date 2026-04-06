@@ -31,11 +31,11 @@ const TWO_PI = Math.PI * 2;
 const ORBIT_RADIUS = [null, [5, 10], [2, 4], [1, 2]];
 const ECC_SIGMA    = [0, 0.08, 0.015, 0.015];
 const ECC_MAX      = [0, 0.5,  0.06,  0.06];
-/* Planets: Gaussian centered at 30° σ10°; moons: half-Gaussian σ0.7° clustered near zero */
-const INCL_SIGMA   = [0, 10,   0.7,   0.7];
+/* Planets: Gaussian centered at 30° σ10°; moons: half-Gaussian σ5° with ±15° cap */
+const INCL_SIGMA   = [0, 10,   5,     5];
 const INCL_CENTER  = [0, 30,   0,     0];
 const INCL_MIN     = [0, 5,    0,     0];
-const INCL_MAX     = [0, 60,   2,     2];
+const INCL_MAX     = [0, 60,   15,    15];
 const ORBIT_PERIOD = [null, [30, 90], [15, 45], [8, 25]];
 
 /* Marker scale per depth: stars 80%, planets 30% of star, moons 25% of planet */
@@ -203,10 +203,14 @@ export async function createSystems(scene, camera, renderer) {
   /* Zone labels — faction-colored or turquoise, rotate with galaxy */
   const ZONE_FACTIONS = { 'cuck-core': 'cuck', 'neo-gio-core': '#6b8cbf', 'clp': 'comexo' };
   const ZONE_BREAKS = {
-    'cuck-core': 'C.U.C.K. Space',
+    'cuck-core': 'C.U.C.K.\nSpace',
     '1gwrz': 'First Galactic\nWar Ruin Zone',
     'dead-zone': 'Unexplained\nDead Zone',
-    'unclaimed': 'Unclaimed\nTerritory'
+    'unclaimed': 'Unclaimed\nTerritory',
+    'neo-gio-core': 'Neo-Giovanni\nCore Worlds',
+    'clp': 'Comexo\nLifestyle Planets',
+    'fields': 'Sapphire\nFields',
+    'smelt': 'Smelt\nWorlds'
   };
   const zoneLabels = [];
 
@@ -453,10 +457,12 @@ export async function createSystems(scene, camera, renderer) {
 
         /* Even spacing with eccentricity cap — preserve explicit JSON overrides */
         for (let i = 0; i < orbitals.length; i++) {
-          const hasExplicitA = galaxyData.bodies[orbitals[i].id]?.orbital?.a != null;
+          const src = galaxyData.bodies[orbitals[i].id]?.orbital;
+          const hasExplicitA = src?.a != null;
           const a = hasExplicitA ? orbitals[i].orbital.a : minR + (i + 0.5) * spacing;
           orbitals[i].orbital.a = a;
-          orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e, spacing / (2 * a + spacing));
+          if (src?.e == null)
+            orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e, spacing / (2 * a + spacing));
         }
 
         /* Nudge adjacent period ratios toward integer resonances (Kepler T ∝ a^1.5).
@@ -474,8 +480,9 @@ export async function createSystems(scene, camera, renderer) {
           const maxA = minR + (i + 0.5) * spacing * 1.5;
           const newA = Math.min(inner * Math.pow(nudged, 2 / 3), maxA);
           orbitals[i].orbital.a = newA;
-          orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e,
-            spacing / (2 * newA + spacing));
+          if (galaxyData.bodies[orbitals[i].id]?.orbital?.e == null)
+            orbitals[i].orbital.e = Math.min(orbitals[i].orbital.e,
+              spacing / (2 * newA + spacing));
         }
 
         if (depth >= 2) {
@@ -485,9 +492,12 @@ export async function createSystems(scene, camera, renderer) {
           const baseTilt = (parentOrb?.incl || 0) + (10 + poleRng.next() * 20) * (Math.PI / 180);
           const baseAz = (parentOrb?.Omega || 0) + (poleRng.next() - 0.5) * 0.5;
           for (let i = 0; i < orbitals.length; i++) {
+            const src = galaxyData.bodies[orbitals[i].id]?.orbital;
             const scatter = createRng(hashString(orbitals[i].id) + 199);
-            orbitals[i].orbital.incl = Math.max(0, baseTilt + scatter.gauss() * 1 * (Math.PI / 180));
-            orbitals[i].orbital.Omega = baseAz + scatter.gauss() * 1 * (Math.PI / 180);
+            if (src?.incl == null)
+              orbitals[i].orbital.incl = Math.max(0, baseTilt + scatter.gauss() * 5 * (Math.PI / 180));
+            if (src?.Omega == null)
+              orbitals[i].orbital.Omega = baseAz + scatter.gauss() * 8 * (Math.PI / 180);
           }
         } else {
           /* Planets: shared orbital plane from star's pole axis (overridable via poleAngle) */
@@ -1077,7 +1087,7 @@ export async function createSystems(scene, camera, renderer) {
 
   function initZoneLabels() {
     for (const [zid, zone] of Object.entries(galaxyData.zones)) {
-      if (zid === 'core' || !zone.position) continue;
+      if (zid === 'core' || zid === 'a-b' || !zone.position) continue;
       const div = document.createElement('div');
       div.className = 'zone-label';
       const displayName = ZONE_BREAKS[zid] || zone.name;

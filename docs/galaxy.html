@@ -8,54 +8,146 @@
   <link rel="stylesheet" href="galaxy/galaxy.css">
 </head>
 <body>
-  <a class="fly-home" id="fly-home" href="#" role="button" aria-label="Return to Mommyship" title="Fly Home!">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"/></svg>
-  </a>
-  <div class="gx-controls">
-    <div class="gx-controls-row">
-      <div class="gx-controls-col">
-        <div class="gx-controls-row">
-          <label class="gx-toggle">
-            <input type="checkbox" id="fancy-nebulae">
-            <span>Fancy Nebulae</span>
-          </label>
-          <label class="gx-toggle gx-cinema-toggle" id="cinema-toggle">
-            <input type="checkbox" id="absolute-cinema">
-            <span>Absolute Cinema</span>
-          </label>
-        </div>
-        <div class="gx-controls-row">
-          <label class="gx-toggle">
-            <input type="checkbox" id="pause-rotation">
-            <span>Pause Rotation</span>
-          </label>
-          <label class="gx-toggle">
-            <input type="checkbox" id="muse-mode">
-            <span>Muse Mode</span>
-          </label>
-        </div>
-      </div>
-      <div class="gx-volume" id="muse-volume-wrap">
-        <input type="range" id="muse-volume" min="0" max="100" value="50" orient="vertical">
+
+  <!-- 3D canvas -->
+  <div class="experience"></div>
+
+  <!-- 2D flat map -->
+  <div class="gx-map2d" id="map-2d">
+    <div class="gx-map2d-container" id="map-container">
+      <div class="gx-map2d-clip">
+        <img src="galaxy/textures/galaxy-lightmap-8k.webp" alt="Galaxy lightmap" />
+        <svg class="gx-map2d-lanes" id="lanes-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       </div>
     </div>
   </div>
-  <div class="gx-controls-guide">
-    <b>Left Drag</b> Rotate<br>
-    <b>Right Drag</b> Pan<br>
-    <b>Scroll</b> Zoom<br>
-    <b>W/S</b> Forward/Back<br>
-    <b>A/D</b> Strafe<br>
-    <b>Q/E</b> Orbit<br>
-    <b>Space/Ctrl</b> Up/Down<br>
-    <b>Shift</b> Sprint<br>
-    <b>Left Click</b> Select<br>
-    <b>Right Click</b> Track<br>
-    <span class="guide-track">While tracking:<br>
-    <b>A/D</b> Orbit H<br>
-    <b>Space/Ctrl</b> Orbit V<br>
-    <b>Right Click</b> Release</span>
+
+  <!-- UI overlay -->
+  <div class="gx-ui">
+
+    <!-- Top nav -->
+    <nav class="gx-nav">
+      <div class="gx-nav-left">
+        <a class="fly-home" id="fly-home" href="#" role="button" aria-label="Return to Mommyship" title="Fly Home!">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"/></svg>
+        </a>
+        <span class="gx-title">The Known Galaxy</span>
+      </div>
+
+      <div class="gx-search" id="gx-search">
+        <svg class="gx-search-icon" viewBox="0 0 512 512" fill="currentColor"><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></svg>
+        <input type="text" id="search-input" placeholder="Spoogle Search" autocomplete="off" />
+        <div class="gx-search-results" id="search-results"></div>
+      </div>
+
+      <div class="gx-nav-right">
+        <div class="gx-btn-group">
+          <button class="gx-btn active" id="btn-3d">3D</button>
+          <button class="gx-btn" id="btn-2d">2D</button>
+        </div>
+        <div class="gx-btn-group" id="mode-buttons">
+          <button class="gx-btn" id="btn-muse">Muse</button>
+          <div class="gx-btn-sep"></div>
+          <button class="gx-btn" id="btn-pause">Pause</button>
+          <div class="gx-btn-sep"></div>
+          <button class="gx-btn" id="btn-screenshot" title="Photo Mode (F2)">Clean</button>
+        </div>
+        <div class="gx-btn-group">
+          <button class="gx-btn gx-btn-icon" id="settings-toggle" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Settings dropdown -->
+    <div class="gx-settings" id="settings-dropdown">
+      <div class="gx-settings-volume">
+        <label>Volume</label>
+        <input type="range" id="volume-slider" min="0" max="100" value="50">
+      </div>
+      <label class="gx-settings-row">
+        <input type="checkbox" id="fancy-nebulae"> Fancy Nebulae
+      </label>
+      <label class="gx-settings-row">
+        <input type="checkbox" id="absolute-cinema"> Absolute Cinema
+      </label>
+      <label class="gx-settings-row">
+        <input type="checkbox" id="show-coords" checked> Show Coordinates
+      </label>
+      <label class="gx-settings-row">
+        <input type="checkbox" id="show-fps"> Show FPS
+      </label>
+    </div>
+
+    <!-- Workspace (context panel lives here) -->
+    <div class="gx-workspace">
+      <aside class="gx-panel" id="context-panel">
+        <div class="gx-panel-header">
+          <div class="gx-panel-header-top">
+            <span class="gx-panel-type" id="panel-type"></span>
+            <button class="gx-panel-close" id="panel-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="gx-panel-name" id="panel-name"></div>
+        </div>
+        <div class="gx-panel-body" id="panel-body"></div>
+      </aside>
+    </div>
+
+    <!-- Controls popup -->
+    <div class="gx-controls-popup" id="controls-popup">
+      <div id="controls-3d">
+        <b>Left Drag</b> Rotate<br>
+        <b>Right Drag</b> Pan<br>
+        <b>Scroll</b> Zoom<br>
+        <b>W/S</b> Forward/Back<br>
+        <b>A/D</b> Strafe<br>
+        <b>Q/E</b> Orbit<br>
+        <b>Space/Ctrl</b> Up/Down<br>
+        <b>Shift</b> Sprint<br>
+        <b>Left Click</b> Select<br>
+        <b>Right Click</b> Track<br>
+        <b>1</b> Reset View<br>
+        <b>2</b> Show 2D Map<br>
+        <b>3</b> Show 3D Map<br>
+        <b>F2</b> Photo Mode<br>
+        <span class="guide-track">While tracking:<br>
+        <b>A/D</b> Orbit H<br>
+        <b>Space/Ctrl</b> Orbit V<br>
+        <b>Right Click</b> Release</span>
+      </div>
+      <div id="controls-2d" style="display:none">
+        <b>Left Drag</b> Pan<br>
+        <b>Scroll</b> Zoom<br>
+        <b>W/A/S/D</b> Pan<br>
+        <b>E</b> Zoom In<br>
+        <b>Q</b> Zoom Out<br>
+        <b>Left Click</b> Select<br>
+        <b>1</b> Reset View<br>
+        <b>2</b> Show 2D Map<br>
+        <b>3</b> Show 3D Map<br>
+        <b>F2</b> Photo Mode
+      </div>
+    </div>
+
+    <!-- Scale bar -->
+    <div class="scale-bar" id="scale-bar">
+      <div class="scale-bar-line" id="scale-bar-line"></div>
+      <div class="scale-bar-label" id="scale-bar-label"></div>
+    </div>
+
+    <!-- HUD (camera coords / FPS) -->
+    <div class="gx-hud" id="gx-hud"></div>
+
+    <!-- Status bar -->
+    <div class="gx-status">
+      <button class="gx-status-toggle" id="controls-toggle">Controls</button>
+      <span class="gx-status-center" id="status-center"></span>
+    </div>
   </div>
+
   <script>
     document.getElementById('fly-home').addEventListener('click', function(e) {
       e.preventDefault();
@@ -68,12 +160,6 @@
       }
     });
   </script>
-  <div class="scale-bar" id="scale-bar">
-    <div class="scale-bar-line" id="scale-bar-line"></div>
-    <div class="scale-bar-label" id="scale-bar-label"></div>
-  </div>
-  <div class="gx-hud" id="gx-hud"></div>
-  <div class="experience"></div>
   <script type="importmap">
   {
     "imports": {

@@ -12,8 +12,8 @@ import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
 import { createSystems } from './systems.js';
 import * as asteroids from './asteroids.js';
+import * as ui from './galaxy-ui.js';
 
-/* Avoids per-frame allocation for BH screen-space projection */
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
 
@@ -57,7 +57,25 @@ async function init() {
   const systems = await createSystems(scene, cam.camera, renderer);
   await asteroids.init(scene, systems.getData());
 
-  /* Nebula toggle: both systems in memory, swap via localStorage */
+  /* Volume — controls drone gain when Muse is off, Muse volume when on */
+  let masterVolume = 0.5;
+  const volumeSlider = document.getElementById('volume-slider');
+
+  function applyVolume() {
+    if (museActive) {
+      audio.setGain(0);
+      museAudio.setVolume(masterVolume);
+    } else {
+      audio.setGain(masterVolume);
+    }
+  }
+
+  volumeSlider.addEventListener('input', () => {
+    masterVolume = parseInt(volumeSlider.value) / 100;
+    applyVolume();
+  });
+
+  /* Fancy Nebulae toggle */
   let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
   const fancyCheckbox = document.getElementById('fancy-nebulae');
   fancyCheckbox.checked = volumetricActive;
@@ -67,33 +85,26 @@ async function init() {
     volumetric.addToScene();
   }
 
-  /* Absolute Cinema: forces max LOD on everything — only available with Fancy Nebulae */
+  /* Absolute Cinema */
   let cinemaMode = false;
   const cinemaCheckbox = document.getElementById('absolute-cinema');
-  const cinemaToggle = document.getElementById('cinema-toggle');
-
-  function syncCinemaVisibility() {
-    if (volumetricActive) {
-      cinemaToggle.classList.add('visible');
-    } else {
-      cinemaToggle.classList.remove('visible');
-      cinemaCheckbox.checked = false;
-      cinemaMode = false;
-      document.body.classList.remove('cinema-active');
-    }
-  }
-  syncCinemaVisibility();
 
   cinemaCheckbox.addEventListener('change', () => {
+    if (cinemaCheckbox.checked && !volumetricActive) {
+      fancyCheckbox.checked = true;
+      fancyCheckbox.dispatchEvent(new Event('change'));
+    }
     cinemaMode = cinemaCheckbox.checked;
-    document.body.classList.toggle('cinema-active', cinemaMode);
-    systems.setClickDisabled(museActive);
   });
 
   fancyCheckbox.addEventListener('change', () => {
     volumetricActive = fancyCheckbox.checked;
     localStorage.setItem('mommyship-galaxy-volumetric', String(volumetricActive));
-    syncCinemaVisibility();
+    /* Turn off Cinema if Fancy is disabled */
+    if (!volumetricActive && cinemaMode) {
+      cinemaCheckbox.checked = false;
+      cinemaMode = false;
+    }
     if (volumetricActive) {
       scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
       volumetric.addToScene();
@@ -103,31 +114,28 @@ async function init() {
     }
   });
 
-  /* Pause rotation: freezes spin, billowing/BH/background keep going */
+  /* Pause — galactic rotation only */
   let rotationPaused = false;
   let rotationTime = 0;
-  const pauseCheckbox = document.getElementById('pause-rotation');
-  pauseCheckbox.addEventListener('change', () => {
-    rotationPaused = pauseCheckbox.checked;
+  const pauseBtn = document.getElementById('btn-pause');
+
+  pauseBtn.addEventListener('click', () => {
+    rotationPaused = !rotationPaused;
+    pauseBtn.classList.toggle('active', rotationPaused);
+    pauseBtn.textContent = rotationPaused ? 'Resume' : 'Pause';
   });
 
-  /* Muse View: camera suck-in → orbit-only around BH → Muse plays */
+  /* Muse Mode */
   let museActive = false;
   const museAudio = createMuseAudio();
-  const museCheckbox = document.getElementById('muse-mode');
-  const museVolumeWrap = document.getElementById('muse-volume-wrap');
-  const museVolumeSlider = document.getElementById('muse-volume');
+  const museBtn = document.getElementById('btn-muse');
 
-  /* Lazy preload the song so it's cached and instant when needed */
   preloadMuse();
+  applyVolume();
 
-  museVolumeSlider.addEventListener('input', () => {
-    museAudio.setVolume(parseInt(museVolumeSlider.value) / 100);
-  });
-
-  museCheckbox.addEventListener('change', () => {
-    museActive = museCheckbox.checked;
-    museVolumeWrap.classList.toggle('visible', museActive);
+  museBtn.addEventListener('click', () => {
+    museActive = !museActive;
+    museBtn.classList.toggle('active', museActive);
     cam.setMuseMode(museActive);
 
     if (museActive) {
@@ -136,18 +144,23 @@ async function init() {
       cam.controls.enablePan = true;
       cam.setTrackMode(false);
       systems.hideOrbits();
-      audio.setGain(0);
-      museAudio.setVolume(parseInt(museVolumeSlider.value) / 100);
+      museAudio.setVolume(masterVolume);
       museAudio.start();
+      audio.setGain(0);
     } else {
       museAudio.stop();
-      audio.setGain(1);
+      audio.setGain(masterVolume);
     }
     systems.setClickDisabled(museActive);
     systems.setMuseActive(museActive);
   });
 
-  /* Confirmation dialog on any navigation away — prevents accidental tab close */
+  /* HUD — show/hide based on settings */
+  const hudEl = document.getElementById('gx-hud');
+  const showCoordsCheckbox = document.getElementById('show-coords');
+  const showFpsCheckbox = document.getElementById('show-fps');
+
+  /* Confirmation dialog on any navigation away */
   window.addEventListener('beforeunload', e => { e.preventDefault(); });
 
   window.addEventListener('resize', () => {
@@ -159,7 +172,7 @@ async function init() {
     systems.resize();
   });
 
-  /* Scale bar — frustum width at orbit target depth, stable and zoom-correlated */
+  /* Scale bar */
   const NICE_CONSTANT = 69;
   const NICE_DISTANCES = [
     1, 2, 5, 10, 20, 50, 69, 100, 200, 500,
@@ -178,7 +191,6 @@ async function init() {
     const lyPerPx = totalLy / window.innerWidth;
     const maxBarPx = window.innerWidth * 0.5;
 
-    /* Largest nice distance that fits under half the screen */
     let bestLy = null;
     for (let i = NICE_DISTANCES.length - 1; i >= 0; i--) {
       if (NICE_DISTANCES[i] / lyPerPx <= maxBarPx) {
@@ -199,12 +211,26 @@ async function init() {
       : bestLy.toLocaleString() + ' ly';
   }
 
-  /* Debug HUD — FPS + camera position */
-  const hudEl = document.getElementById('gx-hud');
+  /* FPS tracking */
   let fpsFrames = 0, fpsTime = 0, fpsDisplay = 0;
 
   function animate() {
     requestAnimationFrame(animate);
+
+    /* Skip 3D rendering in 2D mode */
+    if (ui.getViewMode() === '2d') {
+      const delta = Math.min(clock.getDelta(), 0.1);
+      fpsFrames++;
+      fpsTime += delta;
+      if (fpsTime >= 0.5) {
+        fpsDisplay = Math.round(fpsFrames / fpsTime);
+        fpsFrames = 0;
+        fpsTime = 0;
+      }
+      updateHUD();
+      return;
+    }
+
     const delta = Math.min(clock.getDelta(), 0.1);
     const elapsed = clock.getElapsedTime();
 
@@ -215,10 +241,8 @@ async function init() {
       fpsFrames = 0;
       fpsTime = 0;
     }
-    const cp = cam.camera.position;
-    hudEl.textContent = (cinemaMode || museActive)
-      ? `FPS: ${fpsDisplay}`
-      : `FPS: ${fpsDisplay}\nX: ${cp.x.toFixed(1)}  Y: ${cp.y.toFixed(1)}  Z: ${cp.z.toFixed(1)}`;
+
+    updateHUD();
 
     if (!rotationPaused) rotationTime += delta;
 
@@ -243,7 +267,7 @@ async function init() {
 
     systems.update(delta, rotationTime, lodFactor);
 
-    /* Camera physically follows tracked body through galactic rotation + orbits */
+    /* Camera follows tracked body */
     if (trackedId) {
       const wp = systems.getBodyWorldPos(trackedId);
       if (wp) {
@@ -270,12 +294,30 @@ async function init() {
       renderer.setRenderTarget(null);
       renderer.clear();
       renderer.render(scene, cam.camera);
-
-      /* Markers share depth with main scene — asteroids occlude them */
       renderer.render(systems.markerScene, cam.camera);
     }
 
     systems.labelRenderer.render(scene, cam.camera);
+  }
+
+  function updateHUD() {
+    const showCoords = showCoordsCheckbox.checked;
+    const showFps = showFpsCheckbox.checked;
+
+    if (!showCoords && !showFps) {
+      hudEl.style.display = 'none';
+      return;
+    }
+
+    hudEl.style.display = '';
+    const cp = cam.camera.position;
+    let text = '';
+    if (showFps) text += 'FPS: ' + fpsDisplay;
+    if (showCoords && !cinemaMode && !museActive) {
+      if (text) text += '\n';
+      text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+    }
+    hudEl.textContent = text;
   }
 
   let trackedId = null;
@@ -284,7 +326,7 @@ async function init() {
   systems.initClickDetection(renderer.domElement, (result) => {
     if (museActive) return;
 
-    /* Right-click: track/untrack body as camera orbit center */
+    /* Right-click: track/untrack */
     if (result.button === 2) {
       if (result.type === 'select') {
         trackedId = result.bodyId;
@@ -302,11 +344,50 @@ async function init() {
       return;
     }
 
-    if (cinemaMode) return;
+    /* Left-click: select/deselect — route through UI */
     if (result?.type === 'select') {
-      console.log('Selected:', result.bodyId, result.body?.name);
+      ui.selectBody(result.bodyId);
     } else if (result?.type === 'deselect') {
-      console.log('Deselected');
+      ui.deselectBody();
+    }
+  });
+
+  /* Initialize UI with galaxy data */
+  ui.init(systems.getData(), {
+    onSelect: (id, body) => {
+      systems.setSelectedId(id);
+    },
+    onDeselect: () => {
+      systems.setSelectedId(null);
+    },
+    onViewChange: (mode) => {
+      if (mode === '2d') {
+        audio.setGain(0);
+      } else if (!museActive) {
+        audio.setGain(masterVolume);
+      }
+    },
+    onFlyTo: (id) => {
+      if (museActive) return;
+      const wp = systems.getBodyWorldPos(id);
+      if (!wp) return;
+      const target = new THREE.Vector3(wp.x, wp.y, wp.z);
+      cam.flyTo(target);
+      trackedId = id;
+      trackedLastPos = { x: wp.x, y: wp.y, z: wp.z };
+      cam.controls.enablePan = false;
+      cam.setTrackMode(true);
+      systems.showOrbitsForBody(id);
+    },
+    onResetView: () => {
+      if (museActive) return;
+      trackedId = null;
+      trackedLastPos = null;
+      cam.controls.enablePan = true;
+      cam.setTrackMode(false);
+      systems.hideOrbits();
+      systems.setSelectedId(null);
+      cam.flyTo(new THREE.Vector3(0, 0, 0), 550);
     }
   });
 

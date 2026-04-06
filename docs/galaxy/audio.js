@@ -32,6 +32,8 @@ export function createAudio(camera) {
 
   function setGain(v) {
     externalGain = v;
+    /* Apply immediately — update() won't run in 2D mode */
+    if (masterGain && v === 0) masterGain.gain.value = 0;
   }
 
   function update() {
