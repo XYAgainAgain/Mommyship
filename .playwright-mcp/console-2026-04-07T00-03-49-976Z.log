@@ -1,0 +1,3 @@
+[    1678ms] [LOG] Asteroids: 4000 BigBoi + 11000 LilGuy + 5 Mega = 15005 total @ http://localhost:3000/galaxy/asteroids.js:442
+[    4301ms] [LOG] Perf watchdog: degraded to Q1 (p95: 40.0ms) @ http://localhost:3000/galaxy/galaxy.js:145
+[   16461ms] [LOG] Perf watchdog: restored to Q0 (p95: 0.0ms) @ http://localhost:3000/galaxy/galaxy.js:147

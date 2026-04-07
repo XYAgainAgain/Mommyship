@@ -102,7 +102,6 @@ function updateMapTransform() {
     const labelEl = pin.querySelector('.gx-pin-label');
     if (!labelEl) return;
 
-
     const threshold = LABEL_SHOW[tier] ?? 0;
     const fadeRange = LABEL_FADE_RANGE[tier] ?? 2;
     const baseOpacity = LABEL_OPACITY[tier] ?? 0.7;
@@ -114,7 +113,7 @@ function updateMapTransform() {
     labelEl.style.opacity = labelAlpha <= 0 ? '0' : labelAlpha.toFixed(2);
     if (labelAlpha <= 0) return;
 
-    const dotR = (parseFloat(pin.querySelector('.gx-pin-dot').style.width) || 4) / 2;
+    const dotR = parseFloat(pin.dataset.dotR) || 2;
     labelEl.style.left = '0';
     if (tier === 'star' || tier === 'landmark') {
       /* Centered on body coordinate */
@@ -138,9 +137,13 @@ function updateMapTransform() {
     mapContainer.querySelectorAll('.gx-pin[data-spectral-color]').forEach(pin => {
       const dot = pin.querySelector('.gx-pin-dot');
       if (!dot) return;
-      dot.style.background = colorT <= 0 ? pin.dataset.factionColor
+      const c = colorT <= 0 ? pin.dataset.factionColor
         : colorT >= 1 ? pin.dataset.spectralColor
         : lerpColor(pin.dataset.factionColor, pin.dataset.spectralColor, colorT);
+      /* SVG dots use fill attribute, div dots use background */
+      const circle = dot.querySelector('circle');
+      if (circle) circle.setAttribute('fill', c);
+      else dot.style.background = c;
     });
   }
 
@@ -241,22 +244,26 @@ function build2DMap() {
     const spectral = body.visual?.spectralColor;
 
     const isMoon = body.type === 'moon';
-    const dotSize = tier === 'landmark' ? 6 : tier === 'star' ? 4 : isMoon ? 0.5 : tier === 'station' ? 1 : tier === 'gng' ? 1 : 1.5;
+    const dotSize = tier === 'landmark' ? 6 : tier === 'star' ? 4 : isMoon ? 1 : tier === 'station' ? 1 : tier === 'gng' ? 1 : 1.5;
+    const dotR = dotSize / 2;
 
     const pin = document.createElement('div');
     pin.className = 'gx-pin';
     pin.dataset.id = id;
     pin.dataset.tier = tier;
+    pin.dataset.dotR = String(dotR);
     if (spectral) {
       pin.dataset.factionColor = color;
       pin.dataset.spectralColor = spectral;
     }
     pin.style.left = pos.left + '%';
     pin.style.top = pos.top + '%';
-    const dotStyle = 'width:' + dotSize + 'px;height:' + dotSize + 'px;background:' + color +
-      (tier === 'gng' ? ';border-radius:0' : '');
-    pin.innerHTML =
-      '<div class="gx-pin-dot" style="' + dotStyle + '"></div>' +
+    const isSquare = tier === 'gng';
+    /* SVG circles with large viewBox so Chrome rasterizes at enough pixels before CSS scaling */
+    const dotHtml = isSquare
+      ? '<div class="gx-pin-dot" style="width:' + dotSize + 'px;height:' + dotSize + 'px;background:' + color + ';border-radius:0"></div>'
+      : '<svg class="gx-pin-dot" viewBox="-1 -1 2 2" style="width:' + dotSize + 'px;height:' + dotSize + 'px;overflow:visible"><circle cx="0" cy="0" r="0.9" fill="' + color + '"/></svg>';
+    pin.innerHTML = dotHtml +
       '<div class="gx-pin-label">' + displayName(id, body, tier) + '</div>';
     pin.addEventListener('click', (e) => {
       e.stopPropagation();

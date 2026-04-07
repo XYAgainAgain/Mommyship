@@ -766,7 +766,8 @@ canvas { display: block; }
 .screenshot-active .gx-status,
 .screenshot-active .gx-workspace,
 .screenshot-active .system-label,
-.screenshot-active .zone-label { display: none !important; }
+.screenshot-active .zone-label,
+.screenshot-active .gx-compass { display: none !important; }
 
 .screenshot-active .gx-nav {
   opacity: 0.15;
@@ -799,10 +800,15 @@ canvas { display: block; }
   position: absolute;
   top: 48px;
   left: 8px;
-  width: 256px;
-  height: 256px;
+  width: 420px;
+  height: 420px;
   z-index: 10;
   pointer-events: none;
+}
+
+.gx-compass svg {
+  width: 100%;
+  height: 100%;
 }
 
 .gx-map2d-container {
