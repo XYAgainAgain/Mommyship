@@ -910,6 +910,26 @@ export function init(data, cbs) {
   callbacks = cbs || {};
   updateStatus();
   build2DMap();
+
+  /* Compass rose toggle — click center to shrink/restore, persisted in localStorage */
+  const compassEl = document.getElementById('gx-compass');
+  const smbhCircle = compassEl?.querySelector('#SMBH');
+  if (smbhCircle) {
+    smbhCircle.style.cursor = 'pointer';
+    smbhCircle.style.pointerEvents = 'auto';
+    const COMPASS_KEY = 'mommyship-galaxy-compass-mini';
+    let mini = localStorage.getItem(COMPASS_KEY) === 'true';
+    function applyCompass() {
+      compassEl.style.transform = mini ? 'scale(0.5) translate(-200px, -200px)' : '';
+      compassEl.style.opacity = mini ? '0.85' : '';
+    }
+    applyCompass();
+    smbhCircle.addEventListener('click', () => {
+      mini = !mini;
+      localStorage.setItem(COMPASS_KEY, String(mini));
+      applyCompass();
+    });
+  }
 }
 
 export function getSelectedId() { return selectedId; }
