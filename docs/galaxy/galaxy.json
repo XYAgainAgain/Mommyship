@@ -319,7 +319,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M4V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -346,7 +346,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M2V",
       "luminosity": null,
       "mass": null,
       "factionId": "cuck",
@@ -373,7 +373,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G8V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -400,7 +400,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M5V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -427,7 +427,7 @@
         "glow": 0.5,
         "spectralColor": "#ff8c00"
       },
-      "spectralClass": "K",
+      "spectralClass": "K3V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -454,7 +454,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M6V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -481,7 +481,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G2V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -508,7 +508,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M1V",
       "luminosity": null,
       "mass": null,
       "factionId": "cuck",
@@ -535,7 +535,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -562,7 +562,7 @@
         "glow": 0.7,
         "spectralColor": "#e0e8ff"
       },
-      "spectralClass": "DA",
+      "spectralClass": "DA2",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -590,7 +590,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M4V",
       "luminosity": null,
       "mass": null,
       "factionId": "the-hawke-consortium",
@@ -617,7 +617,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M7V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -644,7 +644,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -671,7 +671,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M5V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -698,7 +698,7 @@
         "glow": 0.8,
         "spectralColor": "#ff2222"
       },
-      "spectralClass": "M",
+      "spectralClass": "M2I",
       "luminosity": null,
       "mass": null,
       "factionId": "criminal",
@@ -725,7 +725,7 @@
         "glow": 0.9,
         "spectralColor": "#4488ff"
       },
-      "spectralClass": "B",
+      "spectralClass": "B3III",
       "luminosity": null,
       "mass": null,
       "factionId": "boc-bloc",
@@ -752,7 +752,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M6V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -779,7 +779,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M2V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -806,7 +806,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M0V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -833,7 +833,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M4V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -860,7 +860,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -887,7 +887,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M8V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -914,7 +914,7 @@
         "glow": 0.5,
         "spectralColor": "#ff8c00"
       },
-      "spectralClass": "K",
+      "spectralClass": "K5V",
       "luminosity": null,
       "mass": null,
       "factionId": "cuck",
@@ -941,7 +941,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M1V",
       "luminosity": null,
       "mass": null,
       "factionId": "cuck",
@@ -968,7 +968,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M7V",
       "luminosity": null,
       "mass": null,
       "factionId": "cuck",
@@ -980,8 +980,8 @@
     "durury": {
       "type": "star",
       "subtype": "binary",
-      "name": "Durury",
-      "description": "Neotypian: brown dwarf, with 7 orbiting moons. Closest to Bruminax, spinward of Padania.",
+      "name": "Durury A",
+      "description": "G4 subgiant primary of the Durury binary. Closest to Bruminax, spinward of Padania.",
       "notes": "",
       "position": {
         "x": 156,
@@ -995,7 +995,7 @@
         "glow": 0.7,
         "spectralColor": "#ff88cc"
       },
-      "spectralClass": "mixed",
+      "spectralClass": "G4IV",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1003,6 +1003,28 @@
       "tags": [],
       "hasFuddruckers": false,
       "colonizedCode": 26
+    },
+    "durury-b": {
+      "type": "star",
+      "subtype": "brown-dwarf",
+      "name": "Durury B",
+      "description": "Neotypian: L2 brown dwarf companion to Durury A, with 7 orbiting moons.",
+      "notes": "",
+      "position": null,
+      "parentId": "durury",
+      "orbital": { "a": 12, "e": 0.15, "incl": 35, "Omega": 45, "omega": 0, "M0": 0 },
+      "visual": {
+        "size": 0.8,
+        "glow": 0.3,
+        "spectralColor": "#cc6644"
+      },
+      "spectralClass": "L2V",
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": true
     },
     "bruminax": {
       "type": "star",
@@ -1022,7 +1044,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G5V",
       "luminosity": null,
       "mass": null,
       "factionId": "grippiani",
@@ -1049,7 +1071,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G0V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1076,7 +1098,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M5V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1103,7 +1125,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1130,7 +1152,7 @@
         "glow": 0.9,
         "spectralColor": "#4488ff"
       },
-      "spectralClass": "B",
+      "spectralClass": "B1III",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1157,7 +1179,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M4V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1184,7 +1206,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G3V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1211,7 +1233,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M6V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1238,7 +1260,7 @@
         "glow": 0.2,
         "spectralColor": "#8B5A2B"
       },
-      "spectralClass": "L",
+      "spectralClass": "L3V",
       "luminosity": null,
       "mass": null,
       "factionId": "the-board",
@@ -1265,7 +1287,7 @@
         "glow": 0.7,
         "spectralColor": "#ffcc00"
       },
-      "spectralClass": "G",
+      "spectralClass": "G5IV",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1293,7 +1315,7 @@
         "spectralColor": "#cc3333",
         "color": "#ff4422"
       },
-      "spectralClass": "M",
+      "spectralClass": "K2III",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1320,7 +1342,7 @@
         "glow": 0.6,
         "spectralColor": "#ffdd44"
       },
-      "spectralClass": "G",
+      "spectralClass": "G7V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1347,7 +1369,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M5V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1374,7 +1396,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M4V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1401,7 +1423,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M2V",
       "luminosity": null,
       "mass": null,
       "factionId": "neo-gio",
@@ -1428,7 +1450,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M6V",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1455,7 +1477,7 @@
         "glow": 0.4,
         "spectralColor": "#ff6b4a"
       },
-      "spectralClass": "M",
+      "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -2179,13 +2201,13 @@
     "flipsulon-gryme": {
       "type": "planet",
       "subtype": null,
-      "name": "Flipsulon Gryme",
+      "name": "Gryme",
       "description": "",
       "notes": "B-Class",
       "class": "B",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": null,
+      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 0, "omega": 0, "M0": 0 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -2339,8 +2361,8 @@
       "notes": "C-Class",
       "class": "C",
       "position": null,
-      "parentId": "durury",
-      "orbital": null,
+      "parentId": "durury-b",
+      "orbital": { "a": 8, "e": 0.05, "incl": 5, "Omega": 0, "omega": 0, "M0": 0 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -3794,13 +3816,13 @@
     "flipsulon-ollie": {
       "type": "planet",
       "subtype": null,
-      "name": "Flipsulon Ollie",
+      "name": "Ollie",
       "description": "",
       "notes": "C-Class",
       "class": "C",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": null,
+      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 120, "omega": 0, "M0": 120 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -3815,13 +3837,13 @@
     "flipsulon-shuvit": {
       "type": "planet",
       "subtype": null,
-      "name": "Flipsulon Shuvit",
+      "name": "Shuvit",
       "description": "",
       "notes": "C-Class",
       "class": "C",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": null,
+      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 240, "omega": 0, "M0": 240 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5578,7 +5600,7 @@
       "subtype": "ocean-world",
       "name": "Osminok Prime",
       "description": "The Endless Ocean That Is Our Treasured Home Despite Its Many Dangers. Gaby's homeworld!",
-      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35\u00c2\u00b0 axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
+      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35Â° axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
       "position": null,
       "parentId": "osminok",
       "orbital": {
@@ -6443,7 +6465,7 @@
         "order": 5,
         "a": 42.0,
         "e": 0.5,
-        "incl": 0.35
+        "incl": 20
       },
       "visual": {
         "color": "#d4c9a8"

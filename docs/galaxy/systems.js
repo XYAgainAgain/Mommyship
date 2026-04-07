@@ -6,6 +6,10 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createRng } from './rng.js';
+import { loadShaderPair } from './shaders.js';
+import { bakeStarAtlas } from './star-bake.js';
+import { createStarDetail } from './star-detail.js';
+import { parseMK } from './star-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
 const MARKER_RADIUS = 2.5;
@@ -223,7 +227,6 @@ export async function createSystems(scene, camera, renderer) {
   let hoveredId = null;
   let museActive = false;
   let lastRotationTime = 0;
-  let starColorLerp = [];
   let cubeSpins = [];
   let labelsDirty = false;
   let needsLabelRender = false;
@@ -259,12 +262,18 @@ export async function createSystems(scene, camera, renderer) {
       );
   };
 
-  /* Two InstancedMesh groups: spheres (stars/stations) and cubes (Gas-n-Gripes) */
+  /* Three InstancedMesh groups: stars (atlas shader), other spheres (basic), cubes (GnGs) */
+  const starGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
   const sphereGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
   const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  let sphereMarkers = null, cubeMarkers = null;
-  let sphereIds = [], cubeIds = [];
+  let starAtlasMat = null;
+  let starMarkers = null, sphereMarkers = null, cubeMarkers = null;
+  let starIds = [], sphereIds = [], cubeIds = [];
+  let starAtlasData = null;
+  let crossfadeAttr = null;
+  let starDetail = null;
+  let detailActiveIds = new Set();
   let allPositionedIds = [];
   const _dummy = new THREE.Object3D();
   const _color = new THREE.Color();
@@ -339,9 +348,10 @@ export async function createSystems(scene, camera, renderer) {
   function importJSON(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           galaxyData = JSON.parse(e.target.result);
+          await rebakeStarAtlas();
           rebuildMarkers();
           autosave();
           resolve(galaxyData);
@@ -355,7 +365,26 @@ export async function createSystems(scene, camera, renderer) {
   async function revertToSaved() {
     localStorage.removeItem(STORAGE_KEY);
     await loadData();
+    await rebakeStarAtlas();
     rebuildMarkers();
+  }
+
+  async function rebakeStarAtlas() {
+    if (!starAtlasMat) return;
+    try {
+      if (starAtlasData?.atlas) starAtlasData.atlas.dispose();
+      starAtlasData = await bakeStarAtlas(renderer, galaxyData.bodies);
+      starAtlasMat.uniforms.uAtlas.value = starAtlasData.atlas;
+      if (starDetail) {
+        markerScene.remove(starDetail.container);
+        starDetail.dispose();
+        detailActiveIds = new Set();
+        starDetail = await createStarDetail(renderer);
+        markerScene.add(starDetail.container);
+      }
+    } catch (e) {
+      console.warn('Star atlas re-bake failed:', e);
+    }
   }
 
   function generateId(name) {
@@ -511,9 +540,20 @@ export async function createSystems(scene, camera, renderer) {
             : (15 + poleRng.next() * 35) * (Math.PI / 180);
           const poleAzimuth = poleRng.next() * TWO_PI;
           for (let i = 0; i < orbitals.length; i++) {
+            const src = galaxyData.bodies[orbitals[i].id]?.orbital;
             const scatter = createRng(hashString(orbitals[i].id) + 99);
-            orbitals[i].orbital.incl = Math.max(0, poleTilt + scatter.gauss() * 3 * (Math.PI / 180));
-            orbitals[i].orbital.Omega = poleAzimuth + scatter.gauss() * 2 * (Math.PI / 180);
+            if (src?.incl != null)
+              orbitals[i].orbital.incl = src.incl * (Math.PI / 180);
+            else
+              orbitals[i].orbital.incl = Math.max(0, poleTilt + scatter.gauss() * 3 * (Math.PI / 180));
+            if (src?.Omega != null)
+              orbitals[i].orbital.Omega = src.Omega * (Math.PI / 180);
+            else
+              orbitals[i].orbital.Omega = poleAzimuth + scatter.gauss() * 2 * (Math.PI / 180);
+            if (src?.omega != null)
+              orbitals[i].orbital.omega = src.omega * (Math.PI / 180);
+            if (src?.M0 != null)
+              orbitals[i].orbital.M0 = src.M0 * (Math.PI / 180);
           }
         }
 
@@ -531,28 +571,73 @@ export async function createSystems(scene, camera, renderer) {
   }
 
   function rebuildMarkers() {
+    if (starMarkers) { markerScene.remove(starMarkers); starMarkers.dispose(); }
     if (sphereMarkers) { markerScene.remove(sphereMarkers); sphereMarkers.dispose(); }
     if (cubeMarkers) { markerScene.remove(cubeMarkers); cubeMarkers.dispose(); }
+    starMarkers = null;
     sphereMarkers = null;
     cubeMarkers = null;
+    crossfadeAttr = null;
     hitboxes.forEach(hb => { if (hb.parent) hb.removeFromParent(); });
     hitboxes.length = 0;
 
     resolveHierarchy();
 
+    starIds = [];
     sphereIds = [];
     cubeIds = [];
-    starColorLerp = [];
     cubeSpins = [];
     allPositionedIds = [];
     for (const [id] of bodyMeta) {
       allPositionedIds.push(id);
       if (LANDMARK_IDS.has(id)) continue;
       if (isGasNGripe(id)) cubeIds.push(id);
+      else if (galaxyData.bodies[id].type === 'star') starIds.push(id);
       else sphereIds.push(id);
     }
 
-    /* Sphere InstancedMesh (stars + non-GnG stations) */
+    /* Star InstancedMesh (textured via atlas shader) */
+    if (starIds.length > 0 && starAtlasMat && starAtlasData) {
+      starMarkers = new THREE.InstancedMesh(starGeo, starAtlasMat, starIds.length);
+      starMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      starMarkers.renderOrder = 5;
+
+      const layers = new Float32Array(starIds.length);
+      const crossfades = new Float32Array(starIds.length);
+
+      for (let i = 0; i < starIds.length; i++) {
+        const id = starIds[i];
+        const body = galaxyData.bodies[id];
+        const meta = bodyMeta.get(id);
+        const mkParams = parseMK(body.spectralClass, body.visual?.size);
+        meta.mkRadius = mkParams.radius;
+        const pos = body.position || { x: 0, y: 0, z: 0 };
+        _dummy.position.set(pos.x, pos.y || 0, pos.z);
+        _dummy.scale.setScalar(meta.instanceScale * mkParams.radius);
+        _dummy.updateMatrix();
+        starMarkers.setMatrixAt(i, _dummy.matrix);
+        _color.set(getBodyColor(body));
+        starMarkers.setColorAt(i, _color);
+        layers[i] = starAtlasData.layerMap.get(id) ?? 0;
+        crossfades[i] = 0;
+      }
+
+      const layerAttr = new THREE.InstancedBufferAttribute(layers, 1);
+      crossfadeAttr = new THREE.InstancedBufferAttribute(crossfades, 1);
+      crossfadeAttr.setUsage(THREE.DynamicDrawUsage);
+      starMarkers.geometry.setAttribute('aLayer', layerAttr);
+      starMarkers.geometry.setAttribute('aCrossfade', crossfadeAttr);
+
+      starMarkers.instanceMatrix.needsUpdate = true;
+      if (starMarkers.instanceColor) starMarkers.instanceColor.needsUpdate = true;
+      markerScene.add(starMarkers);
+    } else if (starIds.length > 0) {
+      /* Fallback if atlas hasn't baked yet — use basic material */
+      sphereIds = starIds.concat(sphereIds);
+      starIds = [];
+    }
+
+    /* Non-star sphere InstancedMesh (planets, moons, stations) */
     if (sphereIds.length > 0) {
       sphereMarkers = new THREE.InstancedMesh(sphereGeo, markerMat, sphereIds.length);
       sphereMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -567,18 +652,8 @@ export async function createSystems(scene, camera, renderer) {
         _dummy.scale.setScalar(meta.instanceScale);
         _dummy.updateMatrix();
         sphereMarkers.setMatrixAt(i, _dummy.matrix);
-        const bodyColor = getBodyColor(body);
-        _color.set(bodyColor);
+        _color.set(getBodyColor(body));
         sphereMarkers.setColorAt(i, _color);
-
-        /* Track stars with spectral colors for distance-based faction→spectral lerp */
-        if (meta.depth === 0 && body.visual?.spectralColor && body.visual.spectralColor !== bodyColor) {
-          starColorLerp.push({
-            index: i,
-            factionColor: new THREE.Color(bodyColor),
-            spectralColor: new THREE.Color(body.visual.spectralColor)
-          });
-        }
       }
       sphereMarkers.instanceMatrix.needsUpdate = true;
       if (sphereMarkers.instanceColor) sphereMarkers.instanceColor.needsUpdate = true;
@@ -827,12 +902,13 @@ export async function createSystems(scene, camera, renderer) {
   let cachedBhNdcX = 0, cachedBhNdcY = 0, cachedBhScreenR = 0;
 
   /* Per-frame update: rotate markers + labels to match galactic disk */
-  function update(delta, rotationTime, lodFactor, worldDirty) {
+  function update(delta, rotationTime, lodFactor, worldDirty, trackedId) {
     lastRotationTime = rotationTime;
+    const hasStars = starMarkers && starIds.length > 0;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
     const hasCubes = cubeMarkers && cubeIds.length > 0;
 
-    if (!hasSpheres && !hasCubes) return;
+    if (!hasStars && !hasSpheres && !hasCubes) return;
 
     /* When nothing has moved, only refresh label styling if selection/hover changed */
     if (!worldDirty) {
@@ -862,7 +938,63 @@ export async function createSystems(scene, camera, renderer) {
       }
     }
 
-    /* Write instance matrices from world positions */
+    /* Write star instance matrices + crossfade from faction color to atlas texture */
+    if (hasStars) {
+      _dummy.quaternion.identity();
+      const camPos = camera.position;
+      let cfDirty = false;
+      for (let i = 0; i < starIds.length; i++) {
+        if (detailActiveIds.has(starIds[i])) continue;
+        const meta = bodyMeta.get(starIds[i]);
+        const wp = bodyWorldPos.get(starIds[i]);
+        _dummy.position.set(wp.x, wp.y, wp.z);
+        _dummy.scale.setScalar(meta.instanceScale * (meta.mkRadius || 1));
+        _dummy.updateMatrix();
+        starMarkers.setMatrixAt(i, _dummy.matrix);
+        const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
+        const cf = 1 - smoothstep(25, 120, Math.sqrt(dx * dx + dy * dy + dz * dz));
+        if (crossfadeAttr.array[i] !== cf) {
+          crossfadeAttr.array[i] = cf;
+          cfDirty = true;
+        }
+      }
+      starMarkers.instanceMatrix.needsUpdate = true;
+      if (cfDirty) crossfadeAttr.needsUpdate = true;
+
+      /* Detail mesh: show high-poly stars when tracked or close */
+      if (starDetail) {
+        const prevIds = new Set(detailActiveIds);
+        detailActiveIds = starDetail.update(trackedId || null, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta);
+
+        /* Hide instanced stars that just became active detail meshes */
+        for (const id of detailActiveIds) {
+          if (prevIds.has(id)) continue;
+          const idx = starIds.indexOf(id);
+          if (idx < 0) continue;
+          _dummy.scale.setScalar(0);
+          _dummy.updateMatrix();
+          starMarkers.setMatrixAt(idx, _dummy.matrix);
+          starMarkers.instanceMatrix.needsUpdate = true;
+        }
+
+        /* Restore instanced stars that just lost detail meshes */
+        for (const id of prevIds) {
+          if (detailActiveIds.has(id)) continue;
+          const idx = starIds.indexOf(id);
+          if (idx < 0) continue;
+          const wp = bodyWorldPos.get(id);
+          if (!wp) continue;
+          const pm = bodyMeta.get(id);
+          _dummy.position.set(wp.x, wp.y, wp.z);
+          _dummy.scale.setScalar(pm.instanceScale * (pm.mkRadius || 1));
+          _dummy.updateMatrix();
+          starMarkers.setMatrixAt(idx, _dummy.matrix);
+          starMarkers.instanceMatrix.needsUpdate = true;
+        }
+      }
+    }
+
+    /* Write non-star sphere instance matrices */
     if (hasSpheres) {
       _dummy.quaternion.identity();
       for (let i = 0; i < sphereIds.length; i++) {
@@ -873,19 +1005,6 @@ export async function createSystems(scene, camera, renderer) {
         sphereMarkers.setMatrixAt(i, _dummy.matrix);
       }
       sphereMarkers.instanceMatrix.needsUpdate = true;
-
-      /* Distance-based star color: faction at distance → spectral up close */
-      if (starColorLerp.length > 0) {
-        const camPos = camera.position;
-        for (const sc of starColorLerp) {
-          const wp = bodyWorldPos.get(sphereIds[sc.index]);
-          const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
-          const t = 1 - smoothstep(25, 120, Math.sqrt(dx * dx + dy * dy + dz * dz));
-          _color.copy(sc.factionColor).lerp(sc.spectralColor, t);
-          sphereMarkers.setColorAt(sc.index, _color);
-        }
-        sphereMarkers.instanceColor.needsUpdate = true;
-      }
     }
 
     if (hasCubes) {
@@ -998,11 +1117,24 @@ export async function createSystems(scene, camera, renderer) {
     raycaster.setFromCamera(_mouse, camera);
 
     /* Bounding spheres are cached from first raycast — stale after rotation */
+    if (starMarkers) starMarkers.computeBoundingSphere();
     if (sphereMarkers) sphereMarkers.computeBoundingSphere();
     if (cubeMarkers) cubeMarkers.computeBoundingSphere();
 
     if (mode === 'select' || mode === 'track' || !mode) {
       const allHits = [];
+      /* Detail meshes cover stars — raycast all active pool entries */
+      if (detailActiveIds.size > 0 && starDetail) {
+        for (const child of starDetail.container.children) {
+          if (!child.visible || !child.userData.bodyId) continue;
+          for (const h of raycaster.intersectObject(child, true))
+            allHits.push({ distance: h.distance, bodyId: child.userData.bodyId });
+        }
+      }
+      if (starMarkers) {
+        for (const h of raycaster.intersectObject(starMarkers))
+          allHits.push({ distance: h.distance, bodyId: starIds[h.instanceId] });
+      }
       if (sphereMarkers) {
         for (const h of raycaster.intersectObject(sphereMarkers))
           allHits.push({ distance: h.distance, bodyId: sphereIds[h.instanceId] });
@@ -1126,6 +1258,25 @@ export async function createSystems(scene, camera, renderer) {
 
   /* Init */
   await loadData();
+
+  /* Bake star atlas before first rebuild so stars get the textured material */
+  try {
+    const atlasShaders = await loadShaderPair('star-atlas');
+    starAtlasMat = new THREE.ShaderMaterial({
+      vertexShader: atlasShaders.vert,
+      fragmentShader: atlasShaders.frag,
+      glslVersion: THREE.GLSL3,
+      uniforms: { uAtlas: { value: null }, uVisualScale: { value: 0.87 } },
+      defines: { USE_INSTANCING: '', USE_INSTANCING_COLOR: '' },
+    });
+    starAtlasData = await bakeStarAtlas(renderer, galaxyData.bodies);
+    starAtlasMat.uniforms.uAtlas.value = starAtlasData.atlas;
+    starDetail = await createStarDetail(renderer);
+    markerScene.add(starDetail.container);
+  } catch (e) {
+    console.warn('Star atlas bake failed, falling back to basic material:', e);
+  }
+
   initLabelPool();
   initZoneLabels();
   rebuildMarkers();
