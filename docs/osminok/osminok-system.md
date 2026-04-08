@@ -23,9 +23,9 @@ search:
 
 - **Mass:** 0.7 solar masses
 - **Luminosity:** 0.3 solar luminosities
-- **Age:** ~6 billion years
+- **Age:** ~12 billion cycles
 - **Peak output:** 600–700nm (orange-red), with less UV and more infrared than Sol
-- **Character:** Stable, long-lived (20–40 billion year lifespan), dim orange glow
+- **Character:** Stable, long-lived (40–80 billion cycle lifespan), dim orange glow
 
 A K-type star provides the long evolutionary timeline needed for complex life while outputting less UV radiation. Its orange light filters through Osminok Prime's thick atmosphere to create a world of perpetual warm twilight tones.
 
@@ -42,7 +42,7 @@ A K-type star provides the long evolutionary timeline needed for complex life wh
 | **Surface Gravity** | 1.15× Earth |
 | **Orbital Distance** | 0.55 AU |
 | **Orbital Period** | ~180 Earth days (~1 cycle) |
-| **Rotation** | 18-hour day |
+| **Rotation** | 18 marbecs |
 | **Axial Tilt** | 35° |
 | **Ocean Coverage** | 99%+ (quite wet) |
 | **Surface Pressure** | 2.5 bar (2.5× Earth) |
@@ -95,8 +95,8 @@ Photosynthesis is *not* the primary source of environmental O₂. The heavy lift
 | **Orbital Period** | ~8 malton units |
 | **Orbital Distance** | ~180,000 km from Osminok Prime |
 | **Composition** | Rocky/metallic, iron-nickel core |
-| **Atmosphere** | None (lost billions of years ago) |
-| **Magnetic Field** | None (core solidified ~2 billion years ago) |
+| **Atmosphere** | None (lost billions of cycles ago) |
+| **Magnetic Field** | None (core solidified ~4 billion cycles ago) |
 | **Surface Temps** | -150°C to +100°C (no atmosphere to regulate) |
 
 At this mass ratio (0.3:0.9), Tsunari was arguably once part of a **binary planet system** before losing significant mass. Its surface is heavily cratered and covered in dark basaltic plains from ancient lava flows, coated in pulverized regolith.
@@ -150,14 +150,14 @@ The homeworld. See [Osminok Prime](#osminok-prime) above. "Prime" is the galacti
 ### Osminok III (1.8 AU) — Red Wanderer
 *"The Wanderer Of Red And Orange Whose Calls Still Echo In The Black"*
 
-To the Osminoki, Osminok III is a rust-colored point of light that wanders slowly against the handful of stars visible during storm breaks. To galactic surveyors, it is a failed gas giant: 4 Earth masses of thick nitrogen-methane atmosphere pressing down at over 50 bar, tinted reddish-orange by iron oxide aerosols and methane haze. There is no solid surface beneath the clouds, only thickening gas that eventually becomes a supercritical fluid. It spins fast, one rotation every 11 hours, driving violent storm systems with an energy output that would make Osminok Prime's megastorms feel almost companionable. Nine moons orbit it: eight small captured asteroids and one larger icy body (0.1 Earth masses). Some of the smaller moons bear geometric surface scarring similar to Tsunari's.
+To the Osminoki, Osminok III is a rust-colored point of light that wanders slowly against the handful of stars visible during storm breaks. To galactic surveyors, it is a failed gas giant: 4 Earth masses of thick nitrogen-methane atmosphere pressing down at over 50 bar, tinted reddish-orange by iron oxide aerosols and methane haze. There is no solid surface beneath the clouds, only thickening gas that eventually becomes a supercritical fluid. It spins fast, one rotation every ~11 marbecs, driving violent storm systems with an energy output that would make Osminok Prime's megastorms feel almost companionable. Nine moons orbit it: eight small captured asteroids and one larger icy body (0.1 Earth masses). Some of the smaller moons bear geometric surface scarring similar to Tsunari's.
 
 The atmosphere composition is unusual for a world this massive. At 4 Earth masses and 1.8 AU, Osminok III should have captured a substantial hydrogen-helium envelope during formation. Instead, its upper atmosphere is almost entirely nitrogen and methane, with only trace hydrogen. The lighter gases that once formed the outermost layers are simply gone, as if something skimmed them off and left the heavier volatiles behind.
 
 ### Osminok IV (3.5 AU) — Blue Watcher
 *"The Bright Blue Eye That Watches Us Fondly From A Great Distance"*
 
-Ice giant, 14 Earth masses. Brilliant blue-white, its methane atmosphere absorbing red wavelengths and reflecting back a cold point of light that stands out sharply against Osminok's amber sky. Spectacular natural ice rings span 160,000 km: 95%+ pure water ice, formed roughly 100 million years ago when a moon crossed the Roche limit and was torn apart. 23 known moons, several with cryovolcanism. The brightest object in Osminok's night sky after Tsunari, and during the clearest storm breaks, its rings are sometimes barely detectable as a hazy line bisecting the point of light.
+Ice giant, 14 Earth masses. Brilliant blue-white, its methane atmosphere absorbing red wavelengths and reflecting back a cold point of light that stands out sharply against Osminok's amber sky. Spectacular natural ice rings span 160,000 km: 95%+ pure water ice, formed roughly 200 million cycles ago when a moon crossed the Roche limit and was torn apart. 23 known moons, several with cryovolcanism. The brightest object in Osminok's night sky after Tsunari, and during the clearest storm breaks, its rings are sometimes barely detectable as a hazy line bisecting the point of light.
 
 ### Osminok V/Ossuary (8 AU) — Hidden Rock
 *"The Cold Small Rock That Has Hidden From Us Always And Saddens Us"*

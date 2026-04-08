@@ -5,7 +5,8 @@
 const SPECTRAL_TEMP = {
   O: [50000, 30000], B: [30000, 10000], A: [10000, 7500],
   F: [7500, 6000],   G: [6000, 5200],   K: [5200, 3700],
-  M: [3700, 2400],   L: [2400, 1300],
+  M: [3700, 2400],   L: [2400, 1300],   T: [1300, 600],
+  Y: [600, 250],
 };
 
 /* Luminosity class → relative radius multiplier and granulation scale factor */
@@ -22,6 +23,7 @@ const LUMINOSITY = {
 const ATMO_COLORS = {
   O: '#aaccff', B: '#99bbff', A: '#ddeeff', F: '#fff8e0',
   G: '#ffeeaa', K: '#ffcc77', M: '#ff9966', L: '#cc6644',
+  T: '#cc44aa', Y: '#552233', C: '#ff3322',
 };
 
 /**
@@ -37,12 +39,69 @@ export function parseMK(raw, visualSize) {
   /* Binary — use the primary (first component) */
   const primary = s.includes('+') ? s.split('+')[0] : s;
 
-  /* White dwarf special case */
-  if (primary.startsWith('DA')) {
+  /* White dwarf */
+  if (primary.startsWith('DA') || primary.startsWith('DB')) {
     return {
       lowTemp: 8000, highTemp: 40000,
       granScale: 6.0, spotAmp: 0.3, slopeness: 0.7, bubbleAmp: 0.02,
       radius: 0.3, atmoColor: '#eeeeff', lumClass: 'V', emissive: 1.8,
+    };
+  }
+
+  /* Pulsar / neutron star — almost entirely white-hot, tiny */
+  if (primary === 'PSR' || primary.startsWith('PSR')) {
+    return {
+      lowTemp: 100000, highTemp: 500000,
+      granScale: 6.0, spotAmp: 0.05, slopeness: 0.15, bubbleAmp: 0.003,
+      radius: 0.15, atmoColor: '#aaddff', lumClass: 'V', emissive: 4.5,
+      isPulsar: true,
+    };
+  }
+
+  /* Wolf-Rayet — 300–2400 km/s stellar winds, violently churning surface */
+  if (primary.startsWith('WN') || primary.startsWith('WC') || primary.startsWith('WO')) {
+    const digit = parseInt(primary.match(/\d/)?.[0] || '5');
+    const t = digit / 9.0;
+    const baseTemp = 200000 - t * 170000;
+    const spread = baseTemp * 0.2;
+    return {
+      lowTemp: Math.max(20000, baseTemp - spread),
+      highTemp: baseTemp + spread,
+      granScale: 4.0, spotAmp: 2.0, slopeness: 2.0, bubbleAmp: 0.18,
+      radius: 2.0, atmoColor: '#9933cc', lumClass: 'I', emissive: 3.0,
+      isWolfRayet: true,
+    };
+  }
+
+  /* Carbon star — deep blood-red, giant-class, dramatic dark lanes */
+  if (primary.charAt(0) === 'C' && /\d/.test(primary)) {
+    const digit = parseInt(primary.match(/\d/)[0]);
+    const t = digit / 9.0;
+    const baseTemp = 3500 - t * 1500;
+    const spread = baseTemp * 0.25;
+    return {
+      lowTemp: Math.max(1000, baseTemp - spread),
+      highTemp: baseTemp + spread,
+      granScale: 3.0, spotAmp: 2.0, slopeness: 2.5, bubbleAmp: 0.16,
+      radius: 1.8, atmoColor: '#ff3322', lumClass: 'III', emissive: 0.8,
+    };
+  }
+
+  /* Subdwarf — same as base class but 40% radius */
+  if (primary.startsWith('SD') && primary.length > 2) {
+    const base = primary.slice(2);
+    const params = parseMK(base, visualSize);
+    params.radius *= 0.4;
+    return params;
+  }
+
+  /* T Tauri — pre-main-sequence protostar, enhanced atmosphere */
+  if (primary.startsWith('TT')) {
+    return {
+      lowTemp: 3500, highTemp: 5000,
+      granScale: 3.5, spotAmp: 1.4, slopeness: 2.0, bubbleAmp: 0.12,
+      radius: 1.3, atmoColor: '#ffbb55', lumClass: 'V', emissive: 1.0,
+      isTTauri: true,
     };
   }
 
@@ -66,26 +125,26 @@ export function parseMK(raw, visualSize) {
   /* Widen the range for visual contrast — ±25% around the base */
   const spread = baseTemp * 0.25;
   const lowTemp = Math.max(1000, baseTemp - spread);
-  const highTemp = baseTemp + spread;
+  const highTemp = Math.max(lowTemp, baseTemp + spread);
 
   /* Granulation scale — giants have larger cells, dwarfs have tighter cells */
-  const baseGran = { O: 5.0, B: 4.5, A: 4.0, F: 4.0, G: 4.0, K: 3.5, M: 3.0, L: 2.5 }[letter] || 4.0;
+  const baseGran = { O: 5.0, B: 4.5, A: 4.0, F: 4.0, G: 4.0, K: 3.5, M: 3.0, L: 2.5, T: 2.5, Y: 2.0, C: 3.0 }[letter] || 4.0;
   const granScale = baseGran * lum.granMul;
 
   /* Spot amplitude — cooler stars have more spots, giants have dramatic ones */
-  const baseSpot = { O: 0.7, B: 0.8, A: 0.9, F: 1.0, G: 1.2, K: 1.5, M: 1.8, L: 1.0 }[letter] || 1.2;
+  const baseSpot = { O: 0.7, B: 0.8, A: 0.9, F: 1.0, G: 1.2, K: 1.5, M: 1.8, L: 1.0, T: 0.8, Y: 0.5, C: 2.0 }[letter] || 1.2;
   const spotAmp = Math.min(2.0, baseSpot * (lumStr === 'V' ? 1.0 : 1.5));
 
   /* Slopeness — controls convection ridge darkness. Cool stars get more dramatic ridges */
-  const baseSlopeness = { O: 1.0, B: 1.2, A: 1.3, F: 1.5, G: 1.8, K: 2.2, M: 2.6, L: 2.8 }[letter] || 1.8;
+  const baseSlopeness = { O: 1.0, B: 1.2, A: 1.3, F: 1.5, G: 1.8, K: 2.2, M: 2.6, L: 2.8, T: 2.8, Y: 2.8, C: 2.5 }[letter] || 1.8;
   const giantBonus = (lumStr !== 'V' && lumStr !== 'IV') ? 0.4 : 0.0;
   const slopeness = baseSlopeness + giantBonus;
 
   /* Emissive — HDR overbright on hottest granulation cells */
-  const emissive = { O: 2.0, B: 2.0, A: 1.5, F: 1.3, G: 1.3, K: 1.0, M: 1.0, L: 0.6 }[letter] || 1.3;
+  const emissive = { O: 2.0, B: 2.0, A: 1.5, F: 1.3, G: 1.3, K: 1.0, M: 1.0, L: 0.6, T: 0.4, Y: 0.2, C: 0.8 }[letter] || 1.3;
 
   /* Vertex bubbling — convection cells physically raise the surface */
-  const baseBubble = { O: 0.04, B: 0.05, A: 0.06, F: 0.08, G: 0.10, K: 0.14, M: 0.18, L: 0.12 }[letter] || 0.10;
+  const baseBubble = { O: 0.04, B: 0.05, A: 0.06, F: 0.08, G: 0.10, K: 0.14, M: 0.18, L: 0.12, T: 0.08, Y: 0.04, C: 0.16 }[letter] || 0.10;
   const bubbleAmp = baseBubble * (lumStr === 'V' ? 1.0 : 1.5);
 
   /* Radius for mesh scale — luminosity class only, visual.size reserved for noise */

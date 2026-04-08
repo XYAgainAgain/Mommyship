@@ -35,8 +35,14 @@ function bakeGradientTexture(stops) {
  * @returns {{ update, container, dispose }}
  */
 export async function createStarDetail(renderer) {
-  const { vert, frag } = await loadShaderPair('star-detail');
+  const [{ vert, frag }, torusShaders] = await Promise.all([
+    loadShaderPair('star-detail'),
+    loadShaderPair('pulsar-torus'),
+  ]);
   const surfaceGeo = new THREE.SphereGeometry(MARKER_RADIUS, DETAIL_SEGMENTS, DETAIL_ROWS);
+  /* Fat torus: r just under R so inner edge intersects the star at the poles.
+     Ring in vertical plane (rotated 90° X) so lobes extend along rotation axis. */
+  const torusGeo = new THREE.TorusGeometry(4, 3.95, 32, 64);
 
   /* Shared sprite textures */
   const coronaTex = bakeGradientTexture([
@@ -47,6 +53,18 @@ export async function createStarDetail(renderer) {
   const haloTex = bakeGradientTexture([
     [0, 'rgba(255,240,210,0.20)'], [0.3, 'rgba(255,210,160,0.10)'],
     [0.6, 'rgba(255,180,130,0.04)'], [1, 'rgba(255,150,100,0)'],
+  ]);
+  /* Pulsar outer glow — blue-white halo */
+  const pulsarGlowTex = bakeGradientTexture([
+    [0, 'rgba(200,230,255,1.0)'], [0.12, 'rgba(170,220,255,0.85)'],
+    [0.35, 'rgba(140,200,255,0.4)'], [0.6, 'rgba(120,180,255,0.12)'],
+    [1, 'rgba(100,160,255,0)'],
+  ]);
+  /* Pulsar inner core — tight white-hot center */
+  const pulsarCoreTex = bakeGradientTexture([
+    [0, 'rgba(255,255,255,1.0)'], [0.2, 'rgba(240,248,255,0.9)'],
+    [0.5, 'rgba(220,240,255,0.3)'], [0.75, 'rgba(200,230,255,0.05)'],
+    [1, 'rgba(200,230,255,0)'],
   ]);
 
   /* Pool of detail mesh groups — each can render one star independently */
@@ -92,16 +110,65 @@ export async function createStarDetail(renderer) {
     halo.scale.setScalar(MARKER_RADIUS * 4.0);
     halo.renderOrder = 3;
 
+    const torusMat = new THREE.ShaderMaterial({
+      vertexShader: torusShaders.vert,
+      fragmentShader: torusShaders.frag,
+      glslVersion: THREE.GLSL3,
+      uniforms: {
+        uTime:      { value: 0 },
+        uSeed:      { value: 0 },
+        uColor:     { value: new THREE.Color('#aaddff') },
+        uIntensity: { value: 2.0 },
+      },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      side: THREE.DoubleSide,
+    });
+    const torusMesh = new THREE.Mesh(torusGeo, torusMat);
+    torusMesh.rotation.x = Math.PI / 2;
+    torusMesh.visible = false;
+    torusMesh.renderOrder = 4;
+
+    const pulsarGlowMat = new THREE.SpriteMaterial({
+      map: pulsarGlowTex, depthWrite: false, transparent: true,
+      color: 0xaaddff,
+    });
+    const pulsarGlow = new THREE.Sprite(pulsarGlowMat);
+    pulsarGlow.scale.setScalar(MARKER_RADIUS * 6.0);
+    pulsarGlow.visible = false;
+    pulsarGlow.renderOrder = 4;
+
+    const pulsarCoreMat = new THREE.SpriteMaterial({
+      map: pulsarCoreTex, depthWrite: false, transparent: true,
+      color: 0xffffff,
+    });
+    const pulsarCore = new THREE.Sprite(pulsarCoreMat);
+    pulsarCore.scale.setScalar(MARKER_RADIUS * 2.5);
+    pulsarCore.visible = false;
+    pulsarCore.renderOrder = 5;
+
+    /* Only the surface mesh should intercept raycasts */
+    corona.raycast = () => {};
+    halo.raycast = () => {};
+    torusMesh.raycast = () => {};
+    pulsarGlow.raycast = () => {};
+    pulsarCore.raycast = () => {};
+
     const group = new THREE.Group();
     group.add(halo);
     group.add(corona);
     group.add(mesh);
+    group.add(torusMesh);
+    group.add(pulsarGlow);
+    group.add(pulsarCore);
     group.visible = false;
     group.renderOrder = 5;
 
     pool.push({
-      group, mat, mesh, coronaMat: cMat, haloMat: hMat,
-      bodyId: null, radius: 1.0,
+      group, mat, mesh, corona, halo, coronaMat: cMat, haloMat: hMat,
+      torusMesh, torusMat, pulsarGlow, pulsarGlowMat, pulsarCore, pulsarCoreMat,
+      bodyId: null, radius: 1.0, isPulsar: false, isWolfRayet: false,
       rotAxis: new THREE.Vector3(0, 1, 0), rotSpeed: 0.1,
     });
   }
@@ -139,6 +206,28 @@ export async function createStarDetail(renderer) {
     entry.haloMat.color.set(params.atmoColor);
     entry.radius = params.radius;
 
+    /* Exotic type flags */
+    entry.isPulsar = !!params.isPulsar;
+    entry.isWolfRayet = !!params.isWolfRayet;
+
+    /* Pulsar: show dipole field torus + steady glow + white core */
+    entry.torusMesh.visible = entry.isPulsar;
+    entry.pulsarGlow.visible = entry.isPulsar;
+    entry.pulsarCore.visible = entry.isPulsar;
+    if (entry.isPulsar) {
+      entry.torusMat.uniforms.uSeed.value = seed;
+      entry.torusMat.uniforms.uColor.value.set(params.atmoColor);
+    }
+
+    /* Wolf-Rayet: boosted corona/halo opacity for enlarged glow */
+    if (entry.isWolfRayet) {
+      entry.coronaMat.opacity = 0.9;
+      entry.haloMat.opacity = 0.6;
+    }
+
+    /* T Tauri: enhanced atmosphere for accretion envelope */
+    if (params.isTTauri) u.uAtmosphereIntensity.value = 0.7;
+
     const rng = createRng(seed + 555);
     const tiltRad = (5 + rng.next() * 25) * Math.PI / 180;
     const azimuth = rng.next() * Math.PI * 2;
@@ -147,7 +236,7 @@ export async function createStarDetail(renderer) {
       Math.cos(tiltRad),
       Math.sin(tiltRad) * Math.sin(azimuth)
     ).normalize();
-    entry.rotSpeed = 0.05 + rng.next() * 0.15;
+    entry.rotSpeed = entry.isPulsar ? 55.0 : 0.05 + rng.next() * 0.15;
 
     entry.bodyId = bodyId;
     entry.group.userData.bodyId = bodyId;
@@ -158,6 +247,15 @@ export async function createStarDetail(renderer) {
     entry.bodyId = null;
     entry.group.userData.bodyId = null;
     entry.group.visible = false;
+    entry.torusMesh.visible = false;
+    entry.pulsarGlow.visible = false;
+    entry.pulsarCore.visible = false;
+    entry.isPulsar = false;
+    entry.isWolfRayet = false;
+    entry.coronaMat.opacity = 1.0;
+    entry.haloMat.opacity = 1.0;
+    entry.corona.scale.setScalar(MARKER_RADIUS * 2.2);
+    entry.halo.scale.setScalar(MARKER_RADIUS * 4.0);
   }
 
   /* Find all stars in the same system as targetId (handles nested hierarchies) */
@@ -254,6 +352,22 @@ export async function createStarDetail(renderer) {
       _rotMat3.setFromMatrix4(_rotMat4);
       entry.mat.uniforms.uRotation.value.copy(_rotMat3);
       entry.mat.uniforms.uTime.value = rotationTime;
+
+      /* Pulsar field torus: counter-scale + wobble around vertical axis */
+      if (entry.isPulsar) {
+        const gs = entry.group.scale.x;
+        if (gs > 0) entry.torusMesh.scale.setScalar(1.0 / gs);
+        entry.torusMat.uniforms.uTime.value = rotationTime;
+        const wobble = Math.sin(rotationTime * 0.25) * 0.08;
+        entry.torusMesh.rotation.set(Math.PI / 2, wobble, 0);
+      }
+
+      /* Wolf-Rayet: breathing pulsation on enlarged corona/halo */
+      if (entry.isWolfRayet) {
+        const pulse = 1.0 + 0.15 * Math.sin(rotationTime * 4.0);
+        entry.corona.scale.setScalar(MARKER_RADIUS * 5.5 * pulse);
+        entry.halo.scale.setScalar(MARKER_RADIUS * 8.0 * pulse);
+      }
     }
 
     return new Set(activeIds);
@@ -261,12 +375,18 @@ export async function createStarDetail(renderer) {
 
   function dispose() {
     surfaceGeo.dispose();
+    torusGeo.dispose();
     coronaTex.dispose();
     haloTex.dispose();
+    pulsarGlowTex.dispose();
+    pulsarCoreTex.dispose();
     for (const entry of pool) {
       entry.mat.dispose();
       entry.coronaMat.dispose();
       entry.haloMat.dispose();
+      entry.torusMat.dispose();
+      entry.pulsarGlowMat.dispose();
+      entry.pulsarCoreMat.dispose();
     }
   }
 

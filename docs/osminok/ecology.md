@@ -349,7 +349,7 @@ Sessile predators ringed with tentacles loaded with nematocysts powerful enough 
 |---|---|---|
 | **Biome:** *Twilight Shelves, Vent Gardens* | **Size:** *3–10cm* | **Analog:** *Clownfish + scorpion* |
 
-Brilliantly colored and armed with a segmented tail ending in a venom bulb, plus beaded toxin sacs along their fins that make them look like living jewelry and hurt like nothing else. Stingfish live exclusively among Stingplant tentacles, protected by a mucus coating that neutralizes the nematocysts. Their eggs are a rich, creamy delicacy that Osminoki prize specifically because only they can harvest them. Reach in, ignore the toxin, pluck the egg clusters, and munch away! The fish themselves are not eaten (too pointy, too venomous, and frankly not worth the trouble when the eggs are right there), but left undisturbed they produce new clutches year-round, making every Stingplant a self-replenishing snack supply. Stingfish seem to find the entire arrangement quite unfair.
+Brilliantly colored and armed with a segmented tail ending in a venom bulb, plus beaded toxin sacs along their fins that make them look like living jewelry and hurt like nothing else. Stingfish live exclusively among Stingplant tentacles, protected by a mucus coating that neutralizes the nematocysts. Their eggs are a rich, creamy delicacy that Osminoki prize specifically because only they can harvest them. Reach in, ignore the toxin, pluck the egg clusters, and munch away! The fish themselves are not eaten (too pointy, too venomous, and frankly not worth the trouble when the eggs are right there), but left undisturbed they produce new clutches continuously, making every Stingplant a self-replenishing snack supply. Stingfish seem to find the entire arrangement quite unfair.
 
 ### Free-Swimming Fauna
 
@@ -521,7 +521,7 @@ Slow-grazing mollusks with tall conical shells, closely related to Glowspirals b
 |---|---|---|
 | **Biome:** *Crushing Deep, Forgotten Depths* | **Size:** *Patches of cm to m* | **Analog:** *Radiotrophic fungi + endoliths* |
 
-No detectable metabolism. They harvest energy from ambient radiation via quantum effects, grow approximately one cell per year, and some specimens are millions of years old. They look like black tar on rocks, are potentially the oldest discrete organisms on the planet, and are barely alive by any definition; theoretically immortal. Abbey scholars have debated for thousands of cycles whether Blacksludge qualifies as alive, as dead, or as something that pre-dates the distinction.
+No detectable metabolism. They harvest energy from ambient radiation via quantum effects, grow approximately one cell per two cycles, and some specimens are millions of cycles old. They look like black tar on rocks, are potentially the oldest discrete organisms on the planet, and are barely alive by any definition; theoretically immortal. Abbey scholars have debated for thousands of cycles whether Blacksludge qualifies as alive, as dead, or as something that pre-dates the distinction.
 
 #### Geyserstone
 

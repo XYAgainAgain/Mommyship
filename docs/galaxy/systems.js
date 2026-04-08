@@ -6,10 +6,13 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createRng } from './rng.js';
-import { loadShaderPair } from './shaders.js';
+import { loadShader, loadShaderPair } from './shaders.js';
 import { bakeStarAtlas } from './star-bake.js';
 import { createStarDetail } from './star-detail.js';
 import { parseMK } from './star-params.js';
+import { bakePlanetAtlas } from './planet-bake.js';
+import { createPlanetDetail } from './planet-detail.js';
+import { findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
 const MARKER_RADIUS = 2.5;
@@ -268,12 +271,24 @@ export async function createSystems(scene, camera, renderer) {
   const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   let starAtlasMat = null;
-  let starMarkers = null, sphereMarkers = null, cubeMarkers = null;
+  let planetAtlasMat = null;
+  let starMarkers = null, sphereMarkers = null, cubeMarkers = null, planetMarkers = null;
   let starIds = [], sphereIds = [], cubeIds = [];
   let starAtlasData = null;
+  let planetAtlasData = null;
   let crossfadeAttr = null;
+  let planetCrossfadeAttr = null;
+  let planetLightDirAttr = null;
+  let planetIds = [];
+  let planetToStarId = new Map();
+  let planetSpins = [];
   let starDetail = null;
+  let planetDetail = null;
   let detailActiveIds = new Set();
+  let planetDetailActiveIds = new Set();
+  const pulsarFarTori = [];
+  let pulsarTorusShaders = null;
+  let pulsarTorusGeoFar = null;
   let allPositionedIds = [];
   const _dummy = new THREE.Object3D();
   const _color = new THREE.Color();
@@ -352,6 +367,7 @@ export async function createSystems(scene, camera, renderer) {
         try {
           galaxyData = JSON.parse(e.target.result);
           await rebakeStarAtlas();
+          await rebakePlanetAtlas();
           rebuildMarkers();
           autosave();
           resolve(galaxyData);
@@ -366,7 +382,26 @@ export async function createSystems(scene, camera, renderer) {
     localStorage.removeItem(STORAGE_KEY);
     await loadData();
     await rebakeStarAtlas();
+    await rebakePlanetAtlas();
     rebuildMarkers();
+  }
+
+  async function rebakePlanetAtlas() {
+    if (!planetAtlasMat) return;
+    try {
+      const newData = await bakePlanetAtlas(renderer, galaxyData.bodies);
+      if (newData.atlas) {
+        const oldAtlas = planetAtlasData?.atlas;
+        const oldDeriv = planetAtlasData?.derivAtlas;
+        planetAtlasData = newData;
+        planetAtlasMat.uniforms.uAtlas.value = newData.atlas;
+        if (oldAtlas) oldAtlas.dispose();
+        if (oldDeriv) oldDeriv.dispose();
+        planetDetailActiveIds = new Set();
+      }
+    } catch (e) {
+      console.warn('Planet atlas re-bake failed:', e);
+    }
   }
 
   async function rebakeStarAtlas() {
@@ -574,10 +609,22 @@ export async function createSystems(scene, camera, renderer) {
     if (starMarkers) { markerScene.remove(starMarkers); starMarkers.dispose(); }
     if (sphereMarkers) { markerScene.remove(sphereMarkers); sphereMarkers.dispose(); }
     if (cubeMarkers) { markerScene.remove(cubeMarkers); cubeMarkers.dispose(); }
+    if (planetMarkers) { markerScene.remove(planetMarkers); planetMarkers.dispose(); }
+    for (const pt of pulsarFarTori) {
+      markerScene.remove(pt.mesh);
+      pt.mat.dispose();
+    }
+    pulsarFarTori.length = 0;
     starMarkers = null;
     sphereMarkers = null;
     cubeMarkers = null;
+    planetMarkers = null;
     crossfadeAttr = null;
+    planetCrossfadeAttr = null;
+    planetLightDirAttr = null;
+    planetIds = [];
+    planetSpins = [];
+    planetToStarId = new Map();
     hitboxes.forEach(hb => { if (hb.parent) hb.removeFromParent(); });
     hitboxes.length = 0;
 
@@ -593,6 +640,7 @@ export async function createSystems(scene, camera, renderer) {
       if (LANDMARK_IDS.has(id)) continue;
       if (isGasNGripe(id)) cubeIds.push(id);
       else if (galaxyData.bodies[id].type === 'star') starIds.push(id);
+      else if (planetAtlasData?.layerMap.has(id)) planetIds.push(id);
       else sphereIds.push(id);
     }
 
@@ -631,6 +679,37 @@ export async function createSystems(scene, camera, renderer) {
       starMarkers.instanceMatrix.needsUpdate = true;
       if (starMarkers.instanceColor) starMarkers.instanceColor.needsUpdate = true;
       markerScene.add(starMarkers);
+
+      /* Pulsar far-LOD: low-poly torus with same shader, crossfades to detail mesh */
+      if (pulsarTorusShaders && pulsarTorusGeoFar) {
+        for (const id of starIds) {
+          const body = galaxyData.bodies[id];
+          if (body.subtype !== 'pulsar') continue;
+          const seed = hashString(id);
+          const params = parseMK(body.spectralClass, body.visual?.size);
+          const mat = new THREE.ShaderMaterial({
+            vertexShader: pulsarTorusShaders.vert,
+            fragmentShader: pulsarTorusShaders.frag,
+            glslVersion: THREE.GLSL3,
+            uniforms: {
+              uTime:      { value: 0 },
+              uSeed:      { value: seed },
+              uColor:     { value: new THREE.Color(params.atmoColor) },
+              uIntensity: { value: 2.0 },
+            },
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            side: THREE.DoubleSide,
+          });
+          const mesh = new THREE.Mesh(pulsarTorusGeoFar, mat);
+          mesh.rotation.x = Math.PI / 2;
+          mesh.visible = false;
+          mesh.renderOrder = 4;
+          markerScene.add(mesh);
+          pulsarFarTori.push({ id, mesh, mat });
+        }
+      }
     } else if (starIds.length > 0) {
       /* Fallback if atlas hasn't baked yet — use basic material */
       sphereIds = starIds.concat(sphereIds);
@@ -658,6 +737,71 @@ export async function createSystems(scene, camera, renderer) {
       sphereMarkers.instanceMatrix.needsUpdate = true;
       if (sphereMarkers.instanceColor) sphereMarkers.instanceColor.needsUpdate = true;
       markerScene.add(sphereMarkers);
+    }
+
+    /* Planet/moon InstancedMesh (textured via planet atlas shader) */
+    if (planetIds.length > 0 && planetAtlasMat && planetAtlasData) {
+      planetMarkers = new THREE.InstancedMesh(sphereGeo, planetAtlasMat, planetIds.length);
+      planetMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      planetMarkers.renderOrder = 5;
+
+      const pLayers = new Float32Array(planetIds.length);
+      const pCrossfades = new Float32Array(planetIds.length);
+      const pLightDirs = new Float32Array(planetIds.length * 3);
+      const pChurns = new Float32Array(planetIds.length);
+
+      for (let i = 0; i < planetIds.length; i++) {
+        const id = planetIds[i];
+        const body = galaxyData.bodies[id];
+        const meta = bodyMeta.get(id);
+        const pos = body.position || { x: 0, y: 0, z: 0 };
+        _dummy.position.set(pos.x, pos.y || 0, pos.z);
+        _dummy.scale.setScalar(meta.instanceScale);
+        _dummy.updateMatrix();
+        planetMarkers.setMatrixAt(i, _dummy.matrix);
+        _color.set(getBodyColor(body));
+        planetMarkers.setColorAt(i, _color);
+        pLayers[i] = planetAtlasData.layerMap.get(id) ?? 0;
+        pCrossfades[i] = 0;
+        /* Default light dir — updated per frame */
+        pLightDirs[i * 3] = 1; pLightDirs[i * 3 + 1] = 0.3; pLightDirs[i * 3 + 2] = 0;
+        pChurns[i] = planetAtlasData.churnMap?.get(id) ?? 0;
+
+        /* Axial rotation — random tilt + speed + direction per body */
+        const spinRng = createRng(hashString(id) + 333);
+        const tilt = 0.15 + spinRng.next() * 0.4;
+        const spinAxis = new THREE.Vector3(
+          (spinRng.next() - 0.5) * tilt * 2, 1, (spinRng.next() - 0.5) * tilt * 2
+        ).normalize();
+        const spinSpeed = (0.08 + spinRng.next() * 0.12) * (spinRng.next() > 0.5 ? 1 : -1);
+        planetSpins.push({ axis: spinAxis, speed: spinSpeed });
+      }
+
+      const pLayerAttr = new THREE.InstancedBufferAttribute(pLayers, 1);
+      planetCrossfadeAttr = new THREE.InstancedBufferAttribute(pCrossfades, 1);
+      planetCrossfadeAttr.setUsage(THREE.DynamicDrawUsage);
+      planetLightDirAttr = new THREE.InstancedBufferAttribute(pLightDirs, 3);
+      planetLightDirAttr.setUsage(THREE.DynamicDrawUsage);
+      planetMarkers.geometry.setAttribute('aLayer', pLayerAttr);
+      planetMarkers.geometry.setAttribute('aCrossfade', planetCrossfadeAttr);
+      planetMarkers.geometry.setAttribute('aLightDir', planetLightDirAttr);
+      planetMarkers.geometry.setAttribute('aChurn', new THREE.InstancedBufferAttribute(pChurns, 1));
+
+      planetMarkers.instanceMatrix.needsUpdate = true;
+      if (planetMarkers.instanceColor) planetMarkers.instanceColor.needsUpdate = true;
+      markerScene.add(planetMarkers);
+      /* Cache planet→starId mapping once to avoid per-frame hierarchy walks */
+      for (const pid of planetIds) {
+        const star = findParentStar(pid, galaxyData.bodies);
+        if (star) {
+          const sid = Object.keys(galaxyData.bodies).find(k => galaxyData.bodies[k] === star);
+          if (sid) planetToStarId.set(pid, sid);
+        }
+      }
+    } else if (planetIds.length > 0) {
+      /* Fallback — put planets back into sphereIds for basic rendering */
+      sphereIds = sphereIds.concat(planetIds);
+      planetIds = [];
     }
 
     /* Cube InstancedMesh (Gas-n-Gripes) */
@@ -907,6 +1051,7 @@ export async function createSystems(scene, camera, renderer) {
     const hasStars = starMarkers && starIds.length > 0;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
     const hasCubes = cubeMarkers && cubeIds.length > 0;
+    const hasPlanets = planetMarkers && planetIds.length > 0;
 
     if (!hasStars && !hasSpheres && !hasCubes) return;
 
@@ -994,6 +1139,24 @@ export async function createSystems(scene, camera, renderer) {
       }
     }
 
+    /* Pulsar far-LOD tori: same shader as detail, hidden when detail takes over */
+    if (pulsarFarTori.length > 0) {
+      for (const pt of pulsarFarTori) {
+        const wp = bodyWorldPos.get(pt.id);
+        if (!wp) { pt.mesh.visible = false; continue; }
+        if (detailActiveIds.has(pt.id)) { pt.mesh.visible = false; continue; }
+        pt.mesh.position.set(wp.x, wp.y, wp.z);
+        pt.mat.uniforms.uTime.value = rotationTime;
+        pt.mat.uniforms.uIntensity.value = 2.0;
+        /* Match detail torus orientation — gentle wobble, no mesh spin
+           (the shader's time-based animation provides all the visual motion) */
+        const wobble = Math.sin(rotationTime * 0.25) * 0.08;
+        pt.mesh.rotation.set(Math.PI / 2, wobble, 0);
+        /* Fixed world-space scale — torus geometry is already the right size */
+        pt.mesh.visible = true;
+      }
+    }
+
     /* Write non-star sphere instance matrices */
     if (hasSpheres) {
       _dummy.quaternion.identity();
@@ -1005,6 +1168,73 @@ export async function createSystems(scene, camera, renderer) {
         sphereMarkers.setMatrixAt(i, _dummy.matrix);
       }
       sphereMarkers.instanceMatrix.needsUpdate = true;
+    }
+
+    /* Write planet/moon instance matrices + crossfade + light direction */
+    if (planetAtlasMat) planetAtlasMat.uniforms.uTime.value = rotationTime;
+    if (hasPlanets) {
+      const camPos = camera.position;
+
+      /* Detail update FIRST so planetDetailActiveIds is current before the instance loop */
+      if (planetDetail) {
+        planetDetailActiveIds = planetDetail.update(
+          trackedId || null, camPos, bodyWorldPos, galaxyData,
+          rotationTime, bodyMeta
+        );
+      }
+
+      let pcfDirty = false, pldDirty = false;
+      for (let i = 0; i < planetIds.length; i++) {
+        const id = planetIds[i];
+
+        /* Detail mesh replaces this body — collapse instance to zero */
+        if (planetDetailActiveIds.has(id)) {
+          _dummy.scale.setScalar(0);
+          _dummy.updateMatrix();
+          planetMarkers.setMatrixAt(i, _dummy.matrix);
+          continue;
+        }
+
+        const wp = bodyWorldPos.get(id);
+        if (!wp) continue;
+        const meta = bodyMeta.get(id);
+        _dummy.position.set(wp.x, wp.y, wp.z);
+        _dummy.scale.setScalar(meta.instanceScale);
+        const spin = planetSpins[i];
+        if (spin) _dummy.quaternion.setFromAxisAngle(spin.axis, spin.speed * rotationTime);
+        else _dummy.quaternion.identity();
+        _dummy.updateMatrix();
+        planetMarkers.setMatrixAt(i, _dummy.matrix);
+
+        /* Crossfade: close = atlas texture, far = faction color */
+        const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const cf = 1 - smoothstep(15, 80, dist);
+        if (planetCrossfadeAttr.array[i] !== cf) {
+          planetCrossfadeAttr.array[i] = cf;
+          pcfDirty = true;
+        }
+
+        const starId = planetToStarId.get(id);
+        if (starId) {
+          const starWp = bodyWorldPos.get(starId);
+          if (starWp) {
+            const lx = starWp.x - wp.x, ly = starWp.y - wp.y, lz = starWp.z - wp.z;
+            const len = Math.sqrt(lx * lx + ly * ly + lz * lz) || 1;
+            const idx3 = i * 3;
+            const nlx = lx / len, nly = ly / len, nlz = lz / len;
+            if (planetLightDirAttr.array[idx3] !== nlx || planetLightDirAttr.array[idx3 + 1] !== nly) {
+              planetLightDirAttr.array[idx3] = nlx;
+              planetLightDirAttr.array[idx3 + 1] = nly;
+              planetLightDirAttr.array[idx3 + 2] = nlz;
+              pldDirty = true;
+            }
+          }
+        }
+      }
+      planetMarkers.instanceMatrix.needsUpdate = true;
+      if (pcfDirty) planetCrossfadeAttr.needsUpdate = true;
+      if (pldDirty) planetLightDirAttr.needsUpdate = true;
     }
 
     if (hasCubes) {
@@ -1028,8 +1258,11 @@ export async function createSystems(scene, camera, renderer) {
       hb.updateMatrixWorld(true);
     }
 
-    /* Orbit lines follow their parent's world position */
+    /* Photo Mode (F2) — hide orbits and hyperlanes for clean captures */
+    const photoMode = document.body.classList.contains('screenshot-active');
+
     for (const [, ol] of orbitLines) {
+      if (photoMode) { ol.line.visible = false; continue; }
       if (!ol.line.visible) continue;
       const pw = bodyWorldPos.get(ol.parentId);
       if (pw) ol.line.position.set(pw.x, pw.y, pw.z);
@@ -1038,6 +1271,7 @@ export async function createSystems(scene, camera, renderer) {
     /* Hyperlane endpoints + throttled occlusion checks */
     const runOcclusion = (++hlThrottle % 4) === 0;
     for (const hl of hyperlaneLines) {
+      if (photoMode) { hl.line.visible = false; continue; }
       const fromId = preferStation.get(hl.fromId) || hl.fromId;
       const toId = preferStation.get(hl.toId) || hl.toId;
       const from = bodyWorldPos.get(fromId);
@@ -1120,12 +1354,21 @@ export async function createSystems(scene, camera, renderer) {
     if (starMarkers) starMarkers.computeBoundingSphere();
     if (sphereMarkers) sphereMarkers.computeBoundingSphere();
     if (cubeMarkers) cubeMarkers.computeBoundingSphere();
+    if (planetMarkers) planetMarkers.computeBoundingSphere();
 
     if (mode === 'select' || mode === 'track' || !mode) {
       const allHits = [];
       /* Detail meshes cover stars — raycast all active pool entries */
       if (detailActiveIds.size > 0 && starDetail) {
         for (const child of starDetail.container.children) {
+          if (!child.visible || !child.userData.bodyId) continue;
+          for (const h of raycaster.intersectObject(child, true))
+            allHits.push({ distance: h.distance, bodyId: child.userData.bodyId });
+        }
+      }
+      /* Planet detail meshes — same pattern */
+      if (planetDetailActiveIds.size > 0 && planetDetail) {
+        for (const child of planetDetail.container.children) {
           if (!child.visible || !child.userData.bodyId) continue;
           for (const h of raycaster.intersectObject(child, true))
             allHits.push({ distance: h.distance, bodyId: child.userData.bodyId });
@@ -1142,6 +1385,10 @@ export async function createSystems(scene, camera, renderer) {
       if (cubeMarkers) {
         for (const h of raycaster.intersectObject(cubeMarkers))
           allHits.push({ distance: h.distance, bodyId: cubeIds[h.instanceId] });
+      }
+      if (planetMarkers) {
+        for (const h of raycaster.intersectObject(planetMarkers))
+          allHits.push({ distance: h.distance, bodyId: planetIds[h.instanceId] });
       }
       if (allHits.length > 0) {
         allHits.sort((a, b) => a.distance - b.distance);
@@ -1273,8 +1520,38 @@ export async function createSystems(scene, camera, renderer) {
     starAtlasMat.uniforms.uAtlas.value = starAtlasData.atlas;
     starDetail = await createStarDetail(renderer);
     markerScene.add(starDetail.container);
+    pulsarTorusShaders = await loadShaderPair('pulsar-torus');
+    pulsarTorusGeoFar = new THREE.TorusGeometry(4, 3.95, 16, 32);
   } catch (e) {
     console.warn('Star atlas bake failed, falling back to basic material:', e);
+  }
+
+  /* Planet atlas — same pattern, separate InstancedMesh */
+  try {
+    const [planetShaders, noiseSrc] = await Promise.all([
+      loadShaderPair('planet-atlas'),
+      loadShader('galaxy/shaders/noise-common.glsl'),
+    ]);
+    const planetAtlasFrag = planetShaders.frag.replace('/* @include noise-common */', noiseSrc);
+    planetAtlasMat = new THREE.ShaderMaterial({
+      vertexShader: planetShaders.vert,
+      fragmentShader: planetAtlasFrag,
+      glslVersion: THREE.GLSL3,
+      uniforms: {
+        uAtlas: { value: null },
+        uVisualScale: { value: 0.87 },
+        uTime: { value: 0 },
+      },
+      defines: { USE_INSTANCING: '', USE_INSTANCING_COLOR: '' },
+    });
+    planetAtlasData = await bakePlanetAtlas(renderer, galaxyData.bodies);
+    if (planetAtlasData.atlas) {
+      planetAtlasMat.uniforms.uAtlas.value = planetAtlasData.atlas;
+    }
+    planetDetail = await createPlanetDetail(renderer);
+    markerScene.add(planetDetail.container);
+  } catch (e) {
+    console.warn('Planet atlas bake failed, falling back to basic material:', e);
   }
 
   initLabelPool();

@@ -601,9 +601,9 @@
     },
     "nj12": {
       "type": "star",
-      "subtype": "red-dwarf",
+      "subtype": "pulsar",
       "name": "NJ12",
-      "description": "Closest to Cerulean Plains, spinward of Walprug.",
+      "description": "Galaxy's first known pulsar. Closest to Cerulean Plains, spinward of Walprug.",
       "notes": "",
       "position": {
         "x": -146,
@@ -613,11 +613,11 @@
       "parentId": null,
       "orbital": null,
       "visual": {
-        "size": 0.8,
-        "glow": 0.4,
-        "spectralColor": "#ff6b4a"
+        "size": 0.6,
+        "glow": 0.9,
+        "spectralColor": "#88ccff"
       },
-      "spectralClass": "M7V",
+      "spectralClass": "PSR",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -980,8 +980,8 @@
     "durury": {
       "type": "star",
       "subtype": "binary",
-      "name": "Durury A",
-      "description": "G4 subgiant primary of the Durury binary. Closest to Bruminax, spinward of Padania.",
+      "name": "Durury",
+      "description": "G4 subgiant primary of the Durury system. Closest to Bruminax, spinward of Padania.",
       "notes": "",
       "position": {
         "x": 156,
@@ -1004,21 +1004,28 @@
       "hasFuddruckers": false,
       "colonizedCode": 26
     },
-    "durury-b": {
+    "neotypian": {
       "type": "star",
-      "subtype": "brown-dwarf",
-      "name": "Durury B",
-      "description": "Neotypian: L2 brown dwarf companion to Durury A, with 7 orbiting moons.",
+      "subtype": "red-dwarf",
+      "name": "Neotypian",
+      "description": "M dwarf companion to Durury. Originally misidentified as a planet due to extremely low luminosity. 7 orbiting moons.",
       "notes": "",
       "position": null,
       "parentId": "durury",
-      "orbital": { "a": 12, "e": 0.15, "incl": 35, "Omega": 45, "omega": 0, "M0": 0 },
-      "visual": {
-        "size": 0.8,
-        "glow": 0.3,
-        "spectralColor": "#cc6644"
+      "orbital": {
+        "a": 12,
+        "e": 0.15,
+        "incl": 35,
+        "Omega": 45,
+        "omega": 0,
+        "M0": 0
       },
-      "spectralClass": "L2V",
+      "visual": {
+        "size": 0.7,
+        "glow": 0.35,
+        "spectralColor": "#ff6b4a"
+      },
+      "spectralClass": "M7V",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1298,9 +1305,9 @@
     },
     "the-hungry-sun": {
       "type": "star",
-      "subtype": "red-giant",
+      "subtype": "wolf-rayet",
       "name": "The Hungry Sun",
-      "description": "Closest to Ivutlis, rimward of Halcyon.",
+      "description": "Wolf-Rayet star in violent self-destruction. Stellar winds destabilizing the entire planetary system. Closest to Ivutlis, rimward of Halcyon.",
       "notes": "Orbital destablization leading to planetary destruction underway.",
       "position": {
         "x": 52,
@@ -1311,11 +1318,11 @@
       "orbital": null,
       "visual": {
         "size": 2.5,
-        "glow": 0.6,
-        "spectralColor": "#cc3333",
+        "glow": 0.9,
+        "spectralColor": "#9933cc",
         "color": "#ff4422"
       },
-      "spectralClass": "K2III",
+      "spectralClass": "WN8",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -2207,7 +2214,14 @@
       "class": "B",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 0, "omega": 0, "M0": 0 },
+      "orbital": {
+        "a": 7,
+        "e": 0.55,
+        "incl": 82,
+        "Omega": 0,
+        "omega": 0,
+        "M0": 0
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -2353,31 +2367,10 @@
       ],
       "hasFuddruckers": false
     },
-    "neotypian": {
+    "splorida": {
       "type": "planet",
       "subtype": null,
-      "name": "Neotypian",
-      "description": "",
-      "notes": "C-Class",
-      "class": "C",
-      "position": null,
-      "parentId": "durury-b",
-      "orbital": { "a": 8, "e": 0.05, "incl": 5, "Omega": 0, "omega": 0, "M0": 0 },
-      "visual": null,
-      "spectralClass": null,
-      "luminosity": null,
-      "mass": null,
-      "factionId": "comexo",
-      "zoneId": null,
-      "tags": [
-        "colony"
-      ],
-      "hasFuddruckers": false
-    },
-    "vamburdia-lesser-planet-1": {
-      "type": "planet",
-      "subtype": null,
-      "name": "Vamburdia Lesser I",
+      "name": "Splorida",
       "description": "",
       "notes": "C-Class",
       "class": "C",
@@ -2397,10 +2390,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-lesser-station-1": {
+    "the-saloon": {
       "type": "station",
       "subtype": "port",
-      "name": "Vamburdia Lesser OSS",
+      "name": "The Saloon",
       "description": "",
       "notes": "C-Class",
       "class": "C",
@@ -2418,10 +2411,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-greater-planet-1": {
+    "meteorissippi": {
       "type": "planet",
       "subtype": null,
-      "name": "Vamburdia Greater I",
+      "name": "Meteorissippi",
       "description": "",
       "notes": "Class U",
       "class": "U",
@@ -2441,10 +2434,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-greater-planet-2": {
+    "twocson": {
       "type": "planet",
       "subtype": null,
-      "name": "Vamburdia Greater II",
+      "name": "Twocson",
       "description": "",
       "notes": "B-Class",
       "class": "B",
@@ -2464,10 +2457,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-greater-planet-3": {
+    "new-old-comexico": {
       "type": "planet",
       "subtype": null,
-      "name": "Vamburdia Greater III",
+      "name": "New Old Comexico",
       "description": "",
       "notes": "C-Class",
       "class": "C",
@@ -2814,15 +2807,15 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-lesser-moon-1": {
+    "keylime": {
       "type": "moon",
       "subtype": null,
-      "name": "Vamburdia Lesser Moon I",
+      "name": "Keylime",
       "description": "",
       "notes": "C-Class",
       "class": "C",
       "position": null,
-      "parentId": "vamburdia-lesser-planet-1",
+      "parentId": "splorida",
       "orbital": {
         "order": 1
       },
@@ -3822,7 +3815,14 @@
       "class": "C",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 120, "omega": 0, "M0": 120 },
+      "orbital": {
+        "a": 7,
+        "e": 0.55,
+        "incl": 82,
+        "Omega": 120,
+        "omega": 0,
+        "M0": 120
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -3843,7 +3843,14 @@
       "class": "C",
       "position": null,
       "parentId": "flipsulon",
-      "orbital": { "a": 7, "e": 0.55, "incl": 82, "Omega": 240, "omega": 0, "M0": 240 },
+      "orbital": {
+        "a": 7,
+        "e": 0.55,
+        "incl": 82,
+        "Omega": 240,
+        "omega": 0,
+        "M0": 240
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -3912,7 +3919,9 @@
       "class": "A",
       "position": null,
       "parentId": "nj12",
-      "orbital": null,
+      "orbital": {
+        "a": 10
+      },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -4037,10 +4046,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-lesser-planet-2": {
+    "gorgia": {
       "type": "planet",
       "subtype": null,
-      "name": "Vamburdia Lesser II",
+      "name": "Gorgia",
       "description": "",
       "notes": "X-Class",
       "class": "X",
@@ -4060,10 +4069,10 @@
       ],
       "hasFuddruckers": false
     },
-    "vamburdia-greater-planet-4": {
+    "green-yonder": {
       "type": "planet",
       "subtype": null,
-      "name": "Vamburdia Greater IV",
+      "name": "Green Yonder",
       "description": "",
       "notes": "X-Class",
       "class": "X",
@@ -4116,10 +4125,10 @@
       "position": null,
       "parentId": "the-hungry-sun",
       "orbital": {
-        "a": 1.5
+        "a": 3.5
       },
       "visual": {
-        "color": "#ff4422"
+        "color": "#9933cc"
       },
       "spectralClass": null,
       "luminosity": null,
@@ -5597,7 +5606,7 @@
     },
     "osminok-prime": {
       "type": "planet",
-      "subtype": "ocean-world",
+      "subtype": "ocean",
       "name": "Osminok Prime",
       "description": "The Endless Ocean That Is Our Treasured Home Despite Its Many Dangers. Gaby's homeworld!",
       "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35Â° axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
@@ -5645,7 +5654,7 @@
     },
     "osminok-iii": {
       "type": "planet",
-      "subtype": "mini-neptune",
+      "subtype": "gas",
       "name": "Red Wanderer",
       "description": "The Wanderer Of Red And Orange Whose Calls Still Echo In The Black",
       "notes": "4 Earth masses, 1.8 AU, 50+ bar, 11-marbec rotation. 9 moons.",
@@ -5668,7 +5677,7 @@
     },
     "rw-moon-1": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-1",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5692,7 +5701,7 @@
     },
     "rw-moon-2": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-2",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5716,7 +5725,7 @@
     },
     "rw-moon-3": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-3",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5740,7 +5749,7 @@
     },
     "rw-moon-4": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-4",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5764,7 +5773,7 @@
     },
     "rw-moon-5": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-5",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5788,7 +5797,7 @@
     },
     "rw-moon-6": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-6",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5813,7 +5822,7 @@
     },
     "rw-moon-7": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-7",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5838,7 +5847,7 @@
     },
     "rw-moon-8": {
       "type": "moon",
-      "subtype": "captured",
+      "subtype": "barren",
       "name": "RW-8",
       "description": "",
       "notes": "Captured asteroid.",
@@ -5863,7 +5872,7 @@
     },
     "rw-moon-9": {
       "type": "moon",
-      "subtype": "icy",
+      "subtype": "ice",
       "name": "RW-9",
       "description": "",
       "notes": "0.1 Earth masses. Largest moon of Red Wanderer.",
@@ -5890,7 +5899,7 @@
     },
     "osminok-iv": {
       "type": "planet",
-      "subtype": "ice-giant",
+      "subtype": "gas",
       "name": "Blue Watcher",
       "description": "The Bright Blue Eye That Watches Us Fondly From A Great Distance",
       "notes": "14 Earth masses, 3.5 AU. 23 known moons.",
@@ -6455,7 +6464,7 @@
     },
     "osminok-v": {
       "type": "planet",
-      "subtype": "dwarf-planet",
+      "subtype": "barren",
       "name": "Ossuary",
       "description": "The Cold Small Rock That Has Hidden From Us Always And Saddens Us",
       "notes": "0.08 Earth masses, ~8 AU, highly elliptical orbit.",
@@ -6482,7 +6491,7 @@
     },
     "osminok-vi": {
       "type": "planet",
-      "subtype": "dwarf-planet",
+      "subtype": "barren",
       "name": "Silent Stone",
       "description": "The Unturned Stone That Waits In Silence At The Edge Of The Shelf",
       "notes": "45 AU.",
