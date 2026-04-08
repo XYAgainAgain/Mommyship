@@ -19,7 +19,7 @@ Welcome to Mommyship! This is a mildly friendlier, more robust, and ever-so-slig
 - **[Shipbreaker's Toolkit](shipbreakers-toolkit/index.md):** Ships, space travel, operating costs, & ship combat.
 - **[D.A.V.E. Pilot Manual](dave-pilot-manual.md):** Design & pilot your very own **D**efense **A**nd **V**iolent **E**ncounter droid.
 
-Mommyship was created by two big nerds, **Jaz** & **Sam**, to fill some gaps in the original system.
+Mommyship was created by two big nerds, **Jaz** & **Sam**, to fill some gaps in the original system. With much love, of course.
 
 ---
 
