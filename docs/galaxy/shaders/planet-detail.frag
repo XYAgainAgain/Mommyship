@@ -42,8 +42,11 @@ out vec4 fragColor;
 /* Captured by render functions for normal perturbation */
 vec3 gDetailDerivs = vec3(0.0);
 
+/* Set by ocean-bearing render functions for specular masking in main() */
+float gOceanMask = 0.0;
+float gWaveHeight = 0.0;
 
-/* Flow-field warp — same as bake shader */
+
 vec3 flowWarp(vec3 p, float s, float strength) {
   float n1 = fbm(p * 1.5 + vec3(s * 0.37, s * 1.13, s * 0.61), 0.3);
   float n2 = fbm(p * 1.5 + vec3(s * 1.83, s * 0.29, s * 1.47), 0.3);
@@ -54,37 +57,114 @@ vec3 flowWarp(vec3 p, float s, float strength) {
 }
 
 
+/* 6 Gerstner waves — mirrors bake version but with uTime-animated phase.
+   Dispersion-correct: big waves scroll slowly, small waves fast (speed ~ sqrt(freq)). */
+vec4 gerstnerField(vec3 sp, float s, float roughness) {
+  vec3 warpOffset = gnoised(sp * 4.0 + vec3(s * 0.7)).yzw;
+  vec3 warpedSp = normalize(sp + warpOffset * 0.07 * roughness);
+
+  float ampMod = 0.55 + 0.45 * fbm(sp * 2.0 + vec3(s * 1.3), 0.3);
+
+  float totalH = 0.0;
+  vec3 totalD = vec3(0.0);
+
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i);
+
+    float a1 = fract(s * 0.137) * 6.2832 + fi * 2.39996;
+    float a2 = acos(clamp(1.0 - (2.0 * fi + 1.0) / 6.0 + fract(s * (0.293 + fi * 0.179)) * 0.25 - 0.125, -1.0, 1.0));
+    vec3 dir = normalize(vec3(cos(a1)*sin(a2), cos(a2), sin(a1)*sin(a2)));
+
+    float freq = (25.0 + fi * 25.0) * (0.8 + fract(s * (0.417 + fi * 0.031)) * 0.4);
+    float amp = roughness * ampMod * 0.35 / (1.0 + fi * 0.6);
+    float steep = 0.3 + fract(s * (0.619 + fi * 0.043)) * 0.5;
+
+    float phaseNoise = gnoised(sp * (6.0 + fi * 4.0) + vec3(s * (0.5 + fi * 0.2))).x * 5.5;
+    float phase = fract(s * (0.773 + fi * 0.089)) * 6.2832 + phaseNoise + uTime * sqrt(freq) * 0.4;
+
+    vec4 w = gerstnerWave(warpedSp, dir, freq, amp, steep, phase);
+    totalH += w.x;
+    totalD += w.yzw;
+  }
+
+  return vec4(totalH, totalD);
+}
+
+/* Shared ocean surface — Gerstner analytic derivatives, sets gDetailDerivs + gWaveHeight */
+vec3 oceanSurface(vec3 sp, float s, float depth, float roughness) {
+  vec4 gw = gerstnerField(sp, s, roughness);
+  float waves = gw.x;
+  gWaveHeight = waves;
+  gDetailDerivs = gw.yzw;
+
+  vec3 shallow = uBaseColor1 * 1.1 + vec3(0.02, 0.04, 0.03);
+  vec3 mid = uBaseColor1 * 0.65;
+  vec3 deep = uBaseColor1 * 0.3;
+  vec3 color = mix(shallow, mid, smoothstep(0.0, 0.15, depth));
+  color = mix(color, deep, smoothstep(0.15, 0.35, depth));
+
+  color *= 0.8 + waves * 0.5;
+
+  float foam = smoothstep(0.3, 0.65, waves) * roughness * 2.0;
+  color += vec3(foam * 0.15);
+
+  float slope = length(gw.yzw);
+  color *= mix(1.0, 0.5, smoothstep(0.2, 1.2, slope));
+
+  float lat = abs(sp.y);
+  vec3 polarTint = mix(uBaseColor1, vec3(0.5, 0.6, 0.7), 0.4);
+  color = mix(color, polarTint, smoothstep(0.0, 0.7, lat) * 0.25);
+
+  return color;
+}
+
+
 vec3 renderRocky(vec3 sp, float s) {
   vec3 p = flowWarp(sp * 3.5, s, 0.25);
   vec4 hd = fbmd(p + vec3(s), uSlopeness);
   gDetailDerivs = hd.yzw;
   float height = hd.x * 0.5 + 0.5;
   float lat = abs(sp.y);
-
-  float landHeight = height - uOceanLevel;
-  float flattenedHeight = landHeight < 0.0
-    ? landHeight / 3.0 + uOceanLevel
-    : height;
-
-  float h = flattenedHeight;
   float t = 0.02;
 
-  vec3 deepOcean = uBaseColor1 * 0.3;
-  vec3 shallowOcean = uBaseColor1 * 0.6;
-  vec3 shore = mix(uBaseColor1, uBaseColor2, 0.5);
-  vec3 lowland = uBaseColor2;
-  vec3 highland = uBaseColor3;
-  vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
+  float oceanMask = 1.0 - smoothstep(uOceanLevel - t, uOceanLevel + t, height);
+  gOceanMask = oceanMask;
 
-  vec3 color = deepOcean;
-  color = mix(color, shallowOcean, smoothstep(uOceanLevel - 0.12, uOceanLevel - 0.03, h));
-  color = mix(color, shore,        smoothstep(uOceanLevel - t, uOceanLevel + t, h));
-  color = mix(color, lowland,      smoothstep(uOceanLevel + 0.02, uOceanLevel + 0.12, h));
-  color = mix(color, highland,     smoothstep(0.6, 0.75, h));
+  if (oceanMask > 0.01) {
+    float depth = max(0.0, uOceanLevel - height);
+    vec3 terrainDerivs = hd.yzw;
+    vec3 oceanColor = oceanSurface(sp, s, depth, uWarpStrength);
+    vec3 oceanDerivs = gDetailDerivs;
+    if (oceanMask > 0.99) return oceanColor;
+
+    vec3 lowland = uBaseColor2;
+    vec3 highland = uBaseColor3;
+    vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
+
+    vec3 landColor = lowland;
+    landColor = mix(landColor, highland, smoothstep(0.6, 0.75, height));
+
+    float polarNoise = fbm(sp * 3.0 + vec3(s * 2.0), 0.3) * 0.12;
+    float polarFactor = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1);
+    polarFactor *= smoothstep(0.7, 0.3, uTemperature);
+    landColor = mix(landColor, polar, polarFactor);
+
+    float slope = length(hd.yzw);
+    landColor *= mix(1.0, 0.55, smoothstep(0.25, 1.5, slope * uSlopeness));
+
+    gDetailDerivs = mix(terrainDerivs, oceanDerivs, oceanMask);
+    return mix(landColor, oceanColor, oceanMask);
+  }
+
+  /* Pure land */
+  vec3 color = mix(uBaseColor1, uBaseColor2, 0.5);
+  color = mix(color, uBaseColor2, smoothstep(uOceanLevel + 0.02, uOceanLevel + 0.12, height));
+  color = mix(color, uBaseColor3, smoothstep(0.6, 0.75, height));
 
   float polarNoise = fbm(sp * 3.0 + vec3(s * 2.0), 0.3) * 0.12;
   float polarFactor = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1);
   polarFactor *= smoothstep(0.7, 0.3, uTemperature);
+  vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
   color = mix(color, polar, polarFactor);
 
   float slope = length(hd.yzw);
@@ -164,49 +244,27 @@ vec3 renderGas(vec3 sp, float s) {
 
 
 vec3 renderOcean(vec3 sp, float s) {
-  vec3 p = sp * 2.5;
-  float qx = fbm(p + vec3(s * 0.37, s * 1.13, s * 0.61), 0.6);
-  float qy = fbm(p + vec3(s * 1.83, s * 0.29, s * 1.47), 0.6);
-  float qz = fbm(p + vec3(s * 0.93, s * 2.11, s * 0.17), 0.6);
-  vec3 q = vec3(qx, qy, qz) * 2.0 - 1.0;
+  vec3 p = flowWarp(sp * 3.5, s, 0.25);
+  vec4 hd = fbmd(p + vec3(s), uSlopeness);
+  float height = hd.x * 0.5 + 0.5;
+  float t = 0.02;
 
-  vec3 np = p + q * 1.5;
-  float rx = fbm(np + vec3(s * 2.37, s * 0.53, s * 1.71), 0.7);
-  float ry = fbm(np + vec3(s * 0.67, s * 1.89, s * 0.33), 0.7);
-  vec3 r = vec3(rx, ry, rx - ry) * 2.0 - 1.0;
+  float depth = max(0.0, uOceanLevel - height);
+  float isOcean = 1.0 - smoothstep(uOceanLevel - t, uOceanLevel + t, height);
+  gOceanMask = isOcean;
 
-  vec3 rp = np + r * 1.3;
-  float sx = fbm(rp + vec3(s * 3.1, s * 0.41, s * 1.9), 0.5);
-  float sy = fbm(rp + vec3(s * 0.19, s * 2.7, s * 0.83), 0.5);
-  vec3 sw = vec3(sx, sy, sx + sy) * 2.0 - 1.0;
+  vec3 color = oceanSurface(sp, s, depth, uWarpStrength);
 
-  vec4 hd = fbmd(p + sw * 0.8, 0.8);
-  gDetailDerivs = hd.yzw;
-  float depthNoise = hd.x * 0.5 + 0.5;
+  if (isOcean < 0.99) {
+    vec3 landColor = uBaseColor2 * 1.2 + 0.1;
+    landColor = mix(landColor, uBaseColor3, smoothstep(uOceanLevel + 0.05, uOceanLevel + 0.2, height));
 
-  float lat = abs(sp.y);
-  float latBand = smoothstep(0.0, 0.7, lat);
+    float slope = length(hd.yzw);
+    landColor *= mix(1.0, 0.55, smoothstep(0.25, 1.5, slope * uSlopeness));
 
-  vec3 shallowWarm = uBaseColor1 * 1.1 + vec3(0.02, 0.04, 0.03);
-  vec3 midOcean = uBaseColor1 * 0.7;
-  vec3 deepCold = uBaseColor1 * 0.35;
-
-  vec3 color = mix(shallowWarm, midOcean, smoothstep(0.25, 0.5, depthNoise));
-  color = mix(color, deepCold, smoothstep(0.5, 0.75, depthNoise));
-
-  vec3 polarTint = mix(uBaseColor1, vec3(0.5, 0.6, 0.7), 0.4);
-  color = mix(color, polarTint, latBand * 0.3);
-
-  float stormIntensity = length(q) * 0.3 + length(r) * 0.25 + length(sw) * 0.2;
-  float whitecaps = pow(max(0.0, stormIntensity), 2.5);
-  color += vec3(whitecaps * 0.1);
-
-  float slope = length(hd.yzw);
-  color *= mix(1.0, 0.45, smoothstep(0.2, 1.2, slope));
-
-  float landHeight = depthNoise - uOceanLevel * 1.8 + 0.4;
-  float land = smoothstep(0.85, 0.9, landHeight);
-  color = mix(color, uBaseColor2 * 1.3 + 0.15, land);
+    color = mix(color, landColor, 1.0 - isOcean);
+    gDetailDerivs = mix(gDetailDerivs, hd.yzw, 1.0 - isOcean);
+  }
 
   return color;
 }
@@ -302,6 +360,8 @@ void main() {
   sp.z += churnN.z * churnAmt;
 
   gDetailDerivs = vec3(0.0);
+  gOceanMask = 0.0;
+  gWaveHeight = 0.0;
 
   vec3 color;
   if (uPlanetMode == 0)      color = renderRocky(sp, s);
@@ -347,12 +407,15 @@ void main() {
   float NdotL = dot(perturbedN, L);
   float lighting = smoothstep(-0.4, 0.5, NdotL) * 0.65 + 0.35;
 
-  /* Ocean/ice specular highlight */
+  /* Blinn-Phong specular — ocean uses gOceanMask + crest-height weighting */
   float specMask = 0.0;
-  if (uPlanetMode == 0) specMask = uSpecular * max(0.0, 1.0 - smoothstep(uOceanLevel - 0.02, uOceanLevel + 0.04, 0.5));
-  if (uPlanetMode == 3) specMask = uSpecular;
+  if (uPlanetMode == 0 || uPlanetMode == 3) specMask = uSpecular * gOceanMask;
   if (uPlanetMode == 4 || uPlanetMode == 6) specMask = uSpecular * 0.5;
-  float spec = specMask * pow(max(0.0, NdotL), 12.0) * 0.4;
+  /* Wave crests catch more light than troughs — only for ocean-bearing modes */
+  if (uPlanetMode == 0 || uPlanetMode == 3) specMask *= 0.7 + gWaveHeight * 0.6;
+  vec3 H = normalize(L + V);
+  float NdotH = max(0.0, dot(perturbedN, H));
+  float spec = specMask * pow(NdotH, 32.0) * 0.6;
 
   color = color * lighting + vec3(spec);
 

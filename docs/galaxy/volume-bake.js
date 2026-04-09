@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createRng } from './rng.js';
+import { STORES, volumeCacheKey, getEntry, putEntry } from './galaxy-cache.js';
 
 const VOLUME_SEED = 31337;
 const RESOLUTION = 128;
@@ -17,7 +18,6 @@ function grad3d(hash, x, y, z) {
 function buildPermutationTable(rng) {
   const p = new Uint8Array(256);
   for (let i = 0; i < 256; i++) p[i] = i;
-  /* Fisher-Yates shuffle with seeded RNG */
   for (let i = 255; i > 0; i--) {
     const j = Math.floor(rng.next() * (i + 1));
     [p[i], p[j]] = [p[j], p[i]];
@@ -67,15 +67,7 @@ function fbm3d(x, y, z, perm, octaves, lacunarity, gain) {
   return value / maxVal;
 }
 
-/* Bake seeded 3D FBM noise into a Data3DTexture for volumetric sampling */
-export function bakeVolumeTexture(opts = {}) {
-  const seed       = opts.seed ?? VOLUME_SEED;
-  const res        = opts.resolution ?? RESOLUTION;
-  const frequency  = opts.frequency ?? 4.0;
-  const octaves    = opts.octaves ?? 5;
-  const lacunarity = opts.lacunarity ?? 2.0;
-  const gain       = opts.gain ?? 0.5;
-
+function computeVolumeData(seed, res, frequency, octaves, lacunarity, gain) {
   const rng = createRng(seed);
   const perm = buildPermutationTable(rng);
   const data = new Uint8Array(res * res * res);
@@ -91,7 +83,10 @@ export function bakeVolumeTexture(opts = {}) {
       }
     }
   }
+  return data;
+}
 
+function dataToTexture(data, res) {
   const texture = new THREE.Data3DTexture(data, res, res, res);
   texture.format = THREE.RedFormat;
   texture.type = THREE.UnsignedByteType;
@@ -101,6 +96,28 @@ export function bakeVolumeTexture(opts = {}) {
   texture.wrapT = THREE.RepeatWrapping;
   texture.wrapR = THREE.RepeatWrapping;
   texture.needsUpdate = true;
-
   return texture;
+}
+
+/* Bake seeded 3D FBM noise, checking IndexedDB cache first */
+export async function bakeVolumeTexture(opts = {}) {
+  const seed       = opts.seed ?? VOLUME_SEED;
+  const res        = opts.resolution ?? RESOLUTION;
+  const frequency  = opts.frequency ?? 4.0;
+  const octaves    = opts.octaves ?? 5;
+  const lacunarity = opts.lacunarity ?? 2.0;
+  const gain       = opts.gain ?? 0.5;
+
+  const key = volumeCacheKey(seed, res, frequency, octaves, lacunarity, gain);
+  const cached = await getEntry(STORES.VOLUME, key);
+
+  if (cached) {
+    console.log('Volume texture: from cache');
+    return dataToTexture(cached, res);
+  }
+
+  const data = computeVolumeData(seed, res, frequency, octaves, lacunarity, gain);
+  putEntry(STORES.VOLUME, key, data);
+
+  return dataToTexture(data, res);
 }

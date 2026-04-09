@@ -86,6 +86,39 @@ float fbm(vec3 p, float slopeness) {
   return v;
 }
 
+/* Ridged FBM — sharp crests via folded noise, weight feedback so small
+   waves ride on large ones. Returns 0–~1.2 (can overshoot slightly).
+   Fixed upper bound loop for mobile WebGL2 driver portability. */
+float ridgedFbm(vec3 p, float freq, float lacunarity, int octaves) {
+  float sum = 0.0, amp = 0.5, weight = 1.0;
+  for (int i = 0; i < 6; i++) {
+    if (i >= octaves) break;
+    float n = 1.0 - abs(gnoised(p * freq).x);
+    n *= n;
+    n *= weight;
+    weight = clamp(n * 2.0, 0.0, 1.0);
+    sum += n * amp;
+    freq *= lacunarity;
+    amp *= 0.45;
+  }
+  return sum;
+}
+
+/* Single Gerstner wave on a unit sphere. Phase uses dot(dir, sp) so wave
+   fronts are great circles perpendicular to dir. Tangent-plane projection
+   makes waves naturally fade at the direction's poles. Returns vec4(height,
+   tangent-plane derivative.xyz) with analytic gradient — no finite differences.
+   Steepness amplifies the normal beyond geometric height, faking the horizontal
+   displacement that real Gerstner does via vertex push. */
+vec4 gerstnerWave(vec3 sp, vec3 dir, float freq, float amp, float steep, float phase) {
+  float dp = dot(dir, sp);
+  float f = freq * dp + phase;
+  float height = amp * sin(f);
+  vec3 tangentDir = dir - dp * sp;
+  vec3 deriv = amp * freq * cos(f) * (1.0 + steep) * tangentDir;
+  return vec4(height, deriv);
+}
+
 /* Kelvin temperature to RGB — Tanner Helland algorithm, HDR uncapped to 5.0 */
 vec3 blackbodyRGB(float kelvin) {
   float t = clamp(kelvin, 1000.0, 40000.0) / 100.0;

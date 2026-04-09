@@ -7,7 +7,8 @@ const DETAIL_SEGMENTS = 48;
 const DETAIL_ROWS = 32;
 const MARKER_RADIUS = 2.5;
 const ACTIVATE_DIST = 18;
-const POOL_SIZE = 8;
+const POOL_SIZE = 12;
+const MAX_ACTIVATE_PER_FRAME = 4;
 
 /**
  * Creates the detail mesh manager for close-up planet/moon rendering.
@@ -89,11 +90,16 @@ export async function createPlanetDetail(renderer) {
   for (const entry of pool) container.add(entry.group);
 
   let cachedPlanetIds = null;
+  let siblingIndex = null;
+  let paramsCache = null;
   const activeIds = new Set();
+  const activationQueue = [];
+
+  function setParamsCache(cache) { paramsCache = cache; }
 
   function activate(entry, bodyId, body, bodies) {
-    const parentStar = findParentStar(bodyId, bodies);
-    const params = parsePlanetType(body, bodyId, parentStar, bodies);
+    const cached = paramsCache?.get(bodyId);
+    const params = cached || parsePlanetType(body, bodyId, findParentStar(bodyId, bodies), bodies);
     const seed = hashString(bodyId);
     const u = entry.mat.uniforms;
 
@@ -148,17 +154,33 @@ export async function createPlanetDetail(renderer) {
     entry.group.visible = false;
   }
 
-  /* Find siblings of a body — all bodies sharing the same parent */
+  /* Build parent→children index once, then O(1) lookups */
+  function ensureSiblingIndex(bodies) {
+    if (siblingIndex) return;
+    siblingIndex = new Map();
+    for (const [id, body] of Object.entries(bodies)) {
+      const t = body.type;
+      if (t !== 'planet' && t !== 'moon') continue;
+      const pid = body.parentId;
+      if (!pid) continue;
+      let arr = siblingIndex.get(pid);
+      if (!arr) { arr = []; siblingIndex.set(pid, arr); }
+      arr.push(id);
+    }
+  }
+
   function getSiblings(bodyId, bodies) {
     const parentId = bodies[bodyId]?.parentId;
     if (!parentId) return [];
-    if (!cachedPlanetIds) {
-      cachedPlanetIds = Object.keys(bodies).filter(id => {
-        const t = bodies[id].type;
-        return t === 'planet' || t === 'moon';
-      });
-    }
-    return cachedPlanetIds.filter(id => id !== bodyId && bodies[id].parentId === parentId);
+    ensureSiblingIndex(bodies);
+    const children = siblingIndex.get(parentId);
+    if (!children) return [];
+    return children.filter(id => id !== bodyId);
+  }
+
+  function getChildren(bodyId, bodies) {
+    ensureSiblingIndex(bodies);
+    return siblingIndex.get(bodyId) || [];
   }
 
   /**
@@ -196,29 +218,31 @@ export async function createPlanetDetail(renderer) {
       }
     }
 
-    /* Build target list: anchor + all siblings, sorted closest-first, capped by pool */
+    /* Build target list: anchor + siblings + anchor's children, closest-first, capped by pool */
     const targetIds = [];
     if (anchorId) {
       targetIds.push(anchorId);
-      const siblings = getSiblings(anchorId, bodies);
-      if (siblings.length > 0) {
-        siblings.sort((a, b) => {
-          const wa = bodyWorldPos.get(a), wb = bodyWorldPos.get(b);
-          if (!wa) return 1;
-          if (!wb) return -1;
-          const da = (cameraPos.x - wa.x) ** 2 + (cameraPos.y - wa.y) ** 2 + (cameraPos.z - wa.z) ** 2;
-          const db = (cameraPos.x - wb.x) ** 2 + (cameraPos.y - wb.y) ** 2 + (cameraPos.z - wb.z) ** 2;
-          return da - db;
-        });
-        for (let i = 0; i < Math.min(POOL_SIZE - 1, siblings.length); i++) {
-          targetIds.push(siblings[i]);
-        }
+
+      const distSq = (id) => {
+        const w = bodyWorldPos.get(id);
+        if (!w) return 1e9;
+        return (cameraPos.x - w.x) ** 2 + (cameraPos.y - w.y) ** 2 + (cameraPos.z - w.z) ** 2;
+      };
+
+      /* Collect siblings + children, dedupe, sort by distance */
+      const candidates = new Set();
+      for (const id of getSiblings(anchorId, bodies)) candidates.add(id);
+      for (const id of getChildren(anchorId, bodies)) candidates.add(id);
+
+      const sorted = [...candidates].sort((a, b) => distSq(a) - distSq(b));
+      for (let i = 0; i < Math.min(POOL_SIZE - 1, sorted.length); i++) {
+        targetIds.push(sorted[i]);
       }
     }
 
     const desired = new Set(targetIds);
 
-    /* Deactivate pool entries no longer needed */
+    /* Deactivate pool entries no longer needed (immediate — no perf cost) */
     for (const entry of pool) {
       if (entry.bodyId && !desired.has(entry.bodyId)) {
         activeIds.delete(entry.bodyId);
@@ -226,13 +250,27 @@ export async function createPlanetDetail(renderer) {
       }
     }
 
-    /* Activate new bodies from the pool */
+    /* Flush stale queue entries that are no longer desired */
+    for (let i = activationQueue.length - 1; i >= 0; i--) {
+      if (!desired.has(activationQueue[i])) activationQueue.splice(i, 1);
+    }
+
+    /* Enqueue new bodies that aren't active or already queued */
     for (const id of targetIds) {
+      if (activeIds.has(id) || activationQueue.includes(id)) continue;
+      activationQueue.push(id);
+    }
+
+    /* Drain queue with per-frame budget */
+    let activated = 0;
+    while (activationQueue.length > 0 && activated < MAX_ACTIVATE_PER_FRAME) {
+      const id = activationQueue.shift();
       if (activeIds.has(id)) continue;
       const freeEntry = pool.find(e => !e.bodyId);
       if (!freeEntry) break;
       activate(freeEntry, id, bodies[id], bodies);
       activeIds.add(id);
+      activated++;
     }
 
     /* Update all active entries */
@@ -265,6 +303,18 @@ export async function createPlanetDetail(renderer) {
     return new Set(activeIds);
   }
 
+  function invalidateCaches() {
+    siblingIndex = null;
+    cachedPlanetIds = null;
+    paramsCache = null;
+    activationQueue.length = 0;
+    /* Force re-activation so pool entries pick up fresh params after rebake */
+    for (const entry of pool) {
+      if (entry.bodyId) deactivate(entry);
+    }
+    activeIds.clear();
+  }
+
   function dispose() {
     surfaceGeo.dispose();
     for (const entry of pool) {
@@ -274,5 +324,5 @@ export async function createPlanetDetail(renderer) {
     }
   }
 
-  return { update, container, dispose };
+  return { update, container, dispose, setParamsCache, invalidateCaches };
 }

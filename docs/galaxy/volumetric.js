@@ -157,8 +157,10 @@ export async function createVolumetric(scene, renderer) {
   const { vert, frag } = await loadShaderPair('volumetric');
   const rng = createRng(VOLUMETRIC_SEED);
 
-  const volumeTex1 = bakeVolumeTexture({ seed: 31337, frequency: 4.0, octaves: 5 });
-  const volumeTex2 = bakeVolumeTexture({ seed: 80085, frequency: 3.0, octaves: 4 });
+  const [volumeTex1, volumeTex2] = await Promise.all([
+    bakeVolumeTexture({ seed: 31337, frequency: 4.0, octaves: 5 }),
+    bakeVolumeTexture({ seed: 80085, frequency: 3.0, octaves: 4 }),
+  ]);
 
   /* Sphere container for raymarch; BackSide rendering handles fly-through */
   const sphereGeo = new THREE.SphereGeometry(0.5, 16, 12);

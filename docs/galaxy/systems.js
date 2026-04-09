@@ -110,6 +110,25 @@ function solveKepler(M, e) {
   return E;
 }
 
+/* Perifocal → ecliptic rotation as a flat column-major mat3 for the orbit shader.
+   Column-major because Three.js Matrix3.set() is row-major but .elements is column-major,
+   and ShaderMaterial passes .elements directly to GLSL mat3. */
+function orbitMatrix(omega, Omega, incl) {
+  const cw = Math.cos(omega), sw = Math.sin(omega);
+  const cO = Math.cos(Omega), sO = Math.sin(Omega);
+  const cI = Math.cos(incl),  sI = Math.sin(incl);
+  const m = new THREE.Matrix3();
+  /* Row 0: x coefficients for px, py, (unused pz=0) */
+  /* Row 1: y coefficients */
+  /* Row 2: z coefficients */
+  m.set(
+    cO*cw - sO*sw*cI,  -cO*sw - sO*cw*cI,  0,
+    sw*sI,              cw*sI,               0,
+    sO*cw + cO*sw*cI,   -sO*sw + cO*cw*cI,  0
+  );
+  return m;
+}
+
 /* Line segment vs sphere — returns true if the segment passes through the sphere */
 function lineHitsSphere(from, to, center, radius) {
   const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z;
@@ -123,26 +142,6 @@ function lineHitsSphere(from, to, center, radius) {
   const t1 = (-b - sq) / (2 * a), t2 = (-b + sq) / (2 * a);
   /* Exclude endpoint neighborhoods so the line's own terminals don't self-block */
   return (t1 > 0.05 && t1 < 0.95) || (t2 > 0.05 && t2 < 0.95) || (t1 < 0.05 && t2 > 0.95);
-}
-
-/* Compute orbit ellipse vertices in parent-relative coordinates */
-function computeOrbitPath(orbital, segments = 64) {
-  const { a, e, incl, omega, Omega } = orbital;
-  const positions = new Float32Array((segments + 1) * 3);
-  const cw = Math.cos(omega), sw = Math.sin(omega);
-  const ci = Math.cos(incl),  si = Math.sin(incl);
-  const cO = Math.cos(Omega), sO = Math.sin(Omega);
-  const b = Math.sqrt(1 - e * e);
-  for (let i = 0; i <= segments; i++) {
-    const E = (i / segments) * TWO_PI;
-    const px = a * (Math.cos(E) - e);
-    const py = a * b * Math.sin(E);
-    const j = i * 3;
-    positions[j]     = (cO * cw - sO * sw * ci) * px + (-cO * sw - sO * cw * ci) * py;
-    positions[j + 1] = sw * si * px + cw * si * py;
-    positions[j + 2] = (sO * cw + cO * sw * ci) * px + (-sO * sw + cO * cw * ci) * py;
-  }
-  return positions;
 }
 
 /* 3D offset from parent via Keplerian orbital elements (Y-up) */
@@ -240,10 +239,12 @@ export async function createSystems(scene, camera, renderer) {
 
   /* Orbit path lines — visible only when tracking */
   const orbitLines = new Map();
-  const orbitSolidTracked = new THREE.LineBasicMaterial({ color: 0xc0c0c8, transparent: true, opacity: 0.8, depthWrite: false });
-  const orbitSolidOther   = new THREE.LineBasicMaterial({ color: 0xc0c0c8, transparent: true, opacity: 0.5, depthWrite: false });
-  const orbitDashedTracked = new THREE.LineDashedMaterial({ color: 0xc0c0c8, transparent: true, opacity: 0.8, depthWrite: false, dashSize: 0.3, gapSize: 0.2 });
-  const orbitDashedOther   = new THREE.LineDashedMaterial({ color: 0xc0c0c8, transparent: true, opacity: 0.5, depthWrite: false, dashSize: 0.3, gapSize: 0.2 });
+  let orbitShaders = null;
+  let orbitGeo = null;
+  let wasPhotoMode = false;
+  let trackedOrbitId = null;
+  const ORBIT_LUCENCY = 0.85;
+  const ORBIT_ATTENUATE = 0.69;
 
   /* Hyperlane lines — always visible, thick Line2 */
   const hyperlaneLines = [];
@@ -392,12 +393,14 @@ export async function createSystems(scene, camera, renderer) {
       const newData = await bakePlanetAtlas(renderer, galaxyData.bodies);
       if (newData.atlas) {
         const oldAtlas = planetAtlasData?.atlas;
-        const oldDeriv = planetAtlasData?.derivAtlas;
         planetAtlasData = newData;
         planetAtlasMat.uniforms.uAtlas.value = newData.atlas;
         if (oldAtlas) oldAtlas.dispose();
-        if (oldDeriv) oldDeriv.dispose();
         planetDetailActiveIds = new Set();
+        if (planetDetail) {
+          planetDetail.invalidateCaches();
+          if (newData.paramsCache) planetDetail.setParamsCache(newData.paramsCache);
+        }
       }
     } catch (e) {
       console.warn('Planet atlas re-bake failed:', e);
@@ -436,6 +439,26 @@ export async function createSystems(scene, camera, renderer) {
     if (body.factionId && galaxyData.factions[body.factionId])
       return galaxyData.factions[body.factionId].color;
     return '#ffffff';
+  }
+
+  /* Orbit color: faction color, walking up the parent chain if needed */
+  const _orbitHSL = {};
+  function getOrbitColor(id, body) {
+    let hex;
+    let cur = body;
+    while (cur) {
+      if (cur.factionId && galaxyData.factions[cur.factionId]) {
+        hex = galaxyData.factions[cur.factionId].color;
+        break;
+      }
+      cur = cur.parentId ? galaxyData.bodies[cur.parentId] : null;
+    }
+    if (!hex) hex = body.visual?.color || '#c0c0c8';
+    /* Floor brightness so dark factions stay readable against deep space */
+    _color.set(hex);
+    _color.getHSL(_orbitHSL);
+    if (_orbitHSL.l < 0.35) _color.setHSL(_orbitHSL.h, _orbitHSL.s, 0.35);
+    return '#' + _color.getHexString();
   }
 
   /* White for GnGs + independents, lightened faction color for everyone else */
@@ -849,23 +872,56 @@ export async function createSystems(scene, camera, renderer) {
       hitboxes.push(mesh);
     }
 
-    /* Orbit path lines for each child body */
-    for (const [, ol] of orbitLines) markerScene.remove(ol.line);
+    /* Orbit path lines — GPU-computed Keplerian ellipses */
+    for (const [, ol] of orbitLines) { markerScene.remove(ol.line); ol.mat.dispose(); }
     orbitLines.clear();
-    for (const [id, meta] of bodyMeta) {
-      if (meta.depth === 0 || !meta.orbital) continue;
-      let rootId = meta.parentId;
-      let rm = bodyMeta.get(rootId);
-      while (rm && rm.depth > 0) { rootId = rm.parentId; rm = bodyMeta.get(rootId); }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(computeOrbitPath(meta.orbital), 3));
-      const isDashed = meta.depth >= 2;
-      const line = new THREE.LineLoop(geo, isDashed ? orbitDashedOther : orbitSolidOther);
-      if (isDashed) line.computeLineDistances();
-      line.renderOrder = 6;
-      line.visible = false;
-      markerScene.add(line);
-      orbitLines.set(id, { line, parentId: meta.parentId, rootId });
+    if (orbitShaders) {
+      if (!orbitGeo) {
+        /* Shared parametric geometry: position.x = t ∈ [0, 511/512) */
+        const ORBIT_VERTS = 512;
+        const verts = new Float32Array(ORBIT_VERTS * 3);
+        for (let i = 0; i < ORBIT_VERTS; i++) {
+          verts[i * 3] = i / ORBIT_VERTS;
+          verts[i * 3 + 1] = 0;
+          verts[i * 3 + 2] = 0;
+        }
+        orbitGeo = new THREE.BufferGeometry();
+        orbitGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      }
+      for (const [id, meta] of bodyMeta) {
+        if (meta.depth === 0 || !meta.orbital) continue;
+        let rootId = meta.parentId;
+        let rm = bodyMeta.get(rootId);
+        while (rm && rm.depth > 0) { rootId = rm.parentId; rm = bodyMeta.get(rootId); }
+        const body = galaxyData.bodies[id];
+        const color = getOrbitColor(id, body);
+        const mat = new THREE.ShaderMaterial({
+          vertexShader: orbitShaders.vert,
+          fragmentShader: orbitShaders.frag,
+          glslVersion: THREE.GLSL3,
+          uniforms: {
+            uA:           { value: meta.orbital.a },
+            uE:           { value: meta.orbital.e },
+            uOrbitMat:    { value: orbitMatrix(meta.orbital.omega, meta.orbital.Omega, meta.orbital.incl) },
+            uTrailStart:  { value: 0.0 },
+            uTrailLength: { value: 0.95 },
+            uAttenuate:   { value: ORBIT_ATTENUATE },
+            uLucency:     { value: ORBIT_LUCENCY },
+            uTracked:     { value: 0.0 },
+            uColor:       { value: new THREE.Color(color) },
+            uDashed:      { value: meta.depth >= 2 ? 1.0 : 0.0 },
+          },
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        const line = new THREE.LineLoop(orbitGeo, mat);
+        line.frustumCulled = false;
+        line.renderOrder = 6;
+        line.visible = false;
+        markerScene.add(line);
+        orbitLines.set(id, { line, mat, parentId: meta.parentId, rootId, orbital: meta.orbital });
+      }
     }
 
     /* Hyperlane lines (thick Line2 with orange→yellow→orange gradient) */
@@ -888,26 +944,18 @@ export async function createSystems(scene, camera, renderer) {
 
   /* Show orbit paths for a tracked body's entire system */
   function showOrbitsForBody(bodyId) {
-    for (const [id, ol] of orbitLines) {
-      let rootId = ol.rootId;
-      let trackedRoot = bodyId;
-      let tm = bodyMeta.get(trackedRoot);
-      while (tm && tm.depth > 0) { trackedRoot = tm.parentId; tm = bodyMeta.get(trackedRoot); }
+    trackedOrbitId = bodyId;
+    let trackedRoot = bodyId;
+    let tm = bodyMeta.get(trackedRoot);
+    while (tm && tm.depth > 0) { trackedRoot = tm.parentId; tm = bodyMeta.get(trackedRoot); }
 
-      if (rootId === trackedRoot) {
-        ol.line.visible = true;
-        const isDashed = bodyMeta.get(id).depth >= 2;
-        ol.line.material = id === bodyId
-          ? (isDashed ? orbitDashedTracked : orbitSolidTracked)
-          : (isDashed ? orbitDashedOther : orbitSolidOther);
-        if (isDashed) ol.line.computeLineDistances();
-      } else {
-        ol.line.visible = false;
-      }
+    for (const [id, ol] of orbitLines) {
+      ol.line.visible = ol.rootId === trackedRoot;
     }
   }
 
   function hideOrbits() {
+    trackedOrbitId = null;
     for (const [, ol] of orbitLines) ol.line.visible = false;
   }
 
@@ -1261,11 +1309,26 @@ export async function createSystems(scene, camera, renderer) {
     /* Photo Mode (F2) — hide orbits and hyperlanes for clean captures */
     const photoMode = document.body.classList.contains('screenshot-active');
 
-    for (const [, ol] of orbitLines) {
-      if (photoMode) { ol.line.visible = false; continue; }
+    if (photoMode) {
+      for (const [, ol] of orbitLines) ol.line.visible = false;
+    } else if (wasPhotoMode && trackedOrbitId) {
+      showOrbitsForBody(trackedOrbitId);
+    }
+    wasPhotoMode = photoMode;
+
+    for (const [id, ol] of orbitLines) {
       if (!ol.line.visible) continue;
       const pw = bodyWorldPos.get(ol.parentId);
       if (pw) ol.line.position.set(pw.x, pw.y, pw.z);
+      const orb = ol.orbital;
+      const M = orb.M0 + (TWO_PI / orb.period) * rotationTime;
+      const E = solveKepler(M, orb.e);
+      ol.mat.uniforms.uTrailStart.value = ((E % TWO_PI) + TWO_PI) % TWO_PI / TWO_PI;
+      /* Highlight tracked and/or selected orbit (no double-up if both) */
+      const highlighted = id === trackedOrbitId || id === selectedId;
+      ol.mat.uniforms.uTracked.value = highlighted ? 1.0 : 0.0;
+      ol.mat.uniforms.uAttenuate.value = highlighted ? ORBIT_ATTENUATE * 0.5 : ORBIT_ATTENUATE;
+      ol.mat.uniforms.uLucency.value = highlighted ? ORBIT_LUCENCY * 2.0 : ORBIT_LUCENCY;
     }
 
     /* Hyperlane endpoints + throttled occlusion checks */
@@ -1526,6 +1589,13 @@ export async function createSystems(scene, camera, renderer) {
     console.warn('Star atlas bake failed, falling back to basic material:', e);
   }
 
+  /* Orbit shaders — independent of atlas pipeline so a bake failure doesn't kill orbits */
+  try {
+    orbitShaders = await loadShaderPair('orbit');
+  } catch (e) {
+    console.warn('Orbit shaders failed to load, orbits disabled:', e);
+  }
+
   /* Planet atlas — same pattern, separate InstancedMesh */
   try {
     const [planetShaders, noiseSrc] = await Promise.all([
@@ -1549,6 +1619,7 @@ export async function createSystems(scene, camera, renderer) {
       planetAtlasMat.uniforms.uAtlas.value = planetAtlasData.atlas;
     }
     planetDetail = await createPlanetDetail(renderer);
+    if (planetAtlasData.paramsCache) planetDetail.setParamsCache(planetAtlasData.paramsCache);
     markerScene.add(planetDetail.container);
   } catch (e) {
     console.warn('Planet atlas bake failed, falling back to basic material:', e);

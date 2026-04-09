@@ -603,7 +603,7 @@
       "type": "star",
       "subtype": "pulsar",
       "name": "NJ12",
-      "description": "Galaxy's first known pulsar. Closest to Cerulean Plains, spinward of Walprug.",
+      "description": "Galaxy's first known pulsar. Closest to Cerulean Plains, spinward of Walpurg.",
       "notes": "",
       "position": {
         "x": -146,
@@ -679,6 +679,63 @@
       "tags": [],
       "hasFuddruckers": false,
       "colonizedCode": 14
+    },
+    "mercgolia-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Mercgolia I",
+      "description": "",
+      "notes": "",
+      "class": null,
+      "position": null,
+      "parentId": "mercgolia",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "mercgolia-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Mercgolia II",
+      "description": "",
+      "notes": "",
+      "class": null,
+      "position": null,
+      "parentId": "mercgolia",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "mercgolia-planet-3": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Mercgolia III",
+      "description": "",
+      "notes": "",
+      "class": null,
+      "position": null,
+      "parentId": "mercgolia",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "neo-gio",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
     },
     "dunroid": {
       "type": "star",
@@ -763,10 +820,10 @@
     },
     "vadfiner": {
       "type": "star",
-      "subtype": "red-dwarf",
+      "subtype": "wolf-rayet",
       "name": "Vadfiner",
-      "description": "Rimward of Gas-N-Gripe 6",
-      "notes": "",
+      "description": "Rimward of Gas-N-Gripe 6. Stripped-envelope massive star; extreme stellar winds have scoured, ablated, or ejected any former planetary system.",
+      "notes": "Ships give it a wide berth.",
       "position": {
         "x": 131,
         "y": -1.1,
@@ -775,11 +832,11 @@
       "parentId": null,
       "orbital": null,
       "visual": {
-        "size": 0.8,
-        "glow": 0.4,
-        "spectralColor": "#ff6b4a"
+        "size": 2.0,
+        "glow": 0.9,
+        "spectralColor": "#aaccff"
       },
-      "spectralClass": "M2V",
+      "spectralClass": "WN5",
       "luminosity": null,
       "mass": null,
       "factionId": "comexo",
@@ -1135,7 +1192,7 @@
       "spectralClass": "M3V",
       "luminosity": null,
       "mass": null,
-      "factionId": "independent",
+      "factionId": "business-de-borto",
       "zoneId": "rim",
       "tags": [],
       "hasFuddruckers": false,
@@ -1167,6 +1224,44 @@
       "tags": [],
       "hasFuddruckers": false,
       "colonizedCode": 31
+    },
+    "fonox-planet-1": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Fonox I",
+      "description": "",
+      "notes": "",
+      "class": null,
+      "position": null,
+      "parentId": "fonox",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
+    },
+    "fonox-planet-2": {
+      "type": "planet",
+      "subtype": null,
+      "name": "Fonox II",
+      "description": "",
+      "notes": "",
+      "class": null,
+      "position": null,
+      "parentId": "fonox",
+      "orbital": null,
+      "visual": null,
+      "spectralClass": null,
+      "luminosity": null,
+      "mass": null,
+      "factionId": "comexo",
+      "zoneId": null,
+      "tags": [],
+      "hasFuddruckers": false
     },
     "vamburdia-lesser": {
       "type": "star",
@@ -1305,10 +1400,10 @@
     },
     "the-hungry-sun": {
       "type": "star",
-      "subtype": "wolf-rayet",
+      "subtype": "red-giant",
       "name": "The Hungry Sun",
-      "description": "Wolf-Rayet star in violent self-destruction. Stellar winds destabilizing the entire planetary system. Closest to Ivutlis, rimward of Halcyon.",
-      "notes": "Orbital destablization leading to planetary destruction underway.",
+      "description": "Dying red giant consuming its own planetary system. Closest to Ivutlis, rimward of Halcyon.",
+      "notes": "Orbital destabilization leading to planetary destruction underway.",
       "position": {
         "x": 52,
         "y": 3.2,
@@ -1318,11 +1413,11 @@
       "orbital": null,
       "visual": {
         "size": 2.5,
-        "glow": 0.9,
-        "spectralColor": "#9933cc",
+        "glow": 0.7,
+        "spectralColor": "#ff6633",
         "color": "#ff4422"
       },
-      "spectralClass": "WN8",
+      "spectralClass": "K2III",
       "luminosity": null,
       "mass": null,
       "factionId": "independent",
@@ -1460,7 +1555,7 @@
       "spectralClass": "M6V",
       "luminosity": null,
       "mass": null,
-      "factionId": "independent",
+      "factionId": "business-de-borto",
       "zoneId": "rim",
       "tags": [],
       "hasFuddruckers": false,
@@ -2383,7 +2478,7 @@
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
-      "factionId": "comexo",
+      "factionId": "independent",
       "zoneId": null,
       "tags": [
         "settlement"
@@ -2830,10 +2925,10 @@
       ],
       "hasFuddruckers": false
     },
-    "modina": {
+    "midona-moon": {
       "type": "moon",
       "subtype": null,
-      "name": "Modina",
+      "name": "MM-I",
       "description": "",
       "notes": "A-Class",
       "class": "A",
@@ -2958,7 +3053,7 @@
       ],
       "hasFuddruckers": false
     },
-    "new-name": {
+    "parcae": {
       "type": "planet",
       "subtype": null,
       "name": "Parcae",
@@ -3912,9 +4007,9 @@
     },
     "elysium": {
       "type": "station",
-      "subtype": null,
+      "subtype": "science",
       "name": "Elysium",
-      "description": "",
+      "description": "Heavily shielded science station in close orbit around the galaxy's only known pulsar.",
       "notes": "A-Class",
       "class": "A",
       "position": null,
@@ -4062,7 +4157,7 @@
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
-      "factionId": "independent",
+      "factionId": "comexo",
       "zoneId": null,
       "tags": [
         "colony"
@@ -4366,16 +4461,16 @@
       "subtype": "military",
       "name": "Alfpas OSS 1",
       "description": "",
-      "notes": "X-Class",
-      "class": "X",
+      "notes": "A-Class",
+      "class": "A",
       "position": null,
       "parentId": "alfpas",
-      "orbital": null,
+      "orbital": { "order": 1 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
-      "factionId": "independent",
+      "factionId": "neo-gio",
       "zoneId": null,
       "tags": [
         "military"
@@ -4538,8 +4633,8 @@
       "subtype": null,
       "name": "Gunonine I",
       "description": "",
-      "notes": "Class U",
-      "class": "U",
+      "notes": "C-Class",
+      "class": "C",
       "position": null,
       "parentId": "gunonine",
       "orbital": {
@@ -4603,7 +4698,7 @@
       "hasFuddruckers": false
     },
     "encaged-in-stations": {
-      "type": "station",
+      "type": "planet",
       "subtype": null,
       "name": "Gunonine IV",
       "subtitle": "encaged in stations",
@@ -4927,16 +5022,16 @@
       "subtype": "military",
       "name": "Alfpas OSS 2",
       "description": "",
-      "notes": "A-Class",
-      "class": "A",
+      "notes": "X-Class",
+      "class": "X",
       "position": null,
       "parentId": "alfpas",
-      "orbital": null,
+      "orbital": { "order": 2 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
-      "factionId": "neo-gio",
+      "factionId": "independent",
       "zoneId": null,
       "tags": [
         "military"
@@ -4952,7 +5047,7 @@
       "class": "C",
       "position": null,
       "parentId": "alfpas",
-      "orbital": null,
+      "orbital": { "order": 3 },
       "visual": null,
       "spectralClass": null,
       "luminosity": null,
@@ -5617,7 +5712,9 @@
         "a": 9.0
       },
       "visual": {
-        "color": "#1a5276"
+        "color": "#1a5276",
+        "warpStrength": 0.95,
+        "oceanLevel": 0.99
       },
       "spectralClass": null,
       "luminosity": null,
