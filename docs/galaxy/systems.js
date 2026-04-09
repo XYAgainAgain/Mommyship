@@ -772,6 +772,7 @@ export async function createSystems(scene, camera, renderer) {
       const pCrossfades = new Float32Array(planetIds.length);
       const pLightDirs = new Float32Array(planetIds.length * 3);
       const pChurns = new Float32Array(planetIds.length);
+      const pAtmos = new Float32Array(planetIds.length * 4);
 
       for (let i = 0; i < planetIds.length; i++) {
         const id = planetIds[i];
@@ -789,6 +790,18 @@ export async function createSystems(scene, camera, renderer) {
         /* Default light dir — updated per frame */
         pLightDirs[i * 3] = 1; pLightDirs[i * 3 + 1] = 0.3; pLightDirs[i * 3 + 2] = 0;
         pChurns[i] = planetAtlasData.churnMap?.get(id) ?? 0;
+
+        const pcache = planetAtlasData.paramsCache?.get(id);
+        if (pcache) {
+          _color.set(pcache.atmosphereTint);
+          pAtmos[i * 4]     = _color.r;
+          pAtmos[i * 4 + 1] = _color.g;
+          pAtmos[i * 4 + 2] = _color.b;
+          pAtmos[i * 4 + 3] = pcache.atmosphereIntensity;
+        } else {
+          pAtmos[i * 4] = 0.53; pAtmos[i * 4 + 1] = 0.67;
+          pAtmos[i * 4 + 2] = 0.8; pAtmos[i * 4 + 3] = 0.2;
+        }
 
         /* Axial rotation — random tilt + speed + direction per body */
         const spinRng = createRng(hashString(id) + 333);
@@ -809,6 +822,7 @@ export async function createSystems(scene, camera, renderer) {
       planetMarkers.geometry.setAttribute('aCrossfade', planetCrossfadeAttr);
       planetMarkers.geometry.setAttribute('aLightDir', planetLightDirAttr);
       planetMarkers.geometry.setAttribute('aChurn', new THREE.InstancedBufferAttribute(pChurns, 1));
+      planetMarkers.geometry.setAttribute('aAtmosphere', new THREE.InstancedBufferAttribute(pAtmos, 4));
 
       planetMarkers.instanceMatrix.needsUpdate = true;
       if (planetMarkers.instanceColor) planetMarkers.instanceColor.needsUpdate = true;

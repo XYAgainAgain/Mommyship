@@ -11,6 +11,8 @@ in vec3 vInstanceColor;
 in vec3 vLightDir;
 in vec3 vLocalPos;
 in float vChurn;
+flat in vec4 vAtmosphere;
+in vec3 vViewDir;
 
 out vec4 fragColor;
 
@@ -51,6 +53,17 @@ void main() {
   vec3 litColor = texColor * lighting + vec3(spec);
 
   vec3 color = mix(vInstanceColor, litColor, vCrossfade);
+
+  /* Fresnel rim atmosphere — 3-layer with tight bright limb, sun-masked */
+  float NdotV_rim = max(0.0, dot(N, normalize(vViewDir)));
+  float rimEdge = 1.0 - NdotV_rim;
+  float rim = pow(rimEdge, 24.0) * 1.0 + pow(rimEdge, 8.0) * 0.5 + pow(rimEdge, 3.0) * 0.15;
+  float sunMask = smoothstep(-0.2, 0.5, dot(N, L));
+  float atmoDensity = vAtmosphere.w;
+  /* Minimum reflected-light rim even on airless bodies */
+  float rimGlow = atmoDensity * rim * (0.15 + sunMask * 0.85);
+  rimGlow = max(rimGlow, pow(rimEdge, 10.0) * 0.06 * sunMask);
+  color += vAtmosphere.xyz * rimGlow * vCrossfade;
 
   fragColor = vec4(color, 1.0);
 }

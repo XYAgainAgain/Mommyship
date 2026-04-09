@@ -5714,7 +5714,12 @@
       "visual": {
         "color": "#1a5276",
         "warpStrength": 0.95,
-        "oceanLevel": 0.99
+        "oceanLevel": 0.99,
+        "atmosphereIntensity": 0.7,
+        "atmosphereTint": "#5599bb",
+        "cloudCover": 0.80,
+        "cloudColor": "#3a4550",
+        "storminess": 0.95
       },
       "spectralClass": null,
       "luminosity": null,
@@ -5739,7 +5744,10 @@
         "order": 1
       },
       "visual": {
-        "color": "#4a4a50"
+        "color": "#4a4a50",
+        "atmosphereIntensity": 0.0,
+        "cloudCover": 0.0,
+        "storminess": 0.0
       },
       "spectralClass": null,
       "luminosity": null,

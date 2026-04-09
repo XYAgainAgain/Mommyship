@@ -44,6 +44,9 @@ export async function createPlanetDetail(renderer) {
         uBaseColor3:        { value: new THREE.Color() },
         uAtmoIntensity:     { value: 0.2 },
         uAtmoTint:          { value: new THREE.Color() },
+        uCloudCover:        { value: 0.0 },
+        uCloudColor:        { value: new THREE.Color(1, 1, 1) },
+        uStorminess:        { value: 0.0 },
         uBandCount:         { value: 8.0 },
         uWarpStrength:      { value: 0.0 },
         uStormSize:         { value: 0.0 },
@@ -115,6 +118,9 @@ export async function createPlanetDetail(renderer) {
     u.uBaseColor3.value.set(params.baseColor3);
     u.uAtmoIntensity.value     = params.atmosphereIntensity;
     u.uAtmoTint.value.set(params.atmosphereTint);
+    u.uCloudCover.value        = params.cloudCover ?? 0;
+    u.uCloudColor.value.set(params.cloudColor ?? '#ffffff');
+    u.uStorminess.value        = params.storminess ?? 0;
     u.uBandCount.value         = params.bandCount;
     u.uWarpStrength.value      = params.warpStrength;
     u.uStormSize.value         = params.stormSize;
@@ -229,8 +235,11 @@ export async function createPlanetDetail(renderer) {
         return (cameraPos.x - w.x) ** 2 + (cameraPos.y - w.y) ** 2 + (cameraPos.z - w.z) ** 2;
       };
 
-      /* Collect siblings + children, dedupe, sort by distance */
+      /* Collect parent + siblings + children, dedupe, sort by distance */
       const candidates = new Set();
+      const parentId = bodies[anchorId]?.parentId;
+      if (parentId && (bodies[parentId]?.type === 'planet' || bodies[parentId]?.type === 'moon'))
+        candidates.add(parentId);
       for (const id of getSiblings(anchorId, bodies)) candidates.add(id);
       for (const id of getChildren(anchorId, bodies)) candidates.add(id);
 

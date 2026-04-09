@@ -262,6 +262,10 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     atmosphereTint:      vis.atmosphereTint ?? subtypeDefaults.atmosphereTint,
     atmosphereIntensity: vis.atmosphereIntensity ?? subtypeDefaults.atmosphereIntensity,
 
+    cloudCover:          vis.cloudCover ?? subtypeDefaults.cloudCover,
+    cloudColor:          vis.cloudColor ?? subtypeDefaults.cloudColor,
+    storminess:          vis.storminess ?? subtypeDefaults.storminess,
+
     /* Gas giant params */
     bandCount:           vis.bandCount ?? subtypeDefaults.bandCount,
     warpStrength:        vis.warpStrength ?? subtypeDefaults.warpStrength,
@@ -289,6 +293,7 @@ function getSubtypeDefaults(subtype, rng, temperature) {
   const base = {
     slopeness: 1.0, oceanLevel: -1.0, craterDensity: 0.0, specular: 0.0,
     displacementAmp: 0.03, atmosphereTint: '#88aacc', atmosphereIntensity: 0.2,
+    cloudCover: 0.0, cloudColor: '#ffffff', storminess: 0.0,
     bandCount: 0, warpStrength: 0.0, stormSize: 0.0,
     crackScale: 5.0, subsurfaceColor: '#335588', emissiveIntensity: 0.0,
     emissiveColor: '#000000', bulbosity: 0.0, churn: 0.0,
@@ -304,6 +309,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         displacementAmp: 0.03 + rng.next() * 0.02,
         atmosphereTint: '#6699cc',
         atmosphereIntensity: 0.25 + rng.next() * 0.15,
+        cloudCover: 0.4 + rng.next() * 0.2,
+        cloudColor: '#e8eef4',
+        storminess: 0.1 + rng.next() * 0.15,
       };
 
     case 'barren':
@@ -325,6 +333,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         atmosphereIntensity: 0.3 + rng.next() * 0.2,
         displacementAmp: 0.0,
         churn: 0.6 + rng.next() * 0.3,
+        cloudCover: 0.25 + rng.next() * 0.25,
+        cloudColor: temperature > 0.5 ? '#eebb88' : '#aaccdd',
+        storminess: 0.3 + rng.next() * 0.3,
       };
 
     case 'ocean':
@@ -337,6 +348,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         atmosphereIntensity: 0.35 + rng.next() * 0.15,
         churn: 0.8 + rng.next() * 0.2,
         displacementAmp: 0.01,
+        cloudCover: 0.35 + rng.next() * 0.2,
+        cloudColor: '#d8e8f0',
+        storminess: 0.2 + rng.next() * 0.3,
       };
 
     case 'ice':
@@ -347,6 +361,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         specular: 0.5 + rng.next() * 0.3,
         atmosphereTint: '#aabbcc',
         atmosphereIntensity: 0.1 + rng.next() * 0.1,
+        cloudCover: 0.15 + rng.next() * 0.2,
+        cloudColor: '#ccddf0',
+        storminess: rng.next() * 0.1,
       };
 
     case 'volcanic':
@@ -357,6 +374,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         emissiveColor: temperature > 0.5 ? '#ff4400' : '#2266dd',
         atmosphereTint: temperature > 0.5 ? '#aa4422' : '#556688',
         atmosphereIntensity: 0.2 + rng.next() * 0.15,
+        cloudCover: 0.15 + rng.next() * 0.2,
+        cloudColor: temperature > 0.5 ? '#553322' : '#334455',
+        storminess: 0.2 + rng.next() * 0.2,
       };
 
     case 'crystalline':
@@ -377,6 +397,9 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         emissiveColor: '#22ccaa',
         atmosphereTint: '#66aa88',
         atmosphereIntensity: 0.25 + rng.next() * 0.15,
+        cloudCover: 0.3 + rng.next() * 0.2,
+        cloudColor: '#44aa66',
+        storminess: 0.1 + rng.next() * 0.1,
       };
 
     default:
