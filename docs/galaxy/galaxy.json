@@ -5717,9 +5717,9 @@
         "oceanLevel": 0.99,
         "atmosphereIntensity": 0.7,
         "atmosphereTint": "#5599bb",
-        "cloudCover": 0.80,
+        "cloudCover": 0.65,
         "cloudColor": "#3a4550",
-        "storminess": 0.95
+        "storminess": 0.85
       },
       "spectralClass": null,
       "luminosity": null,

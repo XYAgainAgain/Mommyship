@@ -114,7 +114,10 @@ function generatePalette(rng, temperature, subtype) {
     baseHue = rng.next();
   }
 
-  const colorAngle = 0.04 + rng.next() * 0.12;
+  /* Gas giants need tighter hue spread so bands stay in the same color family */
+  const colorAngle = subtype === 'gas'
+    ? 0.02 + rng.next() * 0.06
+    : 0.04 + rng.next() * 0.12;
 
   /* Subtype-specific saturation and lightness */
   let baseSat, baseLit;
@@ -132,8 +135,13 @@ function generatePalette(rng, temperature, subtype) {
       baseLit = 0.6 + rng.next() * 0.2;
       break;
     case 'gas':
-      baseSat = 0.3 + rng.next() * 0.35;
-      baseLit = 0.35 + rng.next() * 0.2;
+      /* Warm = muted amber/cream (Jupiter/Saturn), cold = richer blue-green (Neptune) */
+      baseSat = temperature > 0.5
+        ? 0.15 + rng.next() * 0.2
+        : 0.25 + rng.next() * 0.2;
+      baseLit = temperature > 0.5
+        ? 0.50 + rng.next() * 0.2
+        : 0.35 + rng.next() * 0.2;
       break;
     case 'volcanic':
       baseSat = 0.3 + rng.next() * 0.3;
@@ -328,7 +336,7 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         slopeness: 0.4 + rng.next() * 0.3,
         bandCount: 5 + Math.floor(rng.next() * 8),
         warpStrength: 0.1 + rng.next() * 0.15,
-        stormSize: rng.next() < 0.4 ? 0.3 + rng.next() * 0.5 : 0.0,
+        stormSize: rng.next() < 0.7 ? 0.4 + rng.next() * 0.6 : 0.0,
         atmosphereTint: temperature > 0.5 ? '#cc8844' : '#4488cc',
         atmosphereIntensity: 0.3 + rng.next() * 0.2,
         displacementAmp: 0.0,

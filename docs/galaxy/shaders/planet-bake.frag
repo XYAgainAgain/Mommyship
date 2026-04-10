@@ -211,50 +211,107 @@ vec4 renderBarren(vec3 sp, float s) {
 
 vec4 renderGas(vec3 sp, float s) {
   float lat = sp.y;
+  float lon = atan(sp.z, sp.x);
 
-  /* Band-first architecture: latitude bands are THE structure, warp just
-     makes their edges wobble. Noise is sampled in the xz-plane (longitude)
-     so the wobble varies around the equator, not vertically. */
+  /* Curl-based band warp — divergence-free flow circles latitude lines */
   vec3 lonP = vec3(sp.x * 3.0, sp.y * 0.5, sp.z * 3.0);
-  float wobble1 = fbm(lonP + vec3(s, 0.0, s * 0.7), 0.4);
-  float wobble2 = fbm(lonP * 1.7 + vec3(s * 1.3, 0.0, s * 0.3), 0.3);
+  vec4 curlN = gnoised(lonP + vec3(s * 0.7, 0.0, s * 1.1));
+  float curlWarp = (curlN.w * sp.x - curlN.y * sp.z);
+  float meander1 = fbm(lonP + vec3(s, 0.0, s * 0.7), 0.4);
+  float meander2 = fbm(lonP + vec3(meander1 * 0.5 + s * 2.1), 0.35);
   float warpedLat = lat
-    + (wobble1 * 2.0 - 1.0) * uWarpStrength * 0.6
-    + (wobble2 * 2.0 - 1.0) * uWarpStrength * 0.25;
+    + curlWarp * uWarpStrength * 0.4
+    + (meander2 * 2.0 - 1.0) * uWarpStrength * 0.6;
 
-  /* Multi-frequency latitude bands */
-  float band1 = sin(warpedLat * uBandCount * 0.7 * PI) * 0.6;
-  float band2 = sin(warpedLat * uBandCount * 1.3 * PI + 1.7) * 0.3;
-  float band3 = sin(warpedLat * uBandCount * 2.1 * PI + 3.1) * 0.1;
+  /* Storm count from seed — probability cascade: 70%×1, 40%×2, 20%×3, 5%×4+ */
+  int stormCount = 0;
+  if (uStormSize > 0.01) {
+    stormCount = 1;
+    float sc = fract(s * 0.557);
+    if (sc < 0.40) stormCount = 2;
+    if (sc < 0.20) stormCount = 3;
+    if (sc < 0.05) stormCount = 3 + int(fract(s * 0.811) * 5.0) + 1;
+  }
+
+  /* Storms DEFLECT bands — they warp warpedLat before band calculation,
+     so bands visibly flow around each vortex instead of being painted over */
+  float stormEyeMask = 0.0;
+  for (int i = 0; i < 8; i++) {
+    if (i >= stormCount) break;
+    float fi = float(i);
+    float stormSeed = s + fi * 17.31;
+
+    vec2 center = vec2(
+      fract(stormSeed * 0.073) * 6.2832 - 3.1416,
+      -0.4 + fract(stormSeed * 0.031) * 0.8
+    );
+    float R = uStormSize * (0.25 - fi * 0.025);
+    /* Noisy boundary — FBM perturbs the distance for turbulent edges */
+    float dLon = lon - center.x;
+    dLon -= round(dLon / 6.2832) * 6.2832;
+    vec2 delta = vec2(dLon * cos(center.y), (lat - center.y) * 2.0);
+    float r = length(delta);
+    float rNoise = gnoised(sp * 12.0 + vec3(stormSeed * 0.3)).x * R * 0.3;
+    float rNoisy = r + rNoise;
+
+    float influence = 1.0 - smoothstep(R * 0.5, R * 1.3, rNoisy);
+    if (influence < 0.01) continue;
+
+    /* Swirl deflection — rotate the latitude around the storm center */
+    float ring = smoothstep(0.0, R * 0.7, r) * (1.0 - smoothstep(R * 0.85, R * 1.2, r));
+    float swirlAngle = atan(delta.y, delta.x) + ring * (4.5 - fi * 0.5);
+    float deflection = sin(swirlAngle) * influence * R * 1.5;
+    warpedLat += deflection;
+
+    /* Track eye region for later coloring */
+    float eyeDist = smoothstep(R * 0.2, 0.0, rNoisy);
+    stormEyeMask = max(stormEyeMask, eyeDist * influence);
+  }
+
+  /* Kelvin-Helmholtz billows at band edges */
+  float bandPhase = warpedLat * uBandCount * PI;
+  float edgeProximity = 1.0 - abs(cos(bandPhase));
+  edgeProximity = smoothstep(0.0, 0.4, edgeProximity);
+  float kh = sin(lon * 8.0 + bandPhase * 1.7) * edgeProximity;
+  kh *= 0.5 + 0.5 * fbm(sp * 5.0 + vec3(s * 0.8), 0.3);
+  warpedLat += kh * uWarpStrength * 0.35;
+
+  /* Seed-derived band frequency multipliers */
+  float f1 = 0.5 + fract(s * 0.137) * 0.5;
+  float f2 = 1.1 + fract(s * 0.293) * 0.6;
+  float f3 = 1.8 + fract(s * 0.419) * 0.8;
+  float band1 = sin(warpedLat * uBandCount * f1 * PI) * 0.6;
+  float band2 = sin(warpedLat * uBandCount * f2 * PI + 1.7) * 0.3;
+  float band3 = sin(warpedLat * uBandCount * f3 * PI + 3.1) * 0.1;
   float bands = (band1 + band2 + band3) * 0.5 + 0.5;
 
-  /* Within-band turbulence — fine detail that doesn't break the band structure */
-  float turb = fbm(sp * 8.0 + vec3(s * 1.7), 0.3);
-  bands += turb * 0.08;
+  float turb = fbm(vec3(sp.x * 6.0, sp.y * 0.4, sp.z * 6.0) + vec3(s * 1.7), 0.3);
+  bands += turb * (0.04 + edgeProximity * 0.12);
 
   vec3 color = mix(uBaseColor1, uBaseColor2, smoothstep(0.2, 0.5, bands));
   color = mix(color, uBaseColor3, smoothstep(0.55, 0.85, bands));
 
-  /* Band-edge darkening */
+  /* Storm eye coloring — applied after bands so the eye is visible */
+  if (stormEyeMask > 0.01)
+    color = mix(color, uBaseColor3 * 1.3, stormEyeMask * 0.6);
+
+  color = mix(color, uBaseColor2 * 0.85, edgeProximity * 0.08);
+
   float bandEdge = abs(cos(warpedLat * uBandCount * PI));
   color *= 0.82 + bandEdge * 0.18;
 
-  /* Slopeness from the wobble derivatives — darkens the meander peaks */
-  vec4 slopeN = gnoised(lonP + vec3(s, 0.0, s * 0.7));
-  gDerivatives = slopeN.yzw;
-  float slope = length(slopeN.yzw);
+  gDerivatives = curlN.yzw;
+  float slope = length(curlN.yzw);
   color *= mix(1.0, 0.7, smoothstep(0.3, 1.2, slope * uWarpStrength));
 
-  /* Storm vortex */
-  if (uStormSize > 0.01) {
-    vec2 stormCenter = vec2(fract(s * 0.073) * 3.0 - 1.5, 0.15 + fract(s * 0.031) * 0.3);
-    float stormDist = length(vec2(
-      atan(sp.z, sp.x) / PI - stormCenter.x,
-      (lat - stormCenter.y) * 3.0
-    ));
-    float storm = smoothstep(uStormSize * 0.15, 0.0, stormDist);
-    float swirl = fbm(sp * 6.0 + vec3(s * 3.0), 0.4);
-    color = mix(color, uBaseColor3 * 1.2, storm * (0.5 + swirl * 0.5));
+  /* Polar transition — gradual fade, band ghost bleeds through */
+  float polarBlend = smoothstep(0.45, 0.85, abs(lat));
+  if (polarBlend > 0.01) {
+    float polarNoise = fbm(sp * 7.0 + vec3(s * 2.3), 0.5);
+    float bandGhost = sin(warpedLat * uBandCount * f1 * PI * 0.5) * 0.15;
+    vec3 polarColor = mix(uBaseColor1, uBaseColor2, polarNoise * 0.35 + bandGhost + 0.35);
+    polarColor *= 0.88;
+    color = mix(color, polarColor, polarBlend);
   }
 
   return vec4(color, 0.0);

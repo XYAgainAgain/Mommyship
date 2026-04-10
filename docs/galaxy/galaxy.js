@@ -453,6 +453,11 @@ async function init() {
     }
   });
 
+  /* Pre-compile all shaders — force hidden detail meshes visible for one frame
+     so the GPU compiles their programs during loading, not on first flyby */
+  renderer.compile(scene, cam.camera);
+  systems.warmUpShaders(renderer, cam.camera);
+
   updateScaleBar();
   animate();
 

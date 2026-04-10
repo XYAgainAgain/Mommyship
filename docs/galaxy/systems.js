@@ -286,7 +286,7 @@ export async function createSystems(scene, camera, renderer) {
   let starDetail = null;
   let planetDetail = null;
   let detailActiveIds = new Set();
-  let planetDetailActiveIds = new Set();
+  let planetDetailActiveIds = new Map();
   const pulsarFarTori = [];
   let pulsarTorusShaders = null;
   let pulsarTorusGeoFar = null;
@@ -396,7 +396,7 @@ export async function createSystems(scene, camera, renderer) {
         planetAtlasData = newData;
         planetAtlasMat.uniforms.uAtlas.value = newData.atlas;
         if (oldAtlas) oldAtlas.dispose();
-        planetDetailActiveIds = new Set();
+        planetDetailActiveIds = new Map();
         if (planetDetail) {
           planetDetail.invalidateCaches();
           if (newData.paramsCache) planetDetail.setParamsCache(newData.paramsCache);
@@ -1168,10 +1168,17 @@ export async function createSystems(scene, camera, renderer) {
       starMarkers.instanceMatrix.needsUpdate = true;
       if (cfDirty) crossfadeAttr.needsUpdate = true;
 
-      /* Detail mesh: show high-poly stars when tracked or close */
+      /* Detail mesh: show high-poly stars when tracked or close.
+         Walk parent chain so tracking a planet activates its parent star. */
       if (starDetail) {
+        let starTrackId = trackedId || null;
+        if (starTrackId && galaxyData.bodies[starTrackId]?.type !== 'star') {
+          let cur = galaxyData.bodies[starTrackId]?.parentId;
+          while (cur && galaxyData.bodies[cur]?.type !== 'star') cur = galaxyData.bodies[cur]?.parentId;
+          if (cur) starTrackId = cur;
+        }
         const prevIds = new Set(detailActiveIds);
-        detailActiveIds = starDetail.update(trackedId || null, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta);
+        detailActiveIds = starDetail.update(starTrackId, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta);
 
         /* Hide instanced stars that just became active detail meshes */
         for (const id of detailActiveIds) {
@@ -1249,8 +1256,9 @@ export async function createSystems(scene, camera, renderer) {
       for (let i = 0; i < planetIds.length; i++) {
         const id = planetIds[i];
 
-        /* Detail mesh replaces this body — collapse instance to zero */
-        if (planetDetailActiveIds.has(id)) {
+        /* Detail mesh replaces atlas — but only hide atlas once fully opaque */
+        const detailFade = planetDetailActiveIds.get(id);
+        if (detailFade !== undefined && detailFade > 0.99) {
           _dummy.scale.setScalar(0);
           _dummy.updateMatrix();
           planetMarkers.setMatrixAt(i, _dummy.matrix);
@@ -1672,6 +1680,29 @@ export async function createSystems(scene, camera, renderer) {
     get needsLabelRender() { return needsLabelRender; },
     set needsLabelRender(v) { needsLabelRender = v; },
     labelRenderer,
-    markerScene
+    markerScene,
+    /* Force GPU to compile all hidden detail shader programs during loading */
+    warmUpShaders(renderer, camera) {
+      const targets = [];
+      /* Collect one material from each pool entry type — planet detail + atmo + glow */
+      if (planetDetail) {
+        for (const child of planetDetail.container.children) {
+          if (!child.visible) { child.visible = true; targets.push(child); }
+          for (const gc of child.children) {
+            if (!gc.visible) { gc.visible = true; targets.push(gc); }
+          }
+        }
+      }
+      if (starDetail) {
+        for (const child of starDetail.container.children) {
+          if (!child.visible) { child.visible = true; targets.push(child); }
+          for (const gc of child.children) {
+            if (!gc.visible) { gc.visible = true; targets.push(gc); }
+          }
+        }
+      }
+      renderer.compile(markerScene, camera);
+      for (const t of targets) t.visible = false;
+    }
   };
 }
