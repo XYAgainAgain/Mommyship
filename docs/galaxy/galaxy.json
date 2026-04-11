@@ -249,7 +249,7 @@
       "type": "nebula",
       "subtype": "emission",
       "name": "Broken Arm Nebula",
-      "description": "Largest nebula in the galaxy that also happens to have the lowest stellar density.",
+      "description": "Largest nebula in the galaxy that also happens to have the lowest stellar density. Quite pretty from a distance, but not much to do there.",
       "notes": "",
       "position": {
         "x": 84,
@@ -305,7 +305,7 @@
       "type": "star",
       "subtype": "red-dwarf",
       "name": "Brighton",
-      "description": "Commecha Station, ultra-elite rec station for the uber wealthy. Closest to Supermassive Black Hole, between Nimbus and Verdessa.",
+      "description": "Commecha Station, ultra-elite rec station for the über-wealthy. Closest to the Supermassive Black Hole, between Nimbus and Verdessa.",
       "notes": "",
       "position": {
         "x": 40,
@@ -575,7 +575,7 @@
       "type": "star",
       "subtype": "red-dwarf",
       "name": "Flipsulon",
-      "description": "Between Sapphire Fields and Smelt Worlds.",
+      "description": "Between Sapphire Fields and Smelt Worlds. Raddest planets in the galaxy with the sickest orbits.",
       "poleAngle": 90,
       "notes": "",
       "position": {
@@ -2307,7 +2307,7 @@
     },
     "flipsulon-gryme": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Gryme",
       "description": "",
       "notes": "B-Class",
@@ -2331,7 +2331,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "caronia-planet-1": {
       "type": "planet",
@@ -3908,7 +3908,7 @@
     },
     "flipsulon-ollie": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Ollie",
       "description": "",
       "notes": "C-Class",
@@ -3936,7 +3936,7 @@
     },
     "flipsulon-shuvit": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "fungal",
       "name": "Shuvit",
       "description": "",
       "notes": "C-Class",
@@ -3960,7 +3960,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "cholyoke": {
       "type": "station",
@@ -4031,7 +4031,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "bastion-4-1": {
       "type": "planet",
@@ -4171,7 +4171,7 @@
     },
     "green-yonder": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Green Yonder",
       "description": "",
       "notes": "X-Class",
@@ -4181,7 +4181,10 @@
       "orbital": {
         "order": 4
       },
-      "visual": null,
+      "visual": 
+      {
+        "color": "#384e1d"
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -4225,7 +4228,7 @@
       "position": null,
       "parentId": "the-hungry-sun",
       "orbital": {
-        "a": 3.5
+        "a": 2.5
       },
       "visual": {
         "color": "#9933cc",
@@ -5105,7 +5108,7 @@
       "tags": [
         "fueling"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "sunurdan-moon-2": {
       "type": "moon",
@@ -5201,6 +5204,7 @@
       "type": "moon",
       "subtype": null,
       "name": "Xamskaro",
+      "subtitle": "The Blood Moon",
       "description": "",
       "notes": "X-Class",
       "class": "X",
@@ -5216,7 +5220,7 @@
       "tags": [
         "colony"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "dunroid-planet-1": {
       "type": "planet",
@@ -5563,7 +5567,7 @@
       ],
       "hasFuddruckers": false
     },
-    "toxic-but-beautiful": {
+    "homi-eaomi-planet-2": {
       "type": "planet",
       "subtype": null,
       "name": "Homi Eaomi II",
@@ -5682,7 +5686,7 @@
     },
     "osminok-i": {
       "type": "planet",
-      "subtype": "rocky",
+      "subtype": "barren",
       "name": "Little Shadow",
       "description": "The Persistent Little Shadow That Chases The Light And Avoids Our Gaze",
       "notes": "0.6 Earth masses, 0.25 AU. Tidally locked.",
@@ -5693,7 +5697,8 @@
         "a": 5.5
       },
       "visual": {
-        "color": "#6a6a78"
+        "color": "#6a6a78",
+        "temperature": 0.95
       },
       "spectralClass": null,
       "luminosity": null,
@@ -5710,7 +5715,7 @@
       "subtype": "ocean",
       "name": "Osminok Prime",
       "description": "The Endless Ocean That Is Our Treasured Home Despite Its Many Dangers. Gaby's homeworld!",
-      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35Â° axial tilt, 2.5 bar atmosphere. 99%+ ocean coverage.",
+      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35° axial tilt, 2.5 bar atmosphere. ~99% ocean coverage.",
       "position": null,
       "parentId": "osminok",
       "orbital": {
