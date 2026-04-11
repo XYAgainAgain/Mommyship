@@ -133,6 +133,43 @@ vec3 blackbodyRGB(float kelvin) {
   return clamp(c, 0.0, 5.0);
 }
 
+/* Crater hash — distinct from the gradient noise hash33 above so crater
+   placement doesn't correlate with terrain features */
+vec3 craterHash33(vec3 p3) {
+  p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yxz + 19.19);
+  return fract((p3.xxy + p3.yxx) * p3.zyx);
+}
+
+/* Weighted sinusoidal crater field — sin(2*PI*sqrt(d)) naturally produces
+   bowl + raised rim + decay in one expression. 5x5x5 neighbor search. */
+float craterNoise(vec3 x) {
+  vec3 p = floor(x);
+  vec3 f = fract(x);
+  float va = 0.0;
+  float wt = 0.0;
+  for (int i = -2; i <= 2; i++)
+  for (int j = -2; j <= 2; j++)
+  for (int k = -2; k <= 2; k++) {
+    vec3 g = vec3(float(i), float(j), float(k));
+    vec3 o = 0.8 * craterHash33(p + g);
+    float d = distance(f - g, o);
+    float w = exp(-4.0 * d);
+    va += w * sin(2.0 * PI * sqrt(d));
+    wt += w;
+  }
+  return abs(va / wt);
+}
+
+/* Multi-scale crater field with exponential compression for contrast.
+   Three frequencies: large basins, medium craters, fine pitting. */
+float craterFbm(vec3 x) {
+  float c = craterNoise(x * 1.5) * 0.9
+          + craterNoise(x * 4.0) * 0.5
+          + craterNoise(x * 11.0) * 0.3;
+  return exp(-c + 0.05);
+}
+
 /* 3D Voronoi — returns vec3(F1, F2, cellId)
    F1 = distance to nearest cell center, F2 = second nearest.
    F2-F1 gives edge distance (small at edges, large inside cells). */

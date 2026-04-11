@@ -111,6 +111,7 @@ export async function createPlanetDetail(renderer) {
         uBulbosity:         { value: 0.0 },
         uTime:              { value: 0 },
         uDisplacementAmp:   { value: 0.03 },
+        uLumpiness:         { value: 0.0 },
         uRotation:          { value: new THREE.Matrix3() },
         uLightDir:          { value: new THREE.Vector3(0, 1, 0) },
         uLodDist:           { value: 18.0 },
@@ -244,6 +245,7 @@ export async function createPlanetDetail(renderer) {
     u.uEmissiveColor.value.set(params.emissiveColor);
     u.uBulbosity.value         = params.bulbosity;
     u.uDisplacementAmp.value   = params.displacementAmp;
+    u.uLumpiness.value         = params.lumpiness || 0.0;
 
     entry.radius = params.radius;
 
@@ -273,14 +275,16 @@ export async function createPlanetDetail(renderer) {
     entry.parentStarId = sid || null;
 
     const rng = createRng(seed + 777);
-    const tiltRad = (5 + rng.next() * 25) * Math.PI / 180;
+    const isLumpy = (params.lumpiness || 0) > 0.05;
+    const tiltDeg = isLumpy ? 15 + rng.next() * 75 : 5 + rng.next() * 25;
+    const tiltRad = tiltDeg * Math.PI / 180;
     const azimuth = rng.next() * Math.PI * 2;
     entry.rotAxis.set(
       Math.sin(tiltRad) * Math.cos(azimuth),
       Math.cos(tiltRad),
       Math.sin(tiltRad) * Math.sin(azimuth)
     ).normalize();
-    entry.rotSpeed = 0.03 + rng.next() * 0.08;
+    entry.rotSpeed = isLumpy ? 0.06 + rng.next() * 0.18 : 0.03 + rng.next() * 0.08;
 
     entry.bodyId = bodyId;
     entry.group.userData.bodyId = bodyId;

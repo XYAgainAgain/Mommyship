@@ -30,8 +30,54 @@ function projectToScreen(camera) {
   return _bhScreen2;
 }
 
+const LOADING_MESSAGES = [
+  'Spinning up the accretion disk...',
+  'Scattering the stars...',
+  'Shuffling tectonic plates...',
+  'Shaking up the volcanoes...',
+  'Praying for acid rain...',
+  'Tumble-drying the deserts...',
+  'Poking the pulsar...',
+  'Fluffing the clouds...',
+  'Creating crop circles...',
+  'Hand-polishing the hyperlanes...',
+  'Shaking hands with alien neighbors...',
+  'Pressing the big red button...',
+  'Dropping out of warp...',
+];
+
+function createLoadingTracker(totalSteps) {
+  const progressEl = document.getElementById('gx-loading-progress');
+  const textEl = document.getElementById('gx-loading-text');
+  const headEl = document.getElementById('gx-loading-head');
+  const circumference = 2 * Math.PI * 43;
+  let step = 0;
+  let current = 0;
+  let target = 0;
+  let rafId = 0;
+
+  function tick() {
+    current += (target - current) * 0.12;
+    if (Math.abs(target - current) < 0.001) current = target;
+    if (progressEl) progressEl.style.strokeDashoffset = circumference * (1 - current);
+    if (headEl) headEl.style.transform = 'rotate(' + (current * 360) + 'deg)';
+    if (current < target) rafId = requestAnimationFrame(tick);
+  }
+
+  return function advance() {
+    step++;
+    target = step / totalSteps;
+    if (textEl && step <= LOADING_MESSAGES.length) {
+      textEl.textContent = LOADING_MESSAGES[step - 1] || '';
+    }
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(tick);
+  };
+}
+
 async function init() {
   const container = document.querySelector('.experience');
+  const progress = createLoadingTracker(13);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -53,23 +99,36 @@ async function init() {
   const lightmapImg = document.getElementById('lightmap-img');
   if (lightmapImg) lightmapImg.src = lightmapUrl;
 
+  progress();
   const lightmap = await new THREE.TextureLoader().loadAsync(lightmapUrl);
   lightmap.flipY = false;
   lightmap.wrapS = THREE.ClampToEdgeWrapping;
   lightmap.wrapT = THREE.ClampToEdgeWrapping;
 
+  progress();
   const bg = await createBackground(scene);
+  progress();
   const disk = await createDisk(scene);
+  progress();
   const nebula = await createNebula(scene);
+  progress();
   const bh = await createBlackHole(scene, renderer);
+  progress();
   const compositor = await createCompositor(renderer);
+  progress();
   const audio = createAudio(cam.camera);
+  progress();
   const volumetric = await createVolumetric(scene, renderer);
+  progress();
   const coreStorm = await createCoreStorm(scene, renderer);
+  progress();
   const dustTorus = await createDustTorus(scene, renderer, lightmap);
 
+  progress();
   const systems = await createSystems(scene, cam.camera, renderer);
+  progress();
   await asteroids.init(scene, systems.getData(), lightmap);
+  progress();
 
   /* Volume — controls drone gain when Muse is off, Muse volume when on */
   let masterVolume = 0.5;

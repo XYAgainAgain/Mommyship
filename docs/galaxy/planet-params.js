@@ -262,6 +262,7 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     craterDensity:       vis.craterDensity ?? subtypeDefaults.craterDensity,
     specular:            vis.specular ?? subtypeDefaults.specular,
     displacementAmp:     vis.displacementAmp ?? subtypeDefaults.displacementAmp,
+    lumpiness:           vis.lumpiness ?? subtypeDefaults.lumpiness ?? 0.0,
 
     baseColor1:          vis.baseColor1 ?? palette.color1,
     baseColor2:          vis.baseColor2 ?? palette.color2,
@@ -294,6 +295,12 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     result.atmosphereIntensity = Math.max(result.atmosphereIntensity, 0.4);
   }
 
+  /* Barren moons get lumpier shapes — farther orbital order = wobblier */
+  if (subtype === 'barren' && body.type === 'moon' && vis.lumpiness == null) {
+    const order = body.orbital?.order ?? 3;
+    result.lumpiness = 0.18 + order * 0.07 + rng.next() * 0.15;
+  }
+
   return result;
 }
 
@@ -324,11 +331,12 @@ function getSubtypeDefaults(subtype, rng, temperature) {
 
     case 'barren':
       return { ...base,
-        slopeness: 0.6 + rng.next() * 0.4,
-        craterDensity: 0.4 + rng.next() * 0.4,
-        displacementAmp: 0.02 + rng.next() * 0.02,
+        slopeness: 0.8 + rng.next() * 0.5,
+        craterDensity: 0.5 + rng.next() * 0.4,
+        displacementAmp: 0.04 + rng.next() * 0.04,
+        lumpiness: 0.08 + rng.next() * 0.08,
         atmosphereTint: '#887766',
-        atmosphereIntensity: 0.05 + rng.next() * 0.08,
+        atmosphereIntensity: 0.0,
       };
 
     case 'gas':

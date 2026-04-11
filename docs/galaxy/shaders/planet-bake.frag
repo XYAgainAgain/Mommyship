@@ -123,6 +123,14 @@ vec4 renderRocky(vec3 sp, float s) {
   float lat = abs(sp.y);
   float t = 0.02;
 
+  /* Polar ice — shared by ocean and land paths */
+  float polarNoise = fbm(sp * 4.0 + vec3(s * 1.7), 0.3) * 0.1;
+  /* coldness sets how far caps extend; ice is fully opaque within that extent */
+  float coldness = 1.0 - smoothstep(0.35, 0.75, uTemperature);
+  float iceLine = mix(0.97, 0.80, coldness);
+  float polarIce = smoothstep(iceLine - 0.04, iceLine + 0.04, lat + polarNoise);
+  vec3 iceColor = mix(vec3(0.78, 0.84, 0.90), vec3(0.92, 0.95, 0.98), polarNoise * 5.0 + 0.5);
+
   float oceanMask = 1.0 - smoothstep(uOceanLevel - t, uOceanLevel + t, height);
   if (oceanMask > 0.01) {
     float depth = max(0.0, uOceanLevel - height);
@@ -130,80 +138,129 @@ vec4 renderRocky(vec3 sp, float s) {
     vec3 oceanColor = oceanSurface(sp, s, depth, uWarpStrength);
     vec3 oceanDerivs = gDerivatives;
 
+    if (polarIce > 0.01) {
+      float iceGrain = gnoised(sp * 20.0 + vec3(s * 3.0)).x;
+      vec3 ic = iceColor * (0.9 + iceGrain * 0.1);
+      /* Fully replace ocean — no ripples bleeding through */
+      float iceOpacity = smoothstep(0.0, 0.3, polarIce);
+      oceanColor = mix(oceanColor, ic, iceOpacity);
+    }
+
     if (oceanMask > 0.99) {
-      float specAlpha = uSpecular * oceanMask;
+      float iceOp = smoothstep(0.0, 0.3, polarIce);
+      float specAlpha = uSpecular * oceanMask * (1.0 - iceOp);
       return vec4(oceanColor, specAlpha);
     }
 
-    /* Shore transition — blend color and derivatives */
-    vec3 lowland = uBaseColor2;
-    vec3 highland = uBaseColor3;
+    /* Terrain texture from ridged noise — independent of the flow-warped ocean FBM */
+    float ridge = ridgedFbm(sp * 5.0 + vec3(s * 0.7), 4.5, 2.1, 4);
+    float terrain = ridgedFbm(sp * 8.0 + vec3(s * 1.3), 3.0, 2.3, 3);
+    float elev = height - uOceanLevel;
+    float terrainH = elev + ridge * 0.12 + terrain * 0.06;
+
+    vec3 shoreColor = uBaseColor2 * vec3(1.3, 1.15, 0.8) + vec3(0.08, 0.06, 0.02);
+    vec3 lowColor = uBaseColor2 * 1.1 + vec3(0.03);
+    vec3 midColor = mix(uBaseColor2, uBaseColor3, 0.6) * 0.85;
+    vec3 highColor = uBaseColor3 * 0.7 + vec3(0.05);
+
+    vec3 landColor = shoreColor;
+    landColor = mix(landColor, lowColor, smoothstep(0.02, 0.08, terrainH));
+    landColor = mix(landColor, midColor, smoothstep(0.10, 0.18, terrainH));
+    landColor = mix(landColor, highColor, smoothstep(0.22, 0.38, terrainH));
+
+    /* Ridge + terrain as primary texture — replaces the smooth FBM look */
+    landColor *= 0.70 + ridge * 0.30 + terrain * 0.15;
+
+    /* Desert sand — absolute warm color, not a palette tint */
+    float aridity = smoothstep(0.30, 0.65, uTemperature);
+    if (aridity > 0.01) {
+      vec3 sandColor = vec3(0.72, 0.60, 0.38);
+      float equatorial = 1.0 - smoothstep(0.05, 0.50, lat);
+      float sandNoise = fbm(sp * 5.0 + vec3(s * 0.9), 0.3) * 0.3 + 0.55;
+      float dryHeight = 1.0 - smoothstep(0.0, 0.25, elev);
+      landColor = mix(landColor, sandColor * (0.85 + terrain * 0.3), equatorial * aridity * sandNoise * dryHeight);
+    }
+
     vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
-
-    vec3 landColor = lowland;
-    landColor = mix(landColor, highland, smoothstep(0.6, 0.75, height));
-
-    float polarNoise = fbm(sp * 3.0 + vec3(s * 2.0), 0.3) * 0.12;
-    float polarFactor = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1);
-    polarFactor *= smoothstep(0.7, 0.3, uTemperature);
-    landColor = mix(landColor, polar, polarFactor);
+    float landPolar = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1) * coldness;
+    landColor = mix(landColor, polar, landPolar);
 
     float slope = length(hd.yzw);
-    landColor *= mix(1.0, 0.55, smoothstep(0.25, 1.5, slope * uSlopeness));
+    landColor *= mix(1.0, 0.45, smoothstep(0.15, 1.2, slope * uSlopeness));
 
     vec3 color = mix(landColor, oceanColor, oceanMask);
     gDerivatives = mix(terrainDerivs, oceanDerivs, oceanMask);
-    float specAlpha = uSpecular * oceanMask;
+    float iceOp = smoothstep(0.0, 0.3, polarIce);
+    float specAlpha = uSpecular * oceanMask * (1.0 - iceOp);
     return vec4(color, specAlpha);
   }
 
-  /* Pure land path — no ocean visible */
-  vec3 lowland = uBaseColor2;
-  vec3 highland = uBaseColor3;
+  /* Pure land path */
+  float ridge = ridgedFbm(sp * 5.0 + vec3(s * 0.7), 4.5, 2.1, 4);
+  float terrain = ridgedFbm(sp * 8.0 + vec3(s * 1.3), 3.0, 2.3, 3);
+  float elev = height - uOceanLevel;
+  float terrainH = elev + ridge * 0.12 + terrain * 0.06;
+
+  vec3 shoreColor = uBaseColor2 * vec3(1.3, 1.15, 0.8) + vec3(0.08, 0.06, 0.02);
+  vec3 lowColor = uBaseColor2 * 1.1 + vec3(0.03);
+  vec3 midColor = mix(uBaseColor2, uBaseColor3, 0.6) * 0.85;
+  vec3 highColor = uBaseColor3 * 0.7 + vec3(0.05);
+
+  vec3 color = shoreColor;
+  color = mix(color, lowColor, smoothstep(0.02, 0.08, terrainH));
+  color = mix(color, midColor, smoothstep(0.10, 0.18, terrainH));
+  color = mix(color, highColor, smoothstep(0.22, 0.38, terrainH));
+
+  color *= 0.70 + ridge * 0.30 + terrain * 0.15;
+
+  float aridity = smoothstep(0.30, 0.65, uTemperature);
+  if (aridity > 0.01) {
+    vec3 sandColor = vec3(0.72, 0.60, 0.38);
+    float equatorial = 1.0 - smoothstep(0.05, 0.50, lat);
+    float sandNoise = fbm(sp * 5.0 + vec3(s * 0.9), 0.3) * 0.3 + 0.55;
+    float dryHeight = 1.0 - smoothstep(0.0, 0.25, elev);
+    color = mix(color, sandColor * (0.85 + terrain * 0.3), equatorial * aridity * sandNoise * dryHeight);
+  }
+
   vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
-
-  vec3 color = mix(uBaseColor1, uBaseColor2, 0.5);
-  color = mix(color, lowland,  smoothstep(uOceanLevel + 0.02, uOceanLevel + 0.12, height));
-  color = mix(color, highland, smoothstep(0.6, 0.75, height));
-
-  float polarNoise = fbm(sp * 3.0 + vec3(s * 2.0), 0.3) * 0.12;
-  float polarFactor = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1);
-  polarFactor *= smoothstep(0.7, 0.3, uTemperature);
-  color = mix(color, polar, polarFactor);
+  float landPolar = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1) * coldness;
+  color = mix(color, polar, landPolar);
 
   float slope = length(hd.yzw);
-  color *= mix(1.0, 0.55, smoothstep(0.25, 1.5, slope * uSlopeness));
+  color *= mix(1.0, 0.45, smoothstep(0.15, 1.2, slope * uSlopeness));
 
   return vec4(color, 0.0);
 }
 
 
 vec4 renderBarren(vec3 sp, float s) {
-  vec3 p = sp * 3.5;
-  vec4 hd = fbmd(p + vec3(s), uSlopeness);
-  gDerivatives = hd.yzw;
-  float height = hd.x * 0.5 + 0.5;
+  vec3 cp = sp + vec3(s * 0.13, s * 0.37, s * 0.71);
 
-  /* Crater overlay — ridged noise creates raised rims with depressed bowls */
-  vec4 craterNoise = gnoised(sp * 12.0 + vec3(s * 1.7));
-  float ridge = 1.0 - abs(craterNoise.x);
-  ridge *= ridge;
-  /* Second crater scale for variety */
-  float ridge2 = 1.0 - abs(gnoised(sp * 6.0 + vec3(s * 3.1)).x);
-  ridge2 *= ridge2;
-  float craters = mix(ridge, ridge2, 0.4) * uCraterDensity;
-  height = mix(height, height * (1.0 - craters * 0.35), uCraterDensity);
+  float height = craterFbm(cp);
 
-  /* Monochrome palette — single base color, height-modulated */
-  float brightness = mix(0.4, 1.0, height);
+  /* Finite-difference normals from crater height field */
+  float eps = 0.013;
+  float hx = craterFbm(cp + vec3(eps, 0.0, 0.0));
+  float hy = craterFbm(cp + vec3(0.0, eps, 0.0));
+  float hz = craterFbm(cp + vec3(0.0, 0.0, eps));
+  gDerivatives = (vec3(hx, hy, hz) - height) / eps;
+
+  /* Macro terrain variation so not every crater sits at the same base level */
+  float macro = fbm(sp * 1.5 + vec3(s), 0.3) * 0.15;
+  height = height * 0.85 + macro + 0.08;
+
+  float brightness = mix(0.35, 1.0, height);
   vec3 color = uBaseColor1 * brightness;
+  color = mix(color, uBaseColor2 * brightness, smoothstep(0.3, 0.7, height) * 0.35);
 
-  /* Slight color variation from secondary tint */
-  color = mix(color, uBaseColor2 * brightness, smoothstep(0.4, 0.7, height) * 0.3);
+  float slope = length(gDerivatives);
+  color *= mix(1.0, 0.5, smoothstep(1.0, 8.0, slope * uSlopeness));
 
-  /* Slopeness darkening */
-  float slope = length(hd.yzw);
-  color *= mix(1.0, 0.55, smoothstep(0.2, 1.2, slope * uSlopeness));
+  /* Surface microdetail — pitting darkens into pores, grain breaks up smoothness */
+  float pitting = gnoised(sp * 30.0 + vec3(s * 2.3)).x;
+  color *= 0.82 + pitting * 0.18;
+  float grain = gnoised(sp * 80.0 + vec3(s * 4.1)).x;
+  color *= 0.88 + grain * 0.12;
 
   return vec4(color, 0.0);
 }
@@ -319,7 +376,6 @@ vec4 renderGas(vec3 sp, float s) {
 
 
 vec4 renderOcean(vec3 sp, float s) {
-  /* Same terrain system as rocky but with high ocean level — most surface is water */
   vec3 p = flowWarp(sp * 3.5, s, 0.25);
   vec4 hd = fbmd(p + vec3(s), uSlopeness);
   float height = hd.x * 0.5 + 0.5;
@@ -330,7 +386,7 @@ vec4 renderOcean(vec3 sp, float s) {
 
   vec3 color = oceanSurface(sp, s, depth, uWarpStrength);
 
-  /* Rare island peaks — emerge from the ocean like rocky terrain */
+  /* Rare island peaks */
   if (isOcean < 0.99) {
     vec3 landColor = uBaseColor2 * 1.2 + 0.1;
     vec3 highland = uBaseColor3;
@@ -344,6 +400,23 @@ vec4 renderOcean(vec3 sp, float s) {
   }
 
   float spec = isOcean * uSpecular * (1.0 - smoothstep(0.0, 0.7, abs(sp.y)) * 0.5);
+
+  /* Polar ice caps — freeze ocean at high latitudes on cold worlds */
+  float lat = abs(sp.y);
+  float polarNoise = fbm(sp * 4.0 + vec3(s * 1.7), 0.3) * 0.1;
+  /* coldness sets how far caps extend; ice is fully opaque within that extent */
+  float coldness = 1.0 - smoothstep(0.35, 0.75, uTemperature);
+  float iceLine = mix(0.97, 0.80, coldness);
+  float polarIce = smoothstep(iceLine - 0.04, iceLine + 0.04, lat + polarNoise);
+
+  if (polarIce > 0.01) {
+    vec3 iceColor = mix(vec3(0.78, 0.84, 0.90), vec3(0.92, 0.95, 0.98), polarNoise * 5.0 + 0.5);
+    float iceGrain = gnoised(sp * 20.0 + vec3(s * 3.0)).x;
+    iceColor *= 0.9 + iceGrain * 0.1;
+    float iceOpacity = smoothstep(0.0, 0.3, polarIce);
+    color = mix(color, iceColor, iceOpacity);
+    spec *= 1.0 - iceOpacity;
+  }
 
   return vec4(color, spec);
 }
