@@ -42,15 +42,19 @@ void main() {
   vec4 texel = texture(uAtlas, vec3(uv, vLayer));
   vec3 texColor = texel.rgb;
 
-  /* Star-facing hemispherical lighting */
+  /* Star-facing hemispherical lighting — wrap-light matches detail shader */
   vec3 L = normalize(vLightDir);
-  float NdotL = dot(N, L);
-  float lighting = smoothstep(-0.4, 0.5, NdotL) * 0.6 + 0.4;
+  vec3 V = normalize(vViewDir);
+  float NdotL_raw = dot(N, L);
+  float NdotL = max(0.0, NdotL_raw * 0.65 + 0.35);
 
-  /* Specular hint on the lit side */
-  float spec = texel.a * pow(max(0.0, NdotL), 8.0) * 0.35;
+  /* Alpha-driven shininess — approximates detail shader's per-subtype roughness */
+  vec3 H = normalize(L + V);
+  float NdotH = max(0.0, dot(N, H));
+  float shininess = mix(4.0, 64.0, texel.a);
+  float spec = texel.a * pow(NdotH, shininess) * 0.5;
 
-  vec3 litColor = texColor * lighting + vec3(spec);
+  vec3 litColor = texColor * NdotL + vec3(spec);
 
   vec3 color = mix(vInstanceColor, litColor, vCrossfade);
 

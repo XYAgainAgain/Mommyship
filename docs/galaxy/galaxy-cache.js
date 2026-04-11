@@ -3,7 +3,7 @@
 
 const DB_NAME = 'galaxy-cache';
 const DB_VERSION = 1;
-export const CACHE_VERSION = 5;
+export const CACHE_VERSION = 29;
 
 const STORES = {
   PLANET: 'planet-atlas',
@@ -53,6 +53,8 @@ export function planetCacheKey(bodyId, params) {
     params.bandCount, params.warpStrength, params.stormSize,
     params.crackScale, params.subsurfaceColor,
     params.emissiveIntensity, params.emissiveColor, params.bulbosity,
+    params.roughness, params.metalness, params.crystalMetric,
+    params.moistureOffset, params.biomeCount,
   ]));
 }
 

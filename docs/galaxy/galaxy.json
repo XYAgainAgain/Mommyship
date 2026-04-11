@@ -1640,7 +1640,7 @@
     },
     "wodden-planet-2": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "crystalline",
       "name": "Wodden II",
       "description": "",
       "notes": "X-Class",
@@ -1650,7 +1650,12 @@
       "orbital": {
         "order": 2
       },
-      "visual": null,
+      "visual": {
+        "baseColor1": "#7b3fa0",
+        "baseColor2": "#9458b8",
+        "baseColor3": "#6a2d8e",
+        "subsurfaceColor": "#c49edd"
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -2050,7 +2055,7 @@
     },
     "phrunteer": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Phrunteer",
       "description": "",
       "notes": "A-Class",
@@ -2058,7 +2063,7 @@
       "position": null,
       "parentId": "brighton",
       "orbital": null,
-      "visual": null,
+      "visual": { "temperature": 0.55, "moistureOffset": 0.15, "biomeCount": 1.0 },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -2218,7 +2223,7 @@
     },
     "yebba-dim": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Yebba Dim",
       "description": "",
       "notes": "A-Class",
@@ -2226,7 +2231,7 @@
       "position": null,
       "parentId": "celebros",
       "orbital": null,
-      "visual": null,
+      "visual": { "temperature": 0.65, "moistureOffset": -0.1, "biomeCount": 1.0 },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -2464,7 +2469,7 @@
     },
     "splorida": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "fungal",
       "name": "Splorida",
       "description": "",
       "notes": "C-Class",
@@ -2474,7 +2479,7 @@
       "orbital": {
         "order": 1
       },
-      "visual": null,
+      "visual": { "cloudCover": 0.45 },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -2971,7 +2976,7 @@
     },
     "damocles": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Damocles",
       "description": "",
       "notes": "B-Class",
@@ -2979,7 +2984,7 @@
       "position": null,
       "parentId": "nimbus",
       "orbital": null,
-      "visual": null,
+      "visual": { "temperature": 0.40, "moistureOffset": 0.25, "biomeCount": 0.9 },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -3034,7 +3039,7 @@
     },
     "terminal-titan": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "rocky",
       "name": "Terminal Titan",
       "description": "",
       "notes": "A-Class",
@@ -3042,7 +3047,7 @@
       "position": null,
       "parentId": "nimbus",
       "orbital": null,
-      "visual": null,
+      "visual": { "temperature": 0.45, "biomeCount": 0.95 },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -3276,7 +3281,7 @@
     },
     "padania-planet-1": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "crystalline",
       "name": "Padania I",
       "description": "",
       "notes": "Class U",
@@ -4212,7 +4217,7 @@
     },
     "amary": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "volcanic",
       "name": "Amary",
       "description": "Being devoured by The Hungry Sun.",
       "notes": "C-Class",
@@ -4223,7 +4228,8 @@
         "a": 3.5
       },
       "visual": {
-        "color": "#9933cc"
+        "color": "#9933cc",
+        "temperature": 0.95
       },
       "spectralClass": null,
       "luminosity": null,
@@ -4699,7 +4705,7 @@
     },
     "encaged-in-stations": {
       "type": "planet",
-      "subtype": null,
+      "subtype": "crystalline",
       "name": "Gunonine IV",
       "subtitle": "encaged in stations",
       "description": "",
@@ -5126,7 +5132,7 @@
     },
     "homi-eaomi-moon-1": {
       "type": "moon",
-      "subtype": null,
+      "subtype": "crystalline",
       "name": "Homi Eaomi Moon I",
       "description": "",
       "notes": "A-Class",
@@ -5734,7 +5740,7 @@
     },
     "tsunari": {
       "type": "moon",
-      "subtype": "rocky",
+      "subtype": "crystalline",
       "name": "Tsunari",
       "description": "The Dead Sister Waving Through The Storms",
       "notes": "0.3 Earth masses, ~180,000 km orbit, ~8 malton unit period.",
@@ -6119,7 +6125,7 @@
     },
     "bw-moon-5": {
       "type": "moon",
-      "subtype": null,
+      "subtype": "volcanic",
       "name": "BW-V",
       "description": "",
       "notes": "Cryovolcanic.",
@@ -6189,7 +6195,7 @@
     },
     "bw-moon-8": {
       "type": "moon",
-      "subtype": null,
+      "subtype": "volcanic",
       "name": "BW-VIII",
       "description": "",
       "notes": "Cryovolcanic.",

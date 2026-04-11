@@ -28,13 +28,20 @@ float cloudLayer(vec3 sp, float s, float cover) {
   if (cover < 0.01) return 0.0;
 
   float t = uTime * (0.04 + uStorminess * 0.08);
-  vec3 p = sp * 2.8 + vec3(s * 0.41, s * 0.17, s * 0.73);
+  bool isGas = (uPlanetMode == 2);
+
+  /* Gas giants: stretched horizontally for latitude-band streaks.
+     Rocky: isotropic scale for puffy pockets. */
+  vec3 cloudScale = isGas ? vec3(2.0, 5.0, 2.0) : vec3(2.8);
+  vec3 p = sp * cloudScale + vec3(s * 0.41, s * 0.17, s * 0.73);
 
   float warpAmt = 0.15 + uStorminess * 0.9;
   float wx = fbm(p * 0.7 + vec3(t * 0.6, 0.0, t * 0.3), 0.3);
   float wy = fbm(p * 0.7 + vec3(0.0, t * 0.5, t * -0.4), 0.3);
   float wz = fbm(p * 0.7 + vec3(t * -0.2, t * 0.4, 0.0), 0.3);
-  vec3 warpedP = p + vec3(wx, wy, wz) * warpAmt + vec3(t * 0.5, 0.0, t * 0.3);
+  /* Gas giants: suppress Y warp to keep streaks horizontal */
+  float yDamp = isGas ? 0.2 : 1.0;
+  vec3 warpedP = p + vec3(wx, wy * yDamp, wz) * warpAmt + vec3(t * 0.5, 0.0, t * 0.3);
 
   float cloud = fbm(warpedP, 0.2) * 0.5 + 0.5;
   cloud += fbm(warpedP * 2.3 + vec3(s * 1.1), 0.2) * 0.2;
@@ -146,8 +153,8 @@ void main() {
   vec3 litCloud = uCloudColor * cloudLit;
   litCloud += uCloudColor * pow(NdotV, 4.0) * 0.15;
 
-  /* Lightning flashes through the cloud cover */
-  if (uStorminess > 0.05 && cloudAlpha > 0.1) {
+  /* Lightning flashes through the cloud cover — skip for fungal (spore haze, not storms) */
+  if (uStorminess > 0.05 && cloudAlpha > 0.1 && uPlanetMode != 7) {
     vec3 flashColor;
     float flash = lightningFlash(sp, s, uStorminess, flashColor);
     litCloud += flashColor * flash;

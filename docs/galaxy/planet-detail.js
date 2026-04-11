@@ -9,7 +9,7 @@ const MARKER_RADIUS = 2.5;
 const ACTIVATE_DIST = 18;
 const POOL_SIZE = 12;
 const MAX_ACTIVATE_PER_FRAME = 4;
-const GLOW_SCALE = 2.8;
+const GLOW_SCALE = 1.8;
 
 const GLOW_VERT = `
 precision highp float;
@@ -109,6 +109,11 @@ export async function createPlanetDetail(renderer) {
         uEmissiveIntensity: { value: 0.0 },
         uEmissiveColor:     { value: new THREE.Color() },
         uBulbosity:         { value: 0.0 },
+        uRoughness:         { value: 0.7 },
+        uMetalness:         { value: 0.0 },
+        uCrystalMetric:     { value: 0 },
+        uMoistureOffset:    { value: 0.0 },
+        uBiomeCount:        { value: 0.5 },
         uTime:              { value: 0 },
         uDisplacementAmp:   { value: 0.03 },
         uLumpiness:         { value: 0.0 },
@@ -246,6 +251,11 @@ export async function createPlanetDetail(renderer) {
     u.uBulbosity.value         = params.bulbosity;
     u.uDisplacementAmp.value   = params.displacementAmp;
     u.uLumpiness.value         = params.lumpiness || 0.0;
+    u.uRoughness.value         = params.roughness ?? 0.7;
+    u.uMetalness.value         = params.metalness ?? 0.0;
+    u.uCrystalMetric.value     = params.crystalMetric ?? 0;
+    u.uMoistureOffset.value    = params.moistureOffset ?? 0.0;
+    u.uBiomeCount.value        = params.biomeCount ?? 0.5;
 
     entry.radius = params.radius;
 
@@ -263,11 +273,12 @@ export async function createPlanetDetail(renderer) {
     /* Show shell if body has atmosphere OR clouds */
     entry.atmoMesh.visible = params.atmosphereIntensity >= 0.1 || (params.cloudCover ?? 0) > 0.01;
 
-    /* Outer glow sprite — matches atmosphere color, directional */
-    const hasAtmo = params.atmosphereIntensity >= 0.1;
-    entry.glowMat.uniforms.uGlowColor.value.set(params.atmosphereTint);
-    entry.glowMat.uniforms.uGlowIntensity.value = hasAtmo ? params.atmosphereIntensity * 0.5 : 0;
-    entry.glowMesh.visible = hasAtmo;
+    /* Outer glow sprite — disabled pending WebGPU rewrite (shows through planet) */
+    // const hasAtmo = params.atmosphereIntensity >= 0.1;
+    // entry.glowMat.uniforms.uGlowColor.value.set(params.atmosphereTint);
+    // entry.glowMat.uniforms.uGlowIntensity.value = hasAtmo ? params.atmosphereIntensity * 0.5 : 0;
+    // entry.glowMesh.visible = hasAtmo;
+    entry.glowMesh.visible = false;
 
     /* Cache parent star ID for per-frame light direction lookups */
     let sid = bodies[bodyId]?.parentId;

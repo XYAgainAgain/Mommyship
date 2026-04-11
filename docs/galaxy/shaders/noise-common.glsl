@@ -195,3 +195,67 @@ vec3 voronoi3(vec3 p) {
   }
   return vec3(sqrt(F1), sqrt(F2), id);
 }
+
+/* 3D distance metric — 0: euclidean (squared), 1: manhattan,
+   2: chebyshev, 3: triangular (hex XY + Z) */
+float distMetric3D(vec3 r, int metric) {
+  vec3 a = abs(r);
+  if (metric == 1) return a.x + a.y + a.z;
+  if (metric == 2) return max(a.x, max(a.y, a.z));
+  if (metric == 3) return max(a.x * 0.866025 + r.y * 0.5, max(-r.y, a.z));
+  return dot(r, r);
+}
+
+/* Metric-aware 3D cellular noise with derivatives.
+   Returns: x = F1, y = F2, z = cellId, w = unused.
+   Writes nearest-cell offset into outDelta for normal perturbation.
+   Adapted from tuxalin's 2D cellularNoise with 3D metric extension. */
+vec4 cellNoise3D(vec3 p, float jitter, int metric, float seed, out vec3 outDelta) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  float F1 = 1e5, F2 = 1e5;
+  float id = 0.0;
+  vec3 delta1 = vec3(0.0);
+  for (int x = -1; x <= 1; x++)
+  for (int y = -1; y <= 1; y++)
+  for (int z = -1; z <= 1; z++) {
+    vec3 g = vec3(float(x), float(y), float(z));
+    vec3 o = hash33(i + g + vec3(seed)) * 0.5 + 0.5;
+    vec3 r = g + o * jitter + (1.0 - jitter) * 0.5 - f;
+    float d = distMetric3D(r, metric);
+    if (d < F1) {
+      F2 = F1; F1 = d;
+      id = dot(i + g, vec3(7.0, 157.0, 113.0));
+      delta1 = r;
+    } else if (d < F2) {
+      F2 = d;
+    }
+  }
+  outDelta = delta1;
+  float sqrtF1 = metric == 0 ? sqrt(F1) : F1;
+  float sqrtF2 = metric == 0 ? sqrt(F2) : F2;
+  return vec4(sqrtF1, sqrtF2, id, 0.0);
+}
+
+/* Dual-layer crystal pattern — overlays two cellular noise fields at
+   different seeds and takes their difference to create sharp crystal-face
+   boundaries where the two cell networks intersect. Returns vec4:
+   x = crystal value (large inside cells, small at boundaries),
+   y = F1 of primary layer, z = cellId, w = edge width (F2-F1).
+   outDelta receives the nearest-cell offset for normal perturbation. */
+vec4 crystals3D(vec3 p, float jitter, int metric, float seed, out vec3 outDelta) {
+  vec3 d0, d1;
+  vec4 c0 = cellNoise3D(p, jitter, metric, seed, d0);
+  vec4 c1 = cellNoise3D(p, jitter, metric, seed + 23.0, d1);
+  /* Primary = layer with smaller F1 (the cell we're inside) */
+  bool useC1 = c1.x < c0.x;
+  vec4 pri = useC1 ? c1 : c0;
+  outDelta = useC1 ? d1 : d0;
+  float crystalVal = abs(c0.x - c1.x);
+  return vec4(crystalVal, pri.x, pri.z, pri.y - pri.x);
+}
+
+vec4 crystals3D(vec3 p, float jitter, int metric, float seed) {
+  vec3 unused;
+  return crystals3D(p, jitter, metric, seed, unused);
+}

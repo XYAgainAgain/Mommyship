@@ -95,8 +95,8 @@ const SUBTYPE_HUE_RANGES = {
   ocean:       [0.5, 0.65],
   ice:         [0.5, 0.7],
   volcanic:    [0.0, 0.08],
-  crystalline: [0.0, 1.0],
-  fungal:      [0.7, 0.95],
+  crystalline: null,
+  fungal:      [0.20, 0.45],
 };
 
 /* HSL palette generation — subtype-aware hue constraints */
@@ -104,19 +104,35 @@ function generatePalette(rng, temperature, subtype) {
   const hueRange = SUBTYPE_HUE_RANGES[subtype];
   let baseHue;
   if (subtype === 'gas') {
-    /* Gas giants: warm = amber/red (0.02–0.1), cold = blue (0.55–0.65) */
-    baseHue = temperature > 0.5
-      ? 0.02 + rng.next() * 0.08
-      : 0.55 + rng.next() * 0.1;
+    /* Gas giants: wide palette — Jupiter amber, Saturn gold, Neptune teal,
+       Uranus cyan, exotic lavender/sage. Temperature biases but doesn't lock. */
+    const gasHues = temperature > 0.5
+      ? [0.02, 0.06, 0.08, 0.12, 0.05, 0.10]   /* warm: red → amber → gold */
+      : [0.48, 0.55, 0.60, 0.65, 0.72, 0.42];   /* cool: teal → blue → lavender → sage */
+    baseHue = gasHues[Math.floor(rng.next() * gasHues.length)] + (rng.next() - 0.5) * 0.04;
+  } else if (subtype === 'crystalline') {
+    /* Gem families: ruby/garnet, emerald, sapphire, amethyst, citrine, aquamarine */
+    const gemHues = [
+      0.0, 0.33, 0.6, 0.78, 0.10, 0.48,
+      0.85, 0.25, 0.72, 0.08, 0.38, 0.55,
+    ];
+    baseHue = gemHues[Math.floor(rng.next() * gemHues.length)] + (rng.next() - 0.5) * 0.06;
   } else if (hueRange) {
     baseHue = hueRange[0] + rng.next() * (hueRange[1] - hueRange[0]);
   } else {
     baseHue = rng.next();
   }
 
-  /* Gas giants need tighter hue spread so bands stay in the same color family */
+  /* Gas giants need tighter hue spread so bands stay in the same color family.
+     Fungal gets colordodge-style wide rotation for wild splotch variety. */
   const colorAngle = subtype === 'gas'
     ? 0.02 + rng.next() * 0.06
+    : subtype === 'fungal'
+    ? 0.15 + rng.next() * 0.25
+    : subtype === 'crystalline'
+    ? (rng.next() < 0.18
+      ? 0.10 + rng.next() * 0.15   /* ~18% fluorite-style multi-hue */
+      : 0.02 + rng.next() * 0.05)  /* typical: tight hue band */
     : 0.04 + rng.next() * 0.12;
 
   /* Subtype-specific saturation and lightness */
@@ -131,8 +147,8 @@ function generatePalette(rng, temperature, subtype) {
       baseLit = 0.3 + rng.next() * 0.2;
       break;
     case 'ice':
-      baseSat = 0.15 + rng.next() * 0.25;
-      baseLit = 0.6 + rng.next() * 0.2;
+      baseSat = 0.04 + rng.next() * 0.08;
+      baseLit = 0.85 + rng.next() * 0.08;
       break;
     case 'gas':
       /* Warm = muted amber/cream (Jupiter/Saturn), cold = richer blue-green (Neptune) */
@@ -144,12 +160,22 @@ function generatePalette(rng, temperature, subtype) {
         : 0.35 + rng.next() * 0.2;
       break;
     case 'volcanic':
-      baseSat = 0.3 + rng.next() * 0.3;
-      baseLit = 0.2 + rng.next() * 0.15;
+      if (temperature <= 0.5) {
+        /* Cryo volcanic — nearly identical to ice planets, just with glowing cracks */
+        baseSat = 0.04 + rng.next() * 0.06;
+        baseLit = 0.84 + rng.next() * 0.08;
+      } else {
+        baseSat = 0.08 + rng.next() * 0.12;
+        baseLit = 0.10 + rng.next() * 0.08;
+      }
+      break;
+    case 'crystalline':
+      baseSat = 0.55 + rng.next() * 0.35;
+      baseLit = 0.50 + rng.next() * 0.20;
       break;
     case 'fungal':
-      baseSat = 0.4 + rng.next() * 0.3;
-      baseLit = 0.3 + rng.next() * 0.2;
+      baseSat = 0.35 + rng.next() * 0.35;
+      baseLit = 0.30 + rng.next() * 0.2;
       break;
     default:
       baseSat = 0.3 + rng.next() * 0.4;
@@ -287,6 +313,11 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     emissiveColor:       vis.emissiveColor ?? subtypeDefaults.emissiveColor,
     bulbosity:           vis.bulbosity ?? subtypeDefaults.bulbosity,
     churn:               vis.churn ?? subtypeDefaults.churn,
+    roughness:           vis.roughness ?? subtypeDefaults.roughness,
+    metalness:           vis.metalness ?? subtypeDefaults.metalness,
+    crystalMetric:       vis.crystalMetric ?? subtypeDefaults.crystalMetric ?? 0,
+    moistureOffset:      vis.moistureOffset ?? subtypeDefaults.moistureOffset ?? 0.0,
+    biomeCount:          vis.biomeCount ?? subtypeDefaults.biomeCount ?? 0.5,
   };
 
   /* Toxicity tints the atmosphere */
@@ -312,10 +343,26 @@ function getSubtypeDefaults(subtype, rng, temperature) {
     bandCount: 0, warpStrength: 0.0, stormSize: 0.0,
     crackScale: 5.0, subsurfaceColor: '#335588', emissiveIntensity: 0.0,
     emissiveColor: '#000000', bulbosity: 0.0, churn: 0.0,
+    roughness: 0.7, metalness: 0.0,
+    moistureOffset: 0.0, biomeCount: 0.5,
   };
 
   switch (subtype) {
-    case 'rocky':
+    case 'rocky': {
+      /* Cloud variety — wet worlds get heavier coverage, dry worlds get wispy */
+      const moist = rng.next();
+      const cloudRoll = rng.next();
+      const cloudHeavy = cloudRoll > 0.7;
+      const cloudLight = cloudRoll < 0.2;
+      const cc = cloudHeavy ? 0.45 + rng.next() * 0.2
+               : cloudLight ? 0.05 + rng.next() * 0.15
+               : 0.20 + rng.next() * 0.25;
+      /* Cloud color varies: warm worlds get amber tint, cold get blue-grey */
+      const cloudHue = temperature > 0.6 ? 0.08 + rng.next() * 0.05
+                     : temperature < 0.35 ? 0.58 + rng.next() * 0.05
+                     : 0.55 + rng.next() * 0.1;
+      const cloudSat = 0.02 + rng.next() * 0.12;
+      const cloudLit = 0.88 + rng.next() * 0.08;
       return { ...base,
         slopeness: 1.2 + rng.next() * 0.8,
         oceanLevel: 0.2 + rng.next() * 0.35,
@@ -324,10 +371,15 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         displacementAmp: 0.03 + rng.next() * 0.02,
         atmosphereTint: '#6699cc',
         atmosphereIntensity: 0.25 + rng.next() * 0.15,
-        cloudCover: 0.4 + rng.next() * 0.2,
-        cloudColor: '#e8eef4',
-        storminess: 0.1 + rng.next() * 0.15,
+        cloudCover: cc,
+        cloudColor: hslToHex(cloudHue, cloudSat, cloudLit),
+        storminess: cloudHeavy ? 0.2 + rng.next() * 0.25
+                  : 0.05 + rng.next() * 0.15,
+        roughness: 0.7 + rng.next() * 0.2,
+        moistureOffset: (moist - 0.5) * 0.6,
+        biomeCount: 0.4 + rng.next() * 0.6,
       };
+    }
 
     case 'barren':
       return { ...base,
@@ -337,22 +389,37 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         lumpiness: 0.08 + rng.next() * 0.08,
         atmosphereTint: '#887766',
         atmosphereIntensity: 0.0,
+        roughness: 0.8 + rng.next() * 0.15,
       };
 
-    case 'gas':
+    case 'gas': {
+      /* Storm variety — some giants have many small storms, some have one big one */
+      const stormRoll = rng.next();
+      const stSize = stormRoll < 0.15 ? 0.0                    /* 15%: no storms */
+                   : stormRoll < 0.40 ? 0.2 + rng.next() * 0.3 /* 25%: small storms */
+                   : stormRoll < 0.75 ? 0.4 + rng.next() * 0.4 /* 35%: medium storms */
+                   : 0.7 + rng.next() * 0.3;                   /* 25%: Great Red Spot scale */
+      /* Cloud color from the palette hue rather than binary */
+      const gasCloudHue = temperature > 0.5
+        ? 0.06 + rng.next() * 0.06   /* warm: cream/amber */
+        : 0.55 + rng.next() * 0.1;   /* cool: blue-grey */
+      const gasCloudSat = 0.05 + rng.next() * 0.15;
+      const gasCloudLit = 0.82 + rng.next() * 0.12;
       return { ...base,
         slopeness: 0.4 + rng.next() * 0.3,
-        bandCount: 5 + Math.floor(rng.next() * 8),
+        bandCount: 4 + Math.floor(rng.next() * 10),
         warpStrength: 0.1 + rng.next() * 0.15,
-        stormSize: rng.next() < 0.7 ? 0.4 + rng.next() * 0.6 : 0.0,
+        stormSize: stSize,
         atmosphereTint: temperature > 0.5 ? '#cc8844' : '#4488cc',
         atmosphereIntensity: 0.3 + rng.next() * 0.2,
         displacementAmp: 0.0,
         churn: 0.6 + rng.next() * 0.3,
-        cloudCover: 0.25 + rng.next() * 0.25,
-        cloudColor: temperature > 0.5 ? '#eebb88' : '#aaccdd',
-        storminess: 0.3 + rng.next() * 0.3,
+        cloudCover: 0.20 + rng.next() * 0.50,
+        cloudColor: hslToHex(gasCloudHue, gasCloudSat, gasCloudLit),
+        storminess: 0.2 + rng.next() * 0.4,
+        roughness: 0.6 + rng.next() * 0.2,
       };
+    }
 
     case 'ocean':
       return { ...base,
@@ -367,56 +434,101 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         cloudCover: 0.35 + rng.next() * 0.2,
         cloudColor: '#d8e8f0',
         storminess: 0.2 + rng.next() * 0.3,
+        roughness: 0.05 + rng.next() * 0.1,
       };
 
     case 'ice':
       return { ...base,
-        slopeness: 0.3 + rng.next() * 0.3,
-        crackScale: 4.0 + rng.next() * 4.0,
-        subsurfaceColor: '#3355aa',
-        specular: 0.5 + rng.next() * 0.3,
+        slopeness: 0.5 + rng.next() * 0.5,
+        crackScale: 1.5 + rng.next() * 2.5,
+        subsurfaceColor: '#2288aa',
+        specular: 0.55 + rng.next() * 0.35,
         atmosphereTint: '#aabbcc',
         atmosphereIntensity: 0.1 + rng.next() * 0.1,
         cloudCover: 0.15 + rng.next() * 0.2,
         cloudColor: '#ccddf0',
         storminess: rng.next() * 0.1,
+        roughness: 0.1 + rng.next() * 0.2,
       };
 
-    case 'volcanic':
+    case 'volcanic': {
+      /* Real lava hues: 0.0 = deep red (700C), 0.05 = orange (1000C), 0.1 = yellow (1200C) */
+      /* Hot: deep red (0.0) → orange (0.05) → yellow (0.08)
+         Cryo: teal (0.48) → cyan (0.50) → aquamarine (0.53) */
+      const lavaHue = temperature > 0.5
+        ? 0.0 + rng.next() * 0.08
+        : 0.47 + rng.next() * 0.07;
+      const lavaSat = temperature > 0.5
+        ? 0.85 + rng.next() * 0.15
+        : 0.60 + rng.next() * 0.25;
+      const lavaLit = temperature > 0.5
+        ? 0.45 + rng.next() * 0.15
+        : 0.50 + rng.next() * 0.15;
+      const emColor = hslToHex(lavaHue, lavaSat, lavaLit);
+      const autoAtmo = temperature > 0.5
+        ? hslToHex(lavaHue, 0.4, 0.25)
+        : '#556677';
       return { ...base,
-        slopeness: 1.0 + rng.next() * 0.6,
-        crackScale: 3.0 + rng.next() * 4.0,
+        slopeness: 0.8 + rng.next() * 0.6,
+        crackScale: 1.5 + rng.next() * 2.0,
+        craterDensity: 0.3 + rng.next() * 0.4,
+        displacementAmp: 0.02 + rng.next() * 0.03,
+        lumpiness: 0.04 + rng.next() * 0.06,
         emissiveIntensity: 0.6 + rng.next() * 0.4,
-        emissiveColor: temperature > 0.5 ? '#ff4400' : '#2266dd',
-        atmosphereTint: temperature > 0.5 ? '#aa4422' : '#556688',
-        atmosphereIntensity: 0.2 + rng.next() * 0.15,
-        cloudCover: 0.15 + rng.next() * 0.2,
-        cloudColor: temperature > 0.5 ? '#553322' : '#334455',
-        storminess: 0.2 + rng.next() * 0.2,
+        emissiveColor: emColor,
+        atmosphereTint: autoAtmo,
+        atmosphereIntensity: 0.25 + rng.next() * 0.2,
+        cloudCover: 0.35 + rng.next() * 0.30,
+        cloudColor: temperature > 0.5 ? '#332820' : '#8899a8',
+        storminess: 0.5 + rng.next() * 0.4,
+        roughness: 0.6 + rng.next() * 0.2,
       };
+    }
 
-    case 'crystalline':
+    case 'crystalline': {
+      /* 0 = euclidean (round), 1 = manhattan (star), 2 = chebyshev (square), 3 = triangular (hex) */
+      const metric = Math.floor(rng.next() * 4);
+      const subHue = rng.next();
+      const subColor = hslToHex(subHue, 0.5 + rng.next() * 0.3, 0.55 + rng.next() * 0.2);
       return { ...base,
-        slopeness: 0.2 + rng.next() * 0.3,
-        crackScale: 3.0 + rng.next() * 5.0,
+        slopeness: 0.3 + rng.next() * 0.4,
+        crackScale: (sizeClass => sizeClass < 0.33
+          ? 1.5 + rng.next() * 2.0
+          : sizeClass < 0.66 ? 4.0 + rng.next() * 4.0
+          : 10.0 + rng.next() * 10.0)(rng.next()),
         specular: 0.8 + rng.next() * 0.2,
+        bulbosity: rng.next(),
+        crystalMetric: metric,
+        subsurfaceColor: subColor,
+        emissiveIntensity: 0.3 + rng.next() * 0.5,
+        emissiveColor: subColor,
         atmosphereTint: '#aaccee',
-        atmosphereIntensity: 0.1 + rng.next() * 0.1,
+        atmosphereIntensity: 0.08 + rng.next() * 0.12,
+        roughness: 0.03 + rng.next() * 0.12,
+        metalness: 0.02 + rng.next() * 0.15,
       };
+    }
 
-    case 'fungal':
+    case 'fungal': {
+      const emHue = [0.48, 0.25, 0.12][Math.floor(rng.next() * 3)];
+      const emColor = hslToHex(emHue, 0.8 + rng.next() * 0.2, 0.5 + rng.next() * 0.15);
       return { ...base,
-        slopeness: 0.5 + rng.next() * 0.4,
-        bulbosity: 0.3 + rng.next() * 0.5,
-        warpStrength: 0.2 + rng.next() * 0.15,
-        emissiveIntensity: 0.2 + rng.next() * 0.3,
-        emissiveColor: '#22ccaa',
-        atmosphereTint: '#66aa88',
-        atmosphereIntensity: 0.25 + rng.next() * 0.15,
-        cloudCover: 0.3 + rng.next() * 0.2,
-        cloudColor: '#44aa66',
-        storminess: 0.1 + rng.next() * 0.1,
+        slopeness: 0.6 + rng.next() * 0.4,
+        warpStrength: 0.3 + rng.next() * 0.2,
+        crackScale: 3.5 + rng.next() * 3.0,
+        bulbosity: 0.3 + rng.next() * 0.4,
+        emissiveIntensity: 0.4 + rng.next() * 0.5,
+        emissiveColor: emColor,
+        subsurfaceColor: emColor,
+        atmosphereTint: hslToHex(0.3 + rng.next() * 0.1, 0.4, 0.35),
+        atmosphereIntensity: 0.3 + rng.next() * 0.2,
+        cloudCover: 0.3 + rng.next() * 0.15,
+        cloudColor: hslToHex(0.28 + rng.next() * 0.1, 0.3, 0.4),
+        storminess: 0.25 + rng.next() * 0.15,
+        roughness: 0.3 + rng.next() * 0.2,
+        metalness: 0.15 + rng.next() * 0.2,
       };
+    }
 
     default:
       return base;

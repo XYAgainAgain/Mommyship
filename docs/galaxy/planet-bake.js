@@ -51,6 +51,9 @@ export async function bakePlanetAtlas(renderer, bodies) {
       uEmissiveIntensity: { value: 0.0 },
       uEmissiveColor:     { value: new THREE.Color() },
       uBulbosity:         { value: 0.0 },
+      uCrystalMetric:     { value: 0 },
+      uMoistureOffset:    { value: 0.0 },
+      uBiomeCount:        { value: 0.5 },
     },
     depthTest: false,
     depthWrite: false,
@@ -145,6 +148,9 @@ export async function bakePlanetAtlas(renderer, bodies) {
       u.uEmissiveIntensity.value = params.emissiveIntensity;
       u.uEmissiveColor.value.set(params.emissiveColor);
       u.uBulbosity.value         = params.bulbosity;
+      u.uCrystalMetric.value     = params.crystalMetric ?? 0;
+      u.uMoistureOffset.value    = params.moistureOffset ?? 0.0;
+      u.uBiomeCount.value        = params.biomeCount ?? 0.5;
 
       renderer.setRenderTarget(tempRT);
       renderer.clear();

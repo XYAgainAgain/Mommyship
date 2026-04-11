@@ -24,6 +24,13 @@ uniform vec3  uSubsurfaceColor;
 uniform float uEmissiveIntensity;
 uniform vec3  uEmissiveColor;
 uniform float uBulbosity;
+uniform float uRoughness;
+uniform float uMetalness;
+uniform int   uCrystalMetric;
+
+/* Rocky biome system */
+uniform float uMoistureOffset;
+uniform float uBiomeCount;
 
 /* Detail-only */
 uniform float uTime;
@@ -55,6 +62,13 @@ float gGasBandValue = 0.5;
 /* Set by ocean-bearing render functions for specular masking in main() */
 float gOceanMask = 0.0;
 float gWaveHeight = 0.0;
+float gIceCrackMask = 0.0;
+float gVolcanicCrackMask = 0.0;
+float gFungalVeinMask = 0.0;
+float gFungalGlowMask = 0.0;
+float gCrystalEdgeMask = 0.0;
+float gCrystalGlowMask = 0.0;
+float gBiomeRoughness = -1.0; /* -1 = not set, use uRoughness */
 
 
 vec3 flowWarp(vec3 p, float s, float strength) {
@@ -130,33 +144,223 @@ vec3 oceanSurface(vec3 sp, float s, float depth, float roughness) {
 
 
 vec3 renderRocky(vec3 sp, float s) {
-  vec3 p = flowWarp(sp * 3.5, s, 0.25);
-  vec4 hd = fbmd(p + vec3(s), uSlopeness);
-  gDetailDerivs = hd.yzw;
-  float height = hd.x * 0.5 + 0.5;
   float lat = abs(sp.y);
+
+  /* Continent shapes — drives height for ocean/biome selection only.
+     Derivatives kept low so per-biome normals dominate surface texture. */
+  vec4 hd = fbmd(sp * 3.5 + vec3(s), uSlopeness);
+  gDetailDerivs = hd.yzw * 0.15;
+  float height = hd.x * 0.5 + 0.5;
   float t = 0.02;
 
-  /* Polar ice — shared by ocean and land paths */
-  float polarNoise = fbm(sp * 4.0 + vec3(s * 1.7), 0.3) * 0.1;
-  float coldness = 1.0 - smoothstep(0.35, 0.75, uTemperature);
-  float iceLine = mix(0.97, 0.80, coldness);
-  float polarIce = smoothstep(iceLine - 0.04, iceLine + 0.04, lat + polarNoise);
-  vec3 iceColor = mix(vec3(0.78, 0.84, 0.90), vec3(0.92, 0.95, 0.98), polarNoise * 5.0 + 0.5);
+  /* Temperature: latitude cosine + noise perturbation + uTemperature
+     0 (polar) → 1 (equatorial), noise makes boundaries wiggly */
+  float noisePerturb = gnoised(sp * 4.0 + vec3(s * 1.7)).x;
+  float temp = cos(lat * PI) * 0.5 + 0.5 + noisePerturb * 0.15 + uTemperature - 0.5;
+  temp = clamp(temp, 0.0, 1.0);
 
+  /* Moisture: separate FBM + Hadley cell approximation
+     Dip at ~25 deg latitude creates desert belts */
+  float moistureFbm = fbm(sp * 2.5 + vec3(s * 3.1, s * 0.7, s * 1.9), 0.4) * 0.5 + 0.5;
+  float hadleyD = abs(lat) - 0.4;
+  float hadley = 1.0 - 0.4 * exp(-8.0 * hadleyD * hadleyD);
+  float moisture = clamp(moistureFbm * hadley + uMoistureOffset, 0.0, 1.0);
+
+  /* Elevation for alpine/mountain override */
+  float elev = height;
+
+  /* Biome weight system — 9 biomes, each claims a temp×moisture×elevation zone.
+     uBiomeCount controls how many are active (low = 2–4 large zones, high = all 9).
+     Weights computed via smoothstep zones, then normalized. */
+  float biomeScale = 0.3 + uBiomeCount * 0.7;
+
+  /* Ice/tundra/boreal are NOT scaled by biomeScale — cold biomes always
+     present on cold planets regardless of uBiomeCount setting */
+  /* 1. Ice/Polar — cold, any moisture */
+  float iceW = smoothstep(0.18, 0.08, temp);
+  /* Elevation override: above snowline → ice regardless of latitude */
+  float snowline = 0.82 + noisePerturb * 0.03;
+  iceW = max(iceW, smoothstep(snowline, snowline + 0.03, elev));
+
+  /* 2. Tundra — cold-cool transition */
+  float tundraW = smoothstep(0.05, 0.18, temp) * smoothstep(0.35, 0.22, temp);
+
+  /* 3. Boreal/Dense Forest — cool + wet */
+  float borealW = smoothstep(0.15, 0.30, temp) * smoothstep(0.45, 0.30, temp)
+                * smoothstep(0.35, 0.55, moisture);
+
+  /* 4. Temperate Forest — moderate + wet */
+  float tempForestW = smoothstep(0.30, 0.45, temp) * smoothstep(0.65, 0.50, temp)
+                    * smoothstep(0.40, 0.60, moisture) * biomeScale;
+
+  /* 5. Grassland/Plains — broad moderate-temp catch-all for drier areas */
+  float grassW = smoothstep(0.18, 0.35, temp) * smoothstep(0.80, 0.60, temp)
+               * (1.0 - smoothstep(0.55, 0.75, moisture))
+               * biomeScale;
+
+  /* 6. Sandy Desert — warm-hot + dry */
+  float sandDesertW = smoothstep(0.50, 0.65, temp) * smoothstep(0.35, 0.20, moisture)
+                    * biomeScale;
+
+  /* 7. Rocky Desert/Badlands — warm + mid-dry */
+  float rockyDesertW = smoothstep(0.45, 0.60, temp) * smoothstep(0.75, 0.60, temp)
+                     * smoothstep(0.20, 0.35, moisture) * (1.0 - smoothstep(0.40, 0.55, moisture))
+                     * biomeScale;
+
+  /* 8. Tropical/Jungle — hot + wet */
+  float tropicalW = smoothstep(0.60, 0.80, temp) * smoothstep(0.50, 0.70, moisture)
+                  * biomeScale;
+
+  /* 9. Mountains/Alpine — elevation-gated, any temp/moisture */
+  float alpineThresh = 0.72 + noisePerturb * 0.04;
+  float mountainW = smoothstep(alpineThresh, alpineThresh + 0.06, elev) * biomeScale;
+
+  /* Grassland acts as catch-all — prevents black gaps in unclaimed zones */
+  grassW = max(grassW, 0.08 * biomeScale);
+
+  /* Normalize weights */
+  float totalW = iceW + tundraW + borealW + tempForestW + grassW
+               + sandDesertW + rockyDesertW + tropicalW + mountainW + 0.001;
+  iceW /= totalW; tundraW /= totalW; borealW /= totalW;
+  tempForestW /= totalW; grassW /= totalW; sandDesertW /= totalW;
+  rockyDesertW /= totalW; tropicalW /= totalW; mountainW /= totalW;
+
+  /* Each biome: distinct noise technique + domain warp for unique visual character.
+     Domain warping shifts input coords per-biome so even similar functions diverge. */
+  vec3 col1 = uBaseColor1, col2 = uBaseColor2, col3 = uBaseColor3;
+  vec3 colGrey = vec3(dot(col3, vec3(0.3, 0.5, 0.2))) * 0.7 + vec3(0.15);
+  vec3 colWarm = col3 * vec3(1.2, 1.0, 0.7) + vec3(0.08, 0.04, 0.0);
+
+  vec3 biomeColor = vec3(0.0);
+  vec3 biomeDerivs = vec3(0.0);
+
+  /* 1. Ice: ridgedFbm cracks — sharp, linear, high contrast */
+  if (iceW > 0.01) {
+    float crack = ridgedFbm(sp * 8.0 + vec3(s * 2.3), 3.5, 2.1, 3);
+    vec4 iceHd = fbmd(sp * 4.0 + vec3(s * 2.3), 0.4);
+    vec3 iceBase = mix(vec3(0.92, 0.94, 0.98), uSubsurfaceColor, 0.10);
+    biomeColor += iceW * mix(iceBase, uSubsurfaceColor * 0.4 + vec3(0.15),
+                             smoothstep(0.5, 0.8, crack));
+    biomeDerivs += iceW * iceHd.yzw * 0.5;
+  }
+
+  /* 2. Tundra: low-freq cellular noise for patchy polygonal ground */
+  if (tundraW > 0.01) {
+    vec4 tunHd = fbmd(sp * 3.0 + vec3(s * 0.5), 0.3);
+    float splotch = smoothstep(0.15, 0.45, tunHd.x * 0.5 + 0.5);
+    vec3 bare = colGrey * 0.8 + vec3(0.05, 0.03, 0.02);
+    vec3 lichen = mix(col2, colGrey, 0.6) * 0.5;
+    biomeColor += tundraW * mix(bare, lichen, splotch);
+    biomeDerivs += tundraW * tunHd.yzw * 0.25;
+  }
+
+  /* 3. Boreal: ridgedFbm tree clusters — sharp-edged dark patches, not smooth blobs */
+  if (borealW > 0.01) {
+    float trees = ridgedFbm(sp * 5.0 + vec3(s * 1.1), 2.5, 2.0, 3);
+    vec4 borHd = fbmd(sp * 5.0 + vec3(s * 1.1), 0.8);
+    float canopy = smoothstep(0.35, 0.65, trees);
+    vec3 dark = col2 * 0.20;
+    vec3 clearing = mix(colGrey, col2, 0.25) * 0.6;
+    biomeColor += borealW * mix(clearing, dark, canopy);
+    biomeDerivs += borealW * borHd.yzw * 0.8;
+  }
+
+  /* 4. Temperate Forest: domain-warped fbmd for organic canopy clumps */
+  if (tempForestW > 0.01) {
+    vec3 warpP = sp * 8.0 + vec3(s * 1.7);
+    vec3 warp = gnoised(warpP * 0.4 + vec3(s * 0.3)).yzw * 0.6;
+    vec4 canHd = fbmd(warpP + warp, 0.9);
+    float tex = canHd.x * 0.5 + 0.5;
+    vec3 shade = col2 * 0.30 + col3 * 0.05;
+    vec3 lit = col2 * 0.65 + vec3(0.04);
+    biomeColor += tempForestW * mix(shade, lit, tex);
+    biomeDerivs += tempForestW * canHd.yzw * 1.0;
+  }
+
+  /* 5. Grassland: very low freq, smooth, warm — visually flat + bright */
+  if (grassW > 0.01) {
+    vec4 grsHd = fbmd(sp * 2.0 + vec3(s * 0.3), 0.2);
+    float roll = grsHd.x * 0.5 + 0.5;
+    vec3 bright = colWarm * 1.1 + col2 * 0.3;
+    vec3 shadow = mix(colWarm, col2, 0.4) * 0.7;
+    biomeColor += grassW * mix(shadow, bright, roll);
+    biomeDerivs += grassW * grsHd.yzw * 0.15;
+  }
+
+  /* 6. Sandy Desert: anisotropic ridgedFbm dune stripes */
+  if (sandDesertW > 0.01) {
+    vec3 duneP = sp * vec3(3.0, 12.0, 3.0) + vec3(s * 0.9);
+    float dunes = ridgedFbm(duneP, 3.0, 2.0, 3);
+    vec4 duneHd = fbmd(duneP * 0.7, 0.6);
+    vec3 ridge = colWarm * 1.3 + vec3(0.12, 0.08, 0.0);
+    vec3 trough = colWarm * 0.65 + vec3(0.02);
+    biomeColor += sandDesertW * mix(trough, ridge, smoothstep(0.25, 0.65, dunes));
+    biomeDerivs += sandDesertW * duneHd.yzw * 1.0;
+  }
+
+  /* 7. Rocky Desert/Badlands: pow-sharpened ridgedFbm for angular mesas */
+  if (rockyDesertW > 0.01) {
+    float mesa = ridgedFbm(sp * 4.0 + vec3(s * 1.5), 3.5, 2.2, 4);
+    mesa = pow(max(0.0, 1.0 - abs(mesa - 0.5) * 2.0), 5.0);
+    vec4 mesaHd = fbmd(sp * 5.0 + vec3(s * 1.5), 1.2);
+    vec3 plateau = colGrey * 0.9 + colWarm * 0.2;
+    vec3 cliff = colGrey * 0.4;
+    biomeColor += rockyDesertW * mix(plateau, cliff, mesa);
+    biomeDerivs += rockyDesertW * mesaHd.yzw * 1.2;
+  }
+
+  /* 8. Tropical: domain-warped ridgedFbm for tangled dense canopy */
+  if (tropicalW > 0.01) {
+    vec3 junP = sp * 7.0 + vec3(s * 2.1);
+    vec3 junWarp = gnoised(junP * 0.3 + vec3(s * 0.8)).yzw * 0.8;
+    float canopy = ridgedFbm(junP + junWarp, 3.0, 2.1, 3);
+    vec4 junHd = fbmd(junP + junWarp, 0.9);
+    vec3 deep = col2 * 0.15;
+    vec3 top = col2 * 0.45 + col1 * 0.06;
+    biomeColor += tropicalW * mix(deep, top, smoothstep(0.3, 0.7, canopy));
+    biomeDerivs += tropicalW * junHd.yzw * 1.1;
+  }
+
+  /* 9. Mountains: ridged FBM + steep slope darkening, mostly grey */
+  if (mountainW > 0.01) {
+    float mtRidge = ridgedFbm(sp * 6.0 + vec3(s * 0.7), 4.5, 2.1, 4);
+    vec4 mtHd = fbmd(sp * 6.0 + vec3(s * 0.7), uSlopeness * 1.5);
+    vec3 rock = colGrey * 0.55 + col3 * 0.08;
+    vec3 peak = vec3(0.55, 0.52, 0.48);
+    vec3 mtCol = mix(rock, peak, smoothstep(0.3, 0.7, mtRidge));
+    float mtSlope = length(mtHd.yzw);
+    mtCol *= mix(1.0, 0.35, smoothstep(0.15, 1.0, mtSlope * uSlopeness));
+    biomeColor += mountainW * mtCol;
+    biomeDerivs += mountainW * mtHd.yzw * 1.5;
+  }
+
+  gDetailDerivs += biomeDerivs;
+
+  /* Per-biome roughness */
+  gBiomeRoughness = iceW * 0.15 + tundraW * 0.75 + borealW * 0.65
+                  + tempForestW * 0.55 + grassW * 0.70 + sandDesertW * 0.85
+                  + rockyDesertW * 0.90 + tropicalW * 0.50 + mountainW * 0.80;
+
+  vec3 color = biomeColor;
+
+  /* Ocean handling — below ocean level */
   float oceanMask = 1.0 - smoothstep(uOceanLevel - t, uOceanLevel + t, height);
   gOceanMask = oceanMask;
 
   if (oceanMask > 0.01) {
     float depth = max(0.0, uOceanLevel - height);
-    vec3 terrainDerivs = hd.yzw;
-    vec3 oceanColor = oceanSurface(sp, s, depth, uWarpStrength);
+    vec3 terrainDerivs = gDetailDerivs;
+
+    /* Dampen waves for rocky planets — land constrains fetch */
+    vec3 oceanColor = oceanSurface(sp, s, depth, uWarpStrength * 0.4);
     vec3 oceanDerivs = gDetailDerivs;
 
-    if (polarIce > 0.01) {
+    /* Polar ice over ocean */
+    if (iceW > 0.3) {
       float iceGrain = gnoised(sp * 20.0 + vec3(s * 3.0)).x;
-      vec3 ic = iceColor * (0.9 + iceGrain * 0.1);
-      float iceOpacity = smoothstep(0.0, 0.3, polarIce);
+      vec3 iceBase = mix(vec3(0.90, 0.93, 0.97), uSubsurfaceColor, 0.12);
+      vec3 ic = iceBase * (0.9 + iceGrain * 0.1);
+      float iceOpacity = smoothstep(0.3, 0.7, iceW);
       oceanColor = mix(oceanColor, ic, iceOpacity);
       gOceanMask *= 1.0 - iceOpacity;
       gDetailDerivs *= 1.0 - iceOpacity;
@@ -165,74 +369,13 @@ vec3 renderRocky(vec3 sp, float s) {
 
     if (oceanMask > 0.99) return oceanColor;
 
-    float ridge = ridgedFbm(sp * 5.0 + vec3(s * 0.7), 4.5, 2.1, 4);
-    float terrain = ridgedFbm(sp * 8.0 + vec3(s * 1.3), 3.0, 2.3, 3);
-    float elev = height - uOceanLevel;
-    float terrainH = elev + ridge * 0.12 + terrain * 0.06;
-
-    vec3 shoreColor = uBaseColor2 * vec3(1.3, 1.15, 0.8) + vec3(0.08, 0.06, 0.02);
-    vec3 lowColor = uBaseColor2 * 1.1 + vec3(0.03);
-    vec3 midColor = mix(uBaseColor2, uBaseColor3, 0.6) * 0.85;
-    vec3 highColor = uBaseColor3 * 0.7 + vec3(0.05);
-
-    vec3 landColor = shoreColor;
-    landColor = mix(landColor, lowColor, smoothstep(0.02, 0.08, terrainH));
-    landColor = mix(landColor, midColor, smoothstep(0.10, 0.18, terrainH));
-    landColor = mix(landColor, highColor, smoothstep(0.22, 0.38, terrainH));
-    landColor *= 0.70 + ridge * 0.30 + terrain * 0.15;
-
-    float aridity = smoothstep(0.30, 0.65, uTemperature);
-    if (aridity > 0.01) {
-      vec3 sandColor = vec3(0.72, 0.60, 0.38);
-      float equatorial = 1.0 - smoothstep(0.05, 0.50, lat);
-      float sandNoise = fbm(sp * 5.0 + vec3(s * 0.9), 0.3) * 0.3 + 0.55;
-      float dryHeight = 1.0 - smoothstep(0.0, 0.25, elev);
-      landColor = mix(landColor, sandColor * (0.85 + terrain * 0.3), equatorial * aridity * sandNoise * dryHeight);
-    }
-
-    vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
-    float landPolar = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1) * coldness;
-    landColor = mix(landColor, polar, landPolar);
-
-    float slope = length(hd.yzw);
-    landColor *= mix(1.0, 0.45, smoothstep(0.15, 1.2, slope * uSlopeness));
-
     gDetailDerivs = mix(terrainDerivs, oceanDerivs, oceanMask);
-    return mix(landColor, oceanColor, oceanMask);
+    return mix(color, oceanColor, oceanMask);
   }
 
-  /* Pure land */
-  float ridge = ridgedFbm(sp * 5.0 + vec3(s * 0.7), 4.5, 2.1, 4);
-  float terrain = ridgedFbm(sp * 8.0 + vec3(s * 1.3), 3.0, 2.3, 3);
-  float elev = height - uOceanLevel;
-  float terrainH = elev + ridge * 0.12 + terrain * 0.06;
-
-  vec3 shoreColor = uBaseColor2 * vec3(1.3, 1.15, 0.8) + vec3(0.08, 0.06, 0.02);
-  vec3 lowColor = uBaseColor2 * 1.1 + vec3(0.03);
-  vec3 midColor = mix(uBaseColor2, uBaseColor3, 0.6) * 0.85;
-  vec3 highColor = uBaseColor3 * 0.7 + vec3(0.05);
-
-  vec3 color = shoreColor;
-  color = mix(color, lowColor, smoothstep(0.02, 0.08, terrainH));
-  color = mix(color, midColor, smoothstep(0.10, 0.18, terrainH));
-  color = mix(color, highColor, smoothstep(0.22, 0.38, terrainH));
-  color *= 0.70 + ridge * 0.30 + terrain * 0.15;
-
-  float aridity = smoothstep(0.30, 0.65, uTemperature);
-  if (aridity > 0.01) {
-    vec3 sandColor = vec3(0.72, 0.60, 0.38);
-    float equatorial = 1.0 - smoothstep(0.05, 0.50, lat);
-    float sandNoise = fbm(sp * 5.0 + vec3(s * 0.9), 0.3) * 0.3 + 0.55;
-    float dryHeight = 1.0 - smoothstep(0.0, 0.25, elev);
-    color = mix(color, sandColor * (0.85 + terrain * 0.3), equatorial * aridity * sandNoise * dryHeight);
-  }
-
-  vec3 polar = mix(vec3(0.85, 0.9, 0.95), uBaseColor3, 0.3);
-  float landPolar = smoothstep(0.55, 0.8, lat + polarNoise + height * 0.1) * coldness;
-  color = mix(color, polar, landPolar);
-
+  /* Land slope darkening (global, on top of per-biome) */
   float slope = length(hd.yzw);
-  color *= mix(1.0, 0.45, smoothstep(0.15, 1.2, slope * uSlopeness));
+  color *= mix(1.0, 0.55, smoothstep(0.15, 1.2, slope * uSlopeness));
 
   return color;
 }
@@ -419,81 +562,275 @@ vec3 renderOcean(vec3 sp, float s) {
 
 
 vec3 renderIce(vec3 sp, float s) {
-  vec3 p = sp * uCrackScale;
-  vec3 vor = voronoi3(p + vec3(s));
-  float edge = smoothstep(0.0, 0.08, vor.y - vor.x);
+  vec3 off = vec3(s * 0.13, s * 0.37, s * 0.71);
 
-  vec3 color = mix(uBaseColor1, uBaseColor2, vor.x * 0.4);
-  color = mix(uSubsurfaceColor * 0.6, color, edge);
+  float bigCracks   = ridgedFbm(sp * 1.5 + off, uCrackScale * 0.4, 2.1, 3);
+  float medCracks   = ridgedFbm(sp * 3.5 + off * 1.7, uCrackScale * 0.8, 2.3, 4);
+  float fineCracks  = ridgedFbm(sp * 8.0 + off * 2.3, uCrackScale * 1.2, 2.0, 3);
 
-  float h = fbm(sp * 2.0 + vec3(s * 2.0), 0.3);
-  color *= 0.82 + h * 0.35;
+  float threshVar = fbm(sp * 2.0 + vec3(s), 0.3) * 0.08;
+  float cracks = smoothstep(0.55 + threshVar, 0.80, bigCracks) * 0.6
+               + smoothstep(0.60, 0.82, medCracks) * 0.3
+               + smoothstep(0.65, 0.85, fineCracks) * 0.15;
+  cracks = clamp(cracks, 0.0, 1.0);
 
+  float height = ridgedFbm(sp * 2.5 + off * 0.5, 3.0, 2.2, 4) * 0.35
+               + fbm(sp * 1.5 + vec3(s * 2.0), 0.3) * 0.65;
+
+  float eps = 0.015;
+  float hx = ridgedFbm((sp + vec3(eps, 0.0, 0.0)) * 2.5 + off * 0.5, 3.0, 2.2, 4) * 0.35
+           + fbm((sp + vec3(eps, 0.0, 0.0)) * 1.5 + vec3(s * 2.0), 0.3) * 0.65;
+  float hy = ridgedFbm((sp + vec3(0.0, eps, 0.0)) * 2.5 + off * 0.5, 3.0, 2.2, 4) * 0.35
+           + fbm((sp + vec3(0.0, eps, 0.0)) * 1.5 + vec3(s * 2.0), 0.3) * 0.65;
+  float hz = ridgedFbm((sp + vec3(0.0, 0.0, eps)) * 2.5 + off * 0.5, 3.0, 2.2, 4) * 0.35
+           + fbm((sp + vec3(0.0, 0.0, eps)) * 1.5 + vec3(s * 2.0), 0.3) * 0.65;
+  gDetailDerivs = (vec3(hx, hy, hz) - height) / eps;
+
+  float plateVar = fbm(sp * 3.0 + vec3(s * 3.7), 0.3);
+  vec3 color = mix(uBaseColor1, uBaseColor2, plateVar * 0.35 + 0.3);
+  color = mix(color, uBaseColor3, smoothstep(0.4, 0.7, height) * 0.25);
+
+  color *= 0.85 + clamp(height, 0.0, 1.0) * 0.25;
+
+  float slope = length(gDetailDerivs);
+  color *= mix(1.0, 0.75, smoothstep(0.15, 1.0, slope * uSlopeness));
+
+  vec3 crackColor = uSubsurfaceColor * 0.7;
+  color = mix(color, crackColor, cracks);
+
+  gIceCrackMask = cracks;
   return color;
 }
 
 
 vec3 renderVolcanic(vec3 sp, float s) {
-  vec3 p = sp * uCrackScale;
-  vec3 vor = voronoi3(p + vec3(s));
-  float crackWidth = smoothstep(0.07, 0.0, vor.y - vor.x);
+  vec3 off = vec3(s * 0.17, s * 0.41, s * 0.63);
 
-  vec4 hd = fbmd(sp * 4.0 + vec3(s * 1.3), uSlopeness);
-  gDetailDerivs = hd.yzw;
-  vec3 surface = uBaseColor1 * (0.2 + hd.x * 0.35);
+  /* Lava churn — warp crack coordinates so fissures ooze and shift */
+  float churnT = uTime * 0.15;
+  vec3 churnOff = vec3(
+    fbm(sp * 1.5 + vec3(churnT, 0.0, s), 0.3) * 0.12,
+    0.0,
+    fbm(sp * 1.5 + vec3(s, churnT * 0.7, 0.0), 0.3) * 0.12
+  );
 
-  float slope = length(hd.yzw);
-  surface *= mix(1.0, 0.45, smoothstep(0.2, 1.0, slope * uSlopeness));
+  float bigFissures  = ridgedFbm(sp * 1.8 + off + churnOff, uCrackScale * 0.5, 2.1, 3);
+  float medFissures  = ridgedFbm(sp * 4.0 + off * 1.5 + churnOff, uCrackScale * 0.9, 2.3, 4);
+  float fineFissures = ridgedFbm(sp * 9.0 + off * 2.1, uCrackScale * 1.3, 2.0, 3);
 
-  vec3 glowColor = uEmissiveColor * (1.5 + uEmissiveIntensity);
-  vec3 color = mix(surface, glowColor, crackWidth);
+  float height = ridgedFbm(sp * 2.5 + off * 0.5, 3.5, 2.2, 4) * 0.55
+               + fbm(sp * 1.5 + vec3(s * 2.0), 0.3) * 0.45;
 
+  float caldera = smoothstep(0.5, 0.8, height) * 0.25;
+  float threshVar = fbm(sp * 2.0 + vec3(s * 0.7), 0.3) * 0.06;
+  float cracks = smoothstep(0.62 + threshVar, 0.85, bigFissures) * 0.55
+               + smoothstep(0.65, 0.87, medFissures) * 0.30
+               + smoothstep(0.70, 0.88, fineFissures) * 0.15
+               + caldera;
+  cracks = clamp(cracks, 0.0, 1.0);
+
+  float craters = craterFbm(sp * 1.2 + off * 0.3);
+  float craterBlend = uCraterDensity * 0.3;
+  height = mix(height, craters, craterBlend);
+
+  /* Skip craterFbm in finite-diff — too expensive per-frame (375 loops × 3 axes) */
+  float eps = 0.015;
+  float hx = ridgedFbm((sp + vec3(eps, 0.0, 0.0)) * 2.5 + off * 0.5, 3.5, 2.2, 4) * 0.55
+           + fbm((sp + vec3(eps, 0.0, 0.0)) * 1.5 + vec3(s * 2.0), 0.3) * 0.45;
+  float hy = ridgedFbm((sp + vec3(0.0, eps, 0.0)) * 2.5 + off * 0.5, 3.5, 2.2, 4) * 0.55
+           + fbm((sp + vec3(0.0, eps, 0.0)) * 1.5 + vec3(s * 2.0), 0.3) * 0.45;
+  float hz = ridgedFbm((sp + vec3(0.0, 0.0, eps)) * 2.5 + off * 0.5, 3.5, 2.2, 4) * 0.55
+           + fbm((sp + vec3(0.0, 0.0, eps)) * 1.5 + vec3(s * 2.0), 0.3) * 0.45;
+  gDetailDerivs = (vec3(hx, hy, hz) - height) / eps;
+
+  float plateVar = fbm(sp * 3.0 + vec3(s * 2.9), 0.3);
+  vec3 rock = mix(uBaseColor1, uBaseColor2, plateVar * 0.3 + 0.35);
+  rock = mix(rock, uBaseColor3, smoothstep(0.5, 0.8, height) * 0.2);
+  float darkening = uTemperature > 0.5 ? 0.25 : 0.85;
+  float heightRange = uTemperature > 0.5 ? 0.35 : 0.15;
+  rock *= darkening + clamp(height, 0.0, 1.0) * heightRange;
+
+  float slope = length(gDetailDerivs);
+  float slopeDark = uTemperature > 0.5 ? 0.5 : 0.82;
+  rock *= mix(1.0, slopeDark, smoothstep(0.15, 1.0, slope * uSlopeness));
+
+  float pitting = gnoised(sp * 25.0 + vec3(s * 2.3)).x;
+  float pitAmt = uTemperature > 0.5 ? 0.15 : 0.06;
+  rock *= (1.0 - pitAmt) + pitting * pitAmt;
+
+  float hotEdge = smoothstep(0.0, 0.6, cracks);
+  vec3 edgeTint = uTemperature > 0.5 ? vec3(1.0, 0.85, 0.3) : vec3(0.6, 0.9, 1.0);
+  vec3 midTint  = uTemperature > 0.5 ? vec3(1.0, 0.55, 0.1) : vec3(0.3, 0.7, 0.95);
+  vec3 lavaCore = uEmissiveColor * (1.2 + uEmissiveIntensity);
+  vec3 lavaMid  = mix(uEmissiveColor, midTint, 0.4) * (0.9 + uEmissiveIntensity);
+  vec3 lavaEdge = mix(uEmissiveColor, edgeTint, 0.5) * uEmissiveIntensity;
+  float streaks = fbm(sp * 6.0 + vec3(s * 1.7), 0.4);
+  vec3 lavaColor = mix(lavaEdge, lavaMid, smoothstep(0.2, 0.5, hotEdge));
+  lavaColor = mix(lavaColor, lavaCore, smoothstep(0.5, 0.9, hotEdge));
+  lavaColor += edgeTint * streaks * 0.15 * cracks;
+  vec3 color = mix(rock, lavaColor, cracks);
+
+  gVolcanicCrackMask = cracks;
   return color;
 }
 
 
 vec3 renderCrystalline(vec3 sp, float s) {
-  vec3 p = sp * uCrackScale;
-  vec3 vor = voronoi3(p + vec3(s));
+  vec3 p = sp * uCrackScale + vec3(s);
 
-  float cellHue = fract(vor.z * 0.1337);
-  vec3 cellColor = mix(uBaseColor1, uBaseColor2, cellHue);
-  cellColor = mix(cellColor, uBaseColor3, step(0.7, cellHue));
+  /* Primary crystal layer — dual-cell intersection creates cleavage planes */
+  vec3 crystalDelta;
+  vec4 cr = crystals3D(p, 0.85, uCrystalMetric, s, crystalDelta);
+  float crystalVal = cr.x;
+  float f1 = cr.y;
+  float cellId = cr.z;
+  float edgeDist = cr.w;
 
-  float edge = smoothstep(0.0, 0.03, vor.y - vor.x);
-  vec3 edgeColor = cellColor * 0.3;
-  vec3 color = mix(edgeColor, cellColor, edge);
+  /* Secondary layer at finer scale for internal fracture detail */
+  vec4 cr2 = crystals3D(p * 2.3 + vec3(s * 0.7), 0.85, uCrystalMetric, s + 11.0);
 
-  float glint = pow(max(0.0, 1.0 - vor.x * 2.0), 4.0) * uSpecular;
-  color += vec3(glint * 0.3);
+  /* Per-cell color — tight hue variation + per-crystal brightness/saturation */
+  float cellHue = fract(sin(cellId * 127.1) * 43758.5453);
+  vec3 cellColor = mix(uBaseColor1, uBaseColor2, smoothstep(0.28, 0.38, cellHue));
+  cellColor = mix(cellColor, uBaseColor3, smoothstep(0.62, 0.72, cellHue));
+  float cellBright = fract(sin(cellId * 43.7) * 12345.6789);
+  cellColor *= 0.82 + cellBright * 0.36;
+
+  /* Growth banding from dual-layer crystal value — angular contours instead
+     of circular f1 rings, since the two-cell intersection is inherently sharp. */
+  float bandNoise = fbm(sp * 3.0 + vec3(s), 0.2) * 0.15;
+  float bandPattern = fract(crystalVal * 6.0 + cr2.x * 3.0 + bandNoise);
+  float band = smoothstep(0.0, 0.3, bandPattern) * smoothstep(1.0, 0.5, bandPattern);
+  float bandBright = mix(0.85, 1.15, band);
+  /* uBulbosity > 0.5 → bright cores, dark edges; < 0.5 → dark cores, bright edges */
+  float radialGrad = smoothstep(0.0, 0.5, crystalVal);
+  float coreDark = mix(bandBright, bandBright * 0.78, radialGrad * step(uBulbosity, 0.5));
+  float coreLight = mix(bandBright * 0.78, bandBright, radialGrad * step(0.5, uBulbosity));
+  float brightness = mix(coreDark, coreLight, step(0.5, uBulbosity));
+  cellColor *= brightness;
+
+  /* Sharp facet edges — primary cleavage + secondary fractures */
+  float primaryEdge = smoothstep(0.0, 0.04, edgeDist);
+  float secondaryEdge = smoothstep(0.0, 0.06, cr2.w);
+  float combinedEdge = primaryEdge * mix(1.0, secondaryEdge, 0.4);
+
+  /* Edge tinting — subsurface color shows at boundaries */
+  vec3 edgeColor = mix(cellColor * 0.35, uSubsurfaceColor * 0.4, 0.5);
+  vec3 color = mix(edgeColor, cellColor, combinedEdge);
+
+  float glowMask = (1.0 - primaryEdge) + (1.0 - secondaryEdge) * 0.3;
+  glowMask = clamp(glowMask, 0.0, 1.0);
+  gCrystalEdgeMask = 1.0 - combinedEdge;
+  gCrystalGlowMask = glowMask;
+
+  /* Crystal interior — secondary pattern modulates brightness */
+  float interior = crystalVal * 0.5 + cr2.x * 0.3;
+  color *= 0.92 + interior * 0.2;
+
+  /* Derivatives from primary cell for normal perturbation */
+  gDetailDerivs = crystalDelta * 2.5;
 
   return color;
 }
 
 
 vec3 renderFungal(vec3 sp, float s) {
-  vec3 warpedP = sp * uCrackScale;
-  float wx = fbm(warpedP + vec3(s * 0.7), 0.3);
-  float wz = fbm(warpedP + vec3(s * 1.3), 0.3);
-  warpedP += vec3(wx, 0.0, wz) * uBulbosity;
+  /* Dual flow-warped terrain — colordodge-derived organic continent shapes */
+  vec3 wp1 = flowWarp(sp * 2.5, s, uWarpStrength);
+  vec3 wp2 = flowWarp(sp * 1.8, s + 7.31, uWarpStrength * 0.7);
 
-  vec3 vor = voronoi3(warpedP + vec3(s));
-  float edge = smoothstep(0.0, 0.06, vor.y - vor.x);
+  vec4 hd1 = fbmd(wp1 + vec3(s * 0.31), uSlopeness);
+  float terrain1 = clamp((hd1.x * 0.5 + 0.5 - 0.5) * 2.0 + 0.5, 0.0, 1.0);
+  float terrain2 = fbm(wp2 + vec3(s * 1.73), 0.3) * 0.5 + 0.5;
+  gDetailDerivs = hd1.yzw;
 
-  float cellHue = fract(vor.z * 0.0731);
-  vec3 color = mix(uBaseColor1, uBaseColor2, cellHue);
-  color = mix(color, uBaseColor3, smoothstep(0.5, 0.8, cellHue));
+  float height = terrain1 * 0.65 + terrain2 * 0.35;
 
-  vec3 networkColor = uBaseColor1 * 0.2;
-  color = mix(networkColor, color, edge);
+  /* Dual-noise color mapping — wide hue rotation between colors creates
+     colordodge-style splotch variety. 4th color synthesized from complement
+     of color1+color3 midpoint for extra variety without a new uniform. */
+  vec3 color4 = (uBaseColor1 + uBaseColor3) * 0.5;
+  color4 = vec3(1.0) - color4;
+  color4 = mix(color4, uBaseColor2, 0.3);
 
-  float glow = smoothstep(0.2, 0.0, vor.x) * uEmissiveIntensity;
-  color += uEmissiveColor * glow;
+  vec3 color = mix(uBaseColor1, uBaseColor2, smoothstep(0.15, 0.50, terrain1));
+  color = mix(color, uBaseColor3, smoothstep(0.45, 0.80, terrain2));
+  float crossNoise = terrain1 * 0.6 + terrain2 * 0.4;
+  color = mix(color, color4, smoothstep(0.55, 0.85, crossNoise) * 0.45);
+  color *= 0.75 + height * 0.35;
+
+  /* Water pools in terrain lows — higher threshold = more coverage */
+  float poolDepth = max(0.0, 0.45 - height);
+  float poolMask = smoothstep(0.0, 0.12, poolDepth);
+  if (poolMask > 0.01) {
+    vec3 poolColor = uSubsurfaceColor * 0.6 + uBaseColor1 * 0.2;
+    color = mix(color, poolColor, poolMask * 0.7);
+  }
+  gOceanMask = poolMask;
+
+  /* Mycelium network — domain-warped ridgedFbm for organic branching */
+  vec3 veinOff = vec3(s * 0.17, s * 0.41, s * 0.63);
+  float churnT = uTime * 0.04;
+  vec3 animOff = vec3(
+    fbm(sp * 0.8 + vec3(churnT, 0.0, s), 0.3) * 0.06,
+    0.0,
+    fbm(sp * 0.8 + vec3(s, churnT * 0.6, 0.0), 0.3) * 0.06
+  );
+
+  /* Route veins through terrain via fbm domain warp */
+  float veinWarpN1 = fbm(sp * uCrackScale * 0.7 + vec3(s * 0.9), 0.3);
+  float veinWarpN2 = fbm(sp * uCrackScale * 0.7 + vec3(s * 1.6), 0.3);
+  vec3 veinWarped = sp * uCrackScale + vec3(veinWarpN1, 0.0, veinWarpN2) * 0.4 + animOff;
+
+  float primaryVeins = ridgedFbm(veinWarped + veinOff, 2.5, 2.1, 3);
+  float secondaryVeins = ridgedFbm(sp * uCrackScale * 2.3 + veinOff * 1.7 + animOff, 1.8, 2.3, 4);
+
+  float threshVar = fbm(sp * 1.5 + vec3(s), 0.3) * 0.06;
+  float veins = smoothstep(0.75 + threshVar, 0.92, primaryVeins) * 0.6
+              + smoothstep(0.78, 0.93, secondaryVeins) * 0.3;
+  veins = clamp(veins, 0.0, 1.0);
+
+  /* Bioluminescent pulse traveling along vein ridges */
+  float pulseFreq = 8.0 + fract(s * 0.37) * 12.0;
+  float pulseSpeed = 0.8 + fract(s * 0.71) * 1.2;
+  float pulse = sin(primaryVeins * pulseFreq - uTime * pulseSpeed) * 0.5 + 0.5;
+  pulse = smoothstep(0.4, 0.9, pulse) * veins;
+  gFungalVeinMask = veins;
+  gFungalGlowMask = pulse;
+
+  /* Dark substrate between veins */
+  color = mix(color, uSubsurfaceColor * 0.15, veins * 0.5);
+
+  /* Slope darkening from terrain derivatives */
+  float slope = length(gDetailDerivs);
+  color *= mix(1.0, 0.6, smoothstep(0.15, 1.0, slope * uSlopeness));
 
   return color;
 }
 
-/* Clouds and lightning moved to the atmo shell mesh (planet-atmo.frag) */
+/* Cook-Torrance GGX BRDF — replaces old wrap+Blinn-Phong */
+float DistributionGGX(float NdotH, float roughness) {
+  float a  = roughness * roughness;
+  float a2 = a * a;
+  float d  = NdotH * NdotH * (a2 - 1.0) + 1.0;
+  return a2 / max(PI * d * d, 1e-7);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) {
+  float r = roughness + 1.0;
+  float k = (r * r) / 8.0;
+  return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+float GeometrySmith(float NdotV, float NdotL, float roughness) {
+  return GeometrySchlickGGX(max(NdotV, 0.001), roughness)
+       * GeometrySchlickGGX(max(NdotL, 0.001), roughness);
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 
 void main() {
   /* vLocalPos is body-local — texture sticks to surface, geometry rotation is separate */
@@ -519,6 +856,13 @@ void main() {
   gDetailDerivs = vec3(0.0);
   gOceanMask = 0.0;
   gWaveHeight = 0.0;
+  gIceCrackMask = 0.0;
+  gVolcanicCrackMask = 0.0;
+  gFungalVeinMask = 0.0;
+  gFungalGlowMask = 0.0;
+  gCrystalEdgeMask = 0.0;
+  gCrystalGlowMask = 0.0;
+  gBiomeRoughness = -1.0;
 
   vec3 color;
   if (uPlanetMode == 0)      color = renderRocky(sp, s);
@@ -533,8 +877,7 @@ void main() {
 
   /* High-freq detail — expensive, only at close range */
   bool isFluid = (uPlanetMode == 2 || uPlanetMode == 3);
-  bool isVoronoi = (uPlanetMode == 4 || uPlanetMode == 5 || uPlanetMode == 6 || uPlanetMode == 7);
-  if (lodMedium && !isVoronoi) {
+  if (lodMedium) {
     vec3 hp = sp * 18.0 + vec3(s * 0.73);
     vec4 fn1 = gnoised(hp);
     float fine2 = 0.0;
@@ -557,41 +900,83 @@ void main() {
   vec3 B = cross(N, T);
   float derivLen = length(gDetailDerivs);
   /* Bump fades out at far LOD so it matches the flat atlas shading */
-  float bumpStrength = min(0.35, derivLen * 0.25) * (1.0 - lod);
+  /* Rocky/crystalline/fungal get stronger bump for terrain character */
+  float bumpCap = (uPlanetMode == 0 || uPlanetMode == 6 || uPlanetMode == 7) ? 1.0 : 0.35;
+  float bumpMul = (uPlanetMode == 0 || uPlanetMode == 6 || uPlanetMode == 7) ? 0.7 : 0.25;
+  float bumpStrength = min(bumpCap, derivLen * bumpMul) * (1.0 - lod);
   vec3 perturbedN = normalize(N - bumpStrength * (gDetailDerivs.x * T + gDetailDerivs.y * B));
 
   vec3 L = normalize(uLightDir);
-  float NdotL = dot(perturbedN, L);
-  float lighting = smoothstep(-0.4, 0.5, NdotL) * 0.65 + 0.35;
 
-  /* Clouds are now on the atmo shell mesh (front face) */
-  float specMask = 0.0;
-  if (uPlanetMode == 0 || uPlanetMode == 3) specMask = uSpecular * gOceanMask;
-  if (uPlanetMode == 4 || uPlanetMode == 6) specMask = uSpecular * 0.5;
-  if (uPlanetMode == 0 || uPlanetMode == 3) specMask *= 0.7 + gWaveHeight * 0.6 * gOceanMask;
+  /* Per-subtype roughness — masks modulate base uRoughness per-fragment */
+  float effectiveRoughness = uRoughness;
+  /* Rocky biome-driven roughness overrides base when set */
+  if (gBiomeRoughness >= 0.0)
+    effectiveRoughness = gBiomeRoughness;
+  if (uPlanetMode == 0 || uPlanetMode == 3)
+    effectiveRoughness = mix(effectiveRoughness, 0.04, gOceanMask);
+  if (uPlanetMode == 4)
+    effectiveRoughness = mix(uRoughness, 0.9, gIceCrackMask);
+  if (uPlanetMode == 5)
+    effectiveRoughness = mix(uRoughness, 0.04, gVolcanicCrackMask * 0.5);
+  if (uPlanetMode == 6)
+    effectiveRoughness = mix(uRoughness, 0.5, gCrystalEdgeMask);
+  if (uPlanetMode == 7) {
+    effectiveRoughness = mix(uRoughness, 0.15, gFungalVeinMask * 0.6);
+    effectiveRoughness = mix(effectiveRoughness, 0.04, gOceanMask);
+  }
+
+  /* Wrap-light NdotL — shifts terminator softward so small spheres
+     don't get knife-edge shadow boundaries */
+  float NdotL_raw = dot(perturbedN, L);
+  float NdotL = max(0.0, NdotL_raw * 0.65 + 0.35);
+
   vec3 H = normalize(L + V);
   float NdotH = max(0.0, dot(perturbedN, H));
-  float spec = specMask * pow(NdotH, 32.0) * 0.6;
+  float NdotV = max(0.0, dot(perturbedN, V));
+  float HdotV = max(0.0, dot(H, V));
 
-  color = color * lighting + vec3(spec);
+  /* Cook-Torrance GGX specular */
+  vec3 albedo = color;
+  vec3 F0 = mix(vec3(0.04), albedo, uMetalness);
+  vec3 F  = fresnelSchlick(HdotV, F0);
+  float D = DistributionGGX(NdotH, effectiveRoughness);
+  float G = GeometrySmith(NdotV, NdotL, effectiveRoughness);
+
+  vec3 specular = (D * G * F) / max(4.0 * NdotV * NdotL, 0.001);
+
+  /* Energy-conserving diffuse — metals have no diffuse.
+     Skip /PI normalization: we have one directional light, no environment
+     map, so the PI divisor just makes everything too dark. */
+  vec3 kD = (vec3(1.0) - F) * (1.0 - uMetalness);
+  color = (kD * albedo + specular) * NdotL;
+
+  /* Ambient floor — uses albedo so dark side stays readable */
+  color += kD * albedo * 0.12;
 
 
 
+  /* Crystalline — boosted ambient (gems scatter light internally) + edge glow */
+  if (uPlanetMode == 6) {
+    color += albedo * 0.15;
+    color += uSubsurfaceColor * gCrystalGlowMask * uEmissiveIntensity * 0.5;
+  }
+  /* Volcanic emissive — additive glow unaffected by lighting */
   if (uPlanetMode == 5) {
-    vec3 p = sp * uCrackScale;
-    vec3 vor = voronoi3(p + vec3(s));
-    float crackGlow = smoothstep(0.07, 0.0, vor.y - vor.x) * uEmissiveIntensity;
-    color += uEmissiveColor * crackGlow * 0.5;
+    vec3 lavaGlow = uEmissiveColor * gVolcanicCrackMask * uEmissiveIntensity * 0.6;
+    color += lavaGlow;
   }
   if (uPlanetMode == 7) {
-    vec3 warpedP = sp * uCrackScale;
-    float wx = fbm(warpedP + vec3(s * 0.7), 0.3);
-    float wz = fbm(warpedP + vec3(s * 1.3), 0.3);
-    warpedP += vec3(wx, 0.0, wz) * uBulbosity;
-    vec3 vor = voronoi3(warpedP + vec3(s));
-    float glow = smoothstep(0.2, 0.0, vor.x) * uEmissiveIntensity;
-    color += uEmissiveColor * glow * 0.5;
+    color += uEmissiveColor * gFungalVeinMask * uEmissiveIntensity * 0.4;
+    color += uEmissiveColor * 1.8 * gFungalGlowMask * uEmissiveIntensity;
   }
 
-  fragColor = vec4(color, uFadeIn);
+  float alpha = uFadeIn;
+  if (uPlanetMode == 6) {
+    /* Per-body random transparency, squared to skew toward fully opaque */
+    float bodyTransp = fract(s * 0.137);
+    bodyTransp *= bodyTransp;
+    alpha *= mix(1.0 - bodyTransp * 0.03, 1.0 - bodyTransp * 0.10, gCrystalEdgeMask);
+  }
+  fragColor = vec4(color, alpha);
 }

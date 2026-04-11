@@ -34,7 +34,7 @@ const LOADING_MESSAGES = [
   'Spinning up the accretion disk...',
   'Scattering the stars...',
   'Shuffling tectonic plates...',
-  'Shaking up the volcanoes...',
+  'Jostling the volcanoes...',
   'Praying for acid rain...',
   'Tumble-drying the deserts...',
   'Poking the pulsar...',
@@ -44,6 +44,43 @@ const LOADING_MESSAGES = [
   'Shaking hands with alien neighbors...',
   'Pressing the big red button...',
   'Dropping out of warp...',
+  'Discovering the Nice Constant™...',
+  'Squashing space bugs...',
+  'Nudging moons into coplanar orbits...',
+  'Bribing Kepler for a better initial guess...',
+  'Convincing photons to behave...',
+  'Inflating the gas giants...',
+  'Salting the oceans to taste...',
+  'Winding up the elliptical orbits...',
+  'Teaching the binary stars to waltz...',
+  'Rolling planets around like marbles...',
+  'Sprinkling in the rogue planets...',
+  'Tuning the cosmic microwave background...',
+  'Asking the black hole to hold still for a sec...',
+  'Stress-testing the Roche limit...',
+  'Hand-placing every single asteroid...',
+  'Arguing with the Kepler solver...',
+  'Double-checking Fuddruckers locations...',
+  'Spackling the nebulae...',
+  'Briefly resolving the Fermi paradox...',
+  'Painting everything H-alpha pink...',
+  'Threading the gaps between asteroids...',
+  'Waking the Starsingers...',
+  'Ignoring the check engine light...',
+  'Reticulating the galactic spiral arms...',
+  'Installing legally mandated advertisements...',
+  'Confiscating illegal square protein patties...',
+  'Checking the elasticity of spacetime...',
+  'Feeding the fungal planets...',
+  'Roughly aligning the ecliptic...',
+  'Wibble-wobbling the axial tilts...',
+  'Simulating several billion cycles real quick...',
+  'Double-checking Newton-Raphson convergence...',
+  'Seeding the habitable zones with fast casual dining experiences...',
+  'Rounding up to the nearest parsec...',
+  'Politely asking gravity to cooperate...',
+  'Blaming the uncaring cosmos for our misfortunes...',
+  'Dropping out of warp (for real this time)...',
 ];
 
 function createLoadingTracker(totalSteps) {
@@ -56,6 +93,19 @@ function createLoadingTracker(totalSteps) {
   let target = 0;
   let rafId = 0;
 
+  /* Shuffled deck — refills when exhausted so steps never outnumber messages */
+  let deck = [];
+  function nextMessage() {
+    if (deck.length === 0) {
+      deck = LOADING_MESSAGES.slice();
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+    }
+    return deck.pop();
+  }
+
   function tick() {
     current += (target - current) * 0.12;
     if (Math.abs(target - current) < 0.001) current = target;
@@ -67,9 +117,7 @@ function createLoadingTracker(totalSteps) {
   return function advance() {
     step++;
     target = step / totalSteps;
-    if (textEl && step <= LOADING_MESSAGES.length) {
-      textEl.textContent = LOADING_MESSAGES[step - 1] || '';
-    }
+    if (textEl) textEl.textContent = nextMessage();
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(tick);
   };
