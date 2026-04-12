@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0.0",
     "name": "The Known Galaxy",
-    "lastModified": "2026-04-12T00:00:00.000Z",
+    "lastModified": "2026-04-12T19:00:19.019Z",
     "authors": [
       "Sam",
       "Jaz"
@@ -305,7 +305,7 @@
       "type": "star",
       "subtype": "red-dwarf",
       "name": "Brighton",
-      "description": "Commecha Station, ultra-elite rec station for the ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ber-wealthy. Closest to the Supermassive Black Hole, between Nimbus and Verdessa.",
+      "description": "Commecha Station, ultra-elite rec station for the ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ber-wealthy. Closest to the Supermassive Black Hole, between Nimbus and Verdessa.",
       "notes": "",
       "position": {
         "x": 40,
@@ -379,7 +379,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "A",
         "habitability": 76,
@@ -409,7 +409,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "S",
         "habitability": 70,
@@ -461,7 +461,7 @@
       "factionId": "comexo",
       "zoneId": null,
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "nimbus": {
       "type": "star",
@@ -860,7 +860,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "A",
         "habitability": 95,
@@ -1060,7 +1060,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "B",
         "habitability": 82,
@@ -1090,7 +1090,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "A",
         "habitability": 75,
@@ -1122,7 +1122,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "A",
         "habitability": 46,
@@ -1196,7 +1196,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "A",
         "habitability": 96,
@@ -1324,7 +1324,7 @@
       "factionId": "cuck",
       "zoneId": null,
       "tags": [],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "sublex": {
       "type": "star",
@@ -2689,7 +2689,7 @@
       "tags": [
         "recreation"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "S",
         "size": "XXXS"
@@ -3240,7 +3240,7 @@
       "tags": [
         "port"
       ],
-      "hasFuddruckers": false
+      "hasFuddruckers": true
     },
     "phytos": {
       "type": "star",
@@ -4029,7 +4029,7 @@
       "tags": [
         "uninhabited"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "C",
         "habitability": 12,
@@ -4648,7 +4648,7 @@
       "tags": [
         "settlement"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "X",
         "habitability": 54,
@@ -4709,7 +4709,7 @@
       "tags": [
         "colony"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "C",
         "habitability": 66,
@@ -4791,7 +4791,7 @@
       "tags": [
         "uninhabited"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "C",
         "habitability": 61,
@@ -4852,7 +4852,7 @@
       "tags": [
         "colony"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "B",
         "habitability": 64,
@@ -6463,7 +6463,7 @@
       "subtype": "ocean",
       "name": "Osminok Prime",
       "description": "The Endless Ocean That Is Our Treasured Home Despite Its Many Dangers. Gaby's homeworld!",
-      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° axial tilt, 2.5 bar atmosphere. ~99% ocean coverage.",
+      "notes": "0.9 Earth radii, 1.15g, 0.55 AU, 180 malton unit orbit, 18-marbec malton unit, 35ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° axial tilt, 2.5 bar atmosphere. ~99% ocean coverage.",
       "position": null,
       "parentId": "osminok",
       "orbital": {
@@ -7527,7 +7527,7 @@
       "tags": [
         "fueling"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "C",
         "habitability": 100,
@@ -7829,7 +7829,7 @@
       "tags": [
         "fueling"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
         "class": "B",
         "habitability": 100,

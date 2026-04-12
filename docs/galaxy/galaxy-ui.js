@@ -2444,7 +2444,7 @@ function toggleScreenshot() {
 screenshotBtn.addEventListener('click', toggleScreenshot);
 document.addEventListener('keydown', (e) => {
   /* Editor toggle — works even when focused on inputs */
-  if (e.ctrlKey && e.altKey && e.shiftKey && e.key === 'E') {
+  if (e.ctrlKey && e.altKey && e.shiftKey && e.code === 'KeyE') {
     e.preventDefault();
     toggleEditorMode();
     return;
