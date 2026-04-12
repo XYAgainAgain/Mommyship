@@ -390,5 +390,13 @@ export async function createStarDetail(renderer) {
     }
   }
 
-  return { update, container, dispose };
+  /* Invalidate one star — force re-activation with fresh params */
+  function invalidateBody(bodyId) {
+    for (const entry of pool) {
+      if (entry.bodyId === bodyId) { deactivate(entry); break; }
+    }
+    activeIds.delete(bodyId);
+  }
+
+  return { update, container, dispose, invalidateBody };
 }

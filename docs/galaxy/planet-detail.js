@@ -121,6 +121,7 @@ export async function createPlanetDetail(renderer) {
         uLightDir:          { value: new THREE.Vector3(0, 1, 0) },
         uLodDist:           { value: 18.0 },
         uFadeIn:            { value: 1.0 },
+        uOpacity:           { value: -1.0 },
       },
       transparent: true,
     });
@@ -256,6 +257,7 @@ export async function createPlanetDetail(renderer) {
     u.uCrystalMetric.value     = params.crystalMetric ?? 0;
     u.uMoistureOffset.value    = params.moistureOffset ?? 0.0;
     u.uBiomeCount.value        = params.biomeCount ?? 0.5;
+    u.uOpacity.value           = params.opacity ?? 1.0;
 
     entry.radius = params.radius;
 
@@ -510,6 +512,16 @@ export async function createPlanetDetail(renderer) {
     activeIds.clear();
   }
 
+  /* Invalidate just one body — deactivate its pool entry so it re-activates with fresh params */
+  function invalidateBody(bodyId) {
+    if (paramsCache) paramsCache.delete(bodyId);
+    for (const entry of pool) {
+      if (entry.bodyId === bodyId) { deactivate(entry); break; }
+    }
+    activeIds.delete(bodyId);
+    cachedPlanetIds = null;
+  }
+
   function dispose() {
     surfaceGeo.dispose();
     atmoGeo.dispose();
@@ -523,5 +535,5 @@ export async function createPlanetDetail(renderer) {
     }
   }
 
-  return { update, container, dispose, setParamsCache, invalidateCaches };
+  return { update, container, dispose, setParamsCache, invalidateCaches, invalidateBody };
 }

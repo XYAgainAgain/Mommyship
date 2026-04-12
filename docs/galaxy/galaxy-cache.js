@@ -3,7 +3,7 @@
 
 const DB_NAME = 'galaxy-cache';
 const DB_VERSION = 1;
-export const CACHE_VERSION = 29;
+export const CACHE_VERSION = 40;
 
 const STORES = {
   PLANET: 'planet-atlas',

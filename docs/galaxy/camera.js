@@ -7,9 +7,8 @@ const ROTATE_SPEED_QE = 1.5;
 
 /* Keys that the galaxy map captures — prevents browser shortcuts like Ctrl+W */
 const CAPTURED_KEYS = new Set([
-  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE',
-  'Space', 'ControlLeft', 'ControlRight',
-  'ShiftLeft', 'ShiftRight'
+  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyC',
+  'Space', 'ShiftLeft', 'ShiftRight'
 ]);
 
 /* Reusable vectors — avoids per-frame allocation in the render loop */
@@ -27,12 +26,16 @@ export function createCamera(renderer) {
   controls.target.set(0, 0, 0);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
-  controls.zoomSpeed = 0.5;
+  controls.zoomSpeed = 0.8;
   controls.rotateSpeed = 0.5;
   controls.panSpeed = 1.0;
 
+  const TRACK_MIN_DIST_BASE = 0.5;
+  const TRACK_SPEED_RAMP = 60;
+
   let museMode = false;
   let trackMode = false;
+  let trackMinDist = TRACK_MIN_DIST_BASE;
   let museAnim = null;
   let museExit = null;
   let preMuse = null;
@@ -67,22 +70,25 @@ export function createCamera(renderer) {
   }
 
   function handleKeyboard(delta) {
+    /* Gentle keyboard-only damping when tracking — halved so it stays responsive */
+    const trackDist = trackMode ? camera.position.distanceTo(controls.target) : 0;
+    const trackDamp = trackMode ? Math.max(0.5, Math.min(1, trackDist / (TRACK_SPEED_RAMP * 0.35))) : 1;
+
     /* Horizontal orbit: Q/E always, A/D when tracking */
     const orbitDir = (keys['KeyE'] ? 1 : 0) - (keys['KeyQ'] ? 1 : 0)
       + (trackMode ? (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) : 0);
     if (orbitDir) {
-      const angle = orbitDir * ROTATE_SPEED_QE * delta;
+      const angle = orbitDir * ROTATE_SPEED_QE * delta * trackDamp;
       const offset = camera.position.clone().sub(controls.target);
       offset.applyAxisAngle(camera.up, angle);
       camera.position.copy(controls.target).add(offset);
     }
 
-    /* Vertical orbit: Space/Ctrl when tracking */
+    /* Vertical orbit: Space/C when tracking */
     if (trackMode) {
-      const vertDir = (keys['Space'] ? 1 : 0)
-        - ((keys['ControlLeft'] || keys['ControlRight']) ? 1 : 0);
+      const vertDir = (keys['Space'] ? 1 : 0) - (keys['KeyC'] ? 1 : 0);
       if (vertDir) {
-        const angle = vertDir * ROTATE_SPEED_QE * delta;
+        const angle = vertDir * ROTATE_SPEED_QE * delta * trackDamp;
         const offset = camera.position.clone().sub(controls.target);
         _forward.crossVectors(offset, camera.up).normalize();
         offset.applyAxisAngle(_forward, angle);
@@ -97,31 +103,39 @@ export function createCamera(renderer) {
     const sprint = keys['ShiftLeft'] || keys['ShiftRight'] ? 1.75 : 1.0;
     const speed = PAN_SPEED_WASD * delta * sprint;
 
-    camera.getWorldDirection(_forward);
-    _forward.y = 0;
-    if (_forward.lengthSq() < 0.001) {
-      const az = controls.getAzimuthalAngle();
-      _forward.set(-Math.sin(az), 0, -Math.cos(az));
-    }
-    _forward.normalize();
-    _right.crossVectors(_forward, camera.up).normalize();
+    if (trackMode) {
+      /* W/S dolly toward/away from target */
+      const dolly = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0);
+      if (dolly) {
+        const offset = camera.position.clone().sub(controls.target);
+        const dist = offset.length();
+        const newDist = Math.max(trackMinDist, dist - dolly * speed * 0.5 * trackDamp);
+        offset.setLength(newDist);
+        camera.position.copy(controls.target).add(offset);
+      }
+    } else {
+      camera.getWorldDirection(_forward);
+      _forward.y = 0;
+      if (_forward.lengthSq() < 0.001) {
+        const az = controls.getAzimuthalAngle();
+        _forward.set(-Math.sin(az), 0, -Math.cos(az));
+      }
+      _forward.normalize();
+      _right.crossVectors(_forward, camera.up).normalize();
 
-    _move.set(0, 0, 0);
-    if (keys['KeyW']) _move.add(_forward);
-    if (keys['KeyS']) _move.sub(_forward);
-    if (!trackMode) {
+      _move.set(0, 0, 0);
+      if (keys['KeyW']) _move.add(_forward);
+      if (keys['KeyS']) _move.sub(_forward);
       if (keys['KeyD']) _move.add(_right);
       if (keys['KeyA']) _move.sub(_right);
-    }
-    if (!trackMode) {
       if (keys['Space']) _move.y += 1;
-      if (keys['ControlLeft'] || keys['ControlRight']) _move.y -= 1;
-    }
+      if (keys['KeyC']) _move.y -= 1;
 
-    if (_move.lengthSq() > 0) {
-      _move.normalize().multiplyScalar(speed);
-      camera.position.add(_move);
-      controls.target.add(_move);
+      if (_move.lengthSq() > 0) {
+        _move.normalize().multiplyScalar(speed);
+        camera.position.add(_move);
+        controls.target.add(_move);
+      }
     }
   }
 
@@ -256,5 +270,40 @@ export function createCamera(renderer) {
     camera.updateProjectionMatrix();
   }
 
-  return { camera, controls, update, resize, setMuseMode, setTrackMode: (v) => { trackMode = v; }, flyTo };
+  function setTrackMode(v, bodyRadius) {
+    trackMode = v;
+    if (v) {
+      /* Keyboard dolly floor scales with body size, but scroll wheel is unrestricted */
+      trackMinDist = Math.max(TRACK_MIN_DIST_BASE, (bodyRadius || 2) * 0.5);
+      controls.minDistance = 0;
+    } else if (!museMode) {
+      trackMinDist = TRACK_MIN_DIST_BASE;
+      controls.minDistance = 0;
+    }
+  }
+
+  /* M3 snap: animate to a canonical 30° overhead orbit at a comfortable distance */
+  function snapToOrbit() {
+    if (!trackMode || museMode || flyAnim) return;
+    const target = controls.target;
+    const dist = Math.max(trackMinDist * 2.5, 15);
+    const phi = Math.PI / 6;
+    const theta = camera.position.clone().sub(target);
+    const currentTheta = Math.atan2(theta.x, theta.z);
+    const endOffset = new THREE.Vector3(
+      dist * Math.cos(phi) * Math.sin(currentTheta),
+      dist * Math.sin(phi),
+      dist * Math.cos(phi) * Math.cos(currentTheta)
+    );
+    flyAnim = {
+      startOffset: camera.position.clone().sub(target),
+      endOffset,
+      targetPos: target.clone(),
+      startTarget: target.clone(),
+      start: performance.now(),
+      duration: 600
+    };
+  }
+
+  return { camera, controls, update, resize, setMuseMode, setTrackMode, flyTo, snapToOrbit };
 }

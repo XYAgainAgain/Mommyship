@@ -12,7 +12,7 @@ import { createStarDetail } from './star-detail.js';
 import { parseMK } from './star-params.js';
 import { bakePlanetAtlas } from './planet-bake.js';
 import { createPlanetDetail } from './planet-detail.js';
-import { findParentStar } from './planet-params.js';
+import { parsePlanetType, findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
 const MARKER_RADIUS = 2.5;
@@ -31,7 +31,9 @@ const CUBE_FULL = Math.cbrt(SPHERE_VOL);
 const LANDMARK_IDS = new Set(['smbh', 'broken-arm-nebula', 'gantropic-gulch']);
 const FULL_SIZE_CUBES = new Set(['gas-n-gripe-alpha', 'gas-n-gripe-premium']);
 
-function isGasNGripe(id) { return id.startsWith('gas-n-gripe'); }
+function isGasNGripe(id, body) {
+  return id.startsWith('gas-n-gripe') && body?.type === 'station';
+}
 
 /* Orbital scatter — Keplerian ellipses for child body animation */
 const TWO_PI = Math.PI * 2;
@@ -47,6 +49,15 @@ const ORBIT_PERIOD = [null, [30, 90], [15, 45], [8, 25]];
 
 /* Marker scale per depth: stars 80%, planets 30% of star, moons 25% of planet */
 const DEPTH_SCALE = [0.8, 0.24, 0.06, 0.015];
+
+/* Quick body radius lookup from T-shirt size for orbital spacing */
+const SIZE_TO_RADIUS = { XXXS: 0.3, XXS: 0.5, XS: 0.7, S: 0.85, M: 1.0, L: 1.3, XL: 1.6, XXL: 2.0, XXXL: 3.0 };
+function getBodyRadius(body) {
+  const sz = body.stats?.size ?? body.visual?.size;
+  if (typeof sz === 'string') return SIZE_TO_RADIUS[sz.toUpperCase()] ?? 1.0;
+  if (typeof sz === 'number') return sz;
+  return 1.0;
+}
 
 function hashString(str) {
   let h = 0;
@@ -357,7 +368,7 @@ export async function createSystems(scene, camera, renderer) {
     const blob = new Blob([JSON.stringify(galaxyData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'galaxy.json'; a.click();
+    a.href = url; a.download = 'galaxy-update.json'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
@@ -405,6 +416,26 @@ export async function createSystems(scene, camera, renderer) {
     } catch (e) {
       console.warn('Planet atlas re-bake failed:', e);
     }
+  }
+
+  /* Lightweight single-body rebake — invalidates detail mesh so it re-reads fresh params.
+     Skips the full atlas rebuild (8–12s), detail mesh re-activates in ~1 frame. */
+  function rebakeSinglePlanet(bodyId) {
+    if (!planetDetail) return;
+    const body = galaxyData.bodies[bodyId];
+    if (!body) return;
+    const parentStar = findParentStar(bodyId, galaxyData.bodies);
+    const params = parsePlanetType(body, bodyId, parentStar, galaxyData.bodies);
+    /* Invalidate FIRST (deletes old cache entry), then write fresh params */
+    planetDetail.invalidateBody(bodyId);
+    if (planetAtlasData?.paramsCache) planetAtlasData.paramsCache.set(bodyId, params);
+    if (planetAtlasData?.churnMap) planetAtlasData.churnMap.set(bodyId, params.churn || 0);
+  }
+
+  /* Lightweight single-star rebake — same pattern as planets */
+  function rebakeSingleStar(bodyId) {
+    if (!starDetail) return;
+    starDetail.invalidateBody(bodyId);
   }
 
   async function rebakeStarAtlas() {
@@ -463,7 +494,7 @@ export async function createSystems(scene, camera, renderer) {
 
   /* White for GnGs + independents, lightened faction color for everyone else */
   function getLabelColor(id, body) {
-    if (isGasNGripe(id)) return '#ffffff';
+    if (isGasNGripe(id, body)) return '#ffffff';
     if (body.factionId === 'independent') return '#ffffff';
     return lightenHex(getBodyColor(body), 0.45);
   }
@@ -495,10 +526,10 @@ export async function createSystems(scene, camera, renderer) {
       }
     }
 
-    /* Depth 0: root bodies with galactic positions */
+    /* Depth 0: root bodies with galactic positions (skip bodies with parents — they orbit) */
     for (const [id, body] of Object.entries(galaxyData.bodies)) {
-      if (!body.position) continue;
-      const instanceScale = isGasNGripe(id)
+      if (!body.position || body.parentId) continue;
+      const instanceScale = isGasNGripe(id, body)
         ? (FULL_SIZE_CUBES.has(id) ? CUBE_FULL : CUBE_SMALL) * DEPTH_SCALE[0] : DEPTH_SCALE[0];
       bodyMeta.set(id, { depth: 0, parentId: null, orbital: null, instanceScale });
       depthBuckets[0].push(id);
@@ -517,16 +548,25 @@ export async function createSystems(scene, camera, renderer) {
           if (galaxyData.bodies[cid]?.type === 'station') preferStation.set(parentId, cid);
         }
 
-        /* Moon orbits scale to parent's orbit — keeps them inside the Hill sphere */
+        /* Compute max child radius for spacing — larger bodies need more room */
+        let maxChildRadius = 1.0;
+        for (const cid of childIds) {
+          const r = getBodyRadius(galaxyData.bodies[cid]);
+          if (r > maxChildRadius) maxChildRadius = r;
+        }
+        /* Visual diameter in world units = MARKER_RADIUS × DEPTH_SCALE × radius × 2.
+           Add 40% breathing room so orbits don't visually overlap. */
+        const radiusPadding = MARKER_RADIUS * DEPTH_SCALE[Math.min(depth, 3)] * maxChildRadius * 2.8;
+
         let minR, spacing;
         if (depth === 1) {
           minR = ORBIT_RADIUS[1][0];
-          spacing = 2.0;
+          spacing = Math.max(2.0, radiusPadding);
         } else {
           const parentA = bodyMeta.get(parentId)?.orbital?.a || 3;
           const maxR = parentA * 0.35;
           minR = maxR * 0.25;
-          spacing = Math.max(0.15, (maxR - minR) / Math.max(childIds.length, 1));
+          spacing = Math.max(radiusPadding, 0.15, (maxR - minR) / Math.max(childIds.length, 1));
         }
 
         /* Generate params; non-GnG sort by radius first, GnGs always outermost */
@@ -584,10 +624,16 @@ export async function createSystems(scene, camera, renderer) {
           for (let i = 0; i < orbitals.length; i++) {
             const src = galaxyData.bodies[orbitals[i].id]?.orbital;
             const scatter = createRng(hashString(orbitals[i].id) + 199);
-            if (src?.incl == null)
+            if (src?.incl != null)
+              orbitals[i].orbital.incl = src.incl * (Math.PI / 180);
+            else
               orbitals[i].orbital.incl = Math.max(0, baseTilt + scatter.gauss() * 5 * (Math.PI / 180));
-            if (src?.Omega == null)
+            if (src?.Omega != null)
+              orbitals[i].orbital.Omega = src.Omega * (Math.PI / 180);
+            else
               orbitals[i].orbital.Omega = baseAz + scatter.gauss() * 8 * (Math.PI / 180);
+            if (src?.omega != null)
+              orbitals[i].orbital.omega = src.omega * (Math.PI / 180);
           }
         } else {
           /* Planets: shared orbital plane from star's pole axis (overridable via poleAngle) */
@@ -616,11 +662,12 @@ export async function createSystems(scene, camera, renderer) {
         }
 
         const depthFactor = DEPTH_SCALE[Math.min(depth, 3)];
-        for (const o of orbitals) {
-          const instanceScale = isGasNGripe(o.id)
+        for (let oi = 0; oi < orbitals.length; oi++) {
+          const o = orbitals[oi];
+          const instanceScale = isGasNGripe(o.id, galaxyData.bodies[o.id])
             ? (FULL_SIZE_CUBES.has(o.id) ? CUBE_FULL : CUBE_SMALL) * depthFactor
             : depthFactor;
-          bodyMeta.set(o.id, { depth, parentId, orbital: o.orbital, instanceScale });
+          bodyMeta.set(o.id, { depth, parentId, orbital: o.orbital, instanceScale, computedOrder: oi + 1 });
           depthBuckets[depth].push(o.id);
           bodyWorldPos.set(o.id, { x: 0, y: 0, z: 0 });
         }
@@ -661,7 +708,7 @@ export async function createSystems(scene, camera, renderer) {
     for (const [id] of bodyMeta) {
       allPositionedIds.push(id);
       if (LANDMARK_IDS.has(id)) continue;
-      if (isGasNGripe(id)) cubeIds.push(id);
+      if (isGasNGripe(id, galaxyData.bodies[id])) cubeIds.push(id);
       else if (galaxyData.bodies[id].type === 'star') starIds.push(id);
       else if (planetAtlasData?.layerMap.has(id)) planetIds.push(id);
       else sphereIds.push(id);
@@ -778,9 +825,12 @@ export async function createSystems(scene, camera, renderer) {
         const id = planetIds[i];
         const body = galaxyData.bodies[id];
         const meta = bodyMeta.get(id);
+        const pcache = planetAtlasData.paramsCache?.get(id);
+        /* Store planet radius on meta so detail mesh and render loop use the same scale */
+        meta.planetRadius = pcache?.radius ?? 1;
         const pos = body.position || { x: 0, y: 0, z: 0 };
         _dummy.position.set(pos.x, pos.y || 0, pos.z);
-        _dummy.scale.setScalar(meta.instanceScale);
+        _dummy.scale.setScalar(meta.instanceScale * meta.planetRadius);
         _dummy.updateMatrix();
         planetMarkers.setMatrixAt(i, _dummy.matrix);
         _color.set(getBodyColor(body));
@@ -790,8 +840,6 @@ export async function createSystems(scene, camera, renderer) {
         /* Default light dir — updated per frame */
         pLightDirs[i * 3] = 1; pLightDirs[i * 3 + 1] = 0.3; pLightDirs[i * 3 + 2] = 0;
         pChurns[i] = planetAtlasData.churnMap?.get(id) ?? 0;
-
-        const pcache = planetAtlasData.paramsCache?.get(id);
         if (pcache) {
           _color.set(pcache.atmosphereTint);
           pAtmos[i * 4]     = _color.r;
@@ -803,14 +851,22 @@ export async function createSystems(scene, camera, renderer) {
           pAtmos[i * 4 + 2] = 0.8; pAtmos[i * 4 + 3] = 0.2;
         }
 
-        /* Axial rotation — random tilt + speed + direction per body */
+        /* Axial rotation — body.axialTilt overrides random tilt when set */
         const spinRng = createRng(hashString(id) + 333);
-        const tilt = 0.15 + spinRng.next() * 0.4;
+        const bodyObj = galaxyData.bodies[id];
+        const tiltRad = bodyObj?.axialTilt != null
+          ? bodyObj.axialTilt * (Math.PI / 180)
+          : 0.15 + spinRng.next() * 0.4;
+        const tiltAz = spinRng.next() * TWO_PI;
         const spinAxis = new THREE.Vector3(
-          (spinRng.next() - 0.5) * tilt * 2, 1, (spinRng.next() - 0.5) * tilt * 2
+          Math.sin(tiltRad) * Math.cos(tiltAz), Math.cos(tiltRad), Math.sin(tiltRad) * Math.sin(tiltAz)
         ).normalize();
-        const spinSpeed = (0.08 + spinRng.next() * 0.12) * (spinRng.next() > 0.5 ? 1 : -1);
+        const autoSpinSpeed = (0.08 + spinRng.next() * 0.12) * (spinRng.next() > 0.5 ? 1 : -1);
+        const spinSpeed = bodyObj?.visual?.spinSpeed ?? autoSpinSpeed;
         planetSpins.push({ axis: spinAxis, speed: spinSpeed });
+        /* Store computed values for editor display */
+        meta.computedAxialTilt = +(tiltRad * 180 / Math.PI).toFixed(1);
+        meta.computedSpinSpeed = +autoSpinSpeed.toFixed(3);
       }
 
       const pLayerAttr = new THREE.InstancedBufferAttribute(pLayers, 1);
@@ -954,6 +1010,9 @@ export async function createSystems(scene, camera, renderer) {
     }
 
     labelAssignFrame = LABEL_REASSIGN_EVERY;
+
+    /* Restore orbit visibility if a body was being tracked */
+    if (trackedOrbitId) showOrbitsForBody(trackedOrbitId);
   }
 
   /* Show orbit paths for a tracked body's entire system */
@@ -1019,8 +1078,11 @@ export async function createSystems(scene, camera, renderer) {
         if (entry.bodyId !== id) {
           entry.bodyId = id;
           entry.el.textContent = '';
-          entry.el.style.textDecoration = body.tags?.includes('destroyed') ? 'line-through' : 'none';
-          entry.el.appendChild(document.createTextNode(body.name || id));
+          const isDestroyed = body.tags?.includes('destroyed');
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = body.name || id;
+          if (isDestroyed) nameSpan.style.textDecoration = 'line-through';
+          entry.el.appendChild(nameSpan);
           if (body.type === 'station' && body.class) {
             const sub = document.createElement('div');
             sub.className = 'label-class';
@@ -1131,6 +1193,7 @@ export async function createSystems(scene, camera, renderer) {
     /* Compute world positions in depth order */
     for (const id of depthBuckets[0]) {
       const body = galaxyData.bodies[id];
+      if (!body?.position) continue;
       const rot = canonicalToRotated(body.position.x, body.position.z, rotationTime);
       const wp = bodyWorldPos.get(id);
       wp.x = rot.x; wp.y = body.position.y || 0; wp.z = rot.z;
@@ -1151,7 +1214,11 @@ export async function createSystems(scene, camera, renderer) {
       const camPos = camera.position;
       let cfDirty = false;
       for (let i = 0; i < starIds.length; i++) {
-        if (detailActiveIds.has(starIds[i])) continue;
+        /* Detail-active stars must stay at scale 0 every frame to avoid one-frame ghost */
+        if (detailActiveIds.has(starIds[i])) {
+          _dummy.scale.setScalar(0); _dummy.updateMatrix();
+          starMarkers.setMatrixAt(i, _dummy.matrix); continue;
+        }
         const meta = bodyMeta.get(starIds[i]);
         const wp = bodyWorldPos.get(starIds[i]);
         _dummy.position.set(wp.x, wp.y, wp.z);
@@ -1269,7 +1336,7 @@ export async function createSystems(scene, camera, renderer) {
         if (!wp) continue;
         const meta = bodyMeta.get(id);
         _dummy.position.set(wp.x, wp.y, wp.z);
-        _dummy.scale.setScalar(meta.instanceScale);
+        _dummy.scale.setScalar(meta.instanceScale * (meta.planetRadius || 1));
         const spin = planetSpins[i];
         if (spin) _dummy.quaternion.setFromAxisAngle(spin.axis, spin.speed * rotationTime);
         else _dummy.quaternion.identity();
@@ -1671,10 +1738,15 @@ export async function createSystems(scene, camera, renderer) {
     revertToSaved,
     rebuildMarkers,
     autosave,
+    rebakePlanetAtlas,
+    rebakeStarAtlas,
+    rebakeSinglePlanet,
+    rebakeSingleStar,
     angularSpeed,
     canonicalToRotated,
     rotatedToCanonical,
     getBodyWorldPos: (id) => bodyWorldPos.get(id) || null,
+    getBodyMeta: (id) => bodyMeta.get(id) || null,
     showOrbitsForBody,
     hideOrbits,
     get needsLabelRender() { return needsLabelRender; },

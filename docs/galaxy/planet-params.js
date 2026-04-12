@@ -236,12 +236,13 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
   const subtype = body.subtype || inferSubtype(body, parentStar, rng);
   const mode = MODE_MAP[subtype] ?? 0;
 
-  /* Size from T-shirt scale or visual.size or default */
+  /* Size: stats.size (T-shirt from XLSX) takes priority, then visual.size */
   let radius = 1.0;
-  if (vis.size && typeof vis.size === 'string') {
-    radius = SIZE_SCALE[vis.size.toUpperCase()] ?? 1.0;
-  } else if (typeof vis.size === 'number') {
-    radius = vis.size;
+  const sizeVal = body.stats?.size ?? vis.size;
+  if (sizeVal && typeof sizeVal === 'string') {
+    radius = SIZE_SCALE[sizeVal.toUpperCase()] ?? 1.0;
+  } else if (typeof sizeVal === 'number') {
+    radius = sizeVal;
   }
 
   /* Temperature context — 0 = frozen, 1 = molten.
@@ -318,6 +319,7 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     crystalMetric:       vis.crystalMetric ?? subtypeDefaults.crystalMetric ?? 0,
     moistureOffset:      vis.moistureOffset ?? subtypeDefaults.moistureOffset ?? 0.0,
     biomeCount:          vis.biomeCount ?? subtypeDefaults.biomeCount ?? 0.5,
+    opacity:             vis.opacity ?? -1.0,
   };
 
   /* Toxicity tints the atmosphere */

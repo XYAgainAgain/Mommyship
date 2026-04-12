@@ -193,6 +193,25 @@ async function init() {
 
   volumeSlider.addEventListener('input', () => {
     masterVolume = parseInt(volumeSlider.value) / 100;
+    if (muted) { muted = false; volumeLabel.classList.remove('gx-muted'); }
+    applyVolume();
+  });
+
+  /* Click "Volume" label to toggle mute */
+  const volumeLabel = document.getElementById('volume-label');
+  let muted = false;
+  let preMuteVolume = masterVolume;
+  volumeLabel.addEventListener('click', () => {
+    muted = !muted;
+    if (muted) {
+      preMuteVolume = masterVolume;
+      masterVolume = 0;
+      volumeSlider.value = 0;
+    } else {
+      masterVolume = preMuteVolume || 0.5;
+      volumeSlider.value = Math.round(masterVolume * 100);
+    }
+    volumeLabel.classList.toggle('gx-muted', muted);
     applyVolume();
   });
 
@@ -272,6 +291,45 @@ async function init() {
     pauseBtn.textContent = rotationPaused ? 'Resume' : 'Pause';
   });
 
+  /* T=0 — reset galactic rotation to initial state and pause */
+  const t0Btn = document.getElementById('btn-t0');
+  if (t0Btn) t0Btn.addEventListener('click', () => {
+    rotationTime = 0;
+    rotationPaused = true;
+    pauseBtn.classList.add('active');
+    pauseBtn.textContent = 'Resume';
+    t0Btn.classList.add('active');
+    setTimeout(() => t0Btn.classList.remove('active'), 300);
+  });
+
+  /* FOV slider — horizontal FOV display, persisted to localStorage */
+  const DEFAULT_HFOV = 90;
+  const fovSlider = document.getElementById('fov-slider');
+  const fovVal = document.getElementById('fov-val');
+  const fovReset = document.getElementById('fov-reset');
+
+  function setHFov(hfov) {
+    const vfov = 2 * Math.atan(Math.tan(hfov * Math.PI / 360) / cam.camera.aspect) * 180 / Math.PI;
+    cam.camera.fov = vfov;
+    cam.camera.updateProjectionMatrix();
+    if (fovVal) fovVal.textContent = Math.round(hfov) + '\u00B0';
+    if (fovSlider) fovSlider.value = hfov;
+  }
+
+  const savedFov = localStorage.getItem('mommyship-galaxy-fov');
+  if (savedFov) setHFov(parseFloat(savedFov));
+
+  if (fovSlider) fovSlider.addEventListener('input', () => {
+    const hfov = parseInt(fovSlider.value, 10);
+    setHFov(hfov);
+    localStorage.setItem('mommyship-galaxy-fov', String(hfov));
+  });
+
+  if (fovReset) fovReset.addEventListener('click', () => {
+    setHFov(DEFAULT_HFOV);
+    localStorage.removeItem('mommyship-galaxy-fov');
+  });
+
   /* Muse Mode */
   let museActive = false;
   const museAudio = createMuseAudio();
@@ -290,6 +348,7 @@ async function init() {
       trackedLastPos = null;
       cam.controls.enablePan = true;
       cam.setTrackMode(false);
+      ui.setTracking(false);
       systems.hideOrbits();
       museAudio.setVolume(masterVolume);
       museAudio.start();
@@ -313,6 +372,9 @@ async function init() {
 
   window.addEventListener('resize', () => {
     cam.resize();
+    /* Recalculate vFOV from stored hFOV since aspect changed */
+    const curHfov = localStorage.getItem('mommyship-galaxy-fov');
+    if (curHfov) setHFov(parseFloat(curHfov));
     renderer.setSize(window.innerWidth, window.innerHeight);
     /* Respect watchdog's current pixel ratio cap */
     const level = perfMonitor.getLevel();
@@ -445,6 +507,7 @@ async function init() {
         trackedLastPos = null;
         cam.controls.enablePan = true;
         cam.setTrackMode(false);
+        ui.setTracking(false);
         systems.hideOrbits();
       }
     }
@@ -492,6 +555,14 @@ async function init() {
   let trackedId = null;
   let trackedLastPos = null;
 
+  /* World-space visual radius for a body (for zoom clamping) */
+  function bodyVisualRadius(id) {
+    const meta = systems.getBodyMeta(id);
+    if (!meta) return 2;
+    const extraScale = meta.mkRadius || meta.planetRadius || 1;
+    return 2.5 * meta.instanceScale * extraScale;
+  }
+
   systems.initClickDetection(renderer.domElement, (result) => {
     if (museActive) return;
 
@@ -501,13 +572,15 @@ async function init() {
         trackedId = result.bodyId;
         trackedLastPos = null;
         cam.controls.enablePan = false;
-        cam.setTrackMode(true);
+        cam.setTrackMode(true, bodyVisualRadius(result.bodyId));
+        ui.setTracking(true);
         systems.showOrbitsForBody(result.bodyId);
       } else {
         trackedId = null;
         trackedLastPos = null;
         cam.controls.enablePan = true;
         cam.setTrackMode(false);
+        ui.setTracking(false);
         systems.hideOrbits();
       }
       return;
@@ -521,7 +594,16 @@ async function init() {
     }
   });
 
-  /* Initialize UI with galaxy data */
+  /* M3 (middle click): snap to default orbit view while tracking */
+  renderer.domElement.addEventListener('pointerdown', (e) => {
+    if (e.button === 1 && trackedId) {
+      e.preventDefault();
+      e.stopPropagation();
+      cam.snapToOrbit();
+    }
+  }, true);
+
+  /* Initialize UI with galaxy data + systems reference for editor mode */
   ui.init(systems.getData(), {
     onSelect: (id, body) => {
       systems.setSelectedId(id);
@@ -545,7 +627,8 @@ async function init() {
       trackedId = id;
       trackedLastPos = { x: wp.x, y: wp.y, z: wp.z };
       cam.controls.enablePan = false;
-      cam.setTrackMode(true);
+      cam.setTrackMode(true, bodyVisualRadius(id));
+      ui.setTracking(true);
       systems.showOrbitsForBody(id);
     },
     onResetView: () => {
@@ -554,11 +637,12 @@ async function init() {
       trackedLastPos = null;
       cam.controls.enablePan = true;
       cam.setTrackMode(false);
+      ui.setTracking(false);
       systems.hideOrbits();
       systems.setSelectedId(null);
       cam.flyTo(new THREE.Vector3(0, 0, 0), 550);
     }
-  });
+  }, systems);
 
   /* Pre-compile all shaders — force hidden detail meshes visible for one frame
      so the GPU compiles their programs during loading, not on first flyby */

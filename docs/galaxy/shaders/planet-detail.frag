@@ -38,6 +38,7 @@ uniform mat3  uRotation;
 uniform vec3  uLightDir;
 uniform float uLodDist;
 uniform float uFadeIn;
+uniform float uOpacity;
 
 /* Clouds + storms */
 uniform float uCloudCover;
@@ -972,8 +973,11 @@ void main() {
   }
 
   float alpha = uFadeIn;
-  if (uPlanetMode == 6) {
-    /* Per-body random transparency, squared to skew toward fully opaque */
+  if (uOpacity >= 0.0) {
+    /* Explicit opacity override — bypasses crystal transparency */
+    alpha *= uOpacity;
+  } else if (uPlanetMode == 6) {
+    /* Default crystal transparency: per-body random, squared to skew opaque */
     float bodyTransp = fract(s * 0.137);
     bodyTransp *= bodyTransp;
     alpha *= mix(1.0 - bodyTransp * 0.03, 1.0 - bodyTransp * 0.10, gCrystalEdgeMask);

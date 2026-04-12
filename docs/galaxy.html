@@ -237,6 +237,7 @@
       </div>
 
       <div class="gx-nav-right">
+        <button class="gx-btn gx-ed-export-nav" id="ed-export-nav">EXPORT CHANGES</button>
         <div class="gx-btn-group">
           <button class="gx-btn active" id="btn-3d">3D</button>
           <button class="gx-btn" id="btn-2d">2D</button>
@@ -246,7 +247,9 @@
           <div class="gx-btn-sep"></div>
           <button class="gx-btn" id="btn-pause">Pause</button>
           <div class="gx-btn-sep"></div>
-          <button class="gx-btn" id="btn-screenshot" title="Photo Mode (F2)">Clean</button>
+          <button class="gx-btn" id="btn-t0" title="Reset rotation &amp; pause">T=0</button>
+          <div class="gx-btn-sep"></div>
+          <button class="gx-btn" id="btn-screenshot" title="Photo Mode (F2)">Photo</button>
         </div>
         <div class="gx-btn-group">
           <button class="gx-btn gx-btn-icon" id="settings-toggle" title="Settings">
@@ -259,25 +262,32 @@
     <!-- Settings dropdown -->
     <div class="gx-settings" id="settings-dropdown">
       <div class="gx-settings-volume">
-        <label>Volume</label>
+        <label id="volume-label">Volume</label>
         <input type="range" id="volume-slider" min="0" max="100" value="50">
       </div>
-      <label class="gx-settings-row">
-        <input type="checkbox" id="fancy-nebulae"> Fancy Nebulae
-      </label>
-      <label class="gx-settings-row">
-        <input type="checkbox" id="absolute-cinema"> Absolute Cinema
-      </label>
-      <label class="gx-settings-row">
-        <input type="checkbox" id="show-coords" checked> Show Coordinates
-      </label>
-      <label class="gx-settings-row">
-        <input type="checkbox" id="show-fps"> Show FPS
-      </label>
+      <div class="gx-settings-volume">
+        <label>FOV <span class="gx-fov-reset" id="fov-reset" title="Reset to default"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M12 16c1.671 0 3-1.331 3-3s-1.329-3-3-3-3 1.331-3 3 1.329 3 3 3z" fill="currentColor"/><path d="M20.817 11.186a8.94 8.94 0 0 0-1.355-3.219 9.053 9.053 0 0 0-2.43-2.43 8.95 8.95 0 0 0-3.219-1.355 9.028 9.028 0 0 0-1.838-.18V2L8 5l3.975 3V6.002c.484-.002.968.044 1.435.14a6.961 6.961 0 0 1 2.502 1.053 7.005 7.005 0 0 1 1.892 1.892A6.967 6.967 0 0 1 19 13a7.032 7.032 0 0 1-.55 2.725 7.11 7.11 0 0 1-.644 1.188 7.2 7.2 0 0 1-.858 1.039 7.028 7.028 0 0 1-3.536 1.907 7.13 7.13 0 0 1-2.822 0 6.961 6.961 0 0 1-2.503-1.054 7.002 7.002 0 0 1-1.89-1.89A6.996 6.996 0 0 1 5 13H3a9.02 9.02 0 0 0 1.539 5.034 9.096 9.096 0 0 0 2.428 2.428A8.95 8.95 0 0 0 12 22a9.09 9.09 0 0 0 1.814-.183 9.014 9.014 0 0 0 3.218-1.355 8.886 8.886 0 0 0 1.331-1.099 9.228 9.228 0 0 0 1.1-1.332A8.952 8.952 0 0 0 21 13a9.09 9.09 0 0 0-.183-1.814z" fill="currentColor"/></svg></span></label>
+        <div class="gx-fov-wrap"><input type="range" id="fov-slider" min="30" max="130" value="90"><span class="gx-fov-val" id="fov-val">90°</span></div>
+      </div>
+      <div class="gx-settings-grid">
+        <label class="gx-settings-row">
+          <input type="checkbox" id="fancy-nebulae"> Fancy Nebulae
+        </label>
+        <label class="gx-settings-row">
+          <input type="checkbox" id="absolute-cinema"> Absolute Cinema
+        </label>
+        <label class="gx-settings-row">
+          <input type="checkbox" id="show-coords" checked> Show Coordinates
+        </label>
+        <label class="gx-settings-row">
+          <input type="checkbox" id="show-fps"> Show FPS
+        </label>
+      </div>
     </div>
 
     <!-- Workspace (context panel lives here) -->
     <div class="gx-workspace">
+      <div class="gx-forge-title gx-nebula-text" id="forge-title">GALAXY FORGE</div>
       <aside class="gx-panel" id="context-panel">
         <div class="gx-panel-header">
           <div class="gx-panel-header-top">
@@ -287,46 +297,48 @@
             </button>
           </div>
           <div class="gx-panel-name" id="panel-name"></div>
+          <div class="gx-panel-subtitle" id="panel-subtitle"></div>
         </div>
         <div class="gx-panel-body" id="panel-body"></div>
+      </aside>
+
+      <!-- Edit-mode system tree navigator (top-left, 3D only) -->
+      <aside class="gx-navicomputer" id="navicomputer-panel">
+        <div class="gx-panel-name gx-nebula-text" style="margin-bottom:8px">NAVICOMPUTER</div>
+        <div class="gx-navicomputer-body" id="navicomputer-body"></div>
       </aside>
     </div>
 
     <!-- Controls popup -->
     <div class="gx-controls-popup" id="controls-popup">
-      <div id="controls-3d">
-        <b>Left Drag</b> Rotate<br>
-        <b>Right Drag</b> Pan<br>
-        <b>Scroll</b> Zoom<br>
-        <b>W/S</b> Forward/Back<br>
-        <b>A/D</b> Strafe<br>
-        <b>Q/E</b> Orbit<br>
-        <b>Space/Ctrl</b> Up/Down<br>
-        <b>Shift</b> Sprint<br>
-        <b>Left Click</b> Select<br>
-        <b>Right Click</b> Track<br>
-        <b>1</b> Reset View<br>
-        <b>2</b> Show 2D Map<br>
-        <b>3</b> Show 3D Map<br>
-        <b>F2</b> Photo Mode<br>
-        <span class="guide-track">While tracking:<br>
-        <b>A/D</b> Orbit H<br>
-        <b>Space/Ctrl</b> Orbit V<br>
-        <b>Right Click</b> Release</span>
-      </div>
-      <div id="controls-2d" style="display:none">
-        <b>Left Drag</b> Pan<br>
-        <b>Scroll</b> Zoom<br>
-        <b>W/A/S/D</b> Pan<br>
-        <b>E</b> Zoom In<br>
-        <b>Q</b> Zoom Out<br>
-        <b>Left Click</b> Select<br>
-        <b>Right Click</b> Track<br>
-        <b>1</b> Reset View<br>
-        <b>2</b> Show 2D Map<br>
-        <b>3</b> Show 3D Map<br>
-        <b>F2</b> Photo Mode
-      </div>
+      <span data-mode="3d"><b>Left Drag</b> Rotate<br></span>
+      <span data-mode="3d"><b>Right Drag</b> Pan<br></span>
+      <span data-mode="3d"><b>Scroll</b> Zoom<br></span>
+      <span data-mode="3d"><b>W/S</b> Forward/Back<br></span>
+      <span data-mode="3d"><b>A/D</b> Strafe<br></span>
+      <span data-mode="3d"><b>Q/E</b> Orbit<br></span>
+      <span data-mode="3d"><b>Space/C</b> Up/Down<br></span>
+      <span data-mode="3d"><b>Shift</b> Sprint<br></span>
+      <span data-mode="2d"><b>Left Drag</b> Pan<br></span>
+      <span data-mode="2d"><b>Scroll</b> Zoom<br></span>
+      <span data-mode="2d"><b>W/A/S/D</b> Pan<br></span>
+      <span data-mode="2d"><b>E</b> Zoom In<br></span>
+      <span data-mode="2d"><b>Q</b> Zoom Out<br></span>
+      <b>Left Click</b> Select<br>
+      <b>Right Click</b> Track/Fly To<br>
+      <b>1</b> Reset View<br>
+      <b>2</b> Show 2D Map<br>
+      <b>3</b> Show 3D Map<br>
+      <b>F2</b> Photo Mode<br>
+      <span data-mode="track" class="guide-track">While tracking:<br></span>
+      <span data-mode="track"><b>A/D</b> Orbit H<br></span>
+      <span data-mode="track"><b>Space/C</b> Orbit V<br></span>
+      <span data-mode="track"><b>W/S</b> Zoom In/Out<br></span>
+      <span data-mode="track"><b>Right Click</b> Release<br></span>
+      <span data-mode="edit" class="guide-track">Editor:<br></span>
+      <span data-mode="edit"><b>Ctrl+Z</b> Undo<br></span>
+      <span data-mode="edit"><b>Ctrl+Shift+Z</b> Redo<br></span>
+      <span data-mode="edit"><b>Ctrl+Alt+Shift+E</b> Exit Editor<br></span>
     </div>
 
     <!-- Scale bar -->
