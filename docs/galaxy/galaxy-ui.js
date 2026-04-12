@@ -848,7 +848,7 @@ function wireTooltips() {
   document.querySelectorAll('[data-tooltip]').forEach(el => {
     el.addEventListener('pointerenter', () => {
       clearTimeout(tooltipTimer);
-      tooltipTimer = setTimeout(() => { /* 1250ms hover delay */
+      tooltipTimer = setTimeout(() => {
         tooltipEl.textContent = el.dataset.tooltip;
         const rect = el.getBoundingClientRect();
         tooltipEl.style.left = rect.left + 'px';
@@ -868,12 +868,12 @@ function wireTooltips() {
 function updatePanelHeader(body) {
   const typeEl = document.getElementById('panel-type');
   typeEl.style.color = TYPE_COLORS[body.type] || 'var(--gx-text-dim)';
-  /* MK spectral replaces subtype for stars: "STAR / K5V (RED DWARF)" not "STAR / RED-DWARF / K5V (RED DWARF)" */
+  /* MK spectral fills in subtype for stars */
   let typeText = body.type.toUpperCase();
   if (body.spectralClass) {
     const mk = body.spectralClass.toUpperCase();
     const desc = mkDescriptor(body.spectralClass);
-    const mkTip = 'Morgan-Keenan: letter = temp class, number = subclass, Roman = luminosity';
+    const mkTip = 'Morgan-Keenan Classification: Letter = temp class, Number = subclass, Roman = luminosity';
     typeText += ' / <span data-tooltip="' + mkTip + '">' + mk + (desc ? ' (' + desc.toUpperCase() + ')' : '') + '</span>';
   } else if (body.subtype) {
     typeText += ' / ' + body.subtype.toUpperCase();
@@ -918,7 +918,7 @@ function buildViewPanel(body, id) {
       (parent ? parent.name : body.parentId) + '</div></div>';
   }
   if (body.spectralClass) {
-    html += '<div class="gx-p-meta-item" data-tooltip="MK spectral classification; drives star color, size, &amp; temperature"><label>Spectral Class</label><div class="value gx-p-warning">' + body.spectralClass + '</div></div>';
+    html += '<div class="gx-p-meta-item" data-tooltip="Morgan-Keenan (MK) classification: Letter = temperature class (Y coldest → O hottest), Number = subclass (0 hottest → 9 coolest), Roman Numeral = luminosity (I supergiant → V main sequence)"><label>Spectral"><label>Spectral Class</label><div class="value gx-p-warning">' + body.spectralClass + '</div></div>';
   }
   if (body.visual && body.visual.color) {
     html += '<div class="gx-p-meta-item"><label>Color</label><div class="value"><span class="gx-p-swatch" style="background:' +
@@ -1074,7 +1074,7 @@ function buildEditorPanel(body, id) {
   const isStar = body.type === 'star';
   if (isStar) {
     const mkParsed = parseMKDropdown(body.spectralClass || '');
-    html += '<div class="gx-ed-field" data-tooltip="Morgan-Keenan classification: letter = temperature class (Y coldest → O hottest), number = subclass (0 hottest → 9 coolest), Roman numeral = luminosity (I supergiant → V main sequence)"><label>Spectral</label>';
+    html += '<div class="gx-ed-field" data-tooltip="Morgan-Keenan (MK) classification: Letter = temperature class (Y coldest → O hottest), Number = subclass (0 hottest → 9 coolest), Roman Numeral = luminosity (I supergiant → V main sequence)"><label>Spectral</label>';
     html += '<div class="gx-ed-mk-row">';
     html += '<select class="gx-ed-select gx-ed-mk-type" id="ed-mk-type">';
     html += '<option value="">--</option>';
