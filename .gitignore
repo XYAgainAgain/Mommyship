@@ -4,3 +4,4 @@ docs/.obsidian/
 docs/*.canvas
 .cache/
 .dev/
+docs/galaxy/galaxy-update.json
