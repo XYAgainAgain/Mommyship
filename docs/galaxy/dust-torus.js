@@ -1,6 +1,10 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, texture, float, vec3 } from 'three/tsl';
 import { bakeVolumeTexture } from './volume-bake.js';
+
+import { main as dustTorusVert, uCameraPos } from './tsl/vert/dust-torus.tsl.js';
+import { main as dustTorusFrag, uVolume, uLightmap, uTime, uCameraDist, uOpacity } from './tsl/frag/dust-torus.tsl.js';
 
 const BASE_SPEED = 0.061;
 
@@ -54,52 +58,45 @@ const TORUS_DEFS = [
 ];
 
 export async function createDustTorus(scene, renderer, lightmap) {
-  if (!renderer.capabilities.isWebGL2) {
-    console.warn('Dust torus requires WebGL2');
-    return { update() {} };
-  }
+  const volumeTex = await bakeVolumeTexture({ seed: 55555, frequency: 5.0, octaves: 5 });
 
-  const [{ vert, frag }, volumeTex] = await Promise.all([
-    loadShaderPair('dust-torus'),
-    bakeVolumeTexture({ seed: 55555, frequency: 5.0, octaves: 5 }),
-  ]);
+  /* Shared uniforms — set .value once, affects all 3 tori */
+  uVolume.value = volumeTex;
+  uLightmap.value = lightmap;
+  uOpacity.value = 1.0;
 
   const tori = [];
 
   for (const def of TORUS_DEFS) {
     const geo = new THREE.BoxGeometry(1, 1, 1);
 
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: vert,
-      fragmentShader: frag,
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        uVolume:        { value: volumeTex },
-        uLightmap:      { value: lightmap },
-        uTime:          { value: 0 },
-        uCameraDist:    { value: 1000 },
-        uOpacity:       { value: 1.0 },
-        uCameraPos:     { value: new THREE.Vector3() },
-        uBoxScale:      { value: new THREE.Vector3(def.boxHalfXZ, def.boxHalfY, def.boxHalfXZ) },
-        uMajorR:        { value: def.majorR },
-        uMinorR:        { value: def.minorR },
-        uYSquash:       { value: def.ySquash },
-        uLightmapAngle: { value: 0 },
-        uBaseColor:     { value: def.baseColor },
-        uDensityScale:  { value: def.densityScale },
-        uNoiseScale:    { value: def.noiseScale },
-        uNoiseStrength: { value: def.noiseStrength },
-        uWarpScale:     { value: def.warpScale },
-        uSeed:          { value: def.seed },
-        uMinSteps:      { value: def.minSteps },
-        uMaxSteps:      { value: def.maxSteps },
-      },
-      side: THREE.BackSide,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: THREE.AdditiveBlending,
-    });
+    /* Per-torus uniform nodes — each torus gets its own set */
+    const pBoxScale = uniform(vec3(def.boxHalfXZ, def.boxHalfY, def.boxHalfXZ));
+    const pMajorR = uniform(float(def.majorR));
+    const pMinorR = uniform(float(def.minorR));
+    const pYSquash = uniform(float(def.ySquash));
+    const pLightmapAngle = uniform(float(0));
+    const pBaseColor = uniform(vec3(def.baseColor.r, def.baseColor.g, def.baseColor.b));
+    const pDensityScale = uniform(float(def.densityScale));
+    const pNoiseScale = uniform(float(def.noiseScale));
+    const pNoiseStrength = uniform(float(def.noiseStrength));
+    const pWarpScale = uniform(float(def.warpScale));
+    const pSeed = uniform(float(def.seed));
+    const pMinSteps = uniform(float(def.minSteps));
+    const pMaxSteps = uniform(float(def.maxSteps));
+
+    const mat = new MeshBasicNodeMaterial();
+    mat.vertexNode = dustTorusVert();
+    mat.fragmentNode = dustTorusFrag(
+      pBoxScale, pMajorR, pMinorR, pYSquash, pLightmapAngle,
+      pBaseColor, pDensityScale, pNoiseScale, pNoiseStrength,
+      pWarpScale, pSeed, pMinSteps, pMaxSteps
+    );
+    mat.side = THREE.BackSide;
+    mat.transparent = true;
+    mat.depthWrite = false;
+    mat.depthTest = true;
+    mat.blending = THREE.AdditiveBlending;
 
     const mesh = new THREE.Mesh(geo, mat);
     mesh.scale.set(def.boxHalfXZ * 2, def.boxHalfY * 2, def.boxHalfXZ * 2);
@@ -107,21 +104,21 @@ export async function createDustTorus(scene, renderer, lightmap) {
     mesh.frustumCulled = false;
     scene.add(mesh);
 
-    tori.push({ mesh, def });
+    tori.push({ mesh, def, pLightmapAngle });
   }
 
   function update(elapsed, rotationTime, camera, cinemaMode) {
     const galaxyAngle = -rotationTime * BASE_SPEED;
 
-    for (const { mesh, def } of tori) {
+    /* Shared uniforms — same for all tori */
+    uTime.value = elapsed;
+    uCameraPos.value.copy(camera.position);
+    uCameraDist.value = cinemaMode ? 0 : camera.position.length();
+
+    for (const { mesh, def, pLightmapAngle } of tori) {
       const torusAngle = -rotationTime * BASE_SPEED * def.speedFraction;
       mesh.rotation.y = torusAngle;
-
-      const u = mesh.material.uniforms;
-      u.uTime.value = elapsed;
-      u.uCameraPos.value.copy(camera.position);
-      u.uCameraDist.value = cinemaMode ? 0 : camera.position.length();
-      u.uLightmapAngle.value = (torusAngle - galaxyAngle) * def.lightmapLag;
+      pLightmapAngle.value = (torusAngle - galaxyAngle) * def.lightmapLag;
     }
   }
 

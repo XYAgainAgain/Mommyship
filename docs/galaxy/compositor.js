@@ -1,5 +1,9 @@
 import * as THREE from 'three';
-import { loadShaderPair, loadShader } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+
+import { main as composeFrag, uSpaceTexture, uDistortionTexture, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius } from './tsl/frag/compose.tsl.js';
+import { main as activeFrag } from './tsl/frag/distortion-active.tsl.js';
+import { main as maskFrag } from './tsl/frag/distortion-mask.tsl.js';
 
 /* Multi-pass composition pipeline for black hole lensing.
    When active: scene → spaceRT, distortion planes → distortionRT,
@@ -10,25 +14,17 @@ import { loadShaderPair, loadShader } from './shaders.js';
 const DISTORTION_SCALE = 60;
 
 export async function createCompositor(renderer) {
-  const [composeShaders, distortionVert, activeFrag, maskFrag] = await Promise.all([
-    loadShaderPair('compose'),
-    loadShader('galaxy/shaders/distortion-common.vert'),
-    loadShader('galaxy/shaders/distortion-active.frag'),
-    loadShader('galaxy/shaders/distortion-mask.frag')
-  ]);
-
   const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   orthoCamera.position.z = 1;
   const composeScene = new THREE.Scene();
   const distortionScene = new THREE.Scene();
 
   /* Active distortion plane — faces camera each frame, radial gradient */
-  const activeMat = new THREE.ShaderMaterial({
-    vertexShader: distortionVert,
-    fragmentShader: activeFrag,
-    side: THREE.DoubleSide,
-    transparent: true
-  });
+  const activeMat = new MeshBasicNodeMaterial();
+  activeMat.fragmentNode = activeFrag();
+  activeMat.side = THREE.DoubleSide;
+  activeMat.transparent = true;
+
   const activePlane = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1), activeMat
   );
@@ -36,12 +32,11 @@ export async function createCompositor(renderer) {
   distortionScene.add(activePlane);
 
   /* Mask plane — lies flat in XZ, shapes distortion into a disc */
-  const maskMat = new THREE.ShaderMaterial({
-    vertexShader: distortionVert,
-    fragmentShader: maskFrag,
-    side: THREE.DoubleSide,
-    transparent: true
-  });
+  const maskMat = new MeshBasicNodeMaterial();
+  maskMat.fragmentNode = maskFrag();
+  maskMat.side = THREE.DoubleSide;
+  maskMat.transparent = true;
+
   const maskPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1), maskMat
   );
@@ -54,19 +49,15 @@ export async function createCompositor(renderer) {
   let distortionRT = null;
   let rtsReady = false;
 
-  const composeMat = new THREE.ShaderMaterial({
-    vertexShader: composeShaders.vert,
-    fragmentShader: composeShaders.frag,
-    uniforms: {
-      uSpaceTexture:       { value: null },
-      uDistortionTexture:  { value: null },
-      uBlackHolePosition:  { value: new THREE.Vector2(0.5, 0.5) },
-      uDistortionStrength: { value: 0.0 },
-      uRGBShiftRadius:     { value: 0.00001 }
-    },
-    depthWrite: false,
-    depthTest: false
-  });
+  const composeMat = new MeshBasicNodeMaterial();
+  composeMat.fragmentNode = composeFrag();
+  composeMat.depthWrite = false;
+  composeMat.depthTest = false;
+
+  /* Initial uniform values */
+  uBlackHolePosition.value.set(0.5, 0.5);
+  uDistortionStrength.value = 0.0;
+  uRGBShiftRadius.value = 0.00001;
 
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), composeMat);
   quad.frustumCulled = false;
@@ -77,19 +68,19 @@ export async function createCompositor(renderer) {
     const w = renderer.domElement.width;
     const h = renderer.domElement.height;
 
-    spaceRT = new THREE.WebGLRenderTarget(w, h, {
+    spaceRT = new THREE.RenderTarget(w, h, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter
     });
-    distortionRT = new THREE.WebGLRenderTarget(
+    distortionRT = new THREE.RenderTarget(
       Math.floor(w * 0.5), Math.floor(h * 0.5), {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter
       }
     );
 
-    composeMat.uniforms.uSpaceTexture.value = spaceRT.texture;
-    composeMat.uniforms.uDistortionTexture.value = distortionRT.texture;
+    uSpaceTexture.value = spaceRT.texture;
+    uDistortionTexture.value = distortionRT.texture;
     rtsReady = true;
   }
 
@@ -104,8 +95,8 @@ export async function createCompositor(renderer) {
   function render(scene, camera, bhScreenPos, lodFactor, markerScene) {
     ensureRTs();
 
-    composeMat.uniforms.uBlackHolePosition.value.copy(bhScreenPos);
-    composeMat.uniforms.uDistortionStrength.value = lodFactor;
+    uBlackHolePosition.value.copy(bhScreenPos);
+    uDistortionStrength.value = lodFactor;
 
     /* Active plane tracks camera so lensing works from any angle */
     activePlane.lookAt(camera.position);

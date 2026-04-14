@@ -1,29 +1,49 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
+import { uniform, float, Fn, length, mix, smoothstep, varying, varyingProperty, positionLocal, vec3, vec4 } from 'three/tsl';
 import { bakeNoiseTexture } from './noise-bake.js';
+
+import { main as discVert } from './tsl/vert/accretion-disc.tsl.js';
+import { main as discFrag, uTime as discUTime, uOpacity as discUOpacity, uNoiseTexture } from './tsl/frag/accretion-disc.tsl.js';
+
+import { main as particleVert, computeSize, uTime as particleUTime, uViewHeight, uSize } from './tsl/vert/accretion-particles.tsl.js';
+import { main as particleFrag, uOpacity as particleUOpacity } from './tsl/frag/accretion-particles.tsl.js';
 
 /* 20% of outer radius — matches masshole's 1:5 inner gap ratio */
 const DISC_INNER_RADIUS = 6;
 const DISC_OUTER_RADIUS = 30;
 const PARTICLE_COUNT = 50000;
 
-/* Accretion disk palette — matches site's dark mode accent colors */
-/* Brighter inner color — goes near-white with additive blending (3 iterations) */
-const INNER_COLOR = new THREE.Color('#FF90E0');
-const MID_COLOR   = new THREE.Color('#8332ac');
-const OUTER_COLOR = new THREE.Color('#3633ff');
-
-function smoothstep(edge0, edge1, x) {
+function lodSmoothstep(edge0, edge1, x) {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
 }
 
+/* Mid-LOD ring: inline TSL for the 5-stop radial gradient band */
+const vRadial = varying(float(), 'vRadial');
+const ringVertNode = /*@__PURE__*/ Fn(() => {
+  vRadial.assign(length(positionLocal.xy).sub(8.0).div(14.0));
+  return positionLocal;
+});
+
+const vRadialRead = varyingProperty('float', 'vRadial');
+const uRingOpacity = uniform(float(1.0));
+const ringFragNode = /*@__PURE__*/ Fn(() => {
+  const c0 = vec3(1.0, 0.90, 0.97);
+  const c1 = vec3(0.95, 0.30, 0.60);
+  const c2 = vec3(0.12, 0.30, 0.55);
+  const c3 = vec3(0.51, 0.20, 0.67);
+  const c4 = vec3(0.80, 0.65, 0.30);
+  const surfaceColor = mix(c0, c1, smoothstep(0.0, 0.15, vRadialRead)).toVar();
+  surfaceColor.assign(mix(surfaceColor, c2, smoothstep(0.15, 0.35, vRadialRead)));
+  surfaceColor.assign(mix(surfaceColor, c3, smoothstep(0.35, 0.60, vRadialRead)));
+  surfaceColor.assign(mix(surfaceColor, c4, smoothstep(0.60, 0.90, vRadialRead)));
+  const edgeFade = smoothstep(0.0, 0.15, vRadialRead).mul(smoothstep(1.0, 0.7, vRadialRead));
+  return vec4(surfaceColor, edgeFade.mul(uRingOpacity));
+});
+
 export async function createBlackHole(scene, renderer) {
-  const [discShaders, particleShaders, noiseTexture] = await Promise.all([
-    loadShaderPair('accretion-disc'),
-    loadShaderPair('accretion-particles'),
-    bakeNoiseTexture(renderer)
-  ]);
+  const noiseTexture = await bakeNoiseTexture(renderer);
 
   const group = new THREE.Group();
 
@@ -31,23 +51,15 @@ export async function createBlackHole(scene, renderer) {
      collapsing UVs to a single point, exactly like the masshole reference. */
 
   const discGeo = new THREE.CylinderGeometry(DISC_OUTER_RADIUS, DISC_INNER_RADIUS, 0, 64, 10, true);
-  const discMat = new THREE.ShaderMaterial({
-    vertexShader: discShaders.vert,
-    fragmentShader: discShaders.frag,
-    uniforms: {
-      uTime:         { value: 0 },
-      uOpacity:      { value: 1.0 },
-      uNoiseTexture: { value: noiseTexture },
-      uInnerColor:   { value: INNER_COLOR },
-      uMidColor:     { value: MID_COLOR },
-      uOuterColor:   { value: OUTER_COLOR }
-    },
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    depthTest: false,
-    transparent: true
-  });
+  uNoiseTexture.value = noiseTexture;
+  const discMat = new MeshBasicNodeMaterial();
+  discMat.positionNode = discVert();
+  discMat.fragmentNode = discFrag();
+  discMat.side = THREE.DoubleSide;
+  discMat.blending = THREE.AdditiveBlending;
+  discMat.depthWrite = false;
+  discMat.depthTest = false;
+  discMat.transparent = true;
   const discMesh = new THREE.Mesh(discGeo, discMat);
   discMesh.renderOrder = 2;
   group.add(discMesh);
@@ -68,20 +80,16 @@ export async function createBlackHole(scene, renderer) {
   particleGeo.setAttribute('aSize',     new THREE.BufferAttribute(pSizes, 1));
   particleGeo.setAttribute('aRandom',   new THREE.BufferAttribute(pRandoms, 1));
 
-  const particleMat = new THREE.ShaderMaterial({
-    vertexShader: particleShaders.vert,
-    fragmentShader: particleShaders.frag,
-    uniforms: {
-      uTime:       { value: 0 },
-      uOpacity:    { value: 1.0 },
-      uViewHeight: { value: window.innerHeight },
-      uSize:       { value: 0.09 },
-    },
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    depthTest: false,
-    transparent: true
-  });
+  uSize.value = 0.09;
+  uViewHeight.value = window.innerHeight;
+  const particleMat = new PointsNodeMaterial();
+  particleMat.positionNode = particleVert();
+  particleMat.fragmentNode = particleFrag();
+  particleMat.sizeNode = computeSize();
+  particleMat.blending = THREE.AdditiveBlending;
+  particleMat.depthWrite = false;
+  particleMat.depthTest = false;
+  particleMat.transparent = true;
   const particles = new THREE.Points(particleGeo, particleMat);
   particles.renderOrder = 3;
   particles.frustumCulled = false;
@@ -140,42 +148,14 @@ export async function createBlackHole(scene, renderer) {
   /* Mid-LOD ring mesh — shows accretion disk orientation at medium distance.
      Flat in XZ like the real disk, uses radial gradient from vertex position. */
   const ringGeo = new THREE.RingGeometry(8, 22, 48);
-  const ringMat = new THREE.ShaderMaterial({
-    vertexShader: `
-      varying float vRadial;
-      void main() {
-        /* Radial 0-1 from position, not UVs — RingGeometry UVs are positional, not radial */
-        vRadial = (length(position.xy) - 8.0) / (22.0 - 8.0);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      precision highp float;
-      uniform float uOpacity;
-      varying float vRadial;
-      void main() {
-        vec3 c0 = vec3(1.0, 0.90, 0.97);
-        vec3 c1 = vec3(0.95, 0.30, 0.60);
-        vec3 c2 = vec3(0.12, 0.30, 0.55);
-        vec3 c3 = vec3(0.51, 0.20, 0.67);
-        vec3 c4 = vec3(0.80, 0.65, 0.30);
-        vec3 color = mix(c0, c1, smoothstep(0.0, 0.15, vRadial));
-        color = mix(color, c2, smoothstep(0.15, 0.35, vRadial));
-        color = mix(color, c3, smoothstep(0.35, 0.60, vRadial));
-        color = mix(color, c4, smoothstep(0.60, 0.90, vRadial));
-        float edgeFade = smoothstep(0.0, 0.15, vRadial) * smoothstep(1.0, 0.7, vRadial);
-        gl_FragColor = vec4(color, edgeFade * uOpacity);
-      }
-    `,
-    uniforms: {
-      uOpacity: { value: 1.0 }
-    },
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    depthTest: true,
-    transparent: true
-  });
+  const ringMat = new MeshBasicNodeMaterial();
+  ringMat.positionNode = ringVertNode();
+  ringMat.fragmentNode = ringFragNode();
+  ringMat.side = THREE.DoubleSide;
+  ringMat.blending = THREE.AdditiveBlending;
+  ringMat.depthWrite = false;
+  ringMat.depthTest = true;
+  ringMat.transparent = true;
   const ringMesh = new THREE.Mesh(ringGeo, ringMat);
   ringMesh.rotation.x = Math.PI * 0.5;
   ringMesh.renderOrder = 1.5;
@@ -185,8 +165,8 @@ export async function createBlackHole(scene, renderer) {
   scene.add(group);
 
   function update(elapsed, lodFactor, camera) {
-    discMat.uniforms.uTime.value = elapsed;
-    particleMat.uniforms.uTime.value = elapsed + 9999;
+    discUTime.value = elapsed;
+    particleUTime.value = elapsed + 9999;
 
     /* Glow sprite: fades out as real disk appears */
     glowSprite.material.opacity = 1 - lodFactor;
@@ -194,20 +174,20 @@ export async function createBlackHole(scene, renderer) {
 
     /* Occluder: gone before real disk appears so they never coexist */
     occluder.quaternion.copy(camera.quaternion);
-    const occluderOpacity = 1 - smoothstep(0.1, 0.25, lodFactor);
+    const occluderOpacity = 1 - lodSmoothstep(0.1, 0.25, lodFactor);
     occluderMat.opacity = occluderOpacity;
     occluder.visible = occluderOpacity > 0.01;
     occluderMat.depthWrite = occluderOpacity > 0.5;
 
     /* Ring mesh: always visible at far range, bridges gap until real disk takes over */
-    const ringOpacity = 1 - smoothstep(0.3, 0.6, lodFactor);
-    ringMat.uniforms.uOpacity.value = ringOpacity;
+    const ringOpacity = 1 - lodSmoothstep(0.3, 0.6, lodFactor);
+    uRingOpacity.value = ringOpacity;
     ringMesh.visible = ringOpacity > 0.01;
 
     /* Real disk + particles: delayed start so occluder is fully gone first */
-    const diskOpacity = smoothstep(0.2, 0.8, lodFactor);
-    discMat.uniforms.uOpacity.value = diskOpacity;
-    particleMat.uniforms.uOpacity.value = diskOpacity;
+    const diskOpacity = lodSmoothstep(0.2, 0.8, lodFactor);
+    discUOpacity.value = diskOpacity;
+    particleUOpacity.value = diskOpacity;
     discMesh.visible = diskOpacity > 0.01;
     particles.visible = diskOpacity > 0.01;
 
@@ -215,7 +195,7 @@ export async function createBlackHole(scene, renderer) {
   }
 
   function resize() {
-    particleMat.uniforms.uViewHeight.value = window.innerHeight;
+    uViewHeight.value = window.innerHeight;
   }
 
   return { group, update, resize };

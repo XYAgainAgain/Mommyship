@@ -1,6 +1,11 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { createRng } from './rng.js';
+
+import { main as skyboxFrag, uTime as skyboxUTime } from './tsl/frag/skybox.tsl.js';
+import { main as skyboxVert } from './tsl/vert/skybox.tsl.js';
+import { main as starfieldFrag } from './tsl/frag/starfield.tsl.js';
+import { main as starfieldVert, uTime as starfieldUTime } from './tsl/vert/starfield.tsl.js';
 
 const SKYBOX_RADIUS = 650;
 const PARTICLE_COUNT = 18000;
@@ -24,6 +29,7 @@ for (const entry of STAR_PALETTE) {
   cumulativeWeights.push(running / totalWeight);
 }
 
+/* WebGPU has no variable-size point sprites — use instanced billboard quads instead */
 function buildTwinkleGeometry() {
   const rng = createRng(STAR_SEED);
 
@@ -33,11 +39,11 @@ function buildTwinkleGeometry() {
     return STAR_PALETTE[Math.max(0, idx)];
   }
 
-  const positions = new Float32Array(PARTICLE_COUNT * 3);
-  const colors    = new Float32Array(PARTICLE_COUNT * 3);
+  const offsets    = new Float32Array(PARTICLE_COUNT * 3);
+  const colors     = new Float32Array(PARTICLE_COUNT * 3);
   const sizes      = new Float32Array(PARTICLE_COUNT);
   const brightness = new Float32Array(PARTICLE_COUNT);
-  const phases    = new Float32Array(PARTICLE_COUNT);
+  const phases     = new Float32Array(PARTICLE_COUNT);
 
   const r = SKYBOX_RADIUS - 5;
 
@@ -46,9 +52,9 @@ function buildTwinkleGeometry() {
     const phi   = rng.next() * Math.PI * 2;
     const sinT  = Math.sin(theta);
 
-    positions[i * 3]     = r * sinT * Math.cos(phi);
-    positions[i * 3 + 1] = r * Math.cos(theta);
-    positions[i * 3 + 2] = r * sinT * Math.sin(phi);
+    offsets[i * 3]     = r * sinT * Math.cos(phi);
+    offsets[i * 3 + 1] = r * Math.cos(theta);
+    offsets[i * 3 + 2] = r * sinT * Math.sin(phi);
 
     const col = pickColor();
     colors[i * 3]     = col.r;
@@ -60,60 +66,52 @@ function buildTwinkleGeometry() {
     phases[i]     = rng.next();
   }
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position',    new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color',       new THREE.BufferAttribute(colors,    3));
-  geo.setAttribute('aSize',       new THREE.BufferAttribute(sizes,     1));
-  geo.setAttribute('aBrightness', new THREE.BufferAttribute(brightness, 1));
-  geo.setAttribute('aPhase',      new THREE.BufferAttribute(phases,    1));
+  const base = new THREE.PlaneGeometry(1, 1);
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = base.index;
+  geo.setAttribute('position', base.getAttribute('position'));
+  geo.setAttribute('uv',       base.getAttribute('uv'));
+  geo.setAttribute('normal',   base.getAttribute('normal'));
 
+  geo.setAttribute('aOffset',     new THREE.InstancedBufferAttribute(offsets,    3));
+  geo.setAttribute('color',       new THREE.InstancedBufferAttribute(colors,     3));
+  geo.setAttribute('aSize',       new THREE.InstancedBufferAttribute(sizes,      1));
+  geo.setAttribute('aBrightness', new THREE.InstancedBufferAttribute(brightness, 1));
+  geo.setAttribute('aPhase',      new THREE.InstancedBufferAttribute(phases,     1));
+
+  geo.instanceCount = PARTICLE_COUNT;
   return geo;
 }
 
 export async function createBackground(scene) {
-  const [skyboxShaders, starfieldShaders] = await Promise.all([
-    loadShaderPair('skybox'),
-    loadShaderPair('starfield')
-  ]);
-
-  /* Procedural skybox — no texture, just dark space with subtle nebula wisps */
-  const skyboxUniforms = { uTime: { value: 0 } };
-
   const skyboxGeo = new THREE.SphereGeometry(SKYBOX_RADIUS, 64, 32);
-  const skyboxMat = new THREE.ShaderMaterial({
-    vertexShader:   skyboxShaders.vert,
-    fragmentShader: skyboxShaders.frag,
-    uniforms:       skyboxUniforms,
-    side:           THREE.BackSide,
-    depthWrite:     false
-  });
+  const skyboxMat = new MeshBasicNodeMaterial();
+  skyboxMat.positionNode = skyboxVert();
+  skyboxMat.fragmentNode = skyboxFrag();
+  skyboxMat.side = THREE.BackSide;
+  skyboxMat.depthWrite = false;
 
   const skybox = new THREE.Mesh(skyboxGeo, skyboxMat);
   scene.add(skybox);
 
-  /* Twinkle particles */
-  const twinkleUniforms = {
-    uViewHeight: { value: window.innerHeight },
-    uTime:       { value: 0 }
-  };
+  /* Instanced billboard quads — replaces THREE.Points which are 1px on WebGPU */
+  const twinkleMat = new MeshBasicNodeMaterial();
+  twinkleMat.positionNode = starfieldVert();
+  twinkleMat.fragmentNode = starfieldFrag();
+  twinkleMat.blending = THREE.AdditiveBlending;
+  twinkleMat.depthWrite = false;
+  twinkleMat.transparent = true;
+  twinkleMat.side = THREE.DoubleSide;
 
-  const twinkleMat = new THREE.ShaderMaterial({
-    vertexShader:   starfieldShaders.vert,
-    fragmentShader: starfieldShaders.frag,
-    uniforms:       twinkleUniforms,
-    vertexColors:   true,
-    blending:       THREE.AdditiveBlending,
-    depthWrite:     false,
-    transparent:    true
-  });
-
-  const twinkle = new THREE.Points(buildTwinkleGeometry(), twinkleMat);
+  const twinkleGeo = buildTwinkleGeometry();
+  const twinkle = new THREE.Mesh(twinkleGeo, twinkleMat);
+  twinkle.frustumCulled = false;
   scene.add(twinkle);
+  console.log('DEBUG starfield: ' + PARTICLE_COUNT + ' instanced quads, mat #' + twinkleMat.id);
 
   function update(time, cameraPos) {
-    skyboxUniforms.uTime.value       = time;
-    twinkleUniforms.uTime.value      = time;
-    twinkleUniforms.uViewHeight.value = window.innerHeight;
+    skyboxUTime.value = time;
+    starfieldUTime.value = time;
     skybox.position.copy(cameraPos);
     twinkle.position.copy(cameraPos);
   }

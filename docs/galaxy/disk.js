@@ -1,6 +1,9 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { createRng } from './rng.js';
+
+import { main as diskVert, uTime } from './tsl/vert/galaxy-disk.tsl.js';
+import { main as diskFrag } from './tsl/frag/galaxy-disk.tsl.js';
 
 const GALAXY_SEED = 42;
 const GALAXY_RADIUS = 450;
@@ -258,39 +261,39 @@ function generateDiskParticles() {
   }
 
   const count = placed;
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position',    new THREE.BufferAttribute(positions.slice(0, count * 3), 3));
-  geo.setAttribute('color',       new THREE.BufferAttribute(colors.slice(0, count * 3), 3));
-  geo.setAttribute('aSize',       new THREE.BufferAttribute(sizes.slice(0, count), 1));
-  geo.setAttribute('aBrightness', new THREE.BufferAttribute(brightness.slice(0, count), 1));
-  geo.setAttribute('aRadius',     new THREE.BufferAttribute(radii.slice(0, count), 1));
+  const base = new THREE.PlaneGeometry(1, 1);
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = base.index;
+  geo.setAttribute('position', base.getAttribute('position'));
+  geo.setAttribute('uv',       base.getAttribute('uv'));
+  geo.setAttribute('normal',   base.getAttribute('normal'));
+  geo.setAttribute('aOffset',     new THREE.InstancedBufferAttribute(positions.slice(0, count * 3), 3));
+  geo.setAttribute('color',       new THREE.InstancedBufferAttribute(colors.slice(0, count * 3), 3));
+  geo.setAttribute('aSize',       new THREE.InstancedBufferAttribute(sizes.slice(0, count), 1));
+  geo.setAttribute('aBrightness', new THREE.InstancedBufferAttribute(brightness.slice(0, count), 1));
+  geo.setAttribute('aRadius',     new THREE.InstancedBufferAttribute(radii.slice(0, count), 1));
+  geo.instanceCount = count;
 
   return { geo, count };
 }
 
 export async function createDisk(scene) {
-  const { vert, frag } = await loadShaderPair('galaxy-disk');
   const { geo, count } = generateDiskParticles();
 
-  const mat = new THREE.ShaderMaterial({
-    vertexShader: vert,
-    fragmentShader: frag,
-    uniforms: {
-      uViewHeight: { value: window.innerHeight },
-      uTime: { value: 0 }
-    },
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    transparent: true
-  });
+  const mat = new MeshBasicNodeMaterial();
+  mat.positionNode = diskVert();
+  mat.fragmentNode = diskFrag();
+  mat.blending = THREE.AdditiveBlending;
+  mat.depthWrite = false;
+  mat.transparent = true;
+  mat.side = THREE.DoubleSide;
 
-  const mesh = new THREE.Points(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.frustumCulled = false;
   scene.add(mesh);
 
   function update(delta, elapsed) {
-    mat.uniforms.uViewHeight.value = window.innerHeight;
-    mat.uniforms.uTime.value = elapsed;
+    uTime.value = elapsed;
   }
 
   return { mesh, update, count };

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 import { createCamera } from './camera.js';
 import { createBackground } from './background.js';
 import { createDisk } from './disk.js';
@@ -127,20 +128,50 @@ async function init() {
   const container = document.querySelector('.experience');
   const progress = createLoadingTracker(13);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new WebGPURenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000);
   renderer.autoClear = false;
   container.appendChild(renderer.domElement);
+  await renderer.init();
+
+  /* DEBUG — intercept shader compilation to log WGSL source on failure */
+  const gpuDevice = renderer.backend?.device;
+  if (gpuDevice) {
+    const origCreateShaderModule = gpuDevice.createShaderModule.bind(gpuDevice);
+    gpuDevice.createShaderModule = function(descriptor) {
+      const module = origCreateShaderModule(descriptor);
+      module.getCompilationInfo().then(info => {
+        const errors = info.messages.filter(m => m.type === 'error');
+        if (errors.length > 0) {
+          const label = descriptor.label || 'unknown';
+          console.group('WGSL ERROR: ' + label);
+          errors.forEach(e => console.error('Line ' + e.lineNum + ':' + e.linePos + ' — ' + e.message));
+          const lines = (descriptor.code || '').split('\n');
+          errors.forEach(e => {
+            const start = Math.max(0, e.lineNum - 3);
+            const end = Math.min(lines.length, e.lineNum + 2);
+            console.log('--- Near line ' + e.lineNum + ' ---');
+            for (let i = start; i < end; i++)
+              console.log((i + 1 === e.lineNum ? '>>> ' : '    ') + (i + 1) + ': ' + lines[i]);
+          });
+          console.groupEnd();
+        }
+      });
+      return module;
+    };
+    console.log('DEBUG: WebGPU shader error hook installed');
+  }
 
   const scene = new THREE.Scene();
   const cam = createCamera(renderer);
 
-  const clock = new THREE.Clock();
+  const timer = new THREE.Timer();
+  timer.connect(document);
 
   /* 12k → 8k → 4k based on GPU max texture dimension */
-  const maxTex = renderer.capabilities.maxTextureSize;
+  const maxTex = renderer.backend?.device?.limits?.maxTextureDimension2D ?? 16384;
   const tier = maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
   const lightmapUrl = 'galaxy/textures/galaxy-lightmap-' + tier + '.webp';
 
@@ -434,14 +465,13 @@ async function init() {
 
   let lastFrameTime = performance.now();
 
-  function animate() {
-    requestAnimationFrame(animate);
-
+  function animate(timestamp) {
     const now = performance.now();
     perfMonitor.sample(now - lastFrameTime);
     lastFrameTime = now;
 
-    const delta = Math.min(clock.getDelta(), 0.1);
+    timer.update(timestamp);
+    const delta = Math.min(timer.getDelta(), 0.1);
 
     fpsFrames++;
     fpsTime += delta;
@@ -457,7 +487,7 @@ async function init() {
     /* Skip 3D rendering in 2D mode */
     if (ui.getViewMode() === '2d') return;
 
-    const elapsed = clock.getElapsedTime();
+    const elapsed = timer.getElapsed();
 
     if (!rotationPaused) rotationTime += delta;
 
@@ -482,7 +512,7 @@ async function init() {
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);
     coreStorm.update(elapsed, rotationTime);
     dustTorus.update(elapsed, rotationTime, cam.camera, cinemaMode);
-    asteroids.update(delta, rotationTime, cam.camera.position);
+    asteroids.update(delta, rotationTime, cam.camera.position, cam.camera);
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
@@ -644,13 +674,27 @@ async function init() {
     }
   }, systems);
 
-  /* Pre-compile all shaders — force hidden detail meshes visible for one frame
-     so the GPU compiles their programs during loading, not on first flyby */
-  renderer.compile(scene, cam.camera);
-  systems.warmUpShaders(renderer, cam.camera);
+  /* Pre-compile all shaders */
+  console.group('DEBUG: Scene materials at compileAsync');
+  scene.traverse(obj => {
+    if (obj.material) {
+      const m = obj.material;
+      const type = m.type || m.constructor?.name || 'unknown';
+      const nodes = [
+        m.positionNode ? 'pos' : '',
+        m.vertexNode ? 'vert' : '',
+        m.fragmentNode ? 'frag' : '',
+        m.sizeNode ? 'size' : '',
+      ].filter(Boolean).join('+');
+      console.log(type + ' #' + m.id + ' [' + nodes + '] on ' + (obj.constructor?.name || '?') + (obj.visible ? '' : ' (hidden)'));
+    }
+  });
+  console.groupEnd();
+  await renderer.compileAsync(scene, cam.camera);
+  await systems.warmUpShaders(renderer, cam.camera);
 
   updateScaleBar();
-  animate();
+  renderer.setAnimationLoop(animate);
 
   /* Dismiss loading overlay */
   const loadingEl = document.getElementById('gx-loading');

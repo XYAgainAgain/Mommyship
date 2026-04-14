@@ -1,6 +1,10 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, texture, float } from 'three/tsl';
 import { createRng } from './rng.js';
+
+import { main as asteroidVert, uTime as asteroidUTime } from './tsl/vert/asteroid.tsl.js';
+import { main as asteroidFrag } from './tsl/frag/asteroid.tsl.js';
 
 /* Perlin gradient noise — CPU-side only, runs once at init */
 const PERM = new Uint8Array(512);
@@ -308,7 +312,7 @@ function generateMegaPositions(count, rng, exclusionZones) {
   return { offsets, radii, tints, timeOffsets, placed };
 }
 
-function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMode, spareCount) {
+function createAsteroidMesh(cfg, _unused, rng, exclusionZones, lightmap, megaMode, spareCount) {
   const { offsets, radii, tints, timeOffsets, placed } = megaMode
     ? generateMegaPositions(cfg.count, rng, exclusionZones)
     : generatePositions(cfg.count, rng, exclusionZones);
@@ -361,26 +365,24 @@ function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMod
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.magFilter = THREE.LinearFilter;
 
-  const mat = new THREE.ShaderMaterial({
-    vertexShader: shaders.vert,
-    fragmentShader: shaders.frag,
-    uniforms: {
-      uTime:        { value: 0 },
-      uColumns:     { value: cfg.columns },
-      uRows:        { value: cfg.rows },
-      uTotalFrames: { value: cfg.totalFrames },
-      uFPS:         { value: cfg.fps },
-      uSpriteSheet: { value: tex },
-      uLightmap:    { value: lightmap }
-    },
-    side: THREE.DoubleSide,
-    depthWrite: true,
-    depthTest: true,
-    transparent: false,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1
-  });
+  /* Per-population uniform nodes */
+  const pColumns = uniform(float(cfg.columns));
+  const pRows = uniform(float(cfg.rows));
+  const pTotalFrames = uniform(float(cfg.totalFrames));
+  const pFPS = uniform(float(cfg.fps));
+  const pSpriteSheet = texture(tex);
+  const pLightmap = texture(lightmap);
+
+  const mat = new MeshBasicNodeMaterial();
+  mat.positionNode = asteroidVert(pColumns, pRows, pTotalFrames, pFPS);
+  mat.fragmentNode = asteroidFrag(pSpriteSheet, pLightmap);
+  mat.side = THREE.DoubleSide;
+  mat.depthWrite = true;
+  mat.depthTest = true;
+  mat.transparent = false;
+  mat.polygonOffset = true;
+  mat.polygonOffsetFactor = 1;
+  mat.polygonOffsetUnits = 1;
 
   const mesh = new THREE.Mesh(instGeo, mat);
   mesh.frustumCulled = false;
@@ -389,11 +391,10 @@ function createAsteroidMesh(cfg, shaders, rng, exclusionZones, lightmap, megaMod
 
 export async function init(scene, data, lightmap) {
   initPerlin(42069);
-  const shaders = await loadShaderPair('asteroid');
   const exclusionZones = buildExclusionZones(data);
 
   const bigRng = createRng(hashString(BIGBOI.seed));
-  const big = createAsteroidMesh(BIGBOI, shaders, bigRng, exclusionZones, lightmap, false);
+  const big = createAsteroidMesh(BIGBOI, null, bigRng, exclusionZones, lightmap, false);
   bigBoiMesh = big.mesh;
   bigBoiMat = big.mat;
   scene.add(bigBoiMesh);
@@ -408,7 +409,7 @@ export async function init(scene, data, lightmap) {
 
   const lilRng = createRng(typeof LILGUY.seed === 'number'
     ? LILGUY.seed : hashString(LILGUY.seed));
-  const lil = createAsteroidMesh(LILGUY, shaders, lilRng, exclusionZones, lightmap, false, LILGUY_SPARES);
+  const lil = createAsteroidMesh(LILGUY, null, lilRng, exclusionZones, lightmap, false, LILGUY_SPARES);
   lilGuyMesh = lil.mesh;
   lilGuyMat = lil.mat;
   scene.add(lilGuyMesh);
@@ -427,7 +428,7 @@ export async function init(scene, data, lightmap) {
     spareIndices.push(i);
 
   const megaRng = createRng(hashString(MEGA.seed));
-  const mega = createAsteroidMesh(MEGA, shaders, megaRng, exclusionZones, lightmap, true);
+  const mega = createAsteroidMesh(MEGA, null, megaRng, exclusionZones, lightmap, true);
   megaMesh = mega.mesh;
   megaMat = mega.mat;
   scene.add(megaMesh);
@@ -818,10 +819,9 @@ function flushBuffers() {
   }
 }
 
-export function update(delta, rotationTime, cameraPos) {
-  if (bigBoiMat) bigBoiMat.uniforms.uTime.value = rotationTime;
-  if (lilGuyMat) lilGuyMat.uniforms.uTime.value = rotationTime;
-  if (megaMat) megaMat.uniforms.uTime.value = rotationTime;
+export function update(delta, rotationTime, cameraPos, camera) {
+  /* Shared uTime updates all 3 populations at once */
+  asteroidUTime.value = rotationTime;
 
   if (!cameraPos || !populations.big) return;
 
@@ -865,10 +865,9 @@ export function update(delta, rotationTime, cameraPos) {
 }
 
 export function dispose() {
-  for (const [mesh, mat] of [[bigBoiMesh, bigBoiMat], [lilGuyMesh, lilGuyMat], [megaMesh, megaMat]]) {
+  for (const mesh of [bigBoiMesh, lilGuyMesh, megaMesh]) {
     if (!mesh) continue;
     mesh.geometry.dispose();
-    mat.uniforms.uSpriteSheet.value.dispose();
-    mat.dispose();
+    mesh.material.dispose();
   }
 }

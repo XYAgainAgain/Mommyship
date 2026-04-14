@@ -1,15 +1,26 @@
 import * as THREE from 'three';
-import { loadShader, loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { texture } from 'three/tsl';
+import { main as bakeVert } from './tsl/vert/planet-bake.tsl.js';
+import {
+  main as bakeFrag, uSeed, uPlanetMode, uSlopeness, uOceanLevel,
+  uTemperature, uCraterDensity, uSpecular, uBaseColor1, uBaseColor2,
+  uBaseColor3, uAtmoIntensity, uAtmoTint, uBandCount, uWarpStrength,
+  uStormSize, uCrackScale, uSubsurfaceColor, uEmissiveIntensity,
+  uEmissiveColor, uBulbosity, uCrystalMetric, uMoistureOffset, uBiomeCount,
+} from './tsl/frag/planet-bake.tsl.js';
 import { parsePlanetType, findParentStar } from './planet-params.js';
 import { STORES, planetCacheKey, getEntry, putEntry } from './galaxy-cache.js';
 
 const ATLAS_SIZE = 128;
 const PIXELS = ATLAS_SIZE * ATLAS_SIZE * 4;
 
+const _color = new THREE.Color();
+
 /**
  * Bake procedural planet/moon surfaces into a DataArrayTexture atlas.
  * Checks IndexedDB cache per body — skips GPU bake on hit.
- * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.WebGPURenderer} renderer
  * @param {Object} bodies — galaxyData.bodies keyed by ID
  * @returns {{ atlas, layerMap, churnMap, paramsCache }}
  */
@@ -20,54 +31,18 @@ export async function bakePlanetAtlas(renderer, bodies) {
   });
   if (planetIds.length === 0) return { atlas: null, layerMap: new Map() };
 
-  const [{ vert, frag }, noiseSrc] = await Promise.all([
-    loadShaderPair('planet-bake'),
-    loadShader('galaxy/shaders/noise-common.glsl'),
-  ]);
-  const fullFrag = frag.replace('/* @include noise-common */', noiseSrc);
+  const bakeMat = new MeshBasicNodeMaterial();
+  bakeMat.positionNode = bakeVert();
+  bakeMat.fragmentNode = bakeFrag();
+  bakeMat.depthTest = false;
+  bakeMat.depthWrite = false;
 
-  const bakeMat = new THREE.ShaderMaterial({
-    vertexShader: vert,
-    fragmentShader: fullFrag,
-    glslVersion: THREE.GLSL3,
-    uniforms: {
-      uSeed:              { value: 0 },
-      uPlanetMode:        { value: 0 },
-      uSlopeness:         { value: 1.0 },
-      uOceanLevel:        { value: 0.3 },
-      uTemperature:       { value: 0.5 },
-      uCraterDensity:     { value: 0.0 },
-      uSpecular:          { value: 0.0 },
-      uBaseColor1:        { value: new THREE.Color() },
-      uBaseColor2:        { value: new THREE.Color() },
-      uBaseColor3:        { value: new THREE.Color() },
-      uAtmoIntensity:     { value: 0.2 },
-      uAtmoTint:          { value: new THREE.Color() },
-      uBandCount:         { value: 8.0 },
-      uWarpStrength:      { value: 0.0 },
-      uStormSize:         { value: 0.0 },
-      uCrackScale:        { value: 5.0 },
-      uSubsurfaceColor:   { value: new THREE.Color() },
-      uEmissiveIntensity: { value: 0.0 },
-      uEmissiveColor:     { value: new THREE.Color() },
-      uBulbosity:         { value: 0.0 },
-      uCrystalMetric:     { value: 0 },
-      uMoistureOffset:    { value: 0.0 },
-      uBiomeCount:        { value: 0.5 },
-    },
-    depthTest: false,
-    depthWrite: false,
-  });
-
-  /* Pass-through material for writing cached textures into the atlas */
-  const copyMat = new THREE.ShaderMaterial({
-    vertexShader: `out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
-    fragmentShader: `uniform sampler2D uSrc; in vec2 vUv; out vec4 fragColor; void main() { fragColor = texture(uSrc, vUv); }`,
-    glslVersion: THREE.GLSL3,
-    uniforms: { uSrc: { value: null } },
-    depthTest: false,
-    depthWrite: false,
-  });
+  /* Passthrough copy material — texture(null) auto-samples at geometry UV */
+  const uCopySrc = texture(null);
+  const copyMat = new MeshBasicNodeMaterial();
+  copyMat.fragmentNode = uCopySrc;
+  copyMat.depthTest = false;
+  copyMat.depthWrite = false;
 
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bakeMat);
   const bakeScene = new THREE.Scene();
@@ -83,9 +58,9 @@ export async function bakePlanetAtlas(renderer, bodies) {
   const arrayRT = new THREE.WebGLArrayRenderTarget(ATLAS_SIZE, ATLAS_SIZE, planetIds.length, rtOptions);
   arrayRT.texture.wrapS = THREE.RepeatWrapping;
 
-  /* Single-layer RT for reliable readPixels — reading from WebGLArrayRenderTarget
+  /* Single-layer RT for reliable readPixels — reading from ArrayRenderTarget
      layers directly is unreliable (layer attachment may not persist through readback) */
-  const tempRT = new THREE.WebGLRenderTarget(ATLAS_SIZE, ATLAS_SIZE, rtOptions);
+  const tempRT = new THREE.RenderTarget(ATLAS_SIZE, ATLAS_SIZE, rtOptions);
 
   const layerMap = new Map();
   const churnMap = new Map();
@@ -117,7 +92,7 @@ export async function bakePlanetAtlas(renderer, bodies) {
       /* Cache hit — write stored pixels into this atlas layer via copy quad */
       const tex = new THREE.DataTexture(cached, ATLAS_SIZE, ATLAS_SIZE, THREE.RGBAFormat, THREE.HalfFloatType);
       tex.needsUpdate = true;
-      copyMat.uniforms.uSrc.value = tex;
+      uCopySrc.value = tex;
       quad.material = copyMat;
       renderer.setRenderTarget(arrayRT, i);
       renderer.clear();
@@ -127,40 +102,47 @@ export async function bakePlanetAtlas(renderer, bodies) {
       cacheHits++;
     } else {
       /* Cache miss — bake to tempRT for reliable readback, then copy into atlas */
-      const u = bakeMat.uniforms;
-      u.uSeed.value              = params.seed;
-      u.uPlanetMode.value        = params.mode;
-      u.uSlopeness.value         = params.slopeness;
-      u.uOceanLevel.value        = params.oceanLevel;
-      u.uTemperature.value       = params.temperature;
-      u.uCraterDensity.value     = params.craterDensity;
-      u.uSpecular.value          = params.specular;
-      u.uBaseColor1.value.set(params.baseColor1);
-      u.uBaseColor2.value.set(params.baseColor2);
-      u.uBaseColor3.value.set(params.baseColor3);
-      u.uAtmoIntensity.value     = params.atmosphereIntensity;
-      u.uAtmoTint.value.set(params.atmosphereTint);
-      u.uBandCount.value         = params.bandCount;
-      u.uWarpStrength.value      = params.warpStrength;
-      u.uStormSize.value         = params.stormSize;
-      u.uCrackScale.value        = params.crackScale;
-      u.uSubsurfaceColor.value.set(params.subsurfaceColor);
-      u.uEmissiveIntensity.value = params.emissiveIntensity;
-      u.uEmissiveColor.value.set(params.emissiveColor);
-      u.uBulbosity.value         = params.bulbosity;
-      u.uCrystalMetric.value     = params.crystalMetric ?? 0;
-      u.uMoistureOffset.value    = params.moistureOffset ?? 0.0;
-      u.uBiomeCount.value        = params.biomeCount ?? 0.5;
+      uSeed.value              = params.seed;
+      uPlanetMode.value        = params.mode;
+      uSlopeness.value         = params.slopeness;
+      uOceanLevel.value        = params.oceanLevel;
+      uTemperature.value       = params.temperature;
+      uCraterDensity.value     = params.craterDensity;
+      uSpecular.value          = params.specular;
+      _color.set(params.baseColor1);
+      uBaseColor1.value.set(_color.r, _color.g, _color.b);
+      _color.set(params.baseColor2);
+      uBaseColor2.value.set(_color.r, _color.g, _color.b);
+      _color.set(params.baseColor3);
+      uBaseColor3.value.set(_color.r, _color.g, _color.b);
+      uAtmoIntensity.value     = params.atmosphereIntensity;
+      _color.set(params.atmosphereTint);
+      uAtmoTint.value.set(_color.r, _color.g, _color.b);
+      uBandCount.value         = params.bandCount;
+      uWarpStrength.value      = params.warpStrength;
+      uStormSize.value         = params.stormSize;
+      uCrackScale.value        = params.crackScale;
+      _color.set(params.subsurfaceColor);
+      uSubsurfaceColor.value.set(_color.r, _color.g, _color.b);
+      uEmissiveIntensity.value = params.emissiveIntensity;
+      _color.set(params.emissiveColor);
+      uEmissiveColor.value.set(_color.r, _color.g, _color.b);
+      uBulbosity.value         = params.bulbosity;
+      uCrystalMetric.value     = params.crystalMetric ?? 0;
+      uMoistureOffset.value    = params.moistureOffset ?? 0.0;
+      uBiomeCount.value        = params.biomeCount ?? 0.5;
 
       renderer.setRenderTarget(tempRT);
       renderer.clear();
       renderer.render(bakeScene, bakeCam);
 
-      renderer.readRenderTargetPixels(tempRT, 0, 0, ATLAS_SIZE, ATLAS_SIZE, readBuf);
-      putEntry(STORES.PLANET, key, new Uint16Array(readBuf));
+      try {
+        await renderer.readRenderTargetPixelsAsync(tempRT, 0, 0, ATLAS_SIZE, ATLAS_SIZE, readBuf);
+        putEntry(STORES.PLANET, key, new Uint16Array(readBuf));
+      } catch (_) { /* WebGPU readback not yet supported — skip cache, atlas still works */ }
 
       /* Copy baked result into the atlas array layer */
-      copyMat.uniforms.uSrc.value = tempRT.texture;
+      uCopySrc.value = tempRT.texture;
       quad.material = copyMat;
       renderer.setRenderTarget(arrayRT, i);
       renderer.clear();
