@@ -27,7 +27,8 @@ function computeLOD(camera) {
 function projectToScreen(camera) {
   _bhScreen.set(0, 0, 0);
   _bhScreen.project(camera);
-  _bhScreen2.set(_bhScreen.x * 0.5 + 0.5, _bhScreen.y * 0.5 + 0.5);
+  /* Y flipped to match compose shader's RT-corrected UV space */
+  _bhScreen2.set(_bhScreen.x * 0.5 + 0.5, -_bhScreen.y * 0.5 + 0.5);
   return _bhScreen2;
 }
 
@@ -129,6 +130,9 @@ async function init() {
   const progress = createLoadingTracker(13);
 
   const renderer = new WebGPURenderer({ antialias: true });
+  /* All galaxy shaders are custom fragmentNode — bypass sRGB gamma encode to match
+     WebGL's raw gl_FragColor output (colors were authored for direct framebuffer write) */
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000);
@@ -517,7 +521,7 @@ async function init() {
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
     const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
-    bh.update(elapsed, lodFactor, cam.camera);
+    bh.update(rotationTime, lodFactor, cam.camera);
 
     systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId);
 
@@ -670,7 +674,7 @@ async function init() {
       ui.setTracking(false);
       systems.hideOrbits();
       systems.setSelectedId(null);
-      cam.flyTo(new THREE.Vector3(0, 0, 0), 550);
+      cam.flyHome();
     }
   }, systems);
 

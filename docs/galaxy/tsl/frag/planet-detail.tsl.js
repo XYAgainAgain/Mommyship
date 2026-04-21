@@ -1,8 +1,10 @@
 // Three.js Transpiler r183
 
-import { abs, acos, add, atan, Break, cameraPosition, clamp, Continue, cos, cross, div, dot, exp, float, floor, Fn, fract, If, int, length, log, Loop, mat3, max, min, mix, mul, normalize, normalWorld, positionWorld, pow, round, select, sin, smoothstep, sqrt, step, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { abs, acos, add, atan, Break, cameraPosition, clamp, Continue, cos, cross, div, dot, exp, float, floor, Fn, fract, If, int, length, log, Loop, mat3, max, min, mix, mul, normalize, positionWorld, pow, round, select, sin, smoothstep, sqrt, step, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 
 const vLocalPos = varyingProperty( 'vec3', 'vLocalPos' );
+/* uRotation-aware world normal; avoids stuck terminator from normalWorld. */
+const vRotNormal = varyingProperty( 'vec3', 'vRotNormal' );
 
 /* Shared across all detail instances */
 export const uTime = uniform( float( 0 ) );
@@ -995,9 +997,7 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	} );
 
-	/* normalWorld/positionWorld are TSL built-ins — no vert varying needed.
-	   modelWorldMatrix breaks TSL WGSL codegen, so we can't pass these from the vert. */
-	const N = normalize( normalWorld );
+	const N = normalize( vRotNormal );
 	const V = normalize( cameraPosition.sub( positionWorld ) );
 
 	/* Analytical sphere tangent — continuous at poles, no binary switch seam */
@@ -1013,7 +1013,7 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	const bumpCap = select( uPlanetMode.equal( 0 ).or( uPlanetMode.equal( 6 ) ).or( uPlanetMode.equal( 7 ) ), 1.0, 0.35 );
 	const bumpMul = select( uPlanetMode.equal( 0 ).or( uPlanetMode.equal( 6 ) ).or( uPlanetMode.equal( 7 ) ), 0.7, 0.25 );
-	const bumpStrength = min( bumpCap, derivLen.mul( bumpMul ) ).mul( sub( 1.0, lod ) );
+	const bumpStrength = min( bumpCap, derivLen.mul( bumpMul ) ).mul( sub( 1.0, lod ) ).mul( uFadeIn );
 	const perturbedN = normalize( N.sub( bumpStrength.mul( gDetailDerivs.x.mul( T ).add( gDetailDerivs.y.mul( B ) ) ) ) );
 	const L = normalize( uLightDir );
 
@@ -1119,13 +1119,9 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	If( uOpacity.greaterThanEqual( 0.0 ), () => {
 
-		/* Explicit opacity override — bypasses crystal transparency */
-
 		alpha.mulAssign( uOpacity );
 
 	} ).ElseIf( uPlanetMode.equal( 6 ), () => {
-
-		/* Default crystal transparency: per-body random, squared to skew opaque */
 
 		const bodyTransp = fract( s.mul( 0.137 ) ).toVar();
 		bodyTransp.mulAssign( bodyTransp );

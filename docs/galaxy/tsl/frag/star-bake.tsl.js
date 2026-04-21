@@ -19,9 +19,6 @@ import { uvToSphere, hash33, gnoised, fbmd, blackbodyRGB } from '../glsl/noise-c
 
 export const main = /*@__PURE__*/ Fn( () => {
 
-	/* DEBUG — solid orange to test bake pipeline */
-	return vec4( 1.0, 0.6, 0.2, 1.0 );
-
 	const spherePos = uvToSphere( vUv );
 	const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
 	const sizeInv = div( 1.0, max( uSize, 0.3 ) );

@@ -62,7 +62,7 @@ let rng;
 function pickFromTable(table) {
   const r = rng.next();
   const idx = table.cumulative.findIndex(w => r <= w);
-  return table.palette[Math.max(0, idx)];
+  return { ...table.palette[Math.max(0, idx)] };
 }
 
 function hash2d(x, y) {
@@ -242,13 +242,32 @@ function generateDiskParticles() {
       col = pickFromTable(dimTable);
     }
 
-    colors[placed * 3]     = col.r;
-    colors[placed * 3 + 1] = col.g;
-    colors[placed * 3 + 2] = col.b;
-
     const baseSize = 1.0 + rng.next() * 2.0;
     const edgeFade = t > 0.6 ? 1.0 - (t - 0.6) * 1.5 : 1.0;
     sizes[placed] = baseSize * Math.max(edgeFade, 0.3);
+
+    /* Size→color correlation: big → cool white-blue, small → warm amber/rose.
+       Stronger bias + per-star jitter for more visual variety. */
+    const sizeFrac = (baseSize - 1.0) / 2.0;
+    const jitter = (rng.next() - 0.5) * 0.08;
+    if (sizeFrac > 0.5) {
+      const blend = (sizeFrac - 0.5) * 2.0 * 0.25;
+      col.r = col.r * (1 - blend) + blend * 0.82 + jitter;
+      col.g = col.g * (1 - blend) + blend * 0.88 + jitter;
+      col.b = col.b * (1 - blend) + blend * 1.0 + jitter * 0.5;
+    } else {
+      const blend = (0.5 - sizeFrac) * 2.0 * 0.18;
+      col.r = col.r * (1 - blend) + blend * 1.0 + jitter * 0.3;
+      col.g = col.g * (1 - blend) + blend * 0.7 + jitter;
+      col.b = col.b * (1 - blend) + blend * 0.5 + jitter;
+    }
+    col.r = Math.max(0, Math.min(1, col.r));
+    col.g = Math.max(0, Math.min(1, col.g));
+    col.b = Math.max(0, Math.min(1, col.b));
+
+    colors[placed * 3]     = col.r;
+    colors[placed * 3 + 1] = col.g;
+    colors[placed * 3 + 2] = col.b;
 
     let bright = 0.2 + rng.next() * 0.5;
     if (t < CORE_FRACTION) { /* core brightness unchanged */ }

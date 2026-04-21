@@ -48,10 +48,10 @@ export async function bakeStarAtlas(renderer, bodies) {
   const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   const rtOptions = {
-    minFilter: THREE.LinearFilter,
+    minFilter: THREE.LinearMipmapLinearFilter,
     magFilter: THREE.LinearFilter,
     type: THREE.HalfFloatType,
-    generateMipmaps: false,
+    generateMipmaps: true,
   };
   const arrayRT = new THREE.WebGLArrayRenderTarget(ATLAS_SIZE, ATLAS_SIZE, starIds.length, rtOptions);
 

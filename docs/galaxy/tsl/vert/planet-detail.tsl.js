@@ -6,6 +6,8 @@ const vLocalPos = varying( vec3(), 'vLocalPos' );
 const vNormal = varying( vec3(), 'vNormal' );
 const vViewDir = varying( vec3(), 'vViewDir' );
 const vUv = varying( vec2(), 'vUv' );
+/* uRotation-aware world normal; TSL's normalWorld ignores our in-shader rotation. */
+const vRotNormal = varying( vec3(), 'vRotNormal' );
 
 /* Shared across all detail instances */
 export const uTime = uniform( float( 0 ) );
@@ -58,9 +60,7 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uDisplacementAmp, uLumpiness, u
 	/* Rotate the rigid shape for visual spin */
 
 	const rotDisplaced = uRotation.mul( displaced );
-
-	/* World-space vNormal/vViewDir stripped — modelWorldMatrix breaks TSL WGSL codegen.
-	   Frag currently blocked by scope escape (uSlopeness); will restore via positionWorld/normalWorld in frag. */
+	vRotNormal.assign( uRotation.mul( objNormal ) );
 
 	return rotDisplaced;
 

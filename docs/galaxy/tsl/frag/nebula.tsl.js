@@ -50,10 +50,9 @@ export const main = /*@__PURE__*/ Fn( () => {
 
 	} );
 
-	/* Premultiply alpha into RGB for screen blending */
-
+	/* 0.65× tone-down so billboards don't overpower the raymarched volumetrics. */
 	const alpha = smoothstep( 0.5, 0.0, dist ).toVar();
-	alpha.mulAssign( alpha.mul( vBrightness ) );
+	alpha.mulAssign( alpha.mul( vBrightness ).mul( 0.65 ) );
 	return vec4( vColor.mul( alpha ), alpha );
 
 } );

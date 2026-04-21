@@ -1,7 +1,8 @@
 // Three.js Transpiler r183
 
-import { attribute, float, Fn, vertexColor, positionLocal, varying, uniform, uv, vec2, vec3 } from 'three/tsl';
+import { attribute, float, Fn, positionLocal, varying, uniform, uv, vec2, vec3, vertexColor } from 'three/tsl';
 
+/* InstancedMesh.setColorAt uses the vertexColor TSL built-in (different from InstancedBufferGeometry, which fails on vertexColor) */
 const aLayer = attribute( 'aLayer', 'float' );
 const aCrossfade = attribute( 'aCrossfade', 'float' );
 export const vUv = varying( vec2(), 'vUv' );

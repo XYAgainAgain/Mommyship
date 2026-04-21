@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { abs, add, Break, cos, Discard, div, dot, exp, float, Fn, If, int, length, Loop, max, mix, mul, Return, sin, smoothstep, sqrt, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { abs, add, Break, cos, Discard, div, dot, exp, float, Fn, If, int, length, Loop, max, mix, mul, sin, smoothstep, sqrt, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 
 const vRayOrigin = varyingProperty( 'vec3', 'vRayOrigin' );
 const vRayDir = varyingProperty( 'vec3', 'vRayDir' );
@@ -16,15 +16,17 @@ export const intersectSphere = /*@__PURE__*/ Fn( ( [ origin, dir ] ) => {
 	const c = dot( origin, origin ).sub( 0.25 );
 	const disc = b.mul( b ).sub( c );
 
-	If( disc.lessThan( 0.0 ), () => {
+	/* Miss sentinel — result-var pattern avoids Return() in single-If (WGSL-invalid) */
+	const result = vec2( 1.0, - 1.0 ).toVar();
 
-		Return( vec2( 1.0, - 1.0 ) );
+	If( disc.greaterThanEqual( 0.0 ), () => {
+
+		const sq = sqrt( disc );
+		result.assign( vec2( b.negate().sub( sq ), b.negate().add( sq ) ) );
 
 	} );
 
-	const sq = sqrt( disc );
-
-	return vec2( b.negate().sub( sq ), b.negate().add( sq ) );
+	return result;
 
 } );
 
@@ -104,17 +106,18 @@ export const main = /*@__PURE__*/ Fn( ( [ volTex, seedVal, color1, color2, densi
 
 	/* Dark nebulae output a multiply tint; emission outputs additive color */
 
+	const finalColor = vec4( 0.0 ).toVar();
+
 	If( absorptionVal.greaterThan( 0.5 ), () => {
 
-		Return( vec4( mix( vec3( 1.0 ), color1, alpha.mul( opacityVal ) ), 1.0 ) );
+		finalColor.assign( vec4( mix( vec3( 1.0 ), color1, alpha.mul( opacityVal ) ), 1.0 ) );
 
 	} ).Else( () => {
 
-		Return( vec4( accumColor, alpha.mul( opacityVal ) ) );
+		finalColor.assign( vec4( accumColor, alpha.mul( opacityVal ) ) );
 
 	} );
 
-	/* Fallback return — never reached, but tells TSL the function returns vec4 */
-	return vec4( 0.0, 0.0, 0.0, 0.0 );
+	return finalColor;
 
 } );

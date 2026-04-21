@@ -1,11 +1,10 @@
 // Three.js Transpiler r183
 
-import { add, clamp, div, float, Fn, Loop, max, min, mix, mul, smoothstep, sub, texture, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { add, clamp, div, float, Fn, Loop, max, min, mix, mul, smoothstep, sub, texture, uniform, uv, vec3, vec4 } from 'three/tsl';
 
 export const uTime = uniform( float( 0 ) );
 export const uOpacity = uniform( float( 0 ) );
 export const uNoiseTexture = texture( null );
-const vUv = varyingProperty( 'vec2', 'vUv' );
 
 export const inverseLerp = /*@__PURE__*/ Fn( ( [ v, minVal, maxVal ] ) => {
 
@@ -13,7 +12,7 @@ export const inverseLerp = /*@__PURE__*/ Fn( ( [ v, minVal, maxVal ] ) => {
 
 } );
 
-/* vUv.y = 0 at inner edge (near BH), 1 at outer edge */
+/* uv().y = radial position: inner edge (near BH) ↔ outer edge */
 
 export const diskGradient = /*@__PURE__*/ Fn( ( [ t ] ) => {
 
@@ -33,27 +32,22 @@ export const diskGradient = /*@__PURE__*/ Fn( ( [ t ] ) => {
 
 export const main = /*@__PURE__*/ Fn( () => {
 
+	const geoUv = uv();
 	const surfaceColor = vec4( 0.0 ).toVar();
 
 	Loop( { start: 0, end: 3 }, ( { i } ) => {
 
 		const layerOffset = float( i ).div( 2.0 );
-		const intensity = sub( 1.0, vUv.y.sub( layerOffset ).mul( 3.0 ).mul( 0.5 ) ).toVar();
+		const intensity = sub( 1.0, geoUv.y.sub( layerOffset ).mul( 3.0 ).mul( 0.5 ) ).toVar();
 		intensity.assign( smoothstep( 0.0, 1.0, intensity ) );
-		const layerUv = vUv.toVar();
+		const layerUv = geoUv.toVar();
 		layerUv.y.mulAssign( 2.0 );
 		layerUv.x.addAssign( uTime.div( float( i ).mul( 10.0 ).add( 1.0 ) ) );
 
-		/* Gradient driven by radial position, with noise-warped streaks */
-
 		const noiseIntensity = uNoiseTexture.sample( layerUv ).r;
 
-		/* Warp the radial lookup slightly per layer for streaky banding */
-
-		const warpedY = vUv.y.add( noiseIntensity.sub( 0.5 ).mul( 0.12 ).mul( add( 1.0, float( i ).mul( 0.3 ) ) ) );
+		const warpedY = geoUv.y.add( noiseIntensity.sub( 0.5 ).mul( 0.12 ).mul( add( 1.0, float( i ).mul( 0.3 ) ) ) );
 		const ringColor = diskGradient( clamp( warpedY, 0.0, 1.0 ) ).toVar();
-
-		/* Per-layer hue shift adds swirly color variety within bands */
 
 		const hueShift = noiseIntensity.sub( 0.5 ).mul( 0.2 );
 		ringColor.assign( max( vec3( ringColor.r.add( hueShift.mul( 0.4 ) ), ringColor.g.sub( hueShift.mul( 0.2 ) ), ringColor.b.add( hueShift.mul( 0.6 ) ) ), vec3( 0.0 ) ) );
@@ -62,9 +56,7 @@ export const main = /*@__PURE__*/ Fn( () => {
 
 	} );
 
-	/* Edge attenuation at inner/outer boundaries */
-
-	const edges = min( clamp( inverseLerp( vUv.y, 0.0, 0.02 ), 0.0, 1.0 ), clamp( inverseLerp( vUv.y, 1.0, 0.5 ), 0.0, 1.0 ) );
+	const edges = min( clamp( inverseLerp( geoUv.y, 0.0, 0.02 ), 0.0, 1.0 ), clamp( inverseLerp( geoUv.y, 1.0, 0.5 ), 0.0, 1.0 ) );
 	surfaceColor.rgb.assign( mix( vec3( 0.0 ), surfaceColor.rgb, edges ) );
 	surfaceColor.a.assign( uOpacity );
 	return surfaceColor;

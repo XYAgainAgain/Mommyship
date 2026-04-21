@@ -305,5 +305,18 @@ export function createCamera(renderer) {
     };
   }
 
-  return { camera, controls, update, resize, setMuseMode, setTrackMode, flyTo, snapToOrbit };
+  function flyHome() {
+    if (museMode) return;
+    const homePos = new THREE.Vector3(0, 350, 550);
+    flyAnim = {
+      startOffset: camera.position.clone().sub(controls.target),
+      endOffset: homePos.clone(),
+      targetPos: new THREE.Vector3(0, 0, 0),
+      startTarget: controls.target.clone(),
+      start: performance.now(),
+      duration: 1200
+    };
+  }
+
+  return { camera, controls, update, resize, setMuseMode, setTrackMode, flyTo, flyHome, snapToOrbit };
 }

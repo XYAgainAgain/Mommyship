@@ -50,10 +50,10 @@ export async function bakePlanetAtlas(renderer, bodies) {
   const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   const rtOptions = {
-    minFilter: THREE.LinearFilter,
+    minFilter: THREE.LinearMipmapLinearFilter,
     magFilter: THREE.LinearFilter,
     type: THREE.HalfFloatType,
-    generateMipmaps: false,
+    generateMipmaps: true,
   };
   const arrayRT = new THREE.WebGLArrayRenderTarget(ATLAS_SIZE, ATLAS_SIZE, planetIds.length, rtOptions);
   arrayRT.texture.wrapS = THREE.RepeatWrapping;

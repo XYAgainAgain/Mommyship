@@ -2,11 +2,10 @@
 
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { Line2 } from 'three/addons/lines/Line2.js';
+import { Line2 } from 'three/addons/lines/webgpu/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { NodeMaterial } from 'three/webgpu';
-import { uniform, float, int, vec3, mat3 } from 'three/tsl';
+import { NodeMaterial, Line2NodeMaterial } from 'three/webgpu';
+import { uniform, Fn, float, int, vec3, mat3, uv, abs, mix } from 'three/tsl';
 import { main as orbitVertFn } from './tsl/vert/orbit.tsl.js';
 import { main as orbitFragFn } from './tsl/frag/orbit.tsl.js';
 import { main as starAtlasVertFn, uVisualScale as starVisualScale } from './tsl/vert/star-atlas.tsl.js';
@@ -265,25 +264,19 @@ export async function createSystems(scene, camera, renderer) {
   const ORBIT_LUCENCY = 0.85;
   const ORBIT_ATTENUATE = 0.69;
 
-  /* Hyperlane lines — always visible, thick Line2 */
   const hyperlaneLines = [];
-  const hyperlaneMat = new LineMaterial({
+  const hyperlaneMat = new Line2NodeMaterial({
     color: 0xffffff, transparent: true, opacity: 0.69,
-    depthWrite: false, worldUnits: true, linewidth: 0.8
+    depthWrite: false, worldUnits: true, linewidth: 0.8,
+    alphaToCoverage: true
   });
-  hyperlaneMat.resolution.set(window.innerWidth, window.innerHeight);
-  hyperlaneMat.onBeforeCompile = (shader) => {
-    shader.uniforms.uHlA = { value: new THREE.Color('#ff914d') };
-    shader.uniforms.uHlB = { value: new THREE.Color('#ffdd59') };
-    shader.vertexShader = 'varying float vLineT;\n' + shader.vertexShader.replace(
-      /}\s*$/, 'vLineT = position.y < 0.5 ? 1.0 : 0.0;\n}'
-    );
-    shader.fragmentShader = 'varying float vLineT;\nuniform vec3 uHlA;\nuniform vec3 uHlB;\n' +
-      shader.fragmentShader.replace(
-        'vec4 diffuseColor = vec4( diffuse, alpha );',
-        'float gT = 1.0 - abs(vLineT * 2.0 - 1.0);\nfloat nearFade = smoothstep(0.0, 0.002, gl_FragCoord.z);\nvec4 diffuseColor = vec4(mix(uHlA, uHlB, gT), alpha * nearFade);'
-      );
-  };
+  const HL_ORANGE = vec3(1.0, 0.6, 0.25);
+  const HL_YELLOW = vec3(1.0, 0.82, 0.35);
+  hyperlaneMat.lineColorNode = Fn(() => {
+    const alongT = uv().y.mul(2.0).sub(1.0);
+    const gT = float(1.0).sub(abs(alongT));
+    return mix(HL_ORANGE, HL_YELLOW, gT);
+  })();
 
   /* Three InstancedMesh groups: stars (atlas shader), other spheres (basic), cubes (GnGs) */
   const starGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
@@ -356,8 +349,15 @@ export async function createSystems(scene, camera, renderer) {
   async function loadData() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { galaxyData = JSON.parse(saved); return; }
-      catch (e) { /* fall through */ }
+      try {
+        const parsed = JSON.parse(saved);
+        /* Detect garbled UTF-8 (double/triple encoded) — discard and re-fetch */
+        if (!/\u00c3[\u0080-\u00bf]/.test(saved)) {
+          galaxyData = parsed;
+          return;
+        }
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) { /* fall through */ }
     }
     try {
       const resp = await fetch('galaxy/galaxy.json');
@@ -1340,7 +1340,6 @@ export async function createSystems(scene, camera, renderer) {
       for (let i = 0; i < planetIds.length; i++) {
         const id = planetIds[i];
 
-        /* Detail mesh replaces atlas — but only hide atlas once fully opaque */
         const detailFade = planetDetailActiveIds.get(id);
         if (detailFade !== undefined && detailFade > 0.99) {
           _dummy.scale.setScalar(0);
@@ -1623,7 +1622,6 @@ export async function createSystems(scene, camera, renderer) {
 
   function resize() {
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    hyperlaneMat.resolution.set(window.innerWidth, window.innerHeight);
   }
 
   /* Body CRUD (triggers visual rebuild) */

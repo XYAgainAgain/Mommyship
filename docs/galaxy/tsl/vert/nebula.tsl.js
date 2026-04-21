@@ -1,8 +1,9 @@
 // Three.js Transpiler r183
 
-import { add, attribute, cameraPosition, cos, cross, div, exp, float, Fn, normalize, positionLocal, sin, varying, uniform, vec3, vertexColor } from 'three/tsl';
+import { add, attribute, cameraPosition, cos, cross, div, exp, float, Fn, normalize, positionLocal, sin, varying, uniform, vec3 } from 'three/tsl';
 
 const aOffset     = attribute( 'aOffset',     'vec3' );
+const aColor      = attribute( 'color',       'vec3' );
 const aPackedA    = attribute( 'aPackedA',    'vec4' );
 const aAnglePhase = attribute( 'aAnglePhase', 'vec2' );
 
@@ -25,7 +26,7 @@ export const main = /*@__PURE__*/ Fn( () => {
 	const aAngle      = aAnglePhase.x;
 	const aPhase      = aAnglePhase.y;
 
-	vColor.assign( vertexColor );
+	vColor.assign( aColor );
 	vBrightness.assign( aBrightness );
 	vStretch.assign( aStretch );
 	vAngle.assign( aAngle );

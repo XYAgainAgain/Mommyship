@@ -83,7 +83,9 @@ export async function createPlanetDetail(renderer) {
     const pMoistureOffset = uniform(float(0.0));
     const pBiomeCount = uniform(float(0.5));
     const pRotation = uniform(mat3());
-    const pLightDir = uniform(vec3(0, 1, 0));
+    /* THREE.Vector3 value (not TSL vec3()) so .value.copy() actually mutates —
+       uniform() wrapping a TSL vec3 freezes .value as a node. */
+    const pLightDir = uniform(new THREE.Vector3(0, 1, 0));
     const pLodDist = uniform(float(18.0));
     const pFadeIn = uniform(float(1.0));
     const pOpacity = uniform(float(-1.0));
@@ -118,7 +120,7 @@ export async function createPlanetDetail(renderer) {
     /* Per-instance atmosphere uniforms */
     const pAtmoTintA = uniform(vec3(0, 0, 0));
     const pAtmoIntensityA = uniform(float(0.2));
-    const pAtmoLightDir = uniform(vec3(0, 1, 0));
+    const pAtmoLightDir = uniform(new THREE.Vector3(0, 1, 0));
     const pAtmoFadeIn = uniform(float(1.0));
     const pAtmoCloudCover = uniform(float(0.0));
     const pAtmoCloudColor = uniform(vec3(1, 1, 1));
@@ -153,7 +155,7 @@ export async function createPlanetDetail(renderer) {
     /* Per-instance glow uniforms + inline TSL glow material */
     const pGlowColor = uniform(vec3(0, 0, 0));
     const pGlowIntensity = uniform(float(0.3));
-    const pGlowLightDir = uniform(vec3(0, 1, 0));
+    const pGlowLightDir = uniform(new THREE.Vector3(0, 1, 0));
     const pGlowFadeIn = uniform(float(1.0));
 
     const glowMat = new MeshBasicNodeMaterial();
@@ -464,8 +466,8 @@ export async function createPlanetDetail(renderer) {
       _rotMat3.setFromMatrix4(_rotMat4);
       entry.pRotation.value.copy(_rotMat3);
 
-      /* Light direction from parent star — ID cached at activation */
-      if (entry.parentStarId) {
+      /* __debugFreezeLight lets diagnostic overrides survive. */
+      if (entry.parentStarId && !(typeof window !== 'undefined' && window.__debugFreezeLight)) {
         const starWp = bodyWorldPos.get(entry.parentStarId);
         if (starWp) {
           _lightDir.set(starWp.x - wp.x, starWp.y - wp.y, starWp.z - wp.z).normalize();
@@ -535,6 +537,33 @@ export async function createPlanetDetail(renderer) {
       entry.hitbox.geometry.dispose();
       entry.hitbox.material.dispose();
     }
+  }
+
+  /* Debug hooks for the P1 terminator investigation. */
+  if (typeof window !== 'undefined') {
+    window.debugPlanetLights = () => pool
+      .filter(e => e.bodyId)
+      .map(e => ({
+        bodyId: e.bodyId,
+        parentStarId: e.parentStarId,
+        L: e.pLightDir.value.toArray().map(v => +v.toFixed(3)),
+        atmoL: e.pAtmoLightDir.value.toArray().map(v => +v.toFixed(3)),
+        visible: { mesh: e.mesh.visible, atmo: e.atmoMesh.visible, glow: e.glowMesh.visible }
+      }));
+    window.debugForceLight = (x, y, z) => {
+      window.__debugFreezeLight = true;
+      for (const e of pool) {
+        if (!e.bodyId) continue;
+        e.pLightDir.value.set(x, y, z);
+        e.pAtmoLightDir.value.set(x, y, z);
+        e.pGlowLightDir.value.set(x, y, z);
+      }
+      return `Forced L=(${x},${y},${z}) on ${pool.filter(e => e.bodyId).length} active planets. Per-frame updates are now frozen. Call debugUnfreezeLight() to resume.`;
+    };
+    window.debugUnfreezeLight = () => {
+      window.__debugFreezeLight = false;
+      return 'Per-frame L updates resumed.';
+    };
   }
 
   return { update, container, dispose, setParamsCache, invalidateCaches, invalidateBody };

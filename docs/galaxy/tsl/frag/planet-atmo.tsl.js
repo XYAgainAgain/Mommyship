@@ -1,9 +1,12 @@
 // Three.js Transpiler r183
 
-import { abs, acos, add, Break, clamp, Continue, cos, div, dot, exp, float, floor, Fn, fract, frontFacing, If, int, length, log, Loop, max, min, mix, mul, normalize, pow, property, Return, select, sin, smoothstep, sqrt, step, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { acos, add, cameraPosition, clamp, Continue, cos, dot, exp, float, floor, Fn, fract, frontFacing, If, length, Loop, max, min, mix, mul, normalize, positionWorld, pow, select, sin, smoothstep, step, sub, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
 
+/* vSphereNormal: un-rotated outward direction for lighting (matches uLightDir
+   world-space frame — the planet group is never rotated in JS, only its surface
+   pattern rotates inside the shader via uRotation on the detail mesh).
+   vLocalPos: cloud-rotated sphere direction, used only to sample cloud noise. */
 const vSphereNormal = varyingProperty( 'vec3', 'vSphereNormal' );
-const vViewDir = varyingProperty( 'vec3', 'vViewDir' );
 const vLocalPos = varyingProperty( 'vec3', 'vLocalPos' );
 
 /* Shared across all detail instances */
@@ -21,11 +24,9 @@ import {
 
 export const cloudLayer = /*@__PURE__*/ Fn( ( [ sp, s, cover, storminess, planetMode ] ) => {
 
-	If( cover.lessThan( 0.01 ), () => {
+	const result = float( 0 ).toVar();
 
-		Return( float( 0.0 ) );
-
-	} );
+	If( cover.greaterThanEqual( 0.01 ), () => {
 
 	const t = uTime.mul( add( 0.04, storminess.mul( 0.08 ) ) );
 	const isGas = planetMode.equal( 2 );
@@ -51,7 +52,11 @@ export const cloudLayer = /*@__PURE__*/ Fn( ( [ sp, s, cover, storminess, planet
 	const smoothEdge = add( 0.12, storminess.mul( 0.08 ) );
 	cloud.assign( smoothstep( sub( 1.0, cover ), sub( 1.0, cover ).add( smoothEdge ), cloud ) );
 
-	return clamp( cloud, 0.0, 0.9 );
+	result.assign( clamp( cloud, 0.0, 0.9 ) );
+
+	} );
+
+	return result;
 
 } );
 
@@ -69,11 +74,9 @@ export const flashTint = /*@__PURE__*/ Fn( ( [ h, atmoTint ] ) => {
    TSL Fn() can only return a single node, no out-params */
 export const lightningFlash = /*@__PURE__*/ Fn( ( [ sp, s, storminess, atmoTint ] ) => {
 
-	If( storminess.lessThan( 0.05 ), () => {
+	const result = vec4( 0 ).toVar();
 
-		Return( vec4( 0.0 ) );
-
-	} );
+	If( storminess.greaterThanEqual( 0.05 ), () => {
 
 	const flashOut = float( 0.0 ).toVar();
 	const colorAccum = vec3( 0.0 ).toVar();
@@ -114,30 +117,28 @@ export const lightningFlash = /*@__PURE__*/ Fn( ( [ sp, s, storminess, atmoTint 
 	flashOut.assign( clamp( flashOut, 0.0, 1.0 ) );
 	const flashColor = clamp( colorAccum, 0.0, 1.5 );
 
-	return vec4( flashOut, flashColor.x, flashColor.y, flashColor.z );
+	result.assign( vec4( flashOut, flashColor.x, flashColor.y, flashColor.z ) );
+
+	} );
+
+	return result;
 
 } );
 
 export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, uFadeIn, uCloudCover, uCloudColor, uStorminess, uSeed, uPlanetMode, uBandCount ] ) => {
 
-	/* DEBUG — faint tinted shell. TSL Return(value) compiles to bare `return;` in WGSL
-	   inside single-branch If blocks. Restore real shader via result-variable pattern. */
-	return vec4( 0.3, 0.5, 0.8, 0.08 );
-
-	/* Analytical sphere normal from vertex position — smoother than the mesh normal
-	     attribute at low tessellation, avoids triangular artifacts in high-exponent Fresnel */
-
 	const N = normalize( vSphereNormal );
-	const V = normalize( vViewDir );
+	const V = normalize( cameraPosition.sub( positionWorld ) );
 	const L = normalize( uLightDir );
 	const NdotV = max( 0.0, dot( N, V ) );
 	const edge = sub( 1.0, NdotV );
 	const NdotL = dot( N, L );
 
+	const result = vec4( 0 ).toVar();
+
 	If( frontFacing.not(), () => {
 
 		/* BACK FACE — atmosphere Fresnel glow (alpha=0 → pure additive via blend factors) */
-
 		const atmo = pow( edge, 48.0 ).mul( 1.2 ).add( pow( edge, 12.0 ).mul( 0.7 ) ).add( pow( edge, 4.0 ).mul( 0.4 ) ).add( pow( edge, 1.8 ).mul( 0.1 ) );
 		const sunMask = smoothstep( - 0.1, 0.4, NdotL );
 		const terminator = smoothstep( 0.0, 0.3, NdotL ).mul( sub( 1.0, smoothstep( 0.3, 0.7, NdotL ) ) );
@@ -145,48 +146,41 @@ export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, 
 		const scatter = pow( max( 0.0, dot( V, L.negate() ) ), 5.0 ).mul( edge ).mul( 0.5 );
 		const glow = uAtmoIntensity.mul( litGlow.add( scatter ) ).toVar();
 		glow.assign( min( glow, 0.85 ).mul( uFadeIn ) );
-		Return( vec4( uAtmoTint.mul( glow ), 0.0 ) );
+		result.assign( vec4( uAtmoTint.mul( glow ), 0.0 ) );
+
+	} ).Else( () => {
+
+		/* FRONT FACE — cloud layer (premultiplied alpha → occluding via blend factors) */
+		const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
+		const sp = vLocalPos;
+		const cloudAlpha = cloudLayer( sp, s, uCloudCover, uStorminess, uPlanetMode ).toVar();
+
+		If( uPlanetMode.equal( 2 ).and( cloudAlpha.greaterThan( 0.0 ) ), () => {
+
+			const gasBand = sin( sp.y.mul( uBandCount ).mul( 0.7 ).mul( 3.14159265359 ) ).mul( 0.5 ).add( 0.5 );
+			cloudAlpha.mulAssign( mix( 0.2, 1.0, gasBand ) );
+
+		} );
+
+		cloudAlpha.mulAssign( smoothstep( 0.05, 0.35, NdotV ) );
+		const cloudLit = smoothstep( - 0.3, 0.5, NdotL ).mul( 0.7 ).add( 0.3 );
+		const litCloud = uCloudColor.mul( cloudLit ).toVar();
+		litCloud.addAssign( uCloudColor.mul( pow( NdotV, 4.0 ) ).mul( 0.15 ) );
+
+		/* Lightning flashes — skip for fungal (spore haze, not storms) */
+		If( uStorminess.greaterThan( 0.05 ).and( cloudAlpha.greaterThan( 0.1 ) ).and( uPlanetMode.notEqual( 7 ) ), () => {
+
+			const flashResult = lightningFlash( sp, s, uStorminess, uAtmoTint );
+			litCloud.addAssign( flashResult.yzw.mul( flashResult.x ) );
+
+		} );
+
+		cloudAlpha.mulAssign( uFadeIn );
+
+		result.assign( vec4( litCloud.mul( cloudAlpha ), cloudAlpha ) );
 
 	} );
 
-	/* FRONT FACE — cloud layer (premultiplied alpha → occluding via blend factors) */
-
-	const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
-	const sp = vLocalPos;
-	const cloudAlpha = cloudLayer( sp, s, uCloudCover, uStorminess, uPlanetMode ).toVar();
-
-	/* Gas giants: clouds concentrate in zones (bright bands), thin over belts */
-
-	If( uPlanetMode.equal( 2 ).and( cloudAlpha.greaterThan( 0.0 ) ), () => {
-
-		const gasBand = sin( sp.y.mul( uBandCount ).mul( 0.7 ).mul( 3.14159265359 ) ).mul( 0.5 ).add( 0.5 );
-		cloudAlpha.mulAssign( mix( 0.2, 1.0, gasBand ) );
-
-	} );
-
-	/* Wider limb fade — clouds thin out well before the atmosphere rim.
-	     No discard — premultiplied alpha handles near-zero fragments cleanly
-	     without creating hard triangle-aligned edges at the transition. */
-
-	cloudAlpha.mulAssign( smoothstep( 0.05, 0.35, NdotV ) );
-	const cloudLit = smoothstep( - 0.3, 0.5, NdotL ).mul( 0.7 ).add( 0.3 );
-	const litCloud = uCloudColor.mul( cloudLit ).toVar();
-	litCloud.addAssign( uCloudColor.mul( pow( NdotV, 4.0 ) ).mul( 0.15 ) );
-
-	/* Lightning flashes through the cloud cover — skip for fungal (spore haze, not storms) */
-
-	If( uStorminess.greaterThan( 0.05 ).and( cloudAlpha.greaterThan( 0.1 ) ).and( uPlanetMode.notEqual( 7 ) ), () => {
-
-		const flashResult = lightningFlash( sp, s, uStorminess, uAtmoTint );
-		litCloud.addAssign( flashResult.yzw.mul( flashResult.x ) );
-
-	} );
-
-	cloudAlpha.mulAssign( uFadeIn );
-
-	/* Premultiplied alpha: color × alpha, then blend factors (ONE, ONE_MINUS_SRC_ALPHA)
-	     produce correct occlusion of the surface below */
-
-	return vec4( litCloud.mul( cloudAlpha ), cloudAlpha );
+	return result;
 
 } );

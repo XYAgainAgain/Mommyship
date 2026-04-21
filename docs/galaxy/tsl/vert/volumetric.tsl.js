@@ -1,24 +1,23 @@
 // Three.js Transpiler r183
 
-import { Fn, modelWorldMatrixInverse, normalize, positionLocal, varying, uniform, vec3, vec4 } from 'three/tsl';
+import { Fn, normalize, positionLocal, varying, vec3 } from 'three/tsl';
 
+/* Raymarch origin/direction in the sphere's own local space. The camera →
+   local transform is computed JS-side (see volumetric.js per-frame update)
+   and passed in as a per-material uniform — doing it with
+   modelWorldMatrixInverse inside a positionNode trips TSL's WGSL codegen
+   (empty builtinClipSpace). */
 const vRayOrigin = varying( vec3(), 'vRayOrigin' );
 const vRayDir = varying( vec3(), 'vRayDir' );
 
-export const uCameraPos = uniform( vec3( 0, 0, 0 ) );
+export const main = /*@__PURE__*/ Fn( ( [ uLocalCam ] ) => {
 
-export const main = /*@__PURE__*/ Fn( () => {
-
-	/* Camera → local space for raymarch in -0.5 to 0.5 range */
-
-	const localCam = modelWorldMatrixInverse.mul( vec4( uCameraPos, 1.0 ) ).xyz;
-	vRayOrigin.assign( localCam );
-	vRayDir.assign( normalize( positionLocal.sub( localCam ) ) );
+	vRayOrigin.assign( uLocalCam );
+	vRayDir.assign( normalize( positionLocal.sub( uLocalCam ) ) );
 
 	return positionLocal;
 
 } );
 
 // Wire to NodeMaterial:
-//   material.vertexNode = main();
-// No positionNode needed — default MVP handles the sphere geometry correctly.
+//   material.positionNode = main( pLocalCam );

@@ -4,8 +4,11 @@ import { uniform, texture3D, float, Fn, Discard, If, length, smoothstep, exp, su
 import { createRng } from './rng.js';
 import { bakeVolumeTexture } from './volume-bake.js';
 
-import { main as volVert, uCameraPos } from './tsl/vert/volumetric.tsl.js';
+import { main as volVert } from './tsl/vert/volumetric.tsl.js';
 import { main as volFrag, uTime } from './tsl/frag/volumetric.tsl.js';
+
+/* Scratch vector for per-sphere world→local camera transforms */
+const _tmpCamLocal = new THREE.Vector3();
 
 const VOLUMETRIC_SEED = 42069;
 const GALAXY_RADIUS = 450;
@@ -237,9 +240,13 @@ export async function createVolumetric(scene, renderer) {
     const pBrightness = uniform(float(p.brightness));
     const pCameraDist = uniform(float(1000));
     const pOpacity = uniform(float(1.0));
+    /* Camera in this sphere's local space — computed JS-side per frame to avoid
+       the modelWorldMatrixInverse read that trips TSL's positionNode auto-MVP.
+       Uses new THREE.Vector3 (not vec3()) so .value is the mutable Vector3. */
+    const pLocalCam = uniform(new THREE.Vector3(0, 0, 0));
 
     const mat = new MeshBasicNodeMaterial();
-    mat.positionNode = volVert();
+    mat.positionNode = volVert( pLocalCam );
     mat.fragmentNode = volFrag(
       pVolTex, pSeed, pColor, pColor2,
       pDensity, pAbsorption, pBrightness,
@@ -281,7 +288,7 @@ export async function createVolumetric(scene, renderer) {
 
     volumes.push({
       sphere, quad,
-      pCameraDist, pOpacity, qOpacity,
+      pCameraDist, pOpacity, qOpacity, pLocalCam,
       baseTheta: p.theta,
       radius: p.radius,
       baseY: p.y,
@@ -309,7 +316,6 @@ export async function createVolumetric(scene, renderer) {
     if (!active) return;
 
     uTime.value = elapsed;
-    uCameraPos.value.copy(camera.position);
 
     for (const v of volumes) {
       const r = v.radius;
@@ -325,6 +331,14 @@ export async function createVolumetric(scene, renderer) {
       v.quad.position.set(px, v.baseY, pz);
 
       v.quad.quaternion.copy(camera.quaternion);
+
+      /* World→local camera for this sphere's raymarch origin. worldToLocal
+         uses matrixWorld which is updated lazily — updateMatrixWorld() ensures
+         the pose we just set above is applied before inversion. */
+      v.sphere.updateMatrixWorld();
+      _tmpCamLocal.copy(camera.position);
+      v.sphere.worldToLocal(_tmpCamLocal);
+      v.pLocalCam.value.copy(_tmpCamLocal);
 
       const distSq = camera.position.distanceToSquared(v.sphere.position);
 

@@ -3,7 +3,7 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, texture, float, vec3 } from 'three/tsl';
 import { bakeVolumeTexture } from './volume-bake.js';
 
-import { main as dustTorusVert, uCameraPos } from './tsl/vert/dust-torus.tsl.js';
+import { main as dustTorusVert } from './tsl/vert/dust-torus.tsl.js';
 import { main as dustTorusFrag, uVolume, uLightmap, uTime, uCameraDist, uOpacity } from './tsl/frag/dust-torus.tsl.js';
 
 const BASE_SPEED = 0.061;
@@ -65,6 +65,7 @@ export async function createDustTorus(scene, renderer, lightmap) {
   uLightmap.value = lightmap;
   uOpacity.value = 1.0;
 
+  const _tmpCamLocal = new THREE.Vector3();
   const tori = [];
 
   for (const def of TORUS_DEFS) {
@@ -85,8 +86,10 @@ export async function createDustTorus(scene, renderer, lightmap) {
     const pMinSteps = uniform(float(def.minSteps));
     const pMaxSteps = uniform(float(def.maxSteps));
 
+    const pLocalCam = uniform(new THREE.Vector3(0, 0, 0));
+
     const mat = new MeshBasicNodeMaterial();
-    mat.vertexNode = dustTorusVert();
+    mat.positionNode = dustTorusVert(pLocalCam);
     mat.fragmentNode = dustTorusFrag(
       pBoxScale, pMajorR, pMinorR, pYSquash, pLightmapAngle,
       pBaseColor, pDensityScale, pNoiseScale, pNoiseStrength,
@@ -104,21 +107,24 @@ export async function createDustTorus(scene, renderer, lightmap) {
     mesh.frustumCulled = false;
     scene.add(mesh);
 
-    tori.push({ mesh, def, pLightmapAngle });
+    tori.push({ mesh, def, pLightmapAngle, pLocalCam });
   }
 
   function update(elapsed, rotationTime, camera, cinemaMode) {
     const galaxyAngle = -rotationTime * BASE_SPEED;
 
-    /* Shared uniforms — same for all tori */
     uTime.value = elapsed;
-    uCameraPos.value.copy(camera.position);
     uCameraDist.value = cinemaMode ? 0 : camera.position.length();
 
-    for (const { mesh, def, pLightmapAngle } of tori) {
+    for (const { mesh, def, pLightmapAngle, pLocalCam } of tori) {
       const torusAngle = -rotationTime * BASE_SPEED * def.speedFraction;
       mesh.rotation.y = torusAngle;
       pLightmapAngle.value = (torusAngle - galaxyAngle) * def.lightmapLag;
+      /* Each torus has its own rotation; can't share one local-cam. */
+      mesh.updateMatrixWorld();
+      _tmpCamLocal.copy(camera.position);
+      mesh.worldToLocal(_tmpCamLocal);
+      pLocalCam.value.copy(_tmpCamLocal);
     }
   }
 

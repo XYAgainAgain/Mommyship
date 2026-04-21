@@ -1,12 +1,11 @@
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial, PointsNodeMaterial } from 'three/webgpu';
-import { uniform, float, Fn, length, mix, smoothstep, varying, varyingProperty, positionLocal, vec3, vec4 } from 'three/tsl';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, float, Fn, length, mix, smoothstep, positionLocal, vec3, vec4 } from 'three/tsl';
 import { bakeNoiseTexture } from './noise-bake.js';
 
-import { main as discVert } from './tsl/vert/accretion-disc.tsl.js';
 import { main as discFrag, uTime as discUTime, uOpacity as discUOpacity, uNoiseTexture } from './tsl/frag/accretion-disc.tsl.js';
 
-import { main as particleVert, computeSize, uTime as particleUTime, uViewHeight, uSize } from './tsl/vert/accretion-particles.tsl.js';
+import { main as particleVert, uTime as particleUTime, uSize } from './tsl/vert/accretion-particles.tsl.js';
 import { main as particleFrag, uOpacity as particleUOpacity } from './tsl/frag/accretion-particles.tsl.js';
 
 /* 20% of outer radius — matches masshole's 1:5 inner gap ratio */
@@ -19,26 +18,21 @@ function lodSmoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
-/* Mid-LOD ring: inline TSL for the 5-stop radial gradient band */
-const vRadial = varying(float(), 'vRadial');
-const ringVertNode = /*@__PURE__*/ Fn(() => {
-  vRadial.assign(length(positionLocal.xy).sub(8.0).div(14.0));
-  return positionLocal;
-});
-
-const vRadialRead = varyingProperty('float', 'vRadial');
+/* Mid-LOD ring: inline TSL for the 5-stop radial gradient band.
+   Computes radial position directly in frag from positionLocal — no vert needed. */
 const uRingOpacity = uniform(float(1.0));
 const ringFragNode = /*@__PURE__*/ Fn(() => {
+  const radial = length(positionLocal.xy).sub(8.0).div(14.0);
   const c0 = vec3(1.0, 0.90, 0.97);
   const c1 = vec3(0.95, 0.30, 0.60);
   const c2 = vec3(0.12, 0.30, 0.55);
   const c3 = vec3(0.51, 0.20, 0.67);
   const c4 = vec3(0.80, 0.65, 0.30);
-  const surfaceColor = mix(c0, c1, smoothstep(0.0, 0.15, vRadialRead)).toVar();
-  surfaceColor.assign(mix(surfaceColor, c2, smoothstep(0.15, 0.35, vRadialRead)));
-  surfaceColor.assign(mix(surfaceColor, c3, smoothstep(0.35, 0.60, vRadialRead)));
-  surfaceColor.assign(mix(surfaceColor, c4, smoothstep(0.60, 0.90, vRadialRead)));
-  const edgeFade = smoothstep(0.0, 0.15, vRadialRead).mul(smoothstep(1.0, 0.7, vRadialRead));
+  const surfaceColor = mix(c0, c1, smoothstep(0.0, 0.15, radial)).toVar();
+  surfaceColor.assign(mix(surfaceColor, c2, smoothstep(0.15, 0.35, radial)));
+  surfaceColor.assign(mix(surfaceColor, c3, smoothstep(0.35, 0.60, radial)));
+  surfaceColor.assign(mix(surfaceColor, c4, smoothstep(0.60, 0.90, radial)));
+  const edgeFade = smoothstep(0.0, 0.15, radial).mul(smoothstep(1.0, 0.7, radial));
   return vec4(surfaceColor, edgeFade.mul(uRingOpacity));
 });
 
@@ -53,7 +47,6 @@ export async function createBlackHole(scene, renderer) {
   const discGeo = new THREE.CylinderGeometry(DISC_OUTER_RADIUS, DISC_INNER_RADIUS, 0, 64, 10, true);
   uNoiseTexture.value = noiseTexture;
   const discMat = new MeshBasicNodeMaterial();
-  discMat.positionNode = discVert();
   discMat.fragmentNode = discFrag();
   discMat.side = THREE.DoubleSide;
   discMat.blending = THREE.AdditiveBlending;
@@ -72,25 +65,29 @@ export async function createBlackHole(scene, renderer) {
     pSizes[i]    = Math.random();
     pRandoms[i]  = Math.random();
   }
-  const particleGeo = new THREE.BufferGeometry();
-  /* Dummy position attribute — Three.js requires it for draw calls.
-     Real orbit positions are computed in the vertex shader from aProgress. */
-  particleGeo.setAttribute('position',  new THREE.BufferAttribute(new Float32Array(PARTICLE_COUNT * 3), 3));
-  particleGeo.setAttribute('aProgress', new THREE.BufferAttribute(progresses, 1));
-  particleGeo.setAttribute('aSize',     new THREE.BufferAttribute(pSizes, 1));
-  particleGeo.setAttribute('aRandom',   new THREE.BufferAttribute(pRandoms, 1));
+  /* Points → instanced quads: PlaneGeometry(1,1) template, per-instance orbit data.
+     Billboard + world-space size in the vert; frag uses uv() instead of pointUV. */
+  const particleGeo = new THREE.InstancedBufferGeometry();
+  const basePlane = new THREE.PlaneGeometry(1, 1);
+  particleGeo.setAttribute('position', basePlane.attributes.position);
+  particleGeo.setAttribute('uv', basePlane.attributes.uv);
+  particleGeo.setIndex(basePlane.index);
+  particleGeo.instanceCount = PARTICLE_COUNT;
+  particleGeo.setAttribute('aProgress', new THREE.InstancedBufferAttribute(progresses, 1));
+  particleGeo.setAttribute('aSize',     new THREE.InstancedBufferAttribute(pSizes, 1));
+  particleGeo.setAttribute('aRandom',   new THREE.InstancedBufferAttribute(pRandoms, 1));
 
-  uSize.value = 0.09;
-  uViewHeight.value = window.innerHeight;
-  const particleMat = new PointsNodeMaterial();
+  /* World-space radius per quad. Previous pixel-stable sprite scaling was
+     uSize × viewHeight / viewZ; world-space scaling gives natural perspective falloff. */
+  uSize.value = 0.12;
+  const particleMat = new MeshBasicNodeMaterial();
   particleMat.positionNode = particleVert();
-  particleMat.fragmentNode = particleFrag();
-  particleMat.sizeNode = computeSize();
+  particleMat.colorNode = particleFrag();
   particleMat.blending = THREE.AdditiveBlending;
   particleMat.depthWrite = false;
   particleMat.depthTest = false;
   particleMat.transparent = true;
-  const particles = new THREE.Points(particleGeo, particleMat);
+  const particles = new THREE.Mesh(particleGeo, particleMat);
   particles.renderOrder = 3;
   particles.frustumCulled = false;
   group.add(particles);
@@ -149,7 +146,6 @@ export async function createBlackHole(scene, renderer) {
      Flat in XZ like the real disk, uses radial gradient from vertex position. */
   const ringGeo = new THREE.RingGeometry(8, 22, 48);
   const ringMat = new MeshBasicNodeMaterial();
-  ringMat.positionNode = ringVertNode();
   ringMat.fragmentNode = ringFragNode();
   ringMat.side = THREE.DoubleSide;
   ringMat.blending = THREE.AdditiveBlending;
@@ -194,9 +190,9 @@ export async function createBlackHole(scene, renderer) {
     return { lodFactor };
   }
 
-  function resize() {
-    uViewHeight.value = window.innerHeight;
-  }
+  /* No viewport-dependent uniforms after the quads conversion; kept as a stable
+     API surface in case future LOD effects need it. */
+  function resize() {}
 
   return { group, update, resize };
 }

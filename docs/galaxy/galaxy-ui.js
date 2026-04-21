@@ -918,7 +918,7 @@ function buildViewPanel(body, id) {
       (parent ? parent.name : body.parentId) + '</div></div>';
   }
   if (body.spectralClass) {
-    html += '<div class="gx-p-meta-item" data-tooltip="Morgan-Keenan (MK) classification: Letter = temperature class (Y coldest → O hottest), Number = subclass (0 hottest → 9 coolest), Roman Numeral = luminosity (I supergiant → V main sequence)"><label>Spectral"><label>Spectral Class</label><div class="value gx-p-warning">' + body.spectralClass + '</div></div>';
+    html += '<div class="gx-p-meta-item" data-tooltip="Morgan-Keenan (MK) classification: Letter = temperature class (Y coldest → O hottest), Number = subclass (0 hottest → 9 coolest), Roman Numeral = luminosity (I supergiant → V main sequence)"><label>Spectral Class</label><div class="value gx-p-warning">' + body.spectralClass + '</div></div>';
   }
   if (body.visual && body.visual.color) {
     html += '<div class="gx-p-meta-item"><label>Color</label><div class="value"><span class="gx-p-swatch" style="background:' +

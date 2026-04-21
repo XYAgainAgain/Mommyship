@@ -268,19 +268,22 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 	const surfaceColor = biomeColor.toVar();
 
-	/* Ocean */
+	/* Result var + landOnly flag replaces two Return() calls — TSL Return()
+	   inside single-branch If compiles to bare `return;` in WGSL, which is
+	   invalid when the enclosing Fn has a declared return type. */
+	const result = vec4( 0 ).toVar();
+	const landOnly = float( 1.0 ).toVar();
 
 	const oceanMask = sub( 1.0, smoothstep( uOceanLevel.sub( t ), uOceanLevel.add( t ), height ) );
 
 	If( oceanMask.greaterThan( 0.01 ), () => {
 
+		landOnly.assign( 0.0 );
+
 		const depth = max( 0.0, uOceanLevel.sub( height ) );
 		const terrainDerivs = hd.yzw;
 		const oceanColor = oceanSurface( sp, s, depth, uWarpStrength.mul( 0.4 ) ).toVar();
 		const oceanDerivs = gDerivatives;
-
-		/* Polar ice over ocean */
-
 		const iceOpacity = smoothstep( 0.3, 0.7, iceW );
 
 		If( iceOpacity.greaterThan( 0.01 ), () => {
@@ -292,27 +295,30 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 		} );
 
+		const specAlpha = uSpecular.mul( oceanMask ).mul( sub( 1.0, iceOpacity ) );
+
 		If( oceanMask.greaterThan( 0.99 ), () => {
 
-			const specAlpha = uSpecular.mul( oceanMask ).mul( sub( 1.0, iceOpacity ) );
+			result.assign( vec4( oceanColor, specAlpha ) );
 
-			Return( vec4( oceanColor, specAlpha ) );
+		} ).Else( () => {
+
+			gDerivatives.assign( mix( terrainDerivs, oceanDerivs, oceanMask ) );
+			result.assign( vec4( mix( surfaceColor, oceanColor, oceanMask ), specAlpha ) );
 
 		} );
 
-		gDerivatives.assign( mix( terrainDerivs, oceanDerivs, oceanMask ) );
-		const specAlpha = uSpecular.mul( oceanMask ).mul( sub( 1.0, iceOpacity ) );
+	} );
 
-		Return( vec4( mix( surfaceColor, oceanColor, oceanMask ), specAlpha ) );
+	If( landOnly.greaterThan( 0.5 ), () => {
+
+		const slope = length( hd.yzw );
+		surfaceColor.mulAssign( mix( 1.0, 0.55, smoothstep( 0.15, 1.2, slope.mul( uSlopeness ) ) ) );
+		result.assign( vec4( surfaceColor, 0.0 ) );
 
 	} );
 
-	/* Land slope darkening */
-
-	const slope = length( hd.yzw );
-	surfaceColor.mulAssign( mix( 1.0, 0.55, smoothstep( 0.15, 1.2, slope.mul( uSlopeness ) ) ) );
-
-	return vec4( surfaceColor, 0.0 );
+	return result;
 
 } );
 
@@ -772,9 +778,6 @@ export const renderFungal = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 } );
 
 export const main = /*@__PURE__*/ Fn( () => {
-
-	/* DEBUG — solid teal to test bake pipeline */
-	return vec4( 0.2, 0.8, 0.7, 1.0 );
 
 	const sp = uvToSphere( vUv );
 	const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );

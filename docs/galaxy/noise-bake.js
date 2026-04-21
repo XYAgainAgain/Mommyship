@@ -8,6 +8,7 @@ import { main as noiseBakeFrag } from './tsl/frag/noise-bake.tsl.js';
 export async function bakeNoiseTexture(renderer) {
   const bakeScene = new THREE.Scene();
   const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  bakeCam.position.z = 1;
 
   const mat = new MeshBasicNodeMaterial();
   mat.fragmentNode = noiseBakeFrag();

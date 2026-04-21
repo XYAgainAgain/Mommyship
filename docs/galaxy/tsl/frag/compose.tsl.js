@@ -36,9 +36,12 @@ export const getRGBShiftedColor = /*@__PURE__*/ Fn( ( [ uvCoord, radius ] ) => {
 } );
 
 // Uses uv() built-in — vUv was a pure UV pass-through, no varying() needed.
+// WebGPU render targets store row 0 at top; PlaneGeometry UVs have (0,0) at bottom-left.
+// WGSL backend skips the auto-flip (isFlipY → false), so we flip V manually.
 export const main = /*@__PURE__*/ Fn( () => {
 
-	const screenUV = uv();
+	const rawUV = uv();
+	const screenUV = vec2( rawUV.x, rawUV.y.oneMinus() );
 	const distortion = uDistortionTexture.sample( screenUV ).r;
 	const intensity = distortion.mul( uDistortionStrength );
 	const towardCenter = screenUV.sub( uBlackHolePosition ).mul( intensity.negate() ).mul( 2.0 );

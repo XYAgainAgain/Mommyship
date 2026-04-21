@@ -1,34 +1,33 @@
 // Three.js TSL r183
 
-import { add, attribute, cos, div, float, Fn, fract, If, mix, mul, positionView, pow, sin, smoothstep, sub, varying, uniform, vec3 } from 'three/tsl';
+import { add, attribute, cameraPosition, cos, cross, float, Fn, fract, If, mix, mul, normalize, pow, positionLocal, sin, smoothstep, sub, varying, uniform, vec3 } from 'three/tsl';
 
 export const uTime = uniform( float( 0 ) );
-export const uViewHeight = uniform( float( 0 ) );
+/* uSize is now a world-space radius multiplier (quads are billboarded per-instance).
+   Previous behavior used uSize × uViewHeight / positionView.z for pixel-stable sprites.
+   World-space quads scale naturally with distance and match the disc's scale. */
 export const uSize = uniform( float( 0 ) );
 const aProgress = attribute( 'aProgress', 'float' );
 const aSize = attribute( 'aSize', 'float' );
 const aRandom = attribute( 'aRandom', 'float' );
 export const vColor = varying( vec3(), 'vColor' );
 
-/* Perspective point size — positionView.z reflects the computed orbit position */
-
-export const computeSize = /*@__PURE__*/ Fn( () => {
-
-	return aSize.mul( uSize ).mul( uViewHeight ).div( positionView.z.negate() );
-
-} );
-
-/* Orbital position from progress + color variety from per-particle hash */
+/* Retained for the JS import in blackhole.js — emits a no-op size so the old
+   particleMat.sizeNode = computeSize() line can be removed without breaking
+   module boundaries. blackhole.js no longer calls this. */
+export const computeSize = /*@__PURE__*/ Fn( () => float( 1.0 ) );
 
 export const main = /*@__PURE__*/ Fn( () => {
 
+	/* Orbit placement (unchanged from Points version) */
 	const concentration = float( 0.05 );
 	const outerProgress = smoothstep( 0.0, 1.0, aProgress ).toVar();
 	outerProgress.assign( mix( concentration, outerProgress, pow( aRandom, 1.7 ) ) );
 	const radius = add( 6.0, outerProgress.mul( 24.0 ) );
 	const angle = outerProgress.sub( uTime.mul( sub( 1.0, outerProgress ) ).mul( 3.0 ) );
-	const newPosition = vec3( sin( angle ).mul( radius ), 0.0, cos( angle ).mul( radius ) );
+	const orbitCenter = vec3( sin( angle ).mul( radius ), 0.0, cos( angle ).mul( radius ) );
 
+	/* Color palette (unchanged) */
 	const hash = fract( aRandom.mul( 127.1 ).add( aProgress.mul( 311.7 ) ) );
 
 	const c0 = vec3( 1.0, 0.90, 0.97 );
@@ -101,10 +100,20 @@ export const main = /*@__PURE__*/ Fn( () => {
 
 	} );
 
-	return newPosition;
+	/* Billboard the PlaneGeometry template around the orbit-center point.
+	   cameraPosition/cross avoid the modelWorldMatrix codegen trap in positionNode. */
+	const toCamera = normalize( cameraPosition.sub( orbitCenter ) );
+	const right = normalize( cross( vec3( 0.0, 1.0, 0.0 ), toCamera ) );
+	const up = cross( toCamera, right );
+	const scale = aSize.mul( uSize );
+	const quadPos = orbitCenter
+		.add( right.mul( positionLocal.x.mul( scale ) ) )
+		.add( up.mul( positionLocal.y.mul( scale ) ) );
+
+	return quadPos;
 
 } );
 
-// Wire to PointsNodeMaterial:
+// Wire to MeshBasicNodeMaterial on an InstancedBufferGeometry(PlaneGeometry(1,1)):
 //   material.positionNode = main();
-//   material.sizeNode     = computeSize();
+//   (no sizeNode — size is baked into the vert via uSize × aSize)
