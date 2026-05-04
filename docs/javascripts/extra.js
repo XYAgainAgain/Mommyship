@@ -706,7 +706,8 @@ function bindMassholeNav() {
   topic.style.cursor = 'pointer';
   topic.addEventListener('click', function() {
     sessionStorage.setItem('mommyship-return-url', window.location.href);
-    window.location.href = location.pathname.replace(/[^/]*$/, '') + 'galaxy.html';
+    var base = JSON.parse(document.getElementById('__config').textContent).base;
+    window.location.href = base + '/galaxy.html';
   });
   topic._massholebound = true;
 }
