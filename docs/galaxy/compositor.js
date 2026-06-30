@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
-import { main as composeFrag, uSpaceTexture, uDistortionTexture, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius } from './tsl/frag/compose.tsl.js';
+import { main as composeFrag, uSpaceTexture, uDistortionTexture, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius, uAnnulus, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
 import { main as activeFrag } from './tsl/frag/distortion-active.tsl.js';
 import { main as maskFrag } from './tsl/frag/distortion-mask.tsl.js';
 
@@ -12,6 +12,11 @@ import { main as maskFrag } from './tsl/frag/distortion-mask.tsl.js';
 
 /* 60 matches masshole's 2:1 distortion-to-disk ratio (disk outer = 30) */
 const DISTORTION_SCALE = 60;
+const PHOTON_RING_RADIUS = 6.9; /* photon ring = uRingRadius 0.23 × 30 sphere scale */
+
+const _origin = new THREE.Vector3();
+const _edge = new THREE.Vector3();
+const _camUp = new THREE.Vector3();
 
 export async function createCompositor(renderer) {
   const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -59,6 +64,9 @@ export async function createCompositor(renderer) {
   uDistortionStrength.value = 0.0;
   uRGBShiftRadius.value = 0.00001;
 
+  /* Annulus lensing only for the volumetric BH (?bhvol=1); old particle disk keeps center-collapse */
+  uAnnulus.value = new URLSearchParams(location.search).has('bhvol') ? 1 : 0;
+
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), composeMat);
   quad.frustumCulled = false;
   composeScene.add(quad);
@@ -97,6 +105,14 @@ export async function createCompositor(renderer) {
 
     uBlackHolePosition.value.copy(bhScreenPos);
     uDistortionStrength.value = lodFactor;
+
+    /* Project the photon-ring radius to a screen-space (y-UV) radius so the lensing hugs the photon
+       ring (not the disk's outer rim) and scales with distance. Clamped for the inside (Muse) case. */
+    _camUp.setFromMatrixColumn(camera.matrixWorld, 1);
+    _origin.set(0, 0, 0).project(camera);
+    _edge.copy(_camUp).multiplyScalar(PHOTON_RING_RADIUS).project(camera);
+    uBHScreenRadius.value = Math.min(2.0, Math.max(0.02, Math.abs(_edge.y - _origin.y) * 0.5));
+    uAspect.value = renderer.domElement.width / renderer.domElement.height;
 
     /* Active plane tracks camera so lensing works from any angle */
     activePlane.lookAt(camera.position);

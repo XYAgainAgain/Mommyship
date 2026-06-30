@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { texture, uniform, vec2, vec3, float, sin, cos, Fn, vec4, uv } from 'three/tsl';
+import { texture, uniform, vec2, vec3, float, sin, cos, smoothstep, mix, length, Fn, vec4, uv } from 'three/tsl';
 
 
 // Texture uniforms — assign render target textures to .value before rendering:
@@ -12,6 +12,11 @@ export const uDistortionTexture = texture( null );
 export const uBlackHolePosition = uniform( vec2( 0, 0 ) );
 export const uDistortionStrength = uniform( float( 0 ) );
 export const uRGBShiftRadius = uniform( float( 0 ) );
+
+// Annulus mode (volumetric BH): ring lensing in aspect-corrected screen space, never the plane RT.
+export const uAnnulus = uniform( float( 0 ) );
+export const uBHScreenRadius = uniform( float( 0.1 ) );
+export const uAspect = uniform( float( 1 ) );
 
 // PI angle constants inlined from original #define — evaluated at module load time.
 const ANGLE_R = float( Math.PI * 2.0 / 3.0 );
@@ -42,8 +47,21 @@ export const main = /*@__PURE__*/ Fn( () => {
 
 	const rawUV = uv();
 	const screenUV = vec2( rawUV.x, rawUV.y.oneMinus() );
-	const distortion = uDistortionTexture.sample( screenUV ).r;
-	const intensity = distortion.mul( uDistortionStrength );
+
+	/* Old particle-disk mode: plane RT collapses the center to make the hole. */
+	const centerIntensity = uDistortionTexture.sample( screenUV ).r.mul( uDistortionStrength );
+
+	/* Volumetric mode: a circular ring of lensing just outside the sphere's screen rim. Aspect-
+	   corrected so it stays round and never inherits the distortion plane's square shape. */
+	const d = vec2( screenUV.x.sub( uBlackHolePosition.x ).mul( uAspect ), screenUV.y.sub( uBlackHolePosition.y ) );
+	const screenDist = length( d );
+	const soft = uBHScreenRadius.mul( 0.25 );
+	const rOut = uBHScreenRadius.mul( 1.6 );
+	const ring = smoothstep( uBHScreenRadius, uBHScreenRadius.add( soft ), screenDist )
+		.mul( float( 1.0 ).sub( smoothstep( rOut.sub( soft ), rOut, screenDist ) ) );
+	const ringIntensity = ring.mul( 0.16 ).mul( uDistortionStrength );
+
+	const intensity = mix( centerIntensity, ringIntensity, uAnnulus );
 	const towardCenter = screenUV.sub( uBlackHolePosition ).mul( intensity.negate() ).mul( 2.0 );
 	const distortedUV = screenUV.add( towardCenter );
 	const outColor = getRGBShiftedColor( distortedUV, uRGBShiftRadius );

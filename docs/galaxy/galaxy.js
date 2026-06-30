@@ -496,6 +496,9 @@ async function init() {
     if (!rotationPaused) rotationTime += delta;
 
     cam.update(delta);
+    /* Refresh matrixWorld now so the BH lens projection matches the sphere's live camera position
+       this frame; without it .project() lags a frame and the layers smear when the camera moves. */
+    cam.camera.updateMatrixWorld();
 
     const cameraMoved = !lastCamPos.equals(cam.camera.position)
                      || !lastCamQuat.equals(cam.camera.quaternion);

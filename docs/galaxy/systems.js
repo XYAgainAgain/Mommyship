@@ -283,6 +283,45 @@ export async function createSystems(scene, camera, renderer) {
   const sphereGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
   const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+  /* Muse gravitational color shift: faction markers redden as you pull out, blueshift as you fall
+     in. Snapshot/lerp/restore the instanceColor buffers directly (sphere + cube markers). */
+  const MUSE_RED = [0.85, 0.05, 0.05];
+  const MUSE_BLUE = [0.45, 0.35, 1.0];
+  const MUSE_SHIFT_STRENGTH = 0.9;
+  let museBaseColors = null;
+  let museShiftActive = false;
+
+  function applyMuseShift() {
+    const d = camera.position.length();
+    const t = Math.min(1, Math.max(0, (d - 5) / 20));
+    const shift = 1 - 2 * (t * t * (3 - 2 * t));
+    const target = shift > 0 ? MUSE_BLUE : MUSE_RED;
+    const amt = Math.abs(shift) * MUSE_SHIFT_STRENGTH;
+    const lerp = (mesh, base) => {
+      if (!mesh || !mesh.instanceColor || !base) return;
+      const arr = mesh.instanceColor.array;
+      const n = Math.min(mesh.count * 3, base.length);
+      for (let i = 0; i < n; i += 3) {
+        arr[i]     = base[i]     + (target[0] - base[i])     * amt;
+        arr[i + 1] = base[i + 1] + (target[1] - base[i + 1]) * amt;
+        arr[i + 2] = base[i + 2] + (target[2] - base[i + 2]) * amt;
+      }
+      mesh.instanceColor.needsUpdate = true;
+    };
+    lerp(sphereMarkers, museBaseColors.sphere);
+    lerp(cubeMarkers, museBaseColors.cube);
+  }
+
+  function restoreMarkerColors() {
+    const put = (mesh, base) => {
+      if (!mesh || !mesh.instanceColor || !base) return;
+      mesh.instanceColor.array.set(base);
+      mesh.instanceColor.needsUpdate = true;
+    };
+    put(sphereMarkers, museBaseColors.sphere);
+    put(cubeMarkers, museBaseColors.cube);
+  }
   let starAtlasMat = null;
   let planetAtlasMat = null;
   let starMarkers = null, sphereMarkers = null, cubeMarkers = null, planetMarkers = null;
@@ -1439,7 +1478,7 @@ export async function createSystems(scene, camera, renderer) {
     /* Hyperlane endpoints + throttled occlusion checks */
     const runOcclusion = (++hlThrottle % 4) === 0;
     for (const hl of hyperlaneLines) {
-      if (photoMode) { hl.line.visible = false; continue; }
+      if (photoMode || museActive) { hl.line.visible = false; continue; }
       const fromId = preferStation.get(hl.fromId) || hl.fromId;
       const toId = preferStation.get(hl.toId) || hl.toId;
       const from = bodyWorldPos.get(fromId);
@@ -1466,6 +1505,20 @@ export async function createSystems(scene, camera, renderer) {
       arr[0] = from.x; arr[1] = from.y; arr[2] = from.z;
       arr[3] = to.x; arr[4] = to.y; arr[5] = to.z;
       hl.posBuffer.needsUpdate = true;
+    }
+
+    if (museActive) {
+      if (!museShiftActive) {
+        museBaseColors = {
+          sphere: sphereMarkers?.instanceColor?.array.slice() || null,
+          cube: cubeMarkers?.instanceColor?.array.slice() || null
+        };
+        museShiftActive = true;
+      }
+      applyMuseShift();
+    } else if (museShiftActive) {
+      restoreMarkerColors();
+      museShiftActive = false;
     }
 
     /* Screen-space BH disc radius for hiding labels behind the lensing */
