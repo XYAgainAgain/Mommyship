@@ -85,6 +85,39 @@ export const fbmd = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness ] ) => {
 
 } );
 
+/* fbmd with a runtime octave cap (uQuality LOD) — octaves 4 is bit-identical to fbmd.
+   Fixed loop bound + Break for WGSL portability, same pattern as ridgedFbm. */
+
+export const fbmdO = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness, octaves ] ) => {
+
+	const p = p_immutable.toVar();
+	const v = float( 0.0 ).toVar();
+	const a = float( 0.5 ).toVar();
+	const derivative = vec3( 0.0 ).toVar();
+	const freq = float( 1.0 ).toVar();
+
+	Loop( { start: 0, end: 4 }, ( { i } ) => {
+
+		If( float( i ).greaterThanEqual( octaves ), () => {
+
+			Break();
+
+		} );
+
+		const n = gnoised( p );
+		const nx = n.x.div( add( 1.0, slopeness.mul( dot( derivative, derivative ) ) ) );
+		v.addAssign( a.mul( nx ) );
+		derivative.addAssign( a.mul( n.yzw ).mul( freq ) );
+		freq.mulAssign( 2.17 );
+		p.mulAssign( 2.17 );
+		a.mulAssign( 0.45 );
+
+	} );
+
+	return vec4( v, derivative.x, derivative.y, derivative.z );
+
+} );
+
 /* Value-only FBM — cheaper, no derivative tracking */
 
 export const fbm = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness ] ) => {
@@ -95,6 +128,36 @@ export const fbm = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness ] ) => {
 	const slopeAccum = float( 0.0 ).toVar();
 
 	Loop( { start: 0, end: 4 }, ( { i } ) => {
+
+		const n = gnoised( p );
+		const nx = n.x.div( add( 1.0, slopeness.mul( slopeAccum ) ) );
+		v.addAssign( a.mul( nx ) );
+		slopeAccum.addAssign( dot( n.yzw, n.yzw ).mul( a ).mul( a ) );
+		p.mulAssign( 2.17 );
+		a.mulAssign( 0.45 );
+
+	} );
+
+	return v;
+
+} );
+
+/* fbm with a runtime octave cap — octaves 4 is bit-identical to fbm */
+
+export const fbmO = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness, octaves ] ) => {
+
+	const p = p_immutable.toVar();
+	const v = float( 0.0 ).toVar();
+	const a = float( 0.5 ).toVar();
+	const slopeAccum = float( 0.0 ).toVar();
+
+	Loop( { start: 0, end: 4 }, ( { i } ) => {
+
+		If( float( i ).greaterThanEqual( octaves ), () => {
+
+			Break();
+
+		} );
 
 		const n = gnoised( p );
 		const nx = n.x.div( add( 1.0, slopeness.mul( slopeAccum ) ) );

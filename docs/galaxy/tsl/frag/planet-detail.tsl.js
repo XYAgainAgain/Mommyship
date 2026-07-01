@@ -12,7 +12,7 @@ export const uTime = uniform( float( 0 ) );
 /* Per-instance uniforms accepted as parameters for multi-instance pool rendering */
 
 import {
-	uvToSphere, hash33, gnoised, fbmd, fbm, ridgedFbm, gerstnerWave, blackbodyRGB,
+	uvToSphere, hash33, gnoised, fbmd, fbmdO, fbm, ridgedFbm, gerstnerWave, blackbodyRGB,
 	craterHash33, craterNoise, craterFbm, voronoi3, distMetric3D,
 	cellNoise3D, cellNoise3DDelta, crystals3D, crystals3DDelta
 } from '../glsl/noise-common.tsl.js';
@@ -111,14 +111,15 @@ export const oceanSurface = /*@__PURE__*/ Fn( ( [ sp, s, depth, roughness, uBase
 
 } );
 
-export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature, uMoistureOffset, uBiomeCount, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uOceanLevel, uWarpStrength ] ) => {
+export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature, uMoistureOffset, uBiomeCount, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uOceanLevel, uWarpStrength, uQ ] ) => {
 
+	const octD = mix( 2.0, 4.0, uQ );
 	const lat = abs( sp.y );
 
 	/* Continent shapes — drives height for ocean/biome selection only.
 	     Derivatives kept low so per-biome normals dominate surface texture. */
 
-	const hd = fbmd( sp.mul( 3.5 ).add( vec3( s ) ), uSlopeness );
+	const hd = fbmdO( sp.mul( 3.5 ).add( vec3( s ) ), uSlopeness, octD );
 	gDetailDerivs.assign( hd.yzw.mul( 0.15 ) );
 	const height = hd.x.mul( 0.5 ).add( 0.5 );
 	const t = float( 0.02 );
@@ -222,8 +223,8 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( iceW.greaterThan( 0.01 ), () => {
 
-		const crack = ridgedFbm( sp.mul( 8.0 ).add( vec3( s.mul( 2.3 ) ) ), 3.5, 2.1, 3 );
-		const iceHd = fbmd( sp.mul( 4.0 ).add( vec3( s.mul( 2.3 ) ) ), 0.4 );
+		const crack = ridgedFbm( sp.mul( 8.0 ).add( vec3( s.mul( 2.3 ) ) ), 3.5, 2.1, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+		const iceHd = fbmdO( sp.mul( 4.0 ).add( vec3( s.mul( 2.3 ) ) ), 0.4, octD );
 		const iceBase = mix( vec3( 0.92, 0.94, 0.98 ), uSubsurfaceColor, 0.10 );
 		biomeColor.addAssign( iceW.mul( mix( iceBase, uSubsurfaceColor.mul( 0.4 ).add( vec3( 0.15 ) ), smoothstep( 0.5, 0.8, crack ) ) ) );
 		biomeDerivs.addAssign( iceW.mul( iceHd.yzw ).mul( 0.5 ) );
@@ -234,7 +235,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( tundraW.greaterThan( 0.01 ), () => {
 
-		const tunHd = fbmd( sp.mul( 3.0 ).add( vec3( s.mul( 0.5 ) ) ), 0.3 );
+		const tunHd = fbmdO( sp.mul( 3.0 ).add( vec3( s.mul( 0.5 ) ) ), 0.3, octD );
 		const splotch = smoothstep( 0.15, 0.45, tunHd.x.mul( 0.5 ).add( 0.5 ) );
 		const bare = colGrey.mul( 0.8 ).add( vec3( 0.05, 0.03, 0.02 ) );
 		const lichen = mix( col2, colGrey, 0.6 ).mul( 0.5 );
@@ -247,8 +248,8 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( borealW.greaterThan( 0.01 ), () => {
 
-		const trees = ridgedFbm( sp.mul( 5.0 ).add( vec3( s.mul( 1.1 ) ) ), 2.5, 2.0, 3 );
-		const borHd = fbmd( sp.mul( 5.0 ).add( vec3( s.mul( 1.1 ) ) ), 0.8 );
+		const trees = ridgedFbm( sp.mul( 5.0 ).add( vec3( s.mul( 1.1 ) ) ), 2.5, 2.0, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+		const borHd = fbmdO( sp.mul( 5.0 ).add( vec3( s.mul( 1.1 ) ) ), 0.8, octD );
 		const canopy = smoothstep( 0.35, 0.65, trees );
 		const dark = col2.mul( 0.20 );
 		const clearing = mix( colGrey, col2, 0.25 ).mul( 0.6 );
@@ -263,7 +264,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 		const warpP = sp.mul( 8.0 ).add( vec3( s.mul( 1.7 ) ) );
 		const warp = gnoised( warpP.mul( 0.4 ).add( vec3( s.mul( 0.3 ) ) ) ).yzw.mul( 0.6 );
-		const canHd = fbmd( warpP.add( warp ), 0.9 );
+		const canHd = fbmdO( warpP.add( warp ), 0.9, octD );
 		const tex = canHd.x.mul( 0.5 ).add( 0.5 );
 		const shade = col2.mul( 0.30 ).add( col3.mul( 0.05 ) );
 		const lit = col2.mul( 0.65 ).add( vec3( 0.04 ) );
@@ -276,7 +277,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( grassW.greaterThan( 0.01 ), () => {
 
-		const grsHd = fbmd( sp.mul( 2.0 ).add( vec3( s.mul( 0.3 ) ) ), 0.2 );
+		const grsHd = fbmdO( sp.mul( 2.0 ).add( vec3( s.mul( 0.3 ) ) ), 0.2, octD );
 		const roll = grsHd.x.mul( 0.5 ).add( 0.5 );
 		const bright = colWarm.mul( 1.1 ).add( col2.mul( 0.3 ) );
 		const shadow = mix( colWarm, col2, 0.4 ).mul( 0.7 );
@@ -290,8 +291,8 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 	If( sandDesertW.greaterThan( 0.01 ), () => {
 
 		const duneP = sp.mul( vec3( 3.0, 12.0, 3.0 ) ).add( vec3( s.mul( 0.9 ) ) );
-		const dunes = ridgedFbm( duneP, 3.0, 2.0, 3 );
-		const duneHd = fbmd( duneP.mul( 0.7 ), 0.6 );
+		const dunes = ridgedFbm( duneP, 3.0, 2.0, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+		const duneHd = fbmdO( duneP.mul( 0.7 ), 0.6, octD );
 		const ridge = colWarm.mul( 1.3 ).add( vec3( 0.12, 0.08, 0.0 ) );
 		const trough = colWarm.mul( 0.65 ).add( vec3( 0.02 ) );
 		biomeColor.addAssign( sandDesertW.mul( mix( trough, ridge, smoothstep( 0.25, 0.65, dunes ) ) ) );
@@ -303,9 +304,9 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( rockyDesertW.greaterThan( 0.01 ), () => {
 
-		const mesa = ridgedFbm( sp.mul( 4.0 ).add( vec3( s.mul( 1.5 ) ) ), 3.5, 2.2, 4 ).toVar();
+		const mesa = ridgedFbm( sp.mul( 4.0 ).add( vec3( s.mul( 1.5 ) ) ), 3.5, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).toVar();
 		mesa.assign( pow( max( 0.0, sub( 1.0, abs( mesa.sub( 0.5 ) ).mul( 2.0 ) ) ), 5.0 ) );
-		const mesaHd = fbmd( sp.mul( 5.0 ).add( vec3( s.mul( 1.5 ) ) ), 1.2 );
+		const mesaHd = fbmdO( sp.mul( 5.0 ).add( vec3( s.mul( 1.5 ) ) ), 1.2, octD );
 		const plateau = colGrey.mul( 0.9 ).add( colWarm.mul( 0.2 ) );
 		const cliff = colGrey.mul( 0.4 );
 		biomeColor.addAssign( rockyDesertW.mul( mix( plateau, cliff, mesa ) ) );
@@ -319,8 +320,8 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 		const junP = sp.mul( 7.0 ).add( vec3( s.mul( 2.1 ) ) );
 		const junWarp = gnoised( junP.mul( 0.3 ).add( vec3( s.mul( 0.8 ) ) ) ).yzw.mul( 0.8 );
-		const canopy = ridgedFbm( junP.add( junWarp ), 3.0, 2.1, 3 );
-		const junHd = fbmd( junP.add( junWarp ), 0.9 );
+		const canopy = ridgedFbm( junP.add( junWarp ), 3.0, 2.1, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+		const junHd = fbmdO( junP.add( junWarp ), 0.9, octD );
 		const deep = col2.mul( 0.15 );
 		const top = col2.mul( 0.45 ).add( col1.mul( 0.06 ) );
 		biomeColor.addAssign( tropicalW.mul( mix( deep, top, smoothstep( 0.3, 0.7, canopy ) ) ) );
@@ -332,8 +333,8 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 	If( mountainW.greaterThan( 0.01 ), () => {
 
-		const mtRidge = ridgedFbm( sp.mul( 6.0 ).add( vec3( s.mul( 0.7 ) ) ), 4.5, 2.1, 4 );
-		const mtHd = fbmd( sp.mul( 6.0 ).add( vec3( s.mul( 0.7 ) ) ), uSlopeness.mul( 1.5 ) );
+		const mtRidge = ridgedFbm( sp.mul( 6.0 ).add( vec3( s.mul( 0.7 ) ) ), 4.5, 2.1, int( round( mix( 2.0, 4.0, uQ ) ) ) );
+		const mtHd = fbmdO( sp.mul( 6.0 ).add( vec3( s.mul( 0.7 ) ) ), uSlopeness.mul( 1.5 ), octD );
 		const rock = colGrey.mul( 0.55 ).add( col3.mul( 0.08 ) );
 		const peak = vec3( 0.55, 0.52, 0.48 );
 		const mtCol = mix( rock, peak, smoothstep( 0.3, 0.7, mtRidge ) ).toVar();
@@ -405,7 +406,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 } );
 
-export const renderBarren = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uBaseColor1, uBaseColor2 ] ) => {
+export const renderBarren = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uBaseColor1, uBaseColor2, uQ ] ) => {
 
 	const cp = sp.add( vec3( s.mul( 0.13 ), s.mul( 0.37 ), s.mul( 0.71 ) ) );
 	const height = craterFbm( cp ).toVar();
@@ -430,7 +431,7 @@ export const renderBarren = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uBaseColor1
 
 } );
 
-export const renderGas = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uStormSize, uBandCount, uBaseColor1, uBaseColor2, uBaseColor3 ] ) => {
+export const renderGas = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uStormSize, uBandCount, uBaseColor1, uBaseColor2, uBaseColor3, uQ ] ) => {
 
 	const lat = sp.y;
 	const lon = atan( sp.z, sp.x );
@@ -564,10 +565,11 @@ export const renderGas = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uStormSize,
 
 } );
 
-export const renderOcean = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uOceanLevel, uWarpStrength, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature ] ) => {
+export const renderOcean = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uOceanLevel, uWarpStrength, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uQ ] ) => {
 
+	const octD = mix( 2.0, 4.0, uQ );
 	const p = flowWarp( sp.mul( 3.5 ), s, 0.25 );
-	const hd = fbmd( p.add( vec3( s ) ), uSlopeness );
+	const hd = fbmdO( p.add( vec3( s ) ), uSlopeness, octD );
 	const height = hd.x.mul( 0.5 ).add( 0.5 );
 	const t = float( 0.02 );
 	const depth = max( 0.0, uOceanLevel.sub( height ) );
@@ -614,20 +616,21 @@ export const renderOcean = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uOceanLevel,
 
 } );
 
-export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uBaseColor1, uBaseColor2, uBaseColor3, uSlopeness, uSubsurfaceColor ] ) => {
+export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uBaseColor1, uBaseColor2, uBaseColor3, uSlopeness, uSubsurfaceColor, uQ ] ) => {
 
+	const octD = mix( 2.0, 4.0, uQ );
 	const off = vec3( s.mul( 0.13 ), s.mul( 0.37 ), s.mul( 0.71 ) );
-	const bigCracks = ridgedFbm( sp.mul( 1.5 ).add( off ), uCrackScale.mul( 0.4 ), 2.1, 3 );
-	const medCracks = ridgedFbm( sp.mul( 3.5 ).add( off.mul( 1.7 ) ), uCrackScale.mul( 0.8 ), 2.3, 4 );
-	const fineCracks = ridgedFbm( sp.mul( 8.0 ).add( off.mul( 2.3 ) ), uCrackScale.mul( 1.2 ), 2.0, 3 );
+	const bigCracks = ridgedFbm( sp.mul( 1.5 ).add( off ), uCrackScale.mul( 0.4 ), 2.1, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+	const medCracks = ridgedFbm( sp.mul( 3.5 ).add( off.mul( 1.7 ) ), uCrackScale.mul( 0.8 ), 2.3, int( round( mix( 2.0, 4.0, uQ ) ) ) );
+	const fineCracks = ridgedFbm( sp.mul( 8.0 ).add( off.mul( 2.3 ) ), uCrackScale.mul( 1.2 ), 2.0, int( round( mix( 2.0, 3.0, uQ ) ) ) );
 	const threshVar = fbm( sp.mul( 2.0 ).add( vec3( s ) ), 0.3 ).mul( 0.08 );
 	const cracks = smoothstep( add( 0.55, threshVar ), 0.80, bigCracks ).mul( 0.6 ).add( smoothstep( 0.60, 0.82, medCracks ).mul( 0.3 ) ).add( smoothstep( 0.65, 0.85, fineCracks ).mul( 0.15 ) ).toVar();
 	cracks.assign( clamp( cracks, 0.0, 1.0 ) );
-	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
+	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.35 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
 	const eps = float( 0.015 );
-	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
-	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
-	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
+	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.35 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
+	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
+	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
 	gDetailDerivs.assign( vec3( hx, hy, hz ).sub( height ).div( eps ) );
 	const plateVar = fbm( sp.mul( 3.0 ).add( vec3( s.mul( 3.7 ) ) ), 0.3 );
 	const surfaceColor = mix( uBaseColor1, uBaseColor2, plateVar.mul( 0.35 ).add( 0.3 ) ).toVar();
@@ -643,18 +646,19 @@ export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uBaseColor1, 
 
 } );
 
-export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCraterDensity, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uSlopeness, uEmissiveColor, uEmissiveIntensity ] ) => {
+export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCraterDensity, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uSlopeness, uEmissiveColor, uEmissiveIntensity, uQ ] ) => {
 
+	const octD = mix( 2.0, 4.0, uQ );
 	const off = vec3( s.mul( 0.17 ), s.mul( 0.41 ), s.mul( 0.63 ) );
 
 	/* Lava churn — warp crack coordinates so fissures ooze and shift */
 
 	const churnT = uTime.mul( 0.15 );
 	const churnOff = vec3( fbm( sp.mul( 1.5 ).add( vec3( churnT, 0.0, s ) ), 0.3 ).mul( 0.12 ), 0.0, fbm( sp.mul( 1.5 ).add( vec3( s, churnT.mul( 0.7 ), 0.0 ) ), 0.3 ).mul( 0.12 ) );
-	const bigFissures = ridgedFbm( sp.mul( 1.8 ).add( off ).add( churnOff ), uCrackScale.mul( 0.5 ), 2.1, 3 );
-	const medFissures = ridgedFbm( sp.mul( 4.0 ).add( off.mul( 1.5 ) ).add( churnOff ), uCrackScale.mul( 0.9 ), 2.3, 4 );
-	const fineFissures = ridgedFbm( sp.mul( 9.0 ).add( off.mul( 2.1 ) ), uCrackScale.mul( 1.3 ), 2.0, 3 );
-	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
+	const bigFissures = ridgedFbm( sp.mul( 1.8 ).add( off ).add( churnOff ), uCrackScale.mul( 0.5 ), 2.1, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+	const medFissures = ridgedFbm( sp.mul( 4.0 ).add( off.mul( 1.5 ) ).add( churnOff ), uCrackScale.mul( 0.9 ), 2.3, int( round( mix( 2.0, 4.0, uQ ) ) ) );
+	const fineFissures = ridgedFbm( sp.mul( 9.0 ).add( off.mul( 2.1 ) ), uCrackScale.mul( 1.3 ), 2.0, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.55 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
 	const caldera = smoothstep( 0.5, 0.8, height ).mul( 0.25 );
 	const threshVar = fbm( sp.mul( 2.0 ).add( vec3( s.mul( 0.7 ) ) ), 0.3 ).mul( 0.06 );
 	const cracks = smoothstep( add( 0.62, threshVar ), 0.85, bigFissures ).mul( 0.55 ).add( smoothstep( 0.65, 0.87, medFissures ).mul( 0.30 ) ).add( smoothstep( 0.70, 0.88, fineFissures ).mul( 0.15 ) ).add( caldera ).toVar();
@@ -666,9 +670,9 @@ export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCraterD
 	/* Skip craterFbm in finite-diff — too expensive per-frame (375 loops × 3 axes) */
 
 	const eps = float( 0.015 );
-	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
-	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
-	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
+	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.55 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
+	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
+	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, int( round( mix( 2.0, 4.0, uQ ) ) ) ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) );
 	gDetailDerivs.assign( vec3( hx, hy, hz ).sub( height ).div( eps ) );
 	const plateVar = fbm( sp.mul( 3.0 ).add( vec3( s.mul( 2.9 ) ) ), 0.3 );
 	const rock = mix( uBaseColor1, uBaseColor2, plateVar.mul( 0.3 ).add( 0.35 ) ).toVar();
@@ -699,7 +703,7 @@ export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCraterD
 
 } );
 
-export const renderCrystalline = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCrystalMetric, uBaseColor1, uBaseColor2, uBaseColor3, uBulbosity, uSubsurfaceColor ] ) => {
+export const renderCrystalline = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCrystalMetric, uBaseColor1, uBaseColor2, uBaseColor3, uBulbosity, uSubsurfaceColor, uQ ] ) => {
 
 	const p = sp.mul( uCrackScale ).add( vec3( s ) );
 
@@ -768,13 +772,15 @@ export const renderCrystalline = /*@__PURE__*/ Fn( ( [ sp, s, uCrackScale, uCrys
 
 } );
 
-export const renderFungal = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uSlopeness, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uCrackScale ] ) => {
+export const renderFungal = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uSlopeness, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uCrackScale, uQ ] ) => {
+
+	const octD = mix( 2.0, 4.0, uQ );
 
 	/* Dual flow-warped terrain — colordodge-derived organic continent shapes */
 
 	const wp1 = flowWarp( sp.mul( 2.5 ), s, uWarpStrength );
 	const wp2 = flowWarp( sp.mul( 1.8 ), s.add( 7.31 ), uWarpStrength.mul( 0.7 ) );
-	const hd1 = fbmd( wp1.add( vec3( s.mul( 0.31 ) ) ), uSlopeness );
+	const hd1 = fbmdO( wp1.add( vec3( s.mul( 0.31 ) ) ), uSlopeness, octD );
 	const terrain1 = clamp( hd1.x.mul( 0.5 ).add( 0.5 ).sub( 0.5 ).mul( 2.0 ).add( 0.5 ), 0.0, 1.0 );
 	const terrain2 = fbm( wp2.add( vec3( s.mul( 1.73 ) ) ), 0.3 ).mul( 0.5 ).add( 0.5 );
 	gDetailDerivs.assign( hd1.yzw );
@@ -818,8 +824,8 @@ export const renderFungal = /*@__PURE__*/ Fn( ( [ sp, s, uWarpStrength, uSlopene
 	const veinWarpN1 = fbm( sp.mul( uCrackScale ).mul( 0.7 ).add( vec3( s.mul( 0.9 ) ) ), 0.3 );
 	const veinWarpN2 = fbm( sp.mul( uCrackScale ).mul( 0.7 ).add( vec3( s.mul( 1.6 ) ) ), 0.3 );
 	const veinWarped = sp.mul( uCrackScale ).add( vec3( veinWarpN1, 0.0, veinWarpN2 ).mul( 0.4 ) ).add( animOff );
-	const primaryVeins = ridgedFbm( veinWarped.add( veinOff ), 2.5, 2.1, 3 );
-	const secondaryVeins = ridgedFbm( sp.mul( uCrackScale ).mul( 2.3 ).add( veinOff.mul( 1.7 ) ).add( animOff ), 1.8, 2.3, 4 );
+	const primaryVeins = ridgedFbm( veinWarped.add( veinOff ), 2.5, 2.1, int( round( mix( 2.0, 3.0, uQ ) ) ) );
+	const secondaryVeins = ridgedFbm( sp.mul( uCrackScale ).mul( 2.3 ).add( veinOff.mul( 1.7 ) ).add( animOff ), 1.8, 2.3, int( round( mix( 2.0, 4.0, uQ ) ) ) );
 	const threshVar = fbm( sp.mul( 1.5 ).add( vec3( s ) ), 0.3 ).mul( 0.06 );
 	const veins = smoothstep( add( 0.75, threshVar ), 0.92, primaryVeins ).mul( 0.6 ).add( smoothstep( 0.78, 0.93, secondaryVeins ).mul( 0.3 ) ).toVar();
 	veins.assign( clamp( veins, 0.0, 1.0 ) );
@@ -886,7 +892,7 @@ export const main = /*@__PURE__*/ Fn( ( [
 	uCrackScale, uSubsurfaceColor, uEmissiveIntensity, uEmissiveColor, uBulbosity,
 	uRoughness, uMetalness, uCrystalMetric, uMoistureOffset, uBiomeCount,
 	uRotation, uLightDir, uLodDist, uFadeIn, uOpacity,
-	uCloudCover, uCloudColor, uStorminess
+	uCloudCover, uCloudColor, uStorminess, uQuality
 ] ) => {
 
 	/* IGN discard complementary to planet-atlas.tsl.js — atlas keeps ign >= fade,
@@ -936,35 +942,35 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	If( uPlanetMode.equal( 0 ), () => {
 
-		surfaceColor.assign( renderRocky( sp, s, uSlopeness, uTemperature, uMoistureOffset, uBiomeCount, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uOceanLevel, uWarpStrength ) );
+		surfaceColor.assign( renderRocky( sp, s, uSlopeness, uTemperature, uMoistureOffset, uBiomeCount, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uOceanLevel, uWarpStrength, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 1 ), () => {
 
-		surfaceColor.assign( renderBarren( sp, s, uSlopeness, uBaseColor1, uBaseColor2 ) );
+		surfaceColor.assign( renderBarren( sp, s, uSlopeness, uBaseColor1, uBaseColor2, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 2 ), () => {
 
-		surfaceColor.assign( renderGas( sp, s, uWarpStrength, uStormSize, uBandCount, uBaseColor1, uBaseColor2, uBaseColor3 ) );
+		surfaceColor.assign( renderGas( sp, s, uWarpStrength, uStormSize, uBandCount, uBaseColor1, uBaseColor2, uBaseColor3, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 3 ), () => {
 
-		surfaceColor.assign( renderOcean( sp, s, uSlopeness, uOceanLevel, uWarpStrength, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature ) );
+		surfaceColor.assign( renderOcean( sp, s, uSlopeness, uOceanLevel, uWarpStrength, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 4 ), () => {
 
-		surfaceColor.assign( renderIce( sp, s, uCrackScale, uBaseColor1, uBaseColor2, uBaseColor3, uSlopeness, uSubsurfaceColor ) );
+		surfaceColor.assign( renderIce( sp, s, uCrackScale, uBaseColor1, uBaseColor2, uBaseColor3, uSlopeness, uSubsurfaceColor, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 5 ), () => {
 
-		surfaceColor.assign( renderVolcanic( sp, s, uCrackScale, uCraterDensity, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uSlopeness, uEmissiveColor, uEmissiveIntensity ) );
+		surfaceColor.assign( renderVolcanic( sp, s, uCrackScale, uCraterDensity, uBaseColor1, uBaseColor2, uBaseColor3, uTemperature, uSlopeness, uEmissiveColor, uEmissiveIntensity, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 6 ), () => {
 
-		surfaceColor.assign( renderCrystalline( sp, s, uCrackScale, uCrystalMetric, uBaseColor1, uBaseColor2, uBaseColor3, uBulbosity, uSubsurfaceColor ) );
+		surfaceColor.assign( renderCrystalline( sp, s, uCrackScale, uCrystalMetric, uBaseColor1, uBaseColor2, uBaseColor3, uBulbosity, uSubsurfaceColor, uQuality ) );
 
 	} ).ElseIf( uPlanetMode.equal( 7 ), () => {
 
-		surfaceColor.assign( renderFungal( sp, s, uWarpStrength, uSlopeness, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uCrackScale ) );
+		surfaceColor.assign( renderFungal( sp, s, uWarpStrength, uSlopeness, uBaseColor1, uBaseColor2, uBaseColor3, uSubsurfaceColor, uCrackScale, uQuality ) );
 
 	} ).Else( () => {
 

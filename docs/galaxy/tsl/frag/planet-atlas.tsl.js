@@ -26,7 +26,8 @@ export const main = /*@__PURE__*/ Fn( () => {
 			.add( float( 0.00583715 ).mul( screenCoordinate.y ) ) ) ) );
 	If( ign.lessThan( vDetailFade ), () => { Discard(); } );
 
-	const texColor = uAtlas.sample( vUv ).depth( int( vLayer ) ).rgb;
+	/* Round, don't truncate — see star-atlas.tsl.js (layer-flip wobble on Firefox) */
+	const texColor = uAtlas.sample( vUv ).depth( int( vLayer.add( 0.5 ) ) ).rgb;
 
 	/* Lambert ramps in with the detail fade only — unlit at map scale so dark-side
 	   planets never vanish; by detail time the atlas already shows the terminator */

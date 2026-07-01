@@ -143,6 +143,13 @@ async function init() {
   const scene = new THREE.Scene();
   const cam = createCamera(renderer);
 
+  /* Render whatever exists so far: each pass compiles only the newly added pipelines,
+     spreading PSO cost across the load steps; the overlay covers every warm render */
+  const warmStep = async () => {
+    renderer.render(scene, cam.camera);
+    await new Promise(r => setTimeout(r, 0));
+  };
+
   const timer = new THREE.Timer();
   timer.connect(document);
 
@@ -179,10 +186,20 @@ async function init() {
   progress();
   const dustTorus = await createDustTorus(scene, renderer, lightmap);
 
+  /* All visual-scene materials exist now — compile their pipelines on driver threads
+     WHILE the JS-heavy systems/bake steps run, so the final step has nothing left to stall on */
+  const scenePrecompile = renderer.compileAsync(scene, cam.camera);
+
   progress();
   const systems = await createSystems(scene, cam.camera, renderer);
+  /* markerScene pipelines (incl. the big live-atlas module) compile on driver
+     threads while asteroids.init does its CPU-side setup */
+  const markerWarm = systems.warmUpShaders(renderer, cam.camera);
   progress();
   await asteroids.init(scene, systems.getData(), lightmap);
+  await scenePrecompile;
+  await warmStep();
+  await markerWarm;
   progress();
 
   /* Volume — controls drone gain when Muse is off, Muse volume when on */
@@ -650,9 +667,10 @@ async function init() {
     }
   }, systems);
 
-  /* Pre-compile all shaders */
-  await renderer.compileAsync(scene, cam.camera);
-  await systems.warmUpShaders(renderer, cam.camera);
+  /* One LOD-1 frame through the full BH compositor: its RTs and pipelines
+     otherwise compile on the first core approach, mid-flight */
+  bh.update(0, 1, cam.camera);
+  compositor.render(scene, cam.camera, projectToScreen(cam.camera), 1, systems.markerScene);
 
   updateScaleBar();
   renderer.setAnimationLoop(animate);

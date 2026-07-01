@@ -17,6 +17,7 @@ const PHOTON_RING_RADIUS = 6.9; /* photon ring = uRingRadius 0.23 × 30 sphere s
 const _origin = new THREE.Vector3();
 const _edge = new THREE.Vector3();
 const _camUp = new THREE.Vector3();
+const _camFwd = new THREE.Vector3();
 
 export async function createCompositor(renderer) {
   const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -117,8 +118,13 @@ export async function createCompositor(renderer) {
     uBHScreenRadius.value = Math.min(2.0, Math.max(0.02, Math.abs(_edge.y - _origin.y) * 0.5));
     uAspect.value = renderer.domElement.width / renderer.domElement.height;
 
-    /* Gate off (0 = lens everything) inside the core, where the projected origin is unusable */
-    uBHDepth.value = camera.position.lengthSq() < 64 ? 0 : Math.min(1, Math.max(0, _origin.z));
+    /* Inside the core: gate off (0 = lens everything). BH behind the camera: project()
+       wraps the origin back on-screen, so push the gate past the far plane instead. */
+    _camFwd.setFromMatrixColumn(camera.matrixWorld, 2).negate();
+    const bhBehind = _camFwd.dot(camera.position) > 0;
+    uBHDepth.value = camera.position.lengthSq() < 64 ? 0
+      : bhBehind ? 2
+      : Math.min(1, Math.max(0, _origin.z));
 
     /* Active plane tracks camera so lensing works from any angle */
     activePlane.lookAt(camera.position);

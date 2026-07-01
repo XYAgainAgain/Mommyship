@@ -12,13 +12,14 @@ import { main as starAtlasVertFn, uVisualScale as starVisualScale } from './tsl/
 import { main as starAtlasFragFn, uAtlas as starUAtlas } from './tsl/frag/star-atlas.tsl.js';
 import { main as planetAtlasVertFn, uVisualScale as planetVisualScale } from './tsl/vert/planet-atlas.tsl.js';
 import { main as planetAtlasFragFn, uAtlas as planetUAtlas, uTime as planetAtlasUTime } from './tsl/frag/planet-atlas.tsl.js';
+import { main as planetAtlasLiveFragFn, uParamTex as planetParamTex, uQuality as planetAtlasQuality } from './tsl/frag/planet-atlas-live.tsl.js';
 import { main as torusVertFn, uTime as torusVertUTime } from './tsl/vert/pulsar-torus.tsl.js';
 import { main as torusFragFn, uTime as torusFragUTime } from './tsl/frag/pulsar-torus.tsl.js';
 import { createRng } from './rng.js';
 import { bakeStarAtlas } from './star-bake.js';
 import { createStarDetail } from './star-detail.js';
 import { parseMK } from './star-params.js';
-import { bakePlanetAtlas } from './planet-bake.js';
+import { bakePlanetAtlas, buildParamTexture } from './planet-bake.js';
 import { createPlanetDetail } from './planet-detail.js';
 import { parsePlanetType, findParentStar } from './planet-params.js';
 
@@ -450,6 +451,31 @@ export async function createSystems(scene, camera, renderer) {
     rebuildMarkers();
   }
 
+  let planetAtlasLive = false;
+
+  /* Idempotent baked→live frag swap — callable from init AND rebakes, so a
+     failed first bake can still upgrade once params exist */
+  function enableLivePlanetAtlas() {
+    if (planetAtlasLive || !planetAtlasMat) return;
+    if (!planetAtlasData?.paramsCache?.size || !planetAtlasData?.layerMap?.size) return;
+    refreshPlanetParamTexture();
+    planetAtlasMat.fragmentNode = planetAtlasLiveFragFn();
+    planetAtlasMat.needsUpdate = true;
+    planetAtlasLive = true;
+  }
+
+  /* (Re)build the live-atlas param texture from paramsCache, in layer order */
+  function refreshPlanetParamTexture() {
+    const lm = planetAtlasData?.layerMap;
+    const pc = planetAtlasData?.paramsCache;
+    if (!lm?.size || !pc) return;
+    const idsByLayer = new Array(lm.size);
+    for (const [id, i] of lm) idsByLayer[i] = id;
+    const oldTex = planetParamTex.value;
+    planetParamTex.value = buildParamTexture(idsByLayer, pc);
+    if (oldTex) oldTex.dispose();
+  }
+
   async function rebakePlanetAtlas() {
     if (!planetAtlasMat) return;
     try {
@@ -464,6 +490,8 @@ export async function createSystems(scene, camera, renderer) {
           planetDetail.invalidateCaches();
           if (newData.paramsCache) planetDetail.setParamsCache(newData.paramsCache);
         }
+        refreshPlanetParamTexture();
+        enableLivePlanetAtlas();
       }
     } catch (e) {
       console.warn('Planet atlas re-bake failed:', e);
@@ -482,6 +510,7 @@ export async function createSystems(scene, camera, renderer) {
     planetDetail.invalidateBody(bodyId);
     if (planetAtlasData?.paramsCache) planetAtlasData.paramsCache.set(bodyId, params);
     if (planetAtlasData?.churnMap) planetAtlasData.churnMap.set(bodyId, params.churn || 0);
+    refreshPlanetParamTexture();
   }
 
   /* Lightweight single-star rebake — same pattern as planets */
@@ -1389,11 +1418,13 @@ export async function createSystems(scene, camera, renderer) {
       }
 
       let pcfDirty = false, pldDirty = false;
+      let minPlanetDist = Infinity;
       for (let i = 0; i < planetIds.length; i++) {
         const id = planetIds[i];
 
         const detailFade = planetDetailActiveIds.get(id);
         if (detailFade !== undefined && detailFade > 0.99) {
+          minPlanetDist = 0;
           _dummy.scale.setScalar(0);
           _dummy.updateMatrix();
           planetMarkers.setMatrixAt(i, _dummy.matrix);
@@ -1418,6 +1449,7 @@ export async function createSystems(scene, camera, renderer) {
         /* Crossfade: close = atlas texture, far = faction color */
         const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < minPlanetDist) minPlanetDist = dist;
         const cf = 1 - smoothstep(15, 80, dist);
         if (planetPackedAttr.array[i * 4 + 1] !== cf) {
           planetPackedAttr.array[i * 4 + 1] = cf;
@@ -1449,6 +1481,9 @@ export async function createSystems(scene, camera, renderer) {
       planetMarkers.instanceMatrix.needsUpdate = true;
       if (pcfDirty) planetPackedAttr.needsUpdate = true;
       if (pldDirty) planetLightDirAttr.needsUpdate = true;
+
+      /* Live-atlas quality: full octaves at activation range, 2 octaves at map scale */
+      planetAtlasQuality.value = 1 - smoothstep(18, 98, minPlanetDist);
     }
 
     if (hasCubes) {
@@ -1775,6 +1810,9 @@ export async function createSystems(scene, camera, renderer) {
     if (planetAtlasData.atlas) {
       planetUAtlas.value = planetAtlasData.atlas;
     }
+    /* Live procedural atlas replaces the baked lookup when params exist;
+       baked frag stays as the fallback path */
+    enableLivePlanetAtlas();
     planetDetail = await createPlanetDetail(renderer);
     if (planetAtlasData.paramsCache) planetDetail.setParamsCache(planetAtlasData.paramsCache);
     markerScene.add(planetDetail.container);
@@ -1840,6 +1878,13 @@ export async function createSystems(scene, camera, renderer) {
             if (!gc.visible) { gc.visible = true; targets.push(gc); }
           }
         }
+      }
+      /* Orbit lines and pulsar far-tori start hidden — one visible instance per
+         material compiles the pipeline all clones share */
+      const firstOrbit = orbitLines.values().next().value;
+      if (firstOrbit && !firstOrbit.line.visible) { firstOrbit.line.visible = true; targets.push(firstOrbit.line); }
+      for (const pt of pulsarFarTori) {
+        if (!pt.mesh.visible) { pt.mesh.visible = true; targets.push(pt.mesh); }
       }
       await renderer.compileAsync(markerScene, camera);
       /* compileAsync builds shader modules only — a real render forces PSO

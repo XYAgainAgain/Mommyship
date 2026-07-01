@@ -14,7 +14,9 @@ export const uAtlas = texture( null );
 
 export const main = /*@__PURE__*/ Fn( () => {
 
-	const texColor = uAtlas.sample( vUv ).depth( int( vLayer ) ).rgb;
+	/* Round, don't truncate: varying interpolation can wobble a flat 17.0 down to
+	   16.9999 on some GPUs (Firefox), flipping fragments to the neighboring layer */
+	const texColor = uAtlas.sample( vUv ).depth( int( vLayer.add( 0.5 ) ) ).rgb;
 	const color = mix( vInstanceColor, texColor, vCrossfade );
 	return vec4( color, 1.0 );
 

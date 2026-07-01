@@ -30,6 +30,10 @@ function computeAtmoDensity(params) {
   }
 }
 
+/* Uniform, not a literal: an inlined 1.0 makes mix(2,4,q) all-literal, and Firefox's
+   Naga rejects abstract-typed expressions outside const contexts (Chrome tolerates) */
+const uDetailQuality = uniform(float(1.0));
+
 /* Inline TSL glow shader — billboard with light-biased radial falloff */
 const vGlowUv = varying(vec2(), 'vGlowUv');
 /* Must return a position: vertexNode/void here emitted `builtinClipSpace = ;`
@@ -107,7 +111,7 @@ export async function createPlanetDetail(renderer) {
       pCrackScale, pSubsurfaceColor, pEmissiveIntensity, pEmissiveColor, pBulbosity,
       pRoughness, pMetalness, pCrystalMetric, pMoistureOffset, pBiomeCount,
       pRotation, pLightDir, pLodDist, pFadeIn, pOpacity,
-      pCloudCover, pCloudColor, pStorminess
+      pCloudCover, pCloudColor, pStorminess, uDetailQuality
     );
     mat.transparent = true;
     /* IGN (interleaved gradient noise) crossfade keeps pixels opaque, so depth
