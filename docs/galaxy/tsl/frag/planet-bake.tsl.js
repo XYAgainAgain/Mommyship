@@ -128,7 +128,9 @@ export const oceanSurface = /*@__PURE__*/ Fn( ( [ sp, s, depth, roughness ] ) =>
 	const polarTint = mix( uBaseColor1, vec3( 0.5, 0.6, 0.7 ), 0.4 );
 	surfaceColor.assign( mix( surfaceColor, polarTint, smoothstep( 0.0, 0.7, lat ).mul( 0.25 ) ) );
 
-	return vec4( surfaceColor, 0.0 );
+	/* vec3 return — callers join their own spec alpha; a vec4 here overflowed
+	   the callers' vec4() joins, silently truncating away the spec channel */
+	return surfaceColor;
 
 } );
 

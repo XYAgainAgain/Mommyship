@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
-import { main as composeFrag, uSpaceTexture, uDistortionTexture, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius, uAnnulus, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
+import { main as composeFrag, uSpaceTexture, uDistortionTexture, uSceneDepth, uBHDepth, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius, uAnnulus, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
 import { main as activeFrag } from './tsl/frag/distortion-active.tsl.js';
 import { main as maskFrag } from './tsl/frag/distortion-mask.tsl.js';
 
@@ -64,8 +64,8 @@ export async function createCompositor(renderer) {
   uDistortionStrength.value = 0.0;
   uRGBShiftRadius.value = 0.00001;
 
-  /* Annulus lensing only for the volumetric BH (?bhvol=1); old particle disk keeps center-collapse */
-  uAnnulus.value = new URLSearchParams(location.search).has('bhvol') ? 1 : 0;
+  /* Photon-ring annulus lensing for the volumetric BH disk */
+  uAnnulus.value = 1;
 
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), composeMat);
   quad.frustumCulled = false;
@@ -80,6 +80,9 @@ export async function createCompositor(renderer) {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter
     });
+    /* Depth readable by the compose pass for the lensing gate; setSize resizes it */
+    spaceRT.depthTexture = new THREE.DepthTexture(w, h);
+    uSceneDepth.value = spaceRT.depthTexture;
     distortionRT = new THREE.RenderTarget(
       Math.floor(w * 0.5), Math.floor(h * 0.5), {
         minFilter: THREE.LinearFilter,
@@ -113,6 +116,9 @@ export async function createCompositor(renderer) {
     _edge.copy(_camUp).multiplyScalar(PHOTON_RING_RADIUS).project(camera);
     uBHScreenRadius.value = Math.min(2.0, Math.max(0.02, Math.abs(_edge.y - _origin.y) * 0.5));
     uAspect.value = renderer.domElement.width / renderer.domElement.height;
+
+    /* Gate off (0 = lens everything) inside the core, where the projected origin is unusable */
+    uBHDepth.value = camera.position.lengthSq() < 64 ? 0 : Math.min(1, Math.max(0, _origin.z));
 
     /* Active plane tracks camera so lensing works from any angle */
     activePlane.lookAt(camera.position);

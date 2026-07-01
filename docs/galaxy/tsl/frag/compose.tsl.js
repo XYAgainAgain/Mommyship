@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { texture, uniform, vec2, vec3, float, sin, cos, smoothstep, mix, length, Fn, vec4, uv } from 'three/tsl';
+import { texture, uniform, vec2, vec3, float, sin, cos, smoothstep, mix, length, step, Fn, vec4, uv } from 'three/tsl';
 
 
 // Texture uniforms — assign render target textures to .value before rendering:
@@ -8,6 +8,10 @@ import { texture, uniform, vec2, vec3, float, sin, cos, smoothstep, mix, length,
 //   uDistortionTexture.value = distortionRT.texture;
 export const uSpaceTexture = texture( null );
 export const uDistortionTexture = texture( null );
+export const uSceneDepth = texture( null );
+
+// BH clip-space depth — 0 disables the gate (everything lenses)
+export const uBHDepth = uniform( float( 0 ) );
 
 export const uBlackHolePosition = uniform( vec2( 0, 0 ) );
 export const uDistortionStrength = uniform( float( 0 ) );
@@ -27,8 +31,8 @@ const ANGLE_B_OFFSET = vec2( 0.0, 1.0 );
 // Closes over uSpaceTexture rather than accepting a sampler param — TSL Fn parameters
 // don't support texture node types. The original GLSL accepted a sampler2D arg but was
 // only ever called with uSpaceTexture, so closing over it is semantically equivalent.
-// Renamed param 'uv' -> 'uvCoord' to avoid shadowing the TSL built-in uv().
-// Renamed internal 'color' -> 'outColor' to avoid shadowing the TSL built-in color().
+// Renamed param 'uv' → 'uvCoord' to avoid shadowing the TSL built-in uv().
+// Renamed internal 'color' → 'outColor' to avoid shadowing the TSL built-in color().
 export const getRGBShiftedColor = /*@__PURE__*/ Fn( ( [ uvCoord, radius ] ) => {
 
 	const outColor = vec3( 0 ).toVar();
@@ -61,7 +65,11 @@ export const main = /*@__PURE__*/ Fn( () => {
 		.mul( float( 1.0 ).sub( smoothstep( rOut.sub( soft ), rOut, screenDist ) ) );
 	const ringIntensity = ring.mul( 0.16 ).mul( uDistortionStrength );
 
-	const intensity = mix( centerIntensity, ringIntensity, uAnnulus );
+	/* Foreground occluders (planets, asteroids) must not warp — lens only pixels
+	   whose scene depth sits at or behind the BH */
+	const behindBH = step( uBHDepth, uSceneDepth.sample( screenUV ).r );
+
+	const intensity = mix( centerIntensity, ringIntensity, uAnnulus ).mul( behindBH );
 	const towardCenter = screenUV.sub( uBlackHolePosition ).mul( intensity.negate() ).mul( 2.0 );
 	const distortedUV = screenUV.add( towardCenter );
 	const outColor = getRGBShiftedColor( distortedUV, uRGBShiftRadius );

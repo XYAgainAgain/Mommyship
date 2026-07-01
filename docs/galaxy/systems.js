@@ -24,7 +24,11 @@ import { parsePlanetType, findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
 const MARKER_RADIUS = 2.5;
-const MARKER_SEGMENTS = 12;
+/* 24×16 keeps silhouettes round when the atlas mesh fills the screen mid-crossfade */
+const MARKER_SEGMENTS = 24;
+const MARKER_RINGS = 16;
+/* Detail shell (0.95) over atlas visual scale (0.87) — instance scale lerps this in during fade */
+const DETAIL_ATLAS_RATIO = 0.95 / 0.87;
 const CLICK_THRESHOLD = 5;
 /* [near, far] fade distances indexed by hierarchy depth */
 const LABEL_FADE = [[200, 300], [60, 120], [25, 50]];
@@ -279,8 +283,8 @@ export async function createSystems(scene, camera, renderer) {
   })();
 
   /* Three InstancedMesh groups: stars (atlas shader), other spheres (basic), cubes (GnGs) */
-  const starGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
-  const sphereGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, 8);
+  const starGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, MARKER_RINGS);
+  const sphereGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, MARKER_RINGS);
   const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
   const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
@@ -342,6 +346,8 @@ export async function createSystems(scene, camera, renderer) {
   let pulsarTorusGeoFar = null;
   let allPositionedIds = [];
   const _dummy = new THREE.Object3D();
+  const _lightLocal = new THREE.Vector3();
+  const _invSpin = new THREE.Quaternion();
   const _color = new THREE.Color();
 
   /* Hierarchy state for depth-ordered orbital computation */
@@ -765,6 +771,9 @@ export async function createSystems(scene, camera, renderer) {
       starMarkers = new THREE.InstancedMesh(starGeo, starAtlasMat, starIds.length);
       starMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       starMarkers.renderOrder = 5;
+      /* Instances span the whole galaxy but the bounding sphere sits at the origin —
+         culling the shared bounds blanks every body when the core leaves the frustum */
+      starMarkers.frustumCulled = false;
 
       const layers = new Float32Array(starIds.length);
       const crossfades = new Float32Array(starIds.length);
@@ -833,6 +842,7 @@ export async function createSystems(scene, camera, renderer) {
       sphereMarkers = new THREE.InstancedMesh(sphereGeo, markerMat, sphereIds.length);
       sphereMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       sphereMarkers.renderOrder = 5;
+      sphereMarkers.frustumCulled = false;
 
       for (let i = 0; i < sphereIds.length; i++) {
         const id = sphereIds[i];
@@ -856,6 +866,7 @@ export async function createSystems(scene, camera, renderer) {
       planetMarkers = new THREE.InstancedMesh(sphereGeo, planetAtlasMat, planetIds.length);
       planetMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       planetMarkers.renderOrder = 5;
+      planetMarkers.frustumCulled = false;
 
       const pLayers = new Float32Array(planetIds.length);
       const pCrossfades = new Float32Array(planetIds.length);
@@ -911,14 +922,15 @@ export async function createSystems(scene, camera, renderer) {
         meta.computedSpinSpeed = +autoSpinSpeed.toFixed(3);
       }
 
-      /* Pack layer/crossfade/churn into one vec3 — WebGPU maxVertexBuffers = 8 */
-      const packedInfo = new Float32Array(planetIds.length * 3);
+      /* Pack layer/crossfade/churn/detailFade into one vec4 — WebGPU maxVertexBuffers = 8 */
+      const packedInfo = new Float32Array(planetIds.length * 4);
       for (let i = 0; i < planetIds.length; i++) {
-        packedInfo[i * 3]     = pLayers[i];
-        packedInfo[i * 3 + 1] = pCrossfades[i];
-        packedInfo[i * 3 + 2] = pChurns[i];
+        packedInfo[i * 4]     = pLayers[i];
+        packedInfo[i * 4 + 1] = pCrossfades[i];
+        packedInfo[i * 4 + 2] = pChurns[i];
+        packedInfo[i * 4 + 3] = 0;
       }
-      planetPackedAttr = new THREE.InstancedBufferAttribute(packedInfo, 3);
+      planetPackedAttr = new THREE.InstancedBufferAttribute(packedInfo, 4);
       planetPackedAttr.setUsage(THREE.DynamicDrawUsage);
       planetLightDirAttr = new THREE.InstancedBufferAttribute(pLightDirs, 3);
       planetLightDirAttr.setUsage(THREE.DynamicDrawUsage);
@@ -948,6 +960,7 @@ export async function createSystems(scene, camera, renderer) {
       cubeMarkers = new THREE.InstancedMesh(cubeGeo, markerMat, cubeIds.length);
       cubeMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       cubeMarkers.renderOrder = 5;
+      cubeMarkers.frustumCulled = false;
 
       for (let i = 0; i < cubeIds.length; i++) {
         const id = cubeIds[i];
@@ -1390,8 +1403,12 @@ export async function createSystems(scene, camera, renderer) {
         const wp = bodyWorldPos.get(id);
         if (!wp) continue;
         const meta = bodyMeta.get(id);
+        const fadeW = detailFade === undefined ? 0 : Math.min(1, detailFade);
         _dummy.position.set(wp.x, wp.y, wp.z);
-        _dummy.scale.setScalar(meta.instanceScale * (meta.planetRadius || 1));
+        /* Grow toward the detail shell during the fade so the dither dissolves
+           between coincident silhouettes instead of mismatched radii */
+        _dummy.scale.setScalar(meta.instanceScale * (meta.planetRadius || 1)
+          * (1 + (DETAIL_ATLAS_RATIO - 1) * fadeW));
         const spin = planetSpins[i];
         if (spin) _dummy.quaternion.setFromAxisAngle(spin.axis, spin.speed * rotationTime);
         else _dummy.quaternion.identity();
@@ -1402,8 +1419,12 @@ export async function createSystems(scene, camera, renderer) {
         const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const cf = 1 - smoothstep(15, 80, dist);
-        if (planetPackedAttr.array[i * 3 + 1] !== cf) {
-          planetPackedAttr.array[i * 3 + 1] = cf;
+        if (planetPackedAttr.array[i * 4 + 1] !== cf) {
+          planetPackedAttr.array[i * 4 + 1] = cf;
+          pcfDirty = true;
+        }
+        if (planetPackedAttr.array[i * 4 + 3] !== fadeW) {
+          planetPackedAttr.array[i * 4 + 3] = fadeW;
           pcfDirty = true;
         }
 
@@ -1411,14 +1432,15 @@ export async function createSystems(scene, camera, renderer) {
         if (starId) {
           const starWp = bodyWorldPos.get(starId);
           if (starWp) {
-            const lx = starWp.x - wp.x, ly = starWp.y - wp.y, lz = starWp.z - wp.z;
-            const len = Math.sqrt(lx * lx + ly * ly + lz * lz) || 1;
+            /* Light dir pre-rotated into instance-local space (inverse spin) so the
+               atlas frag lights the local sphere normal without matrix work */
+            _lightLocal.set(starWp.x - wp.x, starWp.y - wp.y, starWp.z - wp.z).normalize();
+            if (spin) _lightLocal.applyQuaternion(_invSpin.copy(_dummy.quaternion).invert());
             const idx3 = i * 3;
-            const nlx = lx / len, nly = ly / len, nlz = lz / len;
-            if (planetLightDirAttr.array[idx3] !== nlx || planetLightDirAttr.array[idx3 + 1] !== nly) {
-              planetLightDirAttr.array[idx3] = nlx;
-              planetLightDirAttr.array[idx3 + 1] = nly;
-              planetLightDirAttr.array[idx3 + 2] = nlz;
+            if (planetLightDirAttr.array[idx3] !== _lightLocal.x || planetLightDirAttr.array[idx3 + 1] !== _lightLocal.y) {
+              planetLightDirAttr.array[idx3] = _lightLocal.x;
+              planetLightDirAttr.array[idx3 + 1] = _lightLocal.y;
+              planetLightDirAttr.array[idx3 + 2] = _lightLocal.z;
               pldDirty = true;
             }
           }
@@ -1733,7 +1755,6 @@ export async function createSystems(scene, camera, renderer) {
     starAtlasMat.fragmentNode = starAtlasFragFn();
     starVisualScale.value = 0.87;
     starAtlasData = await bakeStarAtlas(renderer, galaxyData.bodies);
-    console.log('DEBUG star bake: atlas=' + (starAtlasData.atlas ? 'OK' : 'NULL') + ', layers=' + starAtlasData.layerMap?.size);
     starUAtlas.value = starAtlasData.atlas;
     starDetail = await createStarDetail(renderer);
     markerScene.add(starDetail.container);
@@ -1751,7 +1772,6 @@ export async function createSystems(scene, camera, renderer) {
     planetAtlasMat.fragmentNode = planetAtlasFragFn();
     planetVisualScale.value = 0.87;
     planetAtlasData = await bakePlanetAtlas(renderer, galaxyData.bodies);
-    console.log('DEBUG planet bake: atlas=' + (planetAtlasData.atlas ? 'OK' : 'NULL') + ', layers=' + planetAtlasData.layerMap?.size);
     if (planetAtlasData.atlas) {
       planetUAtlas.value = planetAtlasData.atlas;
     }
@@ -1765,10 +1785,6 @@ export async function createSystems(scene, camera, renderer) {
   initLabelPool();
   initZoneLabels();
   rebuildMarkers();
-  console.log('DEBUG markers: starMat=#' + (starAtlasMat?.id ?? 'null') + ', planetMat=#' + (planetAtlasMat?.id ?? 'null'));
-  markerScene.traverse(obj => {
-    if (obj.isInstancedMesh) console.log('  InstancedMesh: ' + obj.count + ' instances, mat=#' + obj.material?.id + ' (' + (obj.material?.type || '?') + ')');
-  });
 
   return {
     update,
@@ -1826,6 +1842,9 @@ export async function createSystems(scene, camera, renderer) {
         }
       }
       await renderer.compileAsync(markerScene, camera);
+      /* compileAsync builds shader modules only — a real render forces PSO
+         compilation now, while the loading overlay still covers the canvas */
+      renderer.render(markerScene, camera);
       for (const t of targets) t.visible = false;
     }
   };

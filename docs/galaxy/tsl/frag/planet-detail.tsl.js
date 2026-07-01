@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { abs, acos, add, atan, Break, cameraPosition, clamp, Continue, cos, cross, div, dot, exp, float, floor, Fn, fract, If, int, length, log, Loop, mat3, max, min, mix, mul, normalize, positionWorld, pow, round, select, sin, smoothstep, sqrt, step, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
+import { abs, acos, add, atan, Break, cameraPosition, clamp, Continue, cos, cross, Discard, div, dot, exp, float, floor, Fn, fract, If, int, length, log, Loop, mat3, max, min, mix, mul, normalize, positionWorld, pow, round, screenCoordinate, select, sin, smoothstep, sqrt, step, sub, uniform, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 
 const vLocalPos = varyingProperty( 'vec3', 'vLocalPos' );
 /* uRotation-aware world normal; avoids stuck terminator from normalWorld. */
@@ -889,6 +889,13 @@ export const main = /*@__PURE__*/ Fn( ( [
 	uCloudCover, uCloudColor, uStorminess
 ] ) => {
 
+	/* IGN discard complementary to planet-atlas.tsl.js — atlas keeps ign >= fade,
+	   detail keeps ign < fade. Early exit skips the whole procedural pipeline. */
+	const ign = fract( float( 52.9829189 ).mul(
+		fract( float( 0.06711056 ).mul( screenCoordinate.x )
+			.add( float( 0.00583715 ).mul( screenCoordinate.y ) ) ) ) );
+	If( ign.greaterThanEqual( uFadeIn ), () => { Discard(); } );
+
 	/* vLocalPos is body-local — texture sticks to surface, geometry rotation is separate */
 
 	const rotated = normalize( vLocalPos );
@@ -1115,7 +1122,9 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	} );
 
-	const alpha = uFadeIn.toVar();
+	/* Crossfade is handled by the IGN discard at the top of main — kept pixels
+	   render opaque so depth writes stay valid during the transition */
+	const alpha = float( 1.0 ).toVar();
 
 	If( uOpacity.greaterThanEqual( 0.0 ), () => {
 

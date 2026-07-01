@@ -16,7 +16,7 @@ export const main = /*@__PURE__*/ Fn( () => {
 	vUv.assign( uv() );
 	vLayer.assign( aLayer );
 	vCrossfade.assign( aCrossfade );
-	vInstanceColor.assign( vertexColor );
+	vInstanceColor.assign( vertexColor() );
 
 	/* Shrink vertex positions so the rendered star is smaller than the raycast hitbox */
 

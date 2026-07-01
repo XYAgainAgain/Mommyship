@@ -12,7 +12,7 @@ import {
 import { parsePlanetType, findParentStar } from './planet-params.js';
 import { STORES, planetCacheKey, getEntry, putEntry } from './galaxy-cache.js';
 
-const ATLAS_SIZE = 128;
+const ATLAS_SIZE = 256;
 const PIXELS = ATLAS_SIZE * ATLAS_SIZE * 4;
 
 const _color = new THREE.Color();
@@ -158,6 +158,11 @@ export async function bakePlanetAtlas(renderer, bodies) {
   bakeMat.dispose();
   copyMat.dispose();
   tempRT.dispose();
+
+  /* WebGPU never auto-generates array RT mips — without this, mips 1+ stay
+     zero and distant planets alias into checkerboard shimmer */
+  try { renderer.backend.generateMipmaps(arrayRT.texture); }
+  catch (e) { console.warn('Planet atlas mip generation failed:', e); }
 
   if (cacheHits > 0) console.log(`Planet atlas: ${cacheHits}/${planetIds.length} from cache`);
 

@@ -32,8 +32,11 @@ function computeAtmoDensity(params) {
 
 /* Inline TSL glow shader — billboard with light-biased radial falloff */
 const vGlowUv = varying(vec2(), 'vGlowUv');
+/* Must return a position: vertexNode/void here emitted `builtinClipSpace = ;`
+   (invalid WGSL), so the glow pipeline never compiled. Needs JS billboarding when re-enabled. */
 const glowVertNode = /*@__PURE__*/ Fn(() => {
   vGlowUv.assign(uv().mul(2.0).sub(1.0));
+  return positionLocal;
 });
 const vGlowUvRead = varyingProperty('vec2', 'vGlowUv');
 
@@ -96,7 +99,7 @@ export async function createPlanetDetail(renderer) {
     const pLumpiness = uniform(float(0.0));
 
     const mat = new NodeMaterial();
-    mat.positionNode = planetDetailVert(pSeed, pDisplacementAmp, pLumpiness, pRotation);
+    mat.positionNode = planetDetailVert(pSeed, pDisplacementAmp, pLumpiness, pRotation, pFadeIn);
     mat.fragmentNode = planetDetailFrag(
       pSeed, pPlanetMode, pSlopeness, pOceanLevel, pTemperature, pCraterDensity, pSpecular,
       pBaseColor1, pBaseColor2, pBaseColor3, pAtmoIntensity, pAtmoTint,
@@ -107,6 +110,9 @@ export async function createPlanetDetail(renderer) {
       pCloudCover, pCloudColor, pStorminess
     );
     mat.transparent = true;
+    /* IGN (interleaved gradient noise) crossfade keeps pixels opaque, so depth
+       stays valid through the fade */
+    mat.depthWrite = true;
 
     const mesh = new THREE.Mesh(surfaceGeo, mat);
     mesh.scale.setScalar(0.95);
@@ -159,7 +165,7 @@ export async function createPlanetDetail(renderer) {
     const pGlowFadeIn = uniform(float(1.0));
 
     const glowMat = new MeshBasicNodeMaterial();
-    glowMat.vertexNode = glowVertNode();
+    glowMat.positionNode = glowVertNode();
     glowMat.fragmentNode = createGlowFragFn(pGlowColor, pGlowIntensity, pGlowLightDir, pGlowFadeIn)();
     glowMat.transparent = true;
     glowMat.blending = THREE.AdditiveBlending;
@@ -283,6 +289,8 @@ export async function createPlanetDetail(renderer) {
     /* Outer glow — disabled pending WebGPU depth fix (shows through planet) */
     entry.glowMesh.visible = false;
 
+    entry.isCrystalline = params.mode === 6;
+
     /* Cache parent star ID for per-frame light direction lookups */
     let sid = bodies[bodyId]?.parentId;
     while (sid && bodies[sid]?.type !== 'star') sid = bodies[sid]?.parentId;
@@ -314,7 +322,7 @@ export async function createPlanetDetail(renderer) {
     entry.glowMesh.visible = false;
   }
 
-  /* Build parent->children index once, then O(1) lookups */
+  /* Build parent→children index once, then O(1) lookups */
   function ensureSiblingIndex(bodies) {
     if (siblingIndex) return;
     siblingIndex = new Map();
@@ -345,7 +353,7 @@ export async function createPlanetDetail(renderer) {
 
   /**
    * Per-frame update — activates detail for tracked planet + nearest siblings.
-   * @returns {Map<string, number>} bodyId -> fade (0-1); caller keeps atlas visible until fade > 0.99
+   * @returns {Map<string, number>} bodyId → fade (0–1); caller keeps atlas visible until fade > 0.99
    */
   function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta) {
     /* Set shared uTime across all materials */
@@ -451,14 +459,16 @@ export async function createPlanetDetail(renderer) {
       const meta = bodyMeta?.get(entry.bodyId);
       if (meta) entry.group.scale.setScalar(meta.instanceScale * entry.radius);
 
-      /* Camera distance -> LOD + fade-in opacity */
+      /* Camera distance → LOD + fade-in opacity */
       const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       entry.pLodDist.value = dist;
-      /* Fade from 0->1 over a 3-unit band inside the activation boundary */
+      /* Fade from 0→1 over a 3-unit band inside the activation boundary */
       const fade = Math.min(1, Math.max(0, (ACTIVATE_DIST - dist) / 3.0));
       entry.pFadeIn.value = fade;
-      entry.mat.depthWrite = fade > 0.99;
+      /* Crystalline facets have real sub-1 alpha unrelated to the crossfade —
+         only they defer depth writes until fully faded in */
+      entry.mat.depthWrite = !entry.isCrystalline || fade > 0.99;
 
       /* Axial rotation */
       _rotQuat.setFromAxisAngle(entry.rotAxis, entry.rotSpeed * rotationTime);
@@ -466,8 +476,7 @@ export async function createPlanetDetail(renderer) {
       _rotMat3.setFromMatrix4(_rotMat4);
       entry.pRotation.value.copy(_rotMat3);
 
-      /* __debugFreezeLight lets diagnostic overrides survive. */
-      if (entry.parentStarId && !(typeof window !== 'undefined' && window.__debugFreezeLight)) {
+      if (entry.parentStarId) {
         const starWp = bodyWorldPos.get(entry.parentStarId);
         if (starWp) {
           _lightDir.set(starWp.x - wp.x, starWp.y - wp.y, starWp.z - wp.z).normalize();
@@ -496,7 +505,7 @@ export async function createPlanetDetail(renderer) {
       }
     }
 
-    /* Return map of bodyId -> fade (0-1). Caller keeps atlas visible when fade < 1. */
+    /* Return map of bodyId → fade (0–1). Caller keeps atlas visible when fade < 1. */
     const fadeMap = new Map();
     for (const entry of pool) {
       if (entry.bodyId) fadeMap.set(entry.bodyId, entry.pFadeIn.value);
@@ -537,33 +546,6 @@ export async function createPlanetDetail(renderer) {
       entry.hitbox.geometry.dispose();
       entry.hitbox.material.dispose();
     }
-  }
-
-  /* Debug hooks for the P1 terminator investigation. */
-  if (typeof window !== 'undefined') {
-    window.debugPlanetLights = () => pool
-      .filter(e => e.bodyId)
-      .map(e => ({
-        bodyId: e.bodyId,
-        parentStarId: e.parentStarId,
-        L: e.pLightDir.value.toArray().map(v => +v.toFixed(3)),
-        atmoL: e.pAtmoLightDir.value.toArray().map(v => +v.toFixed(3)),
-        visible: { mesh: e.mesh.visible, atmo: e.atmoMesh.visible, glow: e.glowMesh.visible }
-      }));
-    window.debugForceLight = (x, y, z) => {
-      window.__debugFreezeLight = true;
-      for (const e of pool) {
-        if (!e.bodyId) continue;
-        e.pLightDir.value.set(x, y, z);
-        e.pAtmoLightDir.value.set(x, y, z);
-        e.pGlowLightDir.value.set(x, y, z);
-      }
-      return `Forced L=(${x},${y},${z}) on ${pool.filter(e => e.bodyId).length} active planets. Per-frame updates are now frozen. Call debugUnfreezeLight() to resume.`;
-    };
-    window.debugUnfreezeLight = () => {
-      window.__debugFreezeLight = false;
-      return 'Per-frame L updates resumed.';
-    };
   }
 
   return { update, container, dispose, setParamsCache, invalidateCaches, invalidateBody };

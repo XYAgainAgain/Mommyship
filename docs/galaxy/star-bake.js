@@ -9,7 +9,7 @@ import {
 import { parseMK } from './star-params.js';
 import { STORES, starCacheKey, getEntry, putEntry } from './galaxy-cache.js';
 
-const ATLAS_SIZE = 128;
+const ATLAS_SIZE = 256;
 const PIXELS = ATLAS_SIZE * ATLAS_SIZE * 4;
 
 function hashString(str) {
@@ -22,7 +22,7 @@ function hashString(str) {
  * Bake procedural star surfaces into a DataArrayTexture atlas.
  * Checks IndexedDB cache per star — skips GPU bake on hit.
  * @param {THREE.WebGPURenderer} renderer
- * @param {Object} bodies - galaxyData.bodies keyed by ID
+ * @param {Object} bodies — galaxyData.bodies keyed by ID
  * @returns {{ atlas: THREE.DataArrayTexture, layerMap: Map<string,number> }}
  */
 export async function bakeStarAtlas(renderer, bodies) {
@@ -121,6 +121,10 @@ export async function bakeStarAtlas(renderer, bodies) {
   bakeMat.dispose();
   copyMat.dispose();
   tempRT.dispose();
+
+  /* WebGPU never auto-generates array RT mips — see planet-bake.js */
+  try { renderer.backend.generateMipmaps(arrayRT.texture); }
+  catch (e) { console.warn('Star atlas mip generation failed:', e); }
 
   if (cacheHits > 0) console.log(`Star atlas: ${cacheHits}/${starIds.length} from cache`);
 

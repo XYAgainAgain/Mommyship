@@ -3,7 +3,7 @@
 
 const DB_NAME = 'galaxy-cache';
 const DB_VERSION = 1;
-export const CACHE_VERSION = 40;
+export const CACHE_VERSION = 41;
 
 const STORES = {
   PLANET: 'planet-atlas',
@@ -113,7 +113,17 @@ export async function clearAll() {
   } catch {}
 }
 
-/* Convenience: delete the entire database (settings button / manual clear) */
+/* Keys are content hashes, so entries from older CACHE_VERSIONs become
+   unreachable but never deleted — prune them once per version bump */
+try {
+  const lsKey = 'mommyship-galaxy-cache-version';
+  if (localStorage.getItem(lsKey) !== String(CACHE_VERSION)) {
+    clearAll();
+    localStorage.setItem(lsKey, String(CACHE_VERSION));
+  }
+} catch {}
+
+/* Convenience: delete the entire database (settings button/manual clear) */
 export function deleteDatabase() {
   dbPromise = null;
   indexedDB.deleteDatabase(DB_NAME);

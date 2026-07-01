@@ -140,34 +140,6 @@ async function init() {
   container.appendChild(renderer.domElement);
   await renderer.init();
 
-  /* DEBUG — intercept shader compilation to log WGSL source on failure */
-  const gpuDevice = renderer.backend?.device;
-  if (gpuDevice) {
-    const origCreateShaderModule = gpuDevice.createShaderModule.bind(gpuDevice);
-    gpuDevice.createShaderModule = function(descriptor) {
-      const module = origCreateShaderModule(descriptor);
-      module.getCompilationInfo().then(info => {
-        const errors = info.messages.filter(m => m.type === 'error');
-        if (errors.length > 0) {
-          const label = descriptor.label || 'unknown';
-          console.group('WGSL ERROR: ' + label);
-          errors.forEach(e => console.error('Line ' + e.lineNum + ':' + e.linePos + ' — ' + e.message));
-          const lines = (descriptor.code || '').split('\n');
-          errors.forEach(e => {
-            const start = Math.max(0, e.lineNum - 3);
-            const end = Math.min(lines.length, e.lineNum + 2);
-            console.log('--- Near line ' + e.lineNum + ' ---');
-            for (let i = start; i < end; i++)
-              console.log((i + 1 === e.lineNum ? '>>> ' : '    ') + (i + 1) + ': ' + lines[i]);
-          });
-          console.groupEnd();
-        }
-      });
-      return module;
-    };
-    console.log('DEBUG: WebGPU shader error hook installed');
-  }
-
   const scene = new THREE.Scene();
   const cam = createCamera(renderer);
 
@@ -401,9 +373,6 @@ async function init() {
   const hudEl = document.getElementById('gx-hud');
   const showCoordsCheckbox = document.getElementById('show-coords');
   const showFpsCheckbox = document.getElementById('show-fps');
-
-  /* Confirmation dialog on any navigation away */
-  window.addEventListener('beforeunload', e => { e.preventDefault(); });
 
   window.addEventListener('resize', () => {
     cam.resize();
@@ -682,21 +651,6 @@ async function init() {
   }, systems);
 
   /* Pre-compile all shaders */
-  console.group('DEBUG: Scene materials at compileAsync');
-  scene.traverse(obj => {
-    if (obj.material) {
-      const m = obj.material;
-      const type = m.type || m.constructor?.name || 'unknown';
-      const nodes = [
-        m.positionNode ? 'pos' : '',
-        m.vertexNode ? 'vert' : '',
-        m.fragmentNode ? 'frag' : '',
-        m.sizeNode ? 'size' : '',
-      ].filter(Boolean).join('+');
-      console.log(type + ' #' + m.id + ' [' + nodes + '] on ' + (obj.constructor?.name || '?') + (obj.visible ? '' : ' (hidden)'));
-    }
-  });
-  console.groupEnd();
   await renderer.compileAsync(scene, cam.camera);
   await systems.warmUpShaders(renderer, cam.camera);
 

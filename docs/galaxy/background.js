@@ -107,7 +107,6 @@ export async function createBackground(scene) {
   const twinkle = new THREE.Mesh(twinkleGeo, twinkleMat);
   twinkle.frustumCulled = false;
   scene.add(twinkle);
-  console.log('DEBUG starfield: ' + PARTICLE_COUNT + ' instanced quads, mat #' + twinkleMat.id);
 
   function update(time, cameraPos) {
     skyboxUTime.value = time;

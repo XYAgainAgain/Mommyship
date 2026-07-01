@@ -35,7 +35,7 @@ export const gnoise = /*@__PURE__*/ Fn( ( [ p ] ) => {
 
 } );
 
-export const main = /*@__PURE__*/ Fn( ( [ uSeed, uDisplacementAmp, uLumpiness, uRotation ] ) => {
+export const main = /*@__PURE__*/ Fn( ( [ uSeed, uDisplacementAmp, uLumpiness, uRotation, uFadeIn ] ) => {
 
 	const n = normalize( normalLocal );
 	vUv.assign( uv() );
@@ -51,7 +51,9 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uDisplacementAmp, uLumpiness, u
 	const lump = gnoise( objNormal.mul( 1.2 ).add( vec3( s.mul( 0.43 ), s.mul( 0.91 ), s.mul( 0.17 ) ) ) ).toVar();
 	lump.addAssign( mul( 0.5, gnoise( objNormal.mul( 2.5 ).add( vec3( s.mul( 1.63 ), s.mul( 0.29 ), s.mul( 1.07 ) ) ) ) ) );
 	disp.addAssign( lump.mul( uLumpiness ) );
-	const displaced = positionLocal.add( n.mul( disp ) );
+	/* Displacement grows in with the crossfade so the dithered silhouette
+	   morphs from the atlas sphere instead of popping to the lumpy shape */
+	const displaced = positionLocal.add( n.mul( disp.mul( uFadeIn ) ) );
 
 	/* Fragment gets body-local pos for texture — craters stick to surface */
 
