@@ -19,8 +19,8 @@ export const main = /*@__PURE__*/ Fn( () => {
 
 	/* Twinkle via sin wave offset by per-particle phase */
 
-	const twinkle = float( 0.7 ).add( float( 0.3 ).mul( sin( uTime.mul( 2.0 ).add( aPhase.mul( 6.2831 ) ) ) ) );
-	vBrightness.assign( aBrightness.mul( twinkle ) );
+	const twinkle = float( 0.5 ).add( float( 0.5 ).mul( sin( uTime.mul( 0.8 ).add( aPhase.mul( 6.2831 ) ) ) ) );
+	vBrightness.assign( aBrightness.mul( twinkle ).mul( 1.75 ) );
 
 	/* Spherical billboard — quad faces the camera sitting at the sphere's center */
 	const forward = normalize( aOffset );
@@ -28,7 +28,7 @@ export const main = /*@__PURE__*/ Fn( () => {
 	const up = cross( forward, right );
 
 	/* Constant world scale — starfield sits on the fixed-radius skybox sphere. */
-	const scale = aSize.mul( 0.6 );
+	const scale = aSize.mul( 0.48 );
 
 	return aOffset.add( right.mul( positionLocal.x.mul( scale ) ) ).add( up.mul( positionLocal.y.mul( scale ) ) );
 

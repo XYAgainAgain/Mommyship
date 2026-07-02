@@ -1,63 +1,30 @@
-// Three.js Transpiler r183
-
-import { uniform, varyingProperty, vec3, vec2, dot, sin, fract, Fn, floor, mul, sub, mix, float, Loop, normalize, vec4 } from 'three/tsl';
+import { uniform, varyingProperty, vec3, vec4, float, Fn, normalize } from 'three/tsl';
+import { colordodgeNebula } from './colordodge.tsl.js';
 
 export const uTime = uniform( float( 0 ) );
 const vWorldDir = varyingProperty( 'vec3', 'vWorldDir' );
 
-export const hash = /*@__PURE__*/ Fn( ( [ p ] ) => {
+/* Uniforms not literals so they stay tunable & Naga-safe. */
+const u = {
+  res1: uniform( float( 1.75 ) ), res2: uniform( float( 1.45 ) ), resMix: uniform( float( 1.0 ) ),
+  warp: uniform( float( 0.3 ) ), octaves: uniform( float( 4.25 ) ), contrast: uniform( float( 4.2 ) ),
+  intensity: uniform( float( 0.42 ) ), seed: uniform( float( 42069 ) ),
+  colA: uniform( vec3( 0.0510, 0.0510, 0.1020 ) ),
+  colB: uniform( vec3( 0.2745, 0.0863, 0.6627 ) ),
+  colC: uniform( vec3( 0.8510, 0.2627, 0.5490 ) ),
+  colD: uniform( vec3( 0.1216, 0.3490, 0.5020 ) ),
+};
+const uDrift = uniform( float( 0.013 ) );
 
-	return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ).mul( 43758.5453123 ) );
-
-} );
-
-export const noise = /*@__PURE__*/ Fn( ( [ p ] ) => {
-
-	const i = floor( p );
-	const f = fract( p ).toVar();
-	f.assign( f.mul( f ).mul( sub( 3.0, mul( 2.0, f ) ) ) );
-	const a = hash( i );
-	const b = hash( i.add( vec2( 1.0, 0.0 ) ) );
-	const c = hash( i.add( vec2( 0.0, 1.0 ) ) );
-	const d = hash( i.add( vec2( 1.0, 1.0 ) ) );
-
-	return mix( mix( a, b, f.x ), mix( c, d, f.x ), f.y );
-
-} );
-
-export const fbm = /*@__PURE__*/ Fn( ( [ p_immutable ] ) => {
-
-	const p = p_immutable.toVar();
-	const val = float( 0.0 ).toVar();
-	const amp = float( 0.5 ).toVar();
-
-	Loop( { start: 0, end: 5 }, ( { i } ) => {
-
-		val.addAssign( amp.mul( noise( p ) ) );
-		p.mulAssign( 2.0 );
-		amp.mulAssign( 0.5 );
-
-	} );
-
-	return val;
-
-} );
+const nebula = colordodgeNebula( u );
 
 export const main = /*@__PURE__*/ Fn( () => {
 
 	const dir = normalize( vWorldDir );
+	const drift = uTime.mul( uDrift );
+	const p = dir.add( vec3( drift, drift.mul( 0.7 ), drift.negate().mul( 0.5 ) ) );
 
-	/* Procedural nebula wisps via FBM noise */
-	const uv1 = dir.xy.mul( 3.0 );
-	const uv2 = dir.yz.mul( 3.0 );
-	const n1 = fbm( uv1.add( vec2( uTime.mul( 0.008 ), uTime.mul( 0.005 ) ) ) );
-	const n2 = fbm( uv2.add( vec2( uTime.negate().mul( 0.006 ), uTime.mul( 0.009 ) ) ) );
-	const nebula = n1.mul( n2 );
-
-	const purplyBlack = vec3( 0.012, 0.012, 0.027 );
-	const indigoWisp = vec3( 0.06, 0.03, 0.12 );
-	const skyColor = mix( vec3( 0.0 ), purplyBlack, 0.8 ).add( indigoWisp.mul( nebula ).mul( 0.25 ) );
-	return vec4( skyColor, 1.0 );
+	return vec4( nebula( p ), 1.0 );
 
 } );
 

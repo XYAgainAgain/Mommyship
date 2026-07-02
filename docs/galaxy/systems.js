@@ -270,18 +270,25 @@ export async function createSystems(scene, camera, renderer) {
   const ORBIT_ATTENUATE = 0.69;
 
   const hyperlaneLines = [];
-  const hyperlaneMat = new Line2NodeMaterial({
-    color: 0xffffff, transparent: true, opacity: 0.69,
-    depthWrite: false, worldUnits: true, linewidth: 0.8,
-    alphaToCoverage: true
-  });
+  const HL_OPACITY = 0.69;
   const HL_ORANGE = vec3(1.0, 0.6, 0.25);
   const HL_YELLOW = vec3(1.0, 0.82, 0.35);
-  hyperlaneMat.lineColorNode = Fn(() => {
+  const laneColorNode = Fn(() => {
     const alongT = uv().y.mul(2.0).sub(1.0);
     const gT = float(1.0).sub(abs(alongT));
     return mix(HL_ORANGE, HL_YELLOW, gT);
   })();
+  /* Per-lane material so occlusion fades each lane independently; the shared
+     color node keeps every lane on one compiled pipeline. */
+  function makeLaneMaterial() {
+    const mat = new Line2NodeMaterial({
+      color: 0xffffff, transparent: true, opacity: HL_OPACITY,
+      depthWrite: false, worldUnits: true, linewidth: 0.8,
+      alphaToCoverage: true
+    });
+    mat.lineColorNode = laneColorNode;
+    return mat;
+  }
 
   /* Three InstancedMesh groups: stars (atlas shader), other spheres (basic), cubes (GnGs) */
   const starGeo = new THREE.SphereGeometry(MARKER_RADIUS, MARKER_SEGMENTS, MARKER_RINGS);
@@ -1091,18 +1098,22 @@ export async function createSystems(scene, camera, renderer) {
     }
 
     /* Hyperlane lines (thick Line2 with orange→yellow→orange gradient) */
-    for (const hl of hyperlaneLines) { markerScene.remove(hl.line); hl.line.geometry.dispose(); }
+    for (const hl of hyperlaneLines) {
+      markerScene.remove(hl.line);
+      hl.line.geometry.dispose();
+      hl.line.material.dispose();
+    }
     hyperlaneLines.length = 0;
     for (const [, hl] of Object.entries(galaxyData.hyperlanes)) {
       if (!bodyMeta.has(hl.fromId) || !bodyMeta.has(hl.toId)) continue;
       const geo = new LineGeometry();
       geo.setPositions([0,0,0, 0,0,0]);
-      const line = new Line2(geo, hyperlaneMat);
+      const line = new Line2(geo, makeLaneMaterial());
       line.renderOrder = 6;
       line.frustumCulled = false;
       markerScene.add(line);
       const posBuffer = line.geometry.getAttribute('instanceStart').data;
-      hyperlaneLines.push({ line, fromId: hl.fromId, toId: hl.toId, posBuffer });
+      hyperlaneLines.push({ line, fromId: hl.fromId, toId: hl.toId, posBuffer, fade: 0, targetFade: 1 });
     }
 
     labelAssignFrame = LABEL_REASSIGN_EVERY;
@@ -1532,15 +1543,16 @@ export async function createSystems(scene, camera, renderer) {
       ol.pLucency.value = highlighted ? ORBIT_LUCENCY * 2.0 : ORBIT_LUCENCY;
     }
 
-    /* Hyperlane endpoints + throttled occlusion checks */
+    /* Hyperlane endpoints + throttled occlusion checks (eased fade, no snap) */
     const runOcclusion = (++hlThrottle % 4) === 0;
+    const laneFadeK = 1 - Math.exp(-delta * 6);
     for (const hl of hyperlaneLines) {
-      if (photoMode || museActive) { hl.line.visible = false; continue; }
+      if (photoMode || museActive) { hl.fade = 0; hl.line.visible = false; continue; }
       const fromId = preferStation.get(hl.fromId) || hl.fromId;
       const toId = preferStation.get(hl.toId) || hl.toId;
       const from = bodyWorldPos.get(fromId);
       const to = bodyWorldPos.get(toId);
-      if (!from || !to) { hl.line.visible = false; continue; }
+      if (!from || !to) { hl.fade = 0; hl.line.visible = false; continue; }
 
       /* Occlusion: check if lane passes through any body (throttled to every 4 frames) */
       if (runOcclusion) {
@@ -1553,11 +1565,14 @@ export async function createSystems(scene, camera, renderer) {
           const r = LANDMARK_IDS.has(bid) ? (bid === 'smbh' ? 15 : 0) : MARKER_RADIUS * bm.instanceScale * 1.5;
           if (r > 0 && lineHitsSphere(from, to, bwp, r)) { blocked = true; break; }
         }
-        if (blocked) { hl.line.visible = false; continue; }
-        hl.line.visible = true;
+        hl.targetFade = blocked ? 0 : 1;
       }
 
+      hl.fade += (hl.targetFade - hl.fade) * laneFadeK;
+      if (Math.abs(hl.targetFade - hl.fade) < 0.02) hl.fade = hl.targetFade;
+      hl.line.visible = hl.fade > 0.02;
       if (!hl.line.visible) continue;
+      hl.line.material.opacity = HL_OPACITY * hl.fade;
       const arr = hl.posBuffer.array;
       arr[0] = from.x; arr[1] = from.y; arr[2] = from.z;
       arr[3] = to.x; arr[4] = to.y; arr[5] = to.z;

@@ -131,9 +131,13 @@ export async function createBlackHole(scene, renderer) {
     glowSprite.material.opacity = 1 - lodFactor;
     glowSprite.visible = lodFactor < 0.99;
 
-    /* Occluder off as the camera enters the core (Muse) → galaxy shows through */
+    /* Occluder off inside the core (Muse). A flat disc matches the sphere silhouette only
+       from afar — apparent radius grows as R/√(1−(R/d)²), else markers peek as crescents. */
     occluder.quaternion.copy(camera.quaternion);
-    occluder.visible = camera.position.length() > 8;
+    const occDist = camera.position.length();
+    const occRatio = Math.min(6.6 / Math.max(occDist, 1e-3), 0.94);
+    occluder.scale.setScalar(1.2 / Math.sqrt(1 - occRatio * occRatio));
+    occluder.visible = occDist > 8;
 
     /* Ring mesh: always visible at far range, bridges gap until real disk takes over */
     const ringOpacity = 1 - lodSmoothstep(0.3, 0.6, lodFactor);
