@@ -184,6 +184,19 @@ function orbitalOffset(orb, time) {
   };
 }
 
+/* XZ ellipse point at eccentric anomaly E — same rotation chain as orbitalOffset */
+function orbitalPointXZ(orb, E) {
+  const px = orb.a * (Math.cos(E) - orb.e);
+  const py = orb.a * Math.sqrt(1 - orb.e * orb.e) * Math.sin(E);
+  const cw = Math.cos(orb.omega), sw = Math.sin(orb.omega);
+  const ci = Math.cos(orb.incl);
+  const cO = Math.cos(orb.Omega), sO = Math.sin(orb.Omega);
+  return {
+    x: (cO * cw - sO * sw * ci) * px + (-cO * sw - sO * cw * ci) * py,
+    z: (sO * cw + cO * sw * ci) * px + (-sO * sw + cO * cw * ci) * py
+  };
+}
+
 /* Differential rotation — replicated from galaxy-disk.vert */
 function angularSpeed(radius) {
   const coreBoost = 0.30 * Math.exp(-radius * 0.05);
@@ -1627,6 +1640,39 @@ export async function createSystems(scene, camera, renderer) {
     updatePool(rotationTime, cachedBhNdcX, cachedBhNdcY, cachedBhScreenR);
   }
 
+  /* Canonical-frame XZ for the 2D map — depth 0 skips galactic rotation (differential
+     rotation can't turn the lightmap bitmap); child offsets are unrotated in 3D too. */
+  function flattenPositions(rotationTime) {
+    const out = new Map();
+    for (const id of depthBuckets[0]) {
+      const p = galaxyData.bodies[id]?.position;
+      if (p) out.set(id, { x: p.x, z: p.z });
+    }
+    for (let d = 1; d < 4; d++) {
+      for (const id of depthBuckets[d]) {
+        const meta = bodyMeta.get(id);
+        const pw = out.get(meta.parentId);
+        if (!pw) continue;
+        const off = orbitalOffset(meta.orbital, rotationTime);
+        out.set(id, { x: pw.x + off.x, z: pw.z + off.z });
+      }
+    }
+    return out;
+  }
+
+  /* Closed XZ orbit polyline relative to the parent — rings pass through bodies by construction */
+  function sampleOrbitXZ(id, count = 64) {
+    const orb = bodyMeta.get(id)?.orbital;
+    if (!orb) return null;
+    const pts = new Float32Array((count + 1) * 2);
+    for (let i = 0; i <= count; i++) {
+      const p = orbitalPointXZ(orb, (i / count) * TWO_PI);
+      pts[i * 2] = p.x;
+      pts[i * 2 + 1] = p.z;
+    }
+    return pts;
+  }
+
   function getLabelTier(bodyId) {
     if (bodyId === selectedId || bodyId === hoveredId) return 1;
     const body = galaxyData.bodies[bodyId];
@@ -1868,6 +1914,9 @@ export async function createSystems(scene, camera, renderer) {
     rotatedToCanonical,
     getBodyWorldPos: (id) => bodyWorldPos.get(id) || null,
     getBodyMeta: (id) => bodyMeta.get(id) || null,
+    flattenPositions,
+    sampleOrbitXZ,
+    getPreferStation: (id) => preferStation.get(id) || id,
     showOrbitsForBody,
     hideOrbits,
     get needsLabelRender() { return needsLabelRender; },

@@ -1566,14 +1566,43 @@ canvas { display: block; }
   100% { transform: rotate(0deg); }
 }
 
-.gx-map2d-container {
+.gx-map2d-canvas {
   position: absolute;
-  width: 800px;
-  height: 800px;
-  top: 50%;
-  left: 50%;
-  transform-origin: center center;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
+
+.gx-map2d-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gx-m2-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gx-text);
+  white-space: nowrap;
+  text-shadow: 0 0 6px var(--gx-bg), 0 0 12px var(--gx-bg);
+  transition: opacity 0.15s;
+}
+
+.gx-m2-label[data-tier="landmark"] { font-size: 16px; }
+.gx-m2-label[data-tier="star"] { font-size: 16px; font-weight: 800; }
+.gx-m2-label[data-tier="child"],
+.gx-m2-label[data-tier="station"],
+.gx-m2-label[data-tier="gng"] { font-size: 12px; }
+.gx-m2-label[data-tier="moon"] { font-size: 11px; }
+
+.gx-map2d-labels .gx-zone-label-2d { left: 0; top: 0; }
 
 .gx-map2d-clip {
   position: absolute;

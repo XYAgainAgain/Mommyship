@@ -474,12 +474,15 @@ async function init() {
 
     if (hudDirty) { updateHUD(); hudDirty = false; }
 
-    /* Skip 3D rendering in 2D mode */
-    if (ui.getViewMode() === '2d') return;
+    /* Single clock for both views — tick before the 2D branch so orbits keep moving there */
+    if (!rotationPaused) rotationTime += delta;
+
+    if (ui.getViewMode() === '2d') {
+      ui.frame2d(delta, rotationTime, !rotationPaused);
+      return;
+    }
 
     const elapsed = timer.getElapsed();
-
-    if (!rotationPaused) rotationTime += delta;
 
     cam.update(delta);
     /* Refresh matrixWorld now so the BH lens projection matches the sphere's live camera position
@@ -570,7 +573,12 @@ async function init() {
     }
     if (showCoords && !cinemaMode && !museActive) {
       if (text) text += '\n';
-      text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+      if (ui.getViewMode() === '2d') {
+        const c2 = ui.get2DCamera();
+        text += c2 ? 'X: ' + c2.cx.toFixed(1) + '  Z: ' + c2.cz.toFixed(1) : '';
+      } else {
+        text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+      }
     }
     hudEl.textContent = text;
   }
