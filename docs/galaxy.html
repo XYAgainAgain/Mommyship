@@ -210,6 +210,9 @@
     </g>
 </svg>
     </div>
+    <canvas class="gx-map2d-layer gx-m2-bg" id="map2d-bg"></canvas>
+    <canvas class="gx-map2d-layer gx-m2-stars" id="map2d-stars"></canvas>
+    <canvas class="gx-map2d-layer gx-m2-lightmap" id="map2d-lightmap"></canvas>
     <canvas class="gx-map2d-canvas" id="map2d-canvas"></canvas>
     <div class="gx-map2d-labels" id="map2d-labels"></div>
     <img id="lightmap-img" alt="" hidden />
@@ -321,8 +324,14 @@
       <span data-mode="2d"><b>W/A/S/D</b> Pan<br></span>
       <span data-mode="2d"><b>E</b> Zoom In<br></span>
       <span data-mode="2d"><b>Q</b> Zoom Out<br></span>
+      <span data-mode="2d"><b>Shift</b> Sprint<br></span>
+      <span data-mode="2d"><b>Dbl-Click</b> Focus<br></span>
+      <span data-mode="2d"><b>Right Click</b> Track/Release<br></span>
+      <span data-mode="2d"><b>Ctrl+Click</b> Measure<br></span>
+      <span data-mode="2d"><b>R/Dbl-Click</b> End Measure<br></span>
+      <span data-mode="2d"><b>Esc</b> Clear Measure<br></span>
       <b>Left Click</b> Select<br>
-      <b>Right Click</b> Track/Fly To<br>
+      <span data-mode="3d"><b>Right Click</b> Track/Fly To<br></span>
       <b>1</b> Reset View<br>
       <b>2</b> Show 2D Map<br>
       <b>3</b> Show 3D Map<br>
@@ -369,10 +378,10 @@
   <script type="importmap">
   {
     "imports": {
-      "three":         "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
-      "three/webgpu":  "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
-      "three/tsl":     "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+      "three":         "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+      "three/webgpu":  "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.webgpu.js",
+      "three/tsl":     "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.tsl.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
     }
   }
   </script>

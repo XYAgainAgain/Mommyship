@@ -478,7 +478,7 @@ async function init() {
     if (!rotationPaused) rotationTime += delta;
 
     if (ui.getViewMode() === '2d') {
-      ui.frame2d(delta, rotationTime, !rotationPaused);
+      ui.frame2d(delta, rotationTime, !rotationPaused, cinemaMode);
       return;
     }
 
@@ -604,7 +604,7 @@ async function init() {
         trackedLastPos = null;
         cam.controls.enablePan = false;
         cam.setTrackMode(true, bodyVisualRadius(result.bodyId));
-        ui.setTracking(true);
+        ui.setTracking(true, result.bodyId);
         systems.showOrbitsForBody(result.bodyId);
       } else {
         trackedId = null;
@@ -659,8 +659,16 @@ async function init() {
       trackedLastPos = { x: wp.x, y: wp.y, z: wp.z };
       cam.controls.enablePan = false;
       cam.setTrackMode(true, bodyVisualRadius(id));
-      ui.setTracking(true);
+      ui.setTracking(true, id);
       systems.showOrbitsForBody(id);
+    },
+    onUntrack: () => {
+      trackedId = null;
+      trackedLastPos = null;
+      cam.controls.enablePan = true;
+      cam.setTrackMode(false);
+      ui.setTracking(false);
+      systems.hideOrbits();
     },
     onResetView: () => {
       if (museActive) return;

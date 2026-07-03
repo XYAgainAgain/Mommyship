@@ -2007,15 +2007,18 @@ function updateStatus() {
     counts.station + ' stations',
     counts.gng + ' Gas-N-Gripes',
     '80,000 rendered stars',
-    '15,000 asteroids'
+    '15,000 asteroids',
+    viewMode === '2d' ? '1 galaxy' : '25 galaxies, only 1 important'
   ];
   document.getElementById('status-center').textContent = parts.join('  \u00b7  ');
 }
 
 /* View mode */
 let viewMode = '3d';
+const VIEW_KEY = 'mommyship-galaxy-view';
 
 function setViewMode(mode) {
+  try { localStorage.setItem(VIEW_KEY, mode); } catch { }
   viewMode = mode;
   document.getElementById('btn-3d').classList.toggle('active', mode === '3d');
   document.getElementById('btn-2d').classList.toggle('active', mode === '2d');
@@ -2023,6 +2026,7 @@ function setViewMode(mode) {
   document.body.classList.toggle('view-2d', mode === '2d');
   map2dView?.setActive(mode === '2d');
   updateControlsVisibility();
+  updateStatus();
   /* Navicomputer only in 3D edit mode */
   const naviPanel = document.getElementById('navicomputer-panel');
   if (naviPanel) {
@@ -2049,9 +2053,15 @@ export function init(data, cbs, systems) {
     callbacks: {
       onSelect: selectBody,
       onDeselect: deselectBody,
-      onTrack: (id) => { if (callbacks.onFlyTo) callbacks.onFlyTo(id); }
+      onTrack: (id) => { if (callbacks.onFlyTo) callbacks.onFlyTo(id); },
+      onUntrack: () => { if (callbacks.onUntrack) callbacks.onUntrack(); }
     }
   });
+  /* Restore last-used view; also catches '2' pressed during load */
+  let savedView = null;
+  try { savedView = localStorage.getItem(VIEW_KEY); } catch { }
+  if (savedView === '2d' && viewMode !== '2d') setViewMode('2d');
+  else map2dView.setActive(viewMode === '2d');
 
   /* Nav export button — wired once, visibility toggled with editor mode */
   const navExport = document.getElementById('ed-export-nav');
@@ -2092,8 +2102,15 @@ export function init(data, cbs, systems) {
 
 export function getSelectedId() { return selectedId; }
 export function getViewMode() { return viewMode; }
-export function setTracking(v) { isTracking = v; updateControlsVisibility(); }
-export function frame2d(delta, rotationTime, rotating) { map2dView?.frame(delta, rotationTime, rotating); }
+export function setTracking(v, id) {
+  isTracking = v;
+  updateControlsVisibility();
+  /* Keep the 2D follow-cam honest: every 3D untrack path lands here */
+  if (!map2dView) return;
+  if (!v) map2dView.clearTracking();
+  else if (id) map2dView.setTracked(id);
+}
+export function frame2d(delta, rotationTime, rotating, cinema) { map2dView?.frame(delta, rotationTime, rotating, cinema); }
 export function get2DCamera() { return map2dView?.getCamera() || null; }
 
 export { selectBody, deselectBody, setViewMode, flyToBody };

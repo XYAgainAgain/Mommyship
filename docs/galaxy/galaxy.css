@@ -1513,10 +1513,13 @@ canvas { display: block; }
 
 .screenshot-active .gx-nav:hover { opacity: 0.8; }
 
-/* 2D mode — hide 3D-only controls, suppress 3D canvas interaction */
+/* 2D mode — hide 3D-only controls, suppress 3D canvas interaction.
+   Pause/T=0 stay (they drive the shared clock); Muse/Photo are 3D-only. */
 .view-2d .experience { pointer-events: none; visibility: hidden; }
-.view-2d #mode-buttons,
-.view-2d .gx-hud { display: none !important; }
+.view-2d #btn-muse,
+.view-2d #btn-screenshot,
+.view-2d #btn-muse + .gx-btn-sep,
+.view-2d #mode-buttons .gx-btn-sep:has(+ #btn-screenshot) { display: none !important; }
 
 /* 2D flat map */
 .gx-map2d {
@@ -1566,11 +1569,41 @@ canvas { display: block; }
   100% { transform: rotate(0deg); }
 }
 
+/* Static content gets its own canvas and moves via CSS transforms (compositor work,
+   not per-frame drawImage) */
+.gx-map2d-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Slight blur keeps the deep-sky stars from out-crisping the lightmap's close-up ones */
+.gx-m2-bg {
+  z-index: 1;
+  filter: blur(0.5px);
+}
+
+.gx-m2-stars {
+  z-index: 2;
+  filter: blur(0.6px);
+}
+
+.gx-m2-lightmap {
+  z-index: 3;
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  filter: brightness(1.12) contrast(1.16);
+}
+
 .gx-map2d-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 4;
 }
 
 .gx-map2d-labels {
@@ -1578,6 +1611,7 @@ canvas { display: block; }
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  z-index: 5;
 }
 
 .gx-m2-label {
@@ -1603,88 +1637,6 @@ canvas { display: block; }
 .gx-m2-label[data-tier="moon"] { font-size: 11px; }
 
 .gx-map2d-labels .gx-zone-label-2d { left: 0; top: 0; }
-
-.gx-map2d-clip {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid rgba(131, 50, 172, 0.2);
-  box-shadow: 0 0 60px rgba(131, 50, 172, 0.08);
-}
-
-.gx-map2d-clip img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  opacity: 0.65;
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-
-.gx-map2d-lanes {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.gx-map2d-lanes line {
-  stroke-width: var(--lane-stroke, 0.5);
-  opacity: 0.6;
-}
-
-.gx-orbit {
-  stroke-width: var(--orbit-stroke, 0.5);
-  opacity: var(--orbit-opacity, 0);
-  transition: opacity 0.3s;
-}
-
-/* 2D system pins — counter-scaled by JS so dots/labels stay constant screen size */
-.gx-pin {
-  position: absolute;
-  width: 0;
-  height: 0;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.gx-pin.selected { z-index: 20; }
-
-.gx-pin-dot {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-}
-
-.gx-pin-label {
-  position: absolute;
-  transform-origin: 0 0;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gx-text);
-  white-space: nowrap;
-  pointer-events: none;
-  text-shadow: 0 0 6px var(--gx-bg), 0 0 12px var(--gx-bg);
-  transition: opacity 0.15s;
-  opacity: 0.7;
-}
-
-.gx-pin:hover .gx-pin-label,
-.gx-pin.selected .gx-pin-label { opacity: 1; }
-
-.gx-pin[data-tier="landmark"] .gx-pin-label { font-size: 16px; opacity: 0.9; }
-.gx-pin[data-tier="star"] .gx-pin-label { font-size: 16px; font-weight: 800; }
-.gx-pin[data-tier="child"] .gx-pin-label { font-size: 12px; }
-.gx-pin[data-tier="moon"] .gx-pin-label { font-size: 11px; }
-.gx-pin[data-tier="station"] .gx-pin-label { font-size: 12px; }
-.gx-pin[data-tier="gng"] .gx-pin-label { font-size: 12px; }
 
 /* 2D zone labels */
 .gx-zone-label-2d {

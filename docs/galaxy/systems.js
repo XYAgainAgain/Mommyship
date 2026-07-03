@@ -299,7 +299,7 @@ export async function createSystems(scene, camera, renderer) {
       depthWrite: false, worldUnits: true, linewidth: 0.8,
       alphaToCoverage: true
     });
-    mat.lineColorNode = laneColorNode;
+    mat.colorNode = laneColorNode;
     return mat;
   }
 
