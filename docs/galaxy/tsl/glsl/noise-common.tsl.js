@@ -6,7 +6,7 @@
 import {
 	sub, sin, cos, vec3, Fn, dot, fract, floor, mul, vec4, float, add,
 	Loop, If, Break, abs, clamp, pow, select, log, int, exp,
-	max, sqrt, length
+	max, min, round, normalize, cross, sqrt, length
 } from 'three/tsl';
 
 export const uvToSphere = /*@__PURE__*/ Fn( ( [ uv ] ) => {
@@ -205,6 +205,57 @@ export const ridgedFbm = /*@__PURE__*/ Fn( ( [ p, freq_immutable, lacunarity, oc
 
 } );
 
+/* Terrain height dispatch over fbmdO/ridgedFbm — 0 smooth / 1 fractal (default) / 2 ridged.
+   octaves is the caller's octave BUDGET (~2–4), not a 0–1 blend, so it is capped/clamped
+   rather than fed to mix(). Returns vec4(value, dx, dy, dz) like fbmd. */
+
+export const terrainHeightMixed = /*@__PURE__*/ Fn( ( [ p, slopeness, octaves, terrainType ] ) => {
+
+	const result = vec4( 0.0 ).toVar();
+
+	If( terrainType.equal( 0 ), () => {
+
+		result.assign( fbmdO( p, slopeness.mul( 0.3 ), min( octaves, 3.0 ) ) );
+
+	} ).ElseIf( terrainType.equal( 2 ), () => {
+
+		const rOct = int( round( clamp( octaves.add( 1.0 ), 3.0, 5.0 ) ) );
+		const rv = ridgedFbm( p, 1.0, 2.3, rOct ).mul( 2.0 ).sub( 1.0 );
+		const eps = float( 0.015 );
+		const hx = ridgedFbm( p.add( vec3( eps, 0, 0 ) ), 1.0, 2.3, rOct ).mul( 2.0 ).sub( 1.0 );
+		const hy = ridgedFbm( p.add( vec3( 0, eps, 0 ) ), 1.0, 2.3, rOct ).mul( 2.0 ).sub( 1.0 );
+		const hz = ridgedFbm( p.add( vec3( 0, 0, eps ) ), 1.0, 2.3, rOct ).mul( 2.0 ).sub( 1.0 );
+		result.assign( vec4( rv, hx.sub( rv ).div( eps ), hy.sub( rv ).div( eps ), hz.sub( rv ).div( eps ) ) );
+
+	} ).Else( () => {
+
+		result.assign( fbmdO( p, slopeness, octaves ) );
+
+	} );
+
+	return result;
+
+} );
+
+/* Hexagonal columnar jointing (Giant's Causeway basalt) — three 60°-spaced plane
+   waves in a seeded plane make a honeycomb; value peaks along the cell walls so
+   callers can threshold it as crack lines like a ridgedFbm crest. */
+
+export const hexColumns = /*@__PURE__*/ Fn( ( [ p, freq, seed ] ) => {
+
+	const a = seed.mul( 2.399 );
+	const e1 = normalize( vec3( cos( a ), 0.3, sin( a ) ) );
+	const e2 = normalize( cross( e1, vec3( 0.0, 1.0, 0.0 ) ) );
+	const t60 = float( 1.04719755 );
+	const d1 = e1.mul( cos( t60 ) ).add( e2.mul( sin( t60 ) ) );
+	const d2 = e1.mul( cos( t60.mul( 2.0 ) ) ).add( e2.mul( sin( t60.mul( 2.0 ) ) ) );
+	const q = p.mul( freq );
+	const h = cos( dot( e1, q ) ).add( cos( dot( d1, q ) ) ).add( cos( dot( d2, q ) ) ).div( 3.0 );
+
+	return sub( 1.0, abs( h ) );
+
+} );
+
 /* Single Gerstner wave on a unit sphere */
 
 export const gerstnerWave = /*@__PURE__*/ Fn( ( [ sp, dir, freq, amp, steep, phase ] ) => {
@@ -258,19 +309,19 @@ export const craterNoise = /*@__PURE__*/ Fn( ( [ x ] ) => {
 	const wt = float( 0.0 ).toVar();
 	const TWO_PI = float( 2.0 * Math.PI );
 
-	Loop( { start: int( - 2 ), end: int( 2 ), condition: '<=' }, ( { i: li } ) => {
-		Loop( { start: int( - 2 ), end: int( 2 ), condition: '<=' }, ( { i: lj } ) => {
-			Loop( { start: int( - 2 ), end: int( 2 ), condition: '<=' }, ( { i: lk } ) => {
+	/* Multi-counter Loop, NEVER three nested Loop() calls — nested calls all name
+	   their counter `i` in WGSL, inner shadows outer, and the neighbor search
+	   collapses to the diagonal (isolated square cells with hard seams) */
 
-				const g = vec3( float( li ), float( lj ), float( lk ) );
-				const o = craterHash33( p.add( g ) ).mul( 0.8 );
-				const d = length( f.sub( g ).sub( o ) );
-				const w = exp( d.mul( - 4.0 ) );
-				va.addAssign( w.mul( sin( TWO_PI.mul( sqrt( d ) ) ) ) );
-				wt.addAssign( w );
+	Loop( 5, 5, 5, ( { i, j, k } ) => {
 
-			} );
-		} );
+		const g = vec3( float( i ).sub( 2.0 ), float( j ).sub( 2.0 ), float( k ).sub( 2.0 ) );
+		const o = craterHash33( p.add( g ) ).mul( 0.8 );
+		const d = length( f.sub( g ).sub( o ) );
+		const w = exp( d.mul( - 4.0 ) );
+		va.addAssign( w.mul( sin( TWO_PI.mul( sqrt( d ) ) ) ) );
+		wt.addAssign( w );
+
 	} );
 
 	return abs( va.div( wt ) );
@@ -298,29 +349,27 @@ export const voronoi3 = /*@__PURE__*/ Fn( ( [ p ] ) => {
 	const F2 = float( 1e5 ).toVar();
 	const id = float( 0.0 ).toVar();
 
-	Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lx } ) => {
-		Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: ly } ) => {
-			Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lz } ) => {
+	/* Multi-counter Loop — see craterNoise: nested Loop() calls shadow-collide on `i` */
 
-				const g = vec3( float( lx ), float( ly ), float( lz ) );
-				const o = hash33( gi.add( g ) ).mul( 0.5 ).add( 0.5 );
-				const r = g.add( o ).sub( f );
-				const d = dot( r, r );
+	Loop( 3, 3, 3, ( { i, j, k } ) => {
 
-				If( d.lessThan( F1 ), () => {
+		const g = vec3( float( i ).sub( 1.0 ), float( j ).sub( 1.0 ), float( k ).sub( 1.0 ) );
+		const o = hash33( gi.add( g ) ).mul( 0.5 ).add( 0.5 );
+		const r = g.add( o ).sub( f );
+		const d = dot( r, r );
 
-					F2.assign( F1 );
-					F1.assign( d );
-					id.assign( dot( gi.add( g ), vec3( 7.0, 157.0, 113.0 ) ) );
+		If( d.lessThan( F1 ), () => {
 
-				} ).ElseIf( d.lessThan( F2 ), () => {
+			F2.assign( F1 );
+			F1.assign( d );
+			id.assign( dot( gi.add( g ), vec3( 7.0, 157.0, 113.0 ) ) );
 
-					F2.assign( d );
+		} ).ElseIf( d.lessThan( F2 ), () => {
 
-				} );
+			F2.assign( d );
 
-			} );
 		} );
+
 	} );
 
 	return vec3( sqrt( F1 ), sqrt( F2 ), id );
@@ -366,29 +415,27 @@ export const cellNoise3D = /*@__PURE__*/ Fn( ( [ p, jitter, metric, seed ] ) => 
 	const F2 = float( 1e5 ).toVar();
 	const id = float( 0.0 ).toVar();
 
-	Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lx } ) => {
-		Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: ly } ) => {
-			Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lz } ) => {
+	/* Multi-counter Loop — see craterNoise: nested Loop() calls shadow-collide on `i` */
 
-				const g = vec3( float( lx ), float( ly ), float( lz ) );
-				const o = hash33( gi.add( g ).add( vec3( seed ) ) ).mul( 0.5 ).add( 0.5 );
-				const r = g.add( o.mul( jitter ) ).add( sub( 1.0, jitter ).mul( 0.5 ) ).sub( f );
-				const d = distMetric3D( r, metric );
+	Loop( 3, 3, 3, ( { i, j, k } ) => {
 
-				If( d.lessThan( F1 ), () => {
+		const g = vec3( float( i ).sub( 1.0 ), float( j ).sub( 1.0 ), float( k ).sub( 1.0 ) );
+		const o = hash33( gi.add( g ).add( vec3( seed ) ) ).mul( 0.5 ).add( 0.5 );
+		const r = g.add( o.mul( jitter ) ).add( sub( 1.0, jitter ).mul( 0.5 ) ).sub( f );
+		const d = distMetric3D( r, metric );
 
-					F2.assign( F1 );
-					F1.assign( d );
-					id.assign( dot( gi.add( g ), vec3( 7.0, 157.0, 113.0 ) ) );
+		If( d.lessThan( F1 ), () => {
 
-				} ).ElseIf( d.lessThan( F2 ), () => {
+			F2.assign( F1 );
+			F1.assign( d );
+			id.assign( dot( gi.add( g ), vec3( 7.0, 157.0, 113.0 ) ) );
 
-					F2.assign( d );
+		} ).ElseIf( d.lessThan( F2 ), () => {
 
-				} );
+			F2.assign( d );
 
-			} );
 		} );
+
 	} );
 
 	const sqrtF1 = select( metric.equal( 0 ), sqrt( F1 ), F1 );
@@ -408,24 +455,22 @@ export const cellNoise3DDelta = /*@__PURE__*/ Fn( ( [ p, jitter, metric, seed ] 
 	const F1 = float( 1e5 ).toVar();
 	const delta = vec3( 0.0 ).toVar();
 
-	Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lx } ) => {
-		Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: ly } ) => {
-			Loop( { start: int( - 1 ), end: int( 1 ), condition: '<=' }, ( { i: lz } ) => {
+	/* Multi-counter Loop — see craterNoise: nested Loop() calls shadow-collide on `i` */
 
-				const g = vec3( float( lx ), float( ly ), float( lz ) );
-				const o = hash33( gi.add( g ).add( vec3( seed ) ) ).mul( 0.5 ).add( 0.5 );
-				const r = g.add( o.mul( jitter ) ).add( sub( 1.0, jitter ).mul( 0.5 ) ).sub( f );
-				const d = distMetric3D( r, metric );
+	Loop( 3, 3, 3, ( { i, j, k } ) => {
 
-				If( d.lessThan( F1 ), () => {
+		const g = vec3( float( i ).sub( 1.0 ), float( j ).sub( 1.0 ), float( k ).sub( 1.0 ) );
+		const o = hash33( gi.add( g ).add( vec3( seed ) ) ).mul( 0.5 ).add( 0.5 );
+		const r = g.add( o.mul( jitter ) ).add( sub( 1.0, jitter ).mul( 0.5 ) ).sub( f );
+		const d = distMetric3D( r, metric );
 
-					F1.assign( d );
-					delta.assign( r );
+		If( d.lessThan( F1 ), () => {
 
-				} );
+			F1.assign( d );
+			delta.assign( r );
 
-			} );
 		} );
+
 	} );
 
 	return delta;

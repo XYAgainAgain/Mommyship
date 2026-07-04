@@ -11,8 +11,11 @@ import { parseMK } from './star-params.js';
 const DETAIL_SEGMENTS = 64;
 const DETAIL_ROWS = 48;
 const MARKER_RADIUS = 2.5;
-const ACTIVATE_DIST = 25;
 const POOL_SIZE = 4;
+/* Apparent size (visualRadius/dist) to swap a system to detail meshes; release
+   sits below activate for hysteresis. Matched to the old 25u distance trigger. */
+const SIZE_ACTIVATE = 0.0533;
+const SIZE_RELEASE = 0.0427;
 
 function hashString(str) {
   let h = 0;
@@ -287,41 +290,47 @@ export async function createStarDetail(renderer) {
    * Per-frame update — activates detail for all stars in the nearest system.
    * @returns {Set<string>} active body IDs (caller hides their instanced versions)
    */
-  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta) {
+  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode) {
     /* Set shared uTime across all materials */
     vertUTime.value = rotationTime;
     fragUTime.value = rotationTime;
     torusVertUTime.value = rotationTime;
     torusFragUTime.value = rotationTime;
 
+    const bodies = galaxyData.bodies;
+    if (!cachedStarIds) {
+      cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
+    }
+
     let anchorId = null;
 
-    /* If tracking a star, use it as anchor */
-    if (trackedId && galaxyData.bodies[trackedId]?.type === 'star') {
+    /* Tracking (already resolved to a parent star upstream) always anchors,
+       so cinema mode's full-system pin needs no extra branch here. */
+    if (trackedId && bodies[trackedId]?.type === 'star') {
       anchorId = trackedId;
     }
 
-    /* Otherwise find closest star by proximity */
+    /* Otherwise the largest on-screen star, gated by apparent size + hysteresis */
     if (!anchorId) {
-      if (!cachedStarIds) {
-        cachedStarIds = Object.keys(galaxyData.bodies).filter(id => galaxyData.bodies[id].type === 'star');
-      }
-      let closestDistSq = ACTIVATE_DIST * ACTIVATE_DIST;
+      let best = null, bestSize = 0;
       for (const id of cachedStarIds) {
         const wp = bodyWorldPos.get(id);
         if (!wp) continue;
+        const meta = bodyMeta?.get(id);
         const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-        if (distSq < closestDistSq) {
-          closestDistSq = distSq;
-          anchorId = id;
-        }
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        const visualRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+        const appSize = visualRadius / dist;
+        if (appSize > bestSize) { bestSize = appSize; best = id; }
       }
+      /* Active family holds down to the release size so binaries don't flicker */
+      const threshold = (best && activeIds.has(best)) ? SIZE_RELEASE : SIZE_ACTIVATE;
+      if (best && bestSize > threshold) anchorId = best;
     }
 
-    /* Determine which stars need detail */
+    /* Whole system (binaries/triskelions) activates together via BFS family */
     const targetIds = anchorId
-      ? getSystemStars(anchorId, galaxyData.bodies)
+      ? getSystemStars(anchorId, bodies)
       : [];
 
     /* Build set of desired IDs for fast lookup */

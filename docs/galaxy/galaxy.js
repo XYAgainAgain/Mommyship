@@ -515,7 +515,7 @@ async function init() {
     const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
     bh.update(rotationTime, lodFactor, cam.camera);
 
-    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId);
+    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode);
 
     /* Camera follows tracked body */
     if (trackedId) {

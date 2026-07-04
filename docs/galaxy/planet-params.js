@@ -35,6 +35,31 @@ function findParentStar(bodyId, bodies) {
   return null;
 }
 
+/* Terrain topology roll — 0 smooth / 1 fractal / 2 ridged. Barren stays off ridged
+   (its crater field reads as a grid under ridged crests). +137 variety substream. */
+function rollTerrainType(subtype, rng) {
+  const r = rng.next();
+  switch (subtype) {
+    case 'rocky':    return r < 0.5 ? 1 : r < 0.75 ? 0 : 2;
+    case 'barren':   return r < 0.6 ? 1 : 0;
+    case 'volcanic':
+    case 'ice':      return r < 0.6 ? 1 : r < 0.8 ? 2 : 0;
+    default:         return 1;
+  }
+}
+
+/* Crack family roll — 0 ridged fissures / 1 hex basalt / 2 shattered plate.
+   Only volcanic consumes it in-shader today; ice/barren rolls are forward-authoring. */
+function rollCrackPattern(subtype, rng) {
+  const r = rng.next();
+  switch (subtype) {
+    case 'volcanic': return r < 0.6 ? 0 : r < 0.8 ? 1 : 2;
+    case 'ice':
+    case 'barren':   return r < 0.7 ? 0 : r < 0.85 ? 1 : 2;
+    default:         return 0;
+  }
+}
+
 /* Pick a weighted random index */
 function weightedPick(weights, rng) {
   const r = rng.next();
@@ -275,6 +300,12 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
   /* Subtype-specific defaults */
   const subtypeDefaults = getSubtypeDefaults(subtype, rng, temperature);
 
+  /* Terrain topology + crack family — independent +137 substream so tuning these
+     rolls never cascade-shifts the palette/param rolls above (which use seed / seed+42) */
+  const varietyRng = createRng(seed + 137);
+  const terrainType = vis.terrainType ?? rollTerrainType(subtype, varietyRng);
+  const crackPattern = vis.crackPattern ?? rollCrackPattern(subtype, varietyRng);
+
   /* Merge: subtype defaults → palette → visual overrides (overrides win) */
   const result = {
     mode,
@@ -319,6 +350,8 @@ export function parsePlanetType(body, bodyId, parentStar, bodies) {
     crystalMetric:       vis.crystalMetric ?? subtypeDefaults.crystalMetric ?? 0,
     moistureOffset:      vis.moistureOffset ?? subtypeDefaults.moistureOffset ?? 0.0,
     biomeCount:          vis.biomeCount ?? subtypeDefaults.biomeCount ?? 0.5,
+    terrainType,
+    crackPattern,
     opacity:             vis.opacity ?? -1.0,
   };
 
@@ -387,7 +420,7 @@ function getSubtypeDefaults(subtype, rng, temperature) {
       return { ...base,
         slopeness: 0.8 + rng.next() * 0.5,
         craterDensity: 0.5 + rng.next() * 0.4,
-        displacementAmp: 0.04 + rng.next() * 0.04,
+        displacementAmp: (rng.next() < 0.5 ? -1 : 1) * (0.04 + rng.next() * 0.05),
         lumpiness: 0.08 + rng.next() * 0.08,
         atmosphereTint: '#887766',
         atmosphereIntensity: 0.0,
@@ -443,6 +476,7 @@ function getSubtypeDefaults(subtype, rng, temperature) {
       return { ...base,
         slopeness: 0.5 + rng.next() * 0.5,
         crackScale: 1.5 + rng.next() * 2.5,
+        displacementAmp: (rng.next() < 0.5 ? -1 : 1) * (0.02 + rng.next() * 0.03),
         subsurfaceColor: '#2288aa',
         specular: 0.55 + rng.next() * 0.35,
         atmosphereTint: '#aabbcc',
@@ -474,7 +508,7 @@ function getSubtypeDefaults(subtype, rng, temperature) {
         slopeness: 0.8 + rng.next() * 0.6,
         crackScale: 1.5 + rng.next() * 2.0,
         craterDensity: 0.3 + rng.next() * 0.4,
-        displacementAmp: 0.02 + rng.next() * 0.03,
+        displacementAmp: (rng.next() < 0.5 ? -1 : 1) * (0.02 + rng.next() * 0.03),
         lumpiness: 0.04 + rng.next() * 0.06,
         emissiveIntensity: 0.6 + rng.next() * 0.4,
         emissiveColor: emColor,

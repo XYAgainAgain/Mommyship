@@ -20,7 +20,7 @@ import { bakeStarAtlas } from './star-bake.js';
 import { createStarDetail } from './star-detail.js';
 import { parseMK } from './star-params.js';
 import { bakePlanetAtlas, buildParamTexture } from './planet-bake.js';
-import { createPlanetDetail } from './planet-detail.js';
+import { createPlanetDetail, SIZE_RELEASE as PLANET_SIZE_RELEASE } from './planet-detail.js';
 import { parsePlanetType, findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
@@ -30,6 +30,10 @@ const MARKER_SEGMENTS = 24;
 const MARKER_RINGS = 16;
 /* Detail shell (0.95) over atlas visual scale (0.87) — instance scale lerps this in during fade */
 const DETAIL_ATLAS_RATIO = 0.95 / 0.87;
+/* Faction-to-texture crossfade bands in apparent size (visualRadius/dist):
+   faction color below LOW, surface texture above HIGH. Matched to old distances. */
+const STAR_CF_LOW = 0.0113, STAR_CF_HIGH = 0.0533;
+const PLANET_CF_LOW = 0.005, PLANET_CF_HIGH = 0.0267;
 const CLICK_THRESHOLD = 5;
 /* [near, far] fade distances indexed by hierarchy depth */
 const LABEL_FADE = [[200, 300], [60, 120], [25, 50]];
@@ -299,7 +303,7 @@ export async function createSystems(scene, camera, renderer) {
       depthWrite: false, worldUnits: true, linewidth: 0.8,
       alphaToCoverage: true
     });
-    mat.colorNode = laneColorNode;
+    mat.lineColorNode = laneColorNode;
     return mat;
   }
 
@@ -1290,7 +1294,7 @@ export async function createSystems(scene, camera, renderer) {
   let cachedBhNdcX = 0, cachedBhNdcY = 0, cachedBhScreenR = 0;
 
   /* Per-frame update: rotate markers + labels to match galactic disk */
-  function update(delta, rotationTime, lodFactor, worldDirty, trackedId) {
+  function update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode) {
     lastRotationTime = rotationTime;
     const hasStars = starMarkers && starIds.length > 0;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
@@ -1346,7 +1350,9 @@ export async function createSystems(scene, camera, renderer) {
         _dummy.updateMatrix();
         starMarkers.setMatrixAt(i, _dummy.matrix);
         const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
-        const cf = 1 - smoothstep(25, 120, Math.sqrt(dx * dx + dy * dy + dz * dz));
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        const appSize = MARKER_RADIUS * meta.instanceScale * (meta.mkRadius || 1) / dist;
+        const cf = smoothstep(STAR_CF_LOW, STAR_CF_HIGH, appSize);
         if (crossfadeAttr.array[i] !== cf) {
           crossfadeAttr.array[i] = cf;
           cfDirty = true;
@@ -1365,7 +1371,7 @@ export async function createSystems(scene, camera, renderer) {
           if (cur) starTrackId = cur;
         }
         const prevIds = new Set(detailActiveIds);
-        detailActiveIds = starDetail.update(starTrackId, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta);
+        detailActiveIds = starDetail.update(starTrackId, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode);
 
         /* Hide instanced stars that just became active detail meshes */
         for (const id of detailActiveIds) {
@@ -1437,7 +1443,7 @@ export async function createSystems(scene, camera, renderer) {
       if (planetDetail) {
         planetDetailActiveIds = planetDetail.update(
           trackedId || null, camPos, bodyWorldPos, galaxyData,
-          rotationTime, bodyMeta
+          rotationTime, bodyMeta, cinemaMode
         );
       }
 
@@ -1470,11 +1476,13 @@ export async function createSystems(scene, camera, renderer) {
         _dummy.updateMatrix();
         planetMarkers.setMatrixAt(i, _dummy.matrix);
 
-        /* Crossfade: close = atlas texture, far = faction color */
+        /* Crossfade: big on screen = atlas texture, small = faction color */
         const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (dist < minPlanetDist) minPlanetDist = dist;
-        const cf = 1 - smoothstep(15, 80, dist);
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        const appSize = MARKER_RADIUS * meta.instanceScale * (meta.planetRadius || 1) / dist;
+        /* Only visually significant bodies pull the live-atlas quality ramp */
+        if (appSize > PLANET_SIZE_RELEASE && dist < minPlanetDist) minPlanetDist = dist;
+        const cf = smoothstep(PLANET_CF_LOW, PLANET_CF_HIGH, appSize);
         if (planetPackedAttr.array[i * 4 + 1] !== cf) {
           planetPackedAttr.array[i * 4 + 1] = cf;
           pcfDirty = true;
@@ -1507,7 +1515,7 @@ export async function createSystems(scene, camera, renderer) {
       if (pldDirty) planetLightDirAttr.needsUpdate = true;
 
       /* Live-atlas quality: full octaves at activation range, 2 octaves at map scale */
-      planetAtlasQuality.value = 1 - smoothstep(18, 98, minPlanetDist);
+      planetAtlasQuality.value = 1 - smoothstep(27, 147, minPlanetDist);
     }
 
     if (hasCubes) {

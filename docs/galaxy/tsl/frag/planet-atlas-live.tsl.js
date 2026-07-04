@@ -71,6 +71,8 @@ export const main = /*@__PURE__*/ Fn( () => {
 	const emissiveIntensity = t6.w;
 	const bulbosity = t7.x;
 	const crystalMetric = int( round( t7.y ) );
+	const terrainType = int( round( t7.z ) );
+	const crackPattern = int( round( t7.w ) );
 
 	/* Live eval only inside the fade band — same sphere domain as the bake (geometry
 	   UVs, seam-free), dissolving from the baked look into the detail-matching one */
@@ -80,17 +82,17 @@ export const main = /*@__PURE__*/ Fn( () => {
 		const live = vec3( 0.5 ).toVar();
 
 		If( mode.equal( int( 0 ) ), () => {
-			live.assign( renderRocky( sp, s, slopeness, temperature, moistureOffset, biomeCount, baseColor1, baseColor2, baseColor3, subsurfaceColor, oceanLevel, warpStrength, uQuality ).xyz );
+			live.assign( renderRocky( sp, s, slopeness, temperature, moistureOffset, biomeCount, baseColor1, baseColor2, baseColor3, subsurfaceColor, oceanLevel, warpStrength, uQuality, terrainType ).xyz );
 		} ).ElseIf( mode.equal( int( 1 ) ), () => {
-			live.assign( renderBarren( sp, s, slopeness, baseColor1, baseColor2, uQuality ).xyz );
+			live.assign( renderBarren( sp, s, slopeness, baseColor1, baseColor2, uQuality, terrainType ).xyz );
 		} ).ElseIf( mode.equal( int( 2 ) ), () => {
 			live.assign( renderGas( sp, s, warpStrength, stormSize, bandCount, baseColor1, baseColor2, baseColor3, uQuality ).xyz );
 		} ).ElseIf( mode.equal( int( 3 ) ), () => {
 			live.assign( renderOcean( sp, s, slopeness, oceanLevel, warpStrength, baseColor1, baseColor2, baseColor3, temperature, uQuality ).xyz );
 		} ).ElseIf( mode.equal( int( 4 ) ), () => {
-			live.assign( renderIce( sp, s, crackScale, baseColor1, baseColor2, baseColor3, slopeness, subsurfaceColor, uQuality ).xyz );
+			live.assign( renderIce( sp, s, crackScale, baseColor1, baseColor2, baseColor3, slopeness, subsurfaceColor, uQuality, terrainType ).xyz );
 		} ).ElseIf( mode.equal( int( 5 ) ), () => {
-			live.assign( renderVolcanic( sp, s, crackScale, craterDensity, baseColor1, baseColor2, baseColor3, temperature, slopeness, emissiveColor, emissiveIntensity, uQuality ).xyz );
+			live.assign( renderVolcanic( sp, s, crackScale, craterDensity, baseColor1, baseColor2, baseColor3, temperature, slopeness, emissiveColor, emissiveIntensity, uQuality, terrainType, crackPattern ).xyz );
 		} ).ElseIf( mode.equal( int( 6 ) ), () => {
 			live.assign( renderCrystalline( sp, s, crackScale, crystalMetric, baseColor1, baseColor2, baseColor3, bulbosity, subsurfaceColor, uQuality ).xyz );
 		} ).Else( () => {

@@ -8,6 +8,7 @@ import {
   uBaseColor3, uAtmoIntensity, uAtmoTint, uBandCount, uWarpStrength,
   uStormSize, uCrackScale, uSubsurfaceColor, uEmissiveIntensity,
   uEmissiveColor, uBulbosity, uCrystalMetric, uMoistureOffset, uBiomeCount,
+  uTerrainType, uCrackPattern,
 } from './tsl/frag/planet-bake.tsl.js';
 import { parsePlanetType, findParentStar } from './planet-params.js';
 
@@ -47,6 +48,8 @@ export function buildParamTexture(planetIds, paramsCache) {
     data[o + 27] = p.emissiveIntensity;
     data[o + 28] = p.bulbosity;
     data[o + 29] = p.crystalMetric ?? 0;
+    data[o + 30] = p.terrainType ?? 1;
+    data[o + 31] = p.crackPattern ?? 0;
   }
   const tex = new THREE.DataTexture(data, PARAM_TEXELS, rows, THREE.RGBAFormat, THREE.FloatType);
   /* float32 is unfilterable-float on WebGPU — Nearest keeps the sampler non-filtering */
@@ -151,6 +154,8 @@ export async function bakePlanetAtlas(renderer, bodies) {
     uCrystalMetric.value     = params.crystalMetric ?? 0;
     uMoistureOffset.value    = params.moistureOffset ?? 0.0;
     uBiomeCount.value        = params.biomeCount ?? 0.5;
+    uTerrainType.value       = params.terrainType ?? 1;
+    uCrackPattern.value      = params.crackPattern ?? 0;
 
     renderer.setRenderTarget(tempRT);
     renderer.clear();

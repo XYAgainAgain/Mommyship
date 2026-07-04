@@ -11,10 +11,17 @@ import { parsePlanetType, findParentStar, hashString } from './planet-params.js'
 const DETAIL_SEGMENTS = 48;
 const DETAIL_ROWS = 32;
 const MARKER_RADIUS = 2.5;
-const ACTIVATE_DIST = 18;
 const POOL_SIZE = 12;
+/* Cinema grows the pool past POOL_SIZE to fit a whole system; entries persist */
+const POOL_HARD_CAP = 40;
 const MAX_ACTIVATE_PER_FRAME = 4;
 const GLOW_SCALE = 1.8;
+
+/* Apparent size = visualRadius/dist (radians). Tuned by feel at 1.5× the original
+   bands: a depth-1 planet (visualRadius 0.6) fades in from ~27u, full by ~22u. */
+export const SIZE_FULL = 0.0267;
+export const SIZE_ACTIVATE = 0.0222;
+export const SIZE_RELEASE = 0.0178;
 
 /* Per-subtype atmosphere scale — thick for gas, thin for rocky, skip for airless */
 function computeAtmoDensity(params) {
@@ -62,7 +69,10 @@ export async function createPlanetDetail(renderer) {
   const atmoGeo = new THREE.SphereGeometry(MARKER_RADIUS, DETAIL_SEGMENTS, DETAIL_ROWS);
 
   const pool = [];
-  for (let p = 0; p < POOL_SIZE; p++) {
+  const container = new THREE.Group();
+
+  /* Factory so cinema mode can lazily grow the pool beyond POOL_SIZE */
+  function makePoolEntry() {
     /* Per-instance TSL uniform nodes for surface shader */
     const pSeed = uniform(float(0));
     const pPlanetMode = uniform(int(0));
@@ -101,6 +111,8 @@ export async function createPlanetDetail(renderer) {
     const pStorminess = uniform(float(0.0));
     const pDisplacementAmp = uniform(float(0.03));
     const pLumpiness = uniform(float(0.0));
+    const pTerrainType = uniform(int(1));
+    const pCrackPattern = uniform(int(0));
 
     const mat = new NodeMaterial();
     mat.positionNode = planetDetailVert(pSeed, pDisplacementAmp, pLumpiness, pRotation, pFadeIn);
@@ -111,7 +123,7 @@ export async function createPlanetDetail(renderer) {
       pCrackScale, pSubsurfaceColor, pEmissiveIntensity, pEmissiveColor, pBulbosity,
       pRoughness, pMetalness, pCrystalMetric, pMoistureOffset, pBiomeCount,
       pRotation, pLightDir, pLodDist, pFadeIn, pOpacity,
-      pCloudCover, pCloudColor, pStorminess, uDetailQuality
+      pCloudCover, pCloudColor, pStorminess, uDetailQuality, pTerrainType, pCrackPattern
     );
     mat.transparent = true;
     /* IGN (interleaved gradient noise) crossfade keeps pixels opaque, so depth
@@ -190,7 +202,7 @@ export async function createPlanetDetail(renderer) {
     group.visible = false;
     group.renderOrder = 5;
 
-    pool.push({
+    const entry = {
       group, mat, mesh, hitbox, atmoMat, atmoMesh, glowMat, glowMesh,
       bodyId: null, parentStarId: null, radius: 1.0,
       atmoDensity: 1.03,
@@ -202,15 +214,20 @@ export async function createPlanetDetail(renderer) {
       pEmissiveIntensity, pEmissiveColor, pBulbosity, pRoughness, pMetalness,
       pCrystalMetric, pMoistureOffset, pBiomeCount, pRotation, pLightDir,
       pLodDist, pFadeIn, pOpacity, pCloudCover, pCloudColor, pStorminess,
-      pDisplacementAmp, pLumpiness,
+      pDisplacementAmp, pLumpiness, pTerrainType, pCrackPattern,
       /* Atmo uniform refs */
       pAtmoTintA, pAtmoIntensityA, pAtmoLightDir, pAtmoFadeIn,
       pAtmoCloudCover, pAtmoCloudColor, pAtmoStorminess, pAtmoSeed,
       pAtmoPlanetMode, pAtmoBandCount, pCloudRotation,
       /* Glow uniform refs */
       pGlowColor, pGlowIntensity, pGlowLightDir, pGlowFadeIn,
-    });
+    };
+    pool.push(entry);
+    container.add(entry.group);
+    return entry;
   }
+
+  for (let p = 0; p < POOL_SIZE; p++) makePoolEntry();
 
   const _rotQuat = new THREE.Quaternion();
   const _rotMat3 = new THREE.Matrix3();
@@ -218,14 +235,11 @@ export async function createPlanetDetail(renderer) {
   const _lightDir = new THREE.Vector3();
   const _color = new THREE.Color();
 
-  const container = new THREE.Group();
-  for (const entry of pool) container.add(entry.group);
-
   let cachedPlanetIds = null;
-  let siblingIndex = null;
   let paramsCache = null;
   const activeIds = new Set();
   const activationQueue = [];
+  const lastAppSizes = new Map();
 
   function setParamsCache(cache) { paramsCache = cache; }
 
@@ -271,6 +285,8 @@ export async function createPlanetDetail(renderer) {
     entry.pCrystalMetric.value     = params.crystalMetric ?? 0;
     entry.pMoistureOffset.value    = params.moistureOffset ?? 0.0;
     entry.pBiomeCount.value        = params.biomeCount ?? 0.5;
+    entry.pTerrainType.value       = params.terrainType ?? 1;
+    entry.pCrackPattern.value      = params.crackPattern ?? 0;
     entry.pOpacity.value           = params.opacity ?? 1.0;
 
     entry.radius = params.radius;
@@ -326,101 +342,102 @@ export async function createPlanetDetail(renderer) {
     entry.glowMesh.visible = false;
   }
 
-  /* Build parent→children index once, then O(1) lookups */
-  function ensureSiblingIndex(bodies) {
-    if (siblingIndex) return;
-    siblingIndex = new Map();
-    for (const [id, body] of Object.entries(bodies)) {
-      const t = body.type;
-      if (t !== 'planet' && t !== 'moon') continue;
-      const pid = body.parentId;
-      if (!pid) continue;
-      let arr = siblingIndex.get(pid);
-      if (!arr) { arr = []; siblingIndex.set(pid, arr); }
-      arr.push(id);
+  /* Every planet/moon sharing the tracked body's top ancestor (handles binaries) */
+  function gatherCinemaSystem(trackedId, bodies) {
+    const rootOf = (id) => {
+      let a = id, guard = 0;
+      while (bodies[a]?.parentId && bodies[bodies[a].parentId] && guard++ < 16) a = bodies[a].parentId;
+      return a;
+    };
+    const root = rootOf(trackedId);
+    if (!cachedPlanetIds) {
+      cachedPlanetIds = Object.keys(bodies).filter(id => {
+        const t = bodies[id].type;
+        return t === 'planet' || t === 'moon';
+      });
     }
+    _cinemaSystem.clear();
+    for (const id of cachedPlanetIds) {
+      if (rootOf(id) === root) _cinemaSystem.add(id);
+    }
+    return _cinemaSystem;
   }
 
-  function getSiblings(bodyId, bodies) {
-    const parentId = bodies[bodyId]?.parentId;
-    if (!parentId) return [];
-    ensureSiblingIndex(bodies);
-    const children = siblingIndex.get(parentId);
-    if (!children) return [];
-    return children.filter(id => id !== bodyId);
-  }
-
-  function getChildren(bodyId, bodies) {
-    ensureSiblingIndex(bodies);
-    return siblingIndex.get(bodyId) || [];
-  }
+  /* Reused per-frame scratch — update() runs every rotating frame, so no fresh allocations */
+  const _candidates = [];
+  const _desired = new Set();
+  const _fadeMap = new Map();
+  const _cinemaSystem = new Set();
 
   /**
-   * Per-frame update — activates detail for tracked planet + nearest siblings.
+   * Per-frame update — activates detail for the largest on-screen planets/moons.
    * @returns {Map<string, number>} bodyId → fade (0–1); caller keeps atlas visible until fade > 0.99
    */
-  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta) {
+  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode) {
     /* Set shared uTime across all materials */
     vertUTime.value = rotationTime;
     fragUTime.value = rotationTime;
     atmoUTime.value = rotationTime;
 
-    let anchorId = null;
     const bodies = galaxyData.bodies;
-
-    /* If tracking a planet/moon, use it as anchor */
-    if (trackedId) {
-      const t = bodies[trackedId]?.type;
-      if (t === 'planet' || t === 'moon') anchorId = trackedId;
+    if (!cachedPlanetIds) {
+      cachedPlanetIds = Object.keys(bodies).filter(id => {
+        const t = bodies[id].type;
+        return t === 'planet' || t === 'moon';
+      });
     }
 
-    /* Otherwise find closest planet/moon by proximity */
-    if (!anchorId) {
-      if (!cachedPlanetIds) {
-        cachedPlanetIds = Object.keys(bodies).filter(id => {
-          const t = bodies[id].type;
-          return t === 'planet' || t === 'moon';
-        });
-      }
-      let closestDistSq = ACTIVATE_DIST * ACTIVATE_DIST;
-      for (const id of cachedPlanetIds) {
-        const wp = bodyWorldPos.get(id);
-        if (!wp) continue;
-        const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-        if (distSq < closestDistSq) {
-          closestDistSq = distSq;
-          anchorId = id;
-        }
-      }
+    /* Apparent size (visualRadius/dist) drives both selection and fade */
+    lastAppSizes.clear();
+    _candidates.length = 0;
+    for (const id of cachedPlanetIds) {
+      const wp = bodyWorldPos.get(id);
+      if (!wp) continue;
+      const meta = bodyMeta?.get(id);
+      if (!meta) continue;
+      const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+      const visualRadius = MARKER_RADIUS * meta.instanceScale * (meta.planetRadius || 1);
+      const appSize = visualRadius / dist;
+      lastAppSizes.set(id, appSize);
+      /* Hysteresis: active bodies hold their slot down to the lower release size */
+      const threshold = activeIds.has(id) ? SIZE_RELEASE : SIZE_ACTIVATE;
+      if (appSize > threshold) _candidates.push(id);
     }
 
-    /* Build target list: anchor + siblings + anchor's children, closest-first, capped by pool */
-    const targetIds = [];
-    if (anchorId) {
-      targetIds.push(anchorId);
+    const cinemaSystem = (cinemaMode && trackedId) ? gatherCinemaSystem(trackedId, bodies) : null;
 
-      const distSq = (id) => {
-        const w = bodyWorldPos.get(id);
-        if (!w) return 1e9;
-        return (cameraPos.x - w.x) ** 2 + (cameraPos.y - w.y) ** 2 + (cameraPos.z - w.z) ** 2;
-      };
-
-      /* Collect parent + siblings + children, dedupe, sort by distance */
-      const candidates = new Set();
-      const parentId = bodies[anchorId]?.parentId;
-      if (parentId && (bodies[parentId]?.type === 'planet' || bodies[parentId]?.type === 'moon'))
-        candidates.add(parentId);
-      for (const id of getSiblings(anchorId, bodies)) candidates.add(id);
-      for (const id of getChildren(anchorId, bodies)) candidates.add(id);
-
-      const sorted = [...candidates].sort((a, b) => distSq(a) - distSq(b));
-      for (let i = 0; i < Math.min(POOL_SIZE - 1, sorted.length); i++) {
-        targetIds.push(sorted[i]);
+    /* Selection: whole tracked system in cinema, else the biggest N on screen */
+    _desired.clear();
+    const desired = _desired;
+    if (cinemaSystem) {
+      for (const id of cinemaSystem) desired.add(id);
+    } else {
+      const tt = bodies[trackedId]?.type;
+      if (trackedId && (tt === 'planet' || tt === 'moon')) desired.add(trackedId);
+      /* Rank hysteresis: actives get a 15% size bonus so a marginally bigger
+         newcomer can't thrash the pool cutoff frame-to-frame */
+      _candidates.sort((a, b) =>
+        lastAppSizes.get(b) * (activeIds.has(b) ? 1.15 : 1) -
+        lastAppSizes.get(a) * (activeIds.has(a) ? 1.15 : 1));
+      for (const id of _candidates) {
+        if (desired.size >= POOL_SIZE) break;
+        desired.add(id);
       }
     }
 
-    const desired = new Set(targetIds);
+    /* Per-frame activation budget, doubled while filling a cinema system */
+    const budget = cinemaSystem ? MAX_ACTIVATE_PER_FRAME * 2 : MAX_ACTIVATE_PER_FRAME;
+
+    /* Grow pool on demand for oversized cinema systems (persists, capped).
+       Throttled to the budget so graph builds spread across frames, not one hitch. */
+    if (cinemaSystem) {
+      let grown = 0;
+      while (pool.length < desired.size && pool.length < POOL_HARD_CAP && grown < budget) {
+        makePoolEntry();
+        grown++;
+      }
+    }
 
     /* Deactivate pool entries no longer needed (immediate — no perf cost) */
     for (const entry of pool) {
@@ -436,14 +453,14 @@ export async function createPlanetDetail(renderer) {
     }
 
     /* Enqueue new bodies that aren't active or already queued */
-    for (const id of targetIds) {
+    for (const id of desired) {
       if (activeIds.has(id) || activationQueue.includes(id)) continue;
       activationQueue.push(id);
     }
 
-    /* Drain queue with per-frame budget */
+    /* Drain queue with the per-frame budget computed above */
     let activated = 0;
-    while (activationQueue.length > 0 && activated < MAX_ACTIVATE_PER_FRAME) {
+    while (activationQueue.length > 0 && activated < budget) {
       const id = activationQueue.shift();
       if (activeIds.has(id)) continue;
       const freeEntry = pool.find(e => !e.bodyId);
@@ -463,12 +480,17 @@ export async function createPlanetDetail(renderer) {
       const meta = bodyMeta?.get(entry.bodyId);
       if (meta) entry.group.scale.setScalar(meta.instanceScale * entry.radius);
 
-      /* Camera distance → LOD + fade-in opacity */
+      /* Camera distance drives the shader LOD; fade comes from apparent size */
       const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       entry.pLodDist.value = dist;
-      /* Fade from 0→1 over a 3-unit band inside the activation boundary */
-      const fade = Math.min(1, Math.max(0, (ACTIVATE_DIST - dist) / 3.0));
+      let fade;
+      if (cinemaSystem && cinemaSystem.has(entry.bodyId)) {
+        fade = 1.0;
+      } else {
+        const appSize = lastAppSizes.get(entry.bodyId) ?? 0;
+        fade = Math.min(1, Math.max(0, (appSize - SIZE_ACTIVATE) / (SIZE_FULL - SIZE_ACTIVATE)));
+      }
       entry.pFadeIn.value = fade;
       /* Crystalline facets have real sub-1 alpha unrelated to the crossfade —
          only they defer depth writes until fully faded in */
@@ -509,16 +531,16 @@ export async function createPlanetDetail(renderer) {
       }
     }
 
-    /* Return map of bodyId → fade (0–1). Caller keeps atlas visible when fade < 1. */
-    const fadeMap = new Map();
+    /* Return map of bodyId → fade (0–1). Caller keeps atlas visible when fade < 1.
+       Reused scratch: consumed synchronously by systems.js within the same frame. */
+    _fadeMap.clear();
     for (const entry of pool) {
-      if (entry.bodyId) fadeMap.set(entry.bodyId, entry.pFadeIn.value);
+      if (entry.bodyId) _fadeMap.set(entry.bodyId, entry.pFadeIn.value);
     }
-    return fadeMap;
+    return _fadeMap;
   }
 
   function invalidateCaches() {
-    siblingIndex = null;
     cachedPlanetIds = null;
     paramsCache = null;
     activationQueue.length = 0;

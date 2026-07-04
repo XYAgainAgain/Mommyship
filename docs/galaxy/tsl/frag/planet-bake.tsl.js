@@ -37,9 +37,14 @@ export const uCrystalMetric = uniform( int( 0 ) );
 export const uMoistureOffset = uniform( float( 0 ) );
 export const uBiomeCount = uniform( float( 0 ) );
 
+/* Terrestrial variety — 0 smooth / 1 fractal / 2 ridged; crack family 0 fissure / 1 hex / 2 plate */
+
+export const uTerrainType = uniform( int( 1 ) );
+export const uCrackPattern = uniform( int( 0 ) );
+
 import {
-	uvToSphere, hash33, gnoised, fbmd, fbm, ridgedFbm, gerstnerWave, blackbodyRGB,
-	craterHash33, craterNoise, craterFbm, voronoi3, distMetric3D,
+	uvToSphere, hash33, gnoised, fbmd, fbmdO, fbm, ridgedFbm, terrainHeightMixed, hexColumns,
+	gerstnerWave, blackbodyRGB, craterHash33, craterNoise, craterFbm, voronoi3, distMetric3D,
 	cellNoise3D, cellNoise3DDelta, crystals3D, crystals3DDelta
 } from '../glsl/noise-common.tsl.js';
 
@@ -141,7 +146,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	/* Continent shapes — direct FBM, no flowWarp.
 	     Derivatives scaled so per-biome normals show through */
 
-	const hd = fbmd( sp.mul( 3.5 ).add( vec3( s ) ), uSlopeness );
+	const hd = terrainHeightMixed( sp.mul( 3.5 ).add( vec3( s ) ), uSlopeness, float( 4.0 ), uTerrainType );
 	gDerivatives.assign( hd.yzw.mul( 0.15 ) );
 	const height = hd.x.mul( 0.5 ).add( 0.5 );
 	const t = float( 0.02 );
@@ -239,14 +244,17 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	If( sandDesertW.greaterThan( 0.01 ), () => {
 
 		const duneP = sp.mul( vec3( 3.0, 12.0, 3.0 ) ).add( vec3( s.mul( 0.9 ) ) );
-		const dunes = ridgedFbm( duneP, 3.0, 2.0, 2 );
+		const duneWarp = gnoised( duneP.mul( 0.4 ).add( vec3( s.mul( 0.3 ) ) ) ).yzw.mul( 0.6 );
+		const dunes = ridgedFbm( duneP.add( duneWarp ), 3.0, 2.0, 2 );
 		biomeColor.addAssign( sandDesertW.mul( mix( colWarm.mul( 0.65 ).add( vec3( 0.02 ) ), colWarm.mul( 1.3 ).add( vec3( 0.12, 0.08, 0.0 ) ), smoothstep( 0.25, 0.65, dunes ) ) ) );
 
 	} );
 
 	If( rockyDesertW.greaterThan( 0.01 ), () => {
 
-		const mesa = ridgedFbm( sp.mul( 4.0 ).add( vec3( s.mul( 1.5 ) ) ), 3.5, 2.2, 3 ).toVar();
+		const mesaP = sp.mul( 4.0 ).add( vec3( s.mul( 1.5 ) ) );
+		const mesaWarp = gnoised( mesaP.mul( 0.4 ).add( vec3( s.mul( 0.3 ) ) ) ).yzw.mul( 0.6 );
+		const mesa = ridgedFbm( mesaP.add( mesaWarp ), 3.5, 2.2, 3 ).toVar();
 		mesa.assign( pow( max( 0.0, sub( 1.0, abs( mesa.sub( 0.5 ) ).mul( 2.0 ) ) ), 5.0 ) );
 		biomeColor.addAssign( rockyDesertW.mul( mix( colGrey.mul( 0.9 ).add( colWarm.mul( 0.2 ) ), colGrey.mul( 0.4 ), mesa ) ) );
 
@@ -339,7 +347,7 @@ export const renderBarren = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 	/* Macro terrain variation so not every crater sits at the same base level */
 
-	const macro = fbm( sp.mul( 1.5 ).add( vec3( s ) ), 0.3 ).mul( 0.15 );
+	const macro = terrainHeightMixed( sp.mul( 1.5 ).add( vec3( s ) ), float( 0.3 ), float( 4.0 ), uTerrainType ).x.mul( 0.3 );
 	height.assign( height.mul( 0.85 ).add( macro ).add( 0.08 ) );
 	const brightness = mix( 0.35, 1.0, height );
 	const surfaceColor = uBaseColor1.mul( brightness ).toVar();
@@ -347,12 +355,12 @@ export const renderBarren = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	const slope = length( gDerivatives );
 	surfaceColor.mulAssign( mix( 1.0, 0.5, smoothstep( 1.0, 8.0, slope.mul( uSlopeness ) ) ) );
 
-	/* Surface microdetail — pitting darkens into pores, grain breaks up smoothness */
+	/* Surface microdetail — shallow pitting/grain so macro forms dominate */
 
 	const pitting = gnoised( sp.mul( 30.0 ).add( vec3( s.mul( 2.3 ) ) ) ).x;
-	surfaceColor.mulAssign( add( 0.82, pitting.mul( 0.18 ) ) );
+	surfaceColor.mulAssign( add( 0.91, pitting.mul( 0.09 ) ) );
 	const grain = gnoised( sp.mul( 80.0 ).add( vec3( s.mul( 4.1 ) ) ) ).x;
-	surfaceColor.mulAssign( add( 0.88, grain.mul( 0.12 ) ) );
+	surfaceColor.mulAssign( add( 0.94, grain.mul( 0.06 ) ) );
 
 	return vec4( surfaceColor, 0.0 );
 
@@ -561,11 +569,14 @@ export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 	const off = vec3( s.mul( 0.13 ), s.mul( 0.37 ), s.mul( 0.71 ) );
 
-	/* Multi-scale ridged cracks — Europa-style linear lineae */
+	/* Multi-scale ridged cracks — Europa-style linear lineae, scales +-30% seed-jittered */
 
-	const bigCracks = ridgedFbm( sp.mul( 1.5 ).add( off ), uCrackScale.mul( 0.4 ), 2.1, 3 );
-	const medCracks = ridgedFbm( sp.mul( 3.5 ).add( off.mul( 1.7 ) ), uCrackScale.mul( 0.8 ), 2.3, 4 );
-	const fineCracks = ridgedFbm( sp.mul( 8.0 ).add( off.mul( 2.3 ) ), uCrackScale.mul( 1.2 ), 2.0, 3 );
+	const fBig = add( 1.5, fract( s.mul( 0.31 ) ).sub( 0.5 ).mul( 0.9 ) );
+	const fMed = add( 3.5, fract( s.mul( 0.47 ) ).sub( 0.5 ).mul( 2.1 ) );
+	const fFine = add( 8.0, fract( s.mul( 0.67 ) ).sub( 0.5 ).mul( 4.8 ) );
+	const bigCracks = ridgedFbm( sp.mul( fBig ).add( off ), uCrackScale.mul( 0.4 ), 2.1, 3 );
+	const medCracks = ridgedFbm( sp.mul( fMed ).add( off.mul( 1.7 ) ), uCrackScale.mul( 0.8 ), 2.3, 4 );
+	const fineCracks = ridgedFbm( sp.mul( fFine ).add( off.mul( 2.3 ) ), uCrackScale.mul( 1.2 ), 2.0, 3 );
 
 	/* Noise-modulated crack threshold so widths vary across the surface */
 	/* ridgedFbm peaks near 1.0 at ridge crests — high thresholds isolate thin crack lines */
@@ -576,7 +587,13 @@ export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 	/* Terrain height — mostly gentle with occasional ridged highlands */
 
-	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
+	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) ).toVar();
+
+	/* Terrain-type knob on base height — no-op at fractal(1) */
+
+	const hGain = float( 1.0 ).toVar();
+	If( uTerrainType.equal( 0 ), () => { hGain.assign( 0.6 ); } ).ElseIf( uTerrainType.equal( 2 ), () => { hGain.assign( 1.35 ); } );
+	height.assign( height.sub( 0.5 ).mul( hGain ).add( 0.5 ) );
 
 	/* Finite-diff normals for lighting response */
 
@@ -584,12 +601,15 @@ export const renderIce = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
 	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
 	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.0, 2.2, 4 ).mul( 0.35 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.65 ) );
-	gDerivatives.assign( vec3( hx, hy, hz ).sub( height ).div( eps ) );
+
+	/* Offsets ride the same hGain transform as the center or the diff skews by a constant */
+
+	gDerivatives.assign( vec3( hx, hy, hz ).sub( 0.5 ).mul( hGain ).add( 0.5 ).sub( height ).div( eps ) );
 
 	/* High-albedo surface with subtle plate-to-plate hue variation */
 
 	const plateVar = fbm( sp.mul( 3.0 ).add( vec3( s.mul( 3.7 ) ) ), 0.3 );
-	const surfaceColor = mix( uBaseColor1, uBaseColor2, plateVar.mul( 0.35 ).add( 0.3 ) ).toVar();
+	const surfaceColor = mix( uBaseColor1, uBaseColor2, plateVar.mul( 0.45 ).add( 0.28 ) ).toVar();
 	surfaceColor.assign( mix( surfaceColor, uBaseColor3, smoothstep( 0.4, 0.7, height ).mul( 0.25 ) ) );
 	surfaceColor.mulAssign( add( 0.85, clamp( height, 0.0, 1.0 ).mul( 0.25 ) ) );
 
@@ -612,21 +632,74 @@ export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 
 	const off = vec3( s.mul( 0.17 ), s.mul( 0.41 ), s.mul( 0.63 ) );
 
-	/* Multi-scale ridged cracks — lava fissures at 3 frequencies */
+	/* Per-seed fissure frequency/lacunarity jitter + tectonic shear so no two hot
+	   worlds share the same crack network at a different zoom */
 
-	const bigFissures = ridgedFbm( sp.mul( 1.8 ).add( off ), uCrackScale.mul( 0.5 ), 2.1, 3 );
-	const medFissures = ridgedFbm( sp.mul( 4.0 ).add( off.mul( 1.5 ) ), uCrackScale.mul( 0.9 ), 2.3, 4 );
-	const fineFissures = ridgedFbm( sp.mul( 9.0 ).add( off.mul( 2.1 ) ), uCrackScale.mul( 1.3 ), 2.0, 3 );
+	const freqBig = uCrackScale.mul( add( 1.4, fract( s.mul( 0.29 ) ).mul( 0.8 ) ) );
+	const freqMed = uCrackScale.mul( add( 3.0, fract( s.mul( 0.53 ) ).mul( 2.5 ) ) );
+	const freqFine = uCrackScale.mul( add( 7.0, fract( s.mul( 0.71 ) ).mul( 5.0 ) ) );
+	const lacBig = add( 1.9, fract( s.mul( 0.41 ) ).mul( 0.6 ) );
+	const crackAngle = fract( s.mul( 0.61 ) ).mul( 6.2832 );
+	const crackDir = vec3( cos( crackAngle ), 0.0, sin( crackAngle ) );
+	const sheared = sp.add( crackDir.mul( dot( sp, crackDir ) ).mul( 0.6 ) );
+
+	/* Crack family — 0 ridged fissures / 1 hex basalt columns / 2 shattered plates */
+
+	const bigFissures = float( 0.0 ).toVar();
+	const medFissures = float( 0.0 ).toVar();
+	const fineFissures = float( 0.0 ).toVar();
+
+	If( uCrackPattern.equal( 1 ), () => {
+
+		bigFissures.assign( hexColumns( sheared.add( off ), freqBig, s ) );
+		medFissures.assign( hexColumns( sheared.add( off.mul( 1.5 ) ), freqMed, s.add( 3.0 ) ) );
+		fineFissures.assign( hexColumns( sheared.add( off.mul( 2.1 ) ), freqFine, s.add( 7.0 ) ) );
+
+	} ).ElseIf( uCrackPattern.equal( 2 ), () => {
+
+		/* Seed-rotate the domain and pick a non-axis-aligned metric per body (0 euclidean
+		   / 3 triangular) so plates read as organic fractures, not a square grid. Metric
+		   must be a concrete int, not a bare int(2) literal — Naga rejects abstract compares. */
+
+		const plateMetric = int( round( fract( s.mul( 0.47 ) ) ) ).mul( int( 3 ) ).toVar();
+		const rotA = fract( s.mul( 0.37 ) ).mul( 6.2832 );
+		const rotB = fract( s.mul( 0.19 ) ).mul( 6.2832 );
+		const cA = cos( rotA );
+		const sA = sin( rotA );
+		const cB = cos( rotB );
+		const sB = sin( rotB );
+		const rY = vec3( sheared.x.mul( cA ).add( sheared.z.mul( sA ) ), sheared.y, sheared.z.mul( cA ).sub( sheared.x.mul( sA ) ) );
+		const plateP = vec3( rY.x, rY.y.mul( cB ).add( rY.z.mul( sB ) ), rY.z.mul( cB ).sub( rY.y.mul( sB ) ) );
+		const plate = crystals3D( plateP.mul( freqBig ).add( off ), 0.85, plateMetric, s );
+		const plateEdge = sub( 1.0, clamp( plate.w.mul( 4.0 ), 0.0, 1.0 ) );
+		bigFissures.assign( plateEdge );
+		medFissures.assign( plateEdge.mul( 0.85 ) );
+		fineFissures.assign( plateEdge.mul( 0.7 ) );
+
+	} ).Else( () => {
+
+		bigFissures.assign( ridgedFbm( sheared.add( off ), freqBig, lacBig, 3 ) );
+		medFissures.assign( ridgedFbm( sheared.add( off.mul( 1.5 ) ), freqMed, 2.3, 4 ) );
+		fineFissures.assign( ridgedFbm( sheared.add( off.mul( 2.1 ) ), freqFine, 2.0, 3 ) );
+
+	} );
 
 	/* Rocky terrain height — more ridged than ice, rougher surface */
 
 	const height = ridgedFbm( sp.mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
 
-	/* Height-boosted cracks — peaks become active calderas */
+	/* Terrain-type knob on base height — smooth flattens, ridged exaggerates; no-op at fractal(1) */
 
-	const caldera = smoothstep( 0.5, 0.8, height ).mul( 0.25 );
+	const hGain = float( 1.0 ).toVar();
+	If( uTerrainType.equal( 0 ), () => { hGain.assign( 0.6 ); } ).ElseIf( uTerrainType.equal( 2 ), () => { hGain.assign( 1.35 ); } );
+	height.assign( height.sub( 0.5 ).mul( hGain ).add( 0.5 ) );
+
+	/* Height-boosted cracks — peaks become active calderas, threshold/weight seed-jittered */
+
+	const calderaThresh = add( 0.45, fract( s.mul( 0.83 ) ).mul( 0.2 ) );
+	const caldera = smoothstep( calderaThresh, calderaThresh.add( 0.3 ), height ).mul( add( 0.15, fract( s.mul( 0.19 ) ).mul( 0.2 ) ) );
 	const threshVar = fbm( sp.mul( 2.0 ).add( vec3( s.mul( 0.7 ) ) ), 0.3 ).mul( 0.06 );
-	const cracks = smoothstep( add( 0.62, threshVar ), 0.85, bigFissures ).mul( 0.55 ).add( smoothstep( 0.65, 0.87, medFissures ).mul( 0.30 ) ).add( smoothstep( 0.70, 0.88, fineFissures ).mul( 0.15 ) ).add( caldera ).toVar();
+	const cracks = smoothstep( add( 0.68, threshVar ), 0.88, bigFissures ).mul( 0.55 ).add( smoothstep( 0.71, 0.89, medFissures ).mul( 0.30 ) ).add( smoothstep( 0.75, 0.90, fineFissures ).mul( 0.15 ) ).add( caldera ).toVar();
 	cracks.assign( clamp( cracks, 0.0, 1.0 ) );
 
 	/* Crater overlay — sparse impacts on the rock */
@@ -638,12 +711,14 @@ export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	/* Finite-diff normals */
 
 	const eps = float( 0.015 );
+	/* Offsets must ride the same hGain transform as the center or the diff skews by a constant */
+
 	const hx = ridgedFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
-	hx.assign( mix( hx, craterFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
+	hx.assign( mix( hx.sub( 0.5 ).mul( hGain ).add( 0.5 ), craterFbm( sp.add( vec3( eps, 0.0, 0.0 ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
 	const hy = ridgedFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
-	hy.assign( mix( hy, craterFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
+	hy.assign( mix( hy.sub( 0.5 ).mul( hGain ).add( 0.5 ), craterFbm( sp.add( vec3( 0.0, eps, 0.0 ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
 	const hz = ridgedFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 2.5 ).add( off.mul( 0.5 ) ), 3.5, 2.2, 4 ).mul( 0.55 ).add( fbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.5 ).add( vec3( s.mul( 2.0 ) ) ), 0.3 ).mul( 0.45 ) ).toVar();
-	hz.assign( mix( hz, craterFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
+	hz.assign( mix( hz.sub( 0.5 ).mul( hGain ).add( 0.5 ), craterFbm( sp.add( vec3( 0.0, 0.0, eps ) ).mul( 1.2 ).add( off.mul( 0.3 ) ) ), craterBlend ) );
 	gDerivatives.assign( vec3( hx, hy, hz ).sub( height ).div( eps ) );
 	const plateVar = fbm( sp.mul( 3.0 ).add( vec3( s.mul( 2.9 ) ) ), 0.3 );
 	const rock = mix( uBaseColor1, uBaseColor2, plateVar.mul( 0.3 ).add( 0.35 ) ).toVar();
@@ -664,8 +739,12 @@ export const renderVolcanic = /*@__PURE__*/ Fn( ( [ sp, s ] ) => {
 	/* Emissive lava — multi-tone: core, mid, edge + noise streaks for variety */
 
 	const hotEdge = smoothstep( 0.0, 0.6, cracks );
-	const edgeTint = select( uTemperature.greaterThan( 0.5 ), vec3( 1.0, 0.85, 0.3 ), vec3( 0.6, 0.9, 1.0 ) );
-	const midTint = select( uTemperature.greaterThan( 0.5 ), vec3( 1.0, 0.55, 0.1 ), vec3( 0.3, 0.7, 0.95 ) );
+
+	/* Per-seed +-10% tint jitter so hot worlds' lava glow isn't identical */
+
+	const tintJit = vec3( add( 0.9, fract( s.mul( 0.37 ) ).mul( 0.2 ) ), add( 0.9, fract( s.mul( 0.53 ) ).mul( 0.2 ) ), add( 0.9, fract( s.mul( 0.71 ) ).mul( 0.2 ) ) );
+	const edgeTint = select( uTemperature.greaterThan( 0.5 ), vec3( 1.0, 0.85, 0.3 ), vec3( 0.6, 0.9, 1.0 ) ).mul( tintJit );
+	const midTint = select( uTemperature.greaterThan( 0.5 ), vec3( 1.0, 0.55, 0.1 ), vec3( 0.3, 0.7, 0.95 ) ).mul( tintJit );
 	const lavaCore = uEmissiveColor.mul( add( 1.2, uEmissiveIntensity ) );
 	const lavaMid = mix( uEmissiveColor, midTint, 0.4 ).mul( add( 0.9, uEmissiveIntensity ) );
 	const lavaEdge = mix( uEmissiveColor, edgeTint, 0.5 ).mul( uEmissiveIntensity );
