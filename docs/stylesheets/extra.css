@@ -326,6 +326,13 @@ html {
   font-size: calc(0.7rem * var(--md-text-scale, 1));
 }
 
+/* Zensical wraps nav labels in .md-typeset spans that hijack content font/color
+   rules; force inheritance so links style their text like Material did */
+.md-nav .md-nav__link .md-typeset {
+  font: inherit;
+  color: inherit;
+}
+
 .md-nav--primary .md-nav__item,
 .md-nav--primary .md-nav__title {
   font-size: calc(0.8rem * var(--md-text-scale, 1));

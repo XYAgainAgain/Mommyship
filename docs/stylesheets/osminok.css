@@ -618,7 +618,7 @@ body:has(.osminok-dive) .ocean-surface {
   pointer-events: none;
 }
 
-/* Phase 4: TOC depth meter */
+/* TOC styling — dive page depth markers */
 
 /* Hide the "Table of Contents" title label */
 body:has(.osminok-dive) .md-nav--secondary .md-nav__title {
@@ -632,14 +632,13 @@ body:has(.osminok-dive) .md-nav--secondary .md-nav .md-nav__link {
   line-height: 1.4;
 }
 
-/* h3 entries (1,000m markers) — bolder, use depth colors */
+/* h3 entries (1,000m markers) — bolder */
 body:has(.osminok-dive) .md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link {
   font-size: 0.85em;
   font-weight: 600;
 }
 
-/* TOC links — JS overrides opacity per-link via inline !important.
-   CSS baseline keeps them dim until JS takes over. */
+/* TOC links — uniform dim opacity; --current class (below) highlights the active one */
 body:has(.osminok-dive) .md-nav--secondary .md-nav__link {
   opacity: 0.15;
   text-shadow: 0 0 4px currentColor;
@@ -651,22 +650,6 @@ body:has(.osminok-dive) .md-nav--secondary .md-nav__link--current {
   text-shadow: 0 0 12px currentColor, 0 0 4px currentColor !important;
   transform: scale(1.12);
 }
-
-/* Depth colors for 1,000m markers — bright at surface, deep at bottom */
-body:has(.osminok-dive) .md-nav--secondary a[href="#0m"] { color: #7dd3fc !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#1000m"] { color: #38bdf8 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#2000m"] { color: #0ea5e9 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#3000m"] { color: #0284c7 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#4000m"] { color: #1e5a8a !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#5000m"] { color: #2e4570 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#6000m"] { color: #3a3868 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#7000m"] { color: #3d2e60 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#8000m"] { color: #3a2558 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#9000m"] { color: #331e50 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#10000m"] { color: #2d1848 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#11000m"] { color: #271340 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#12000m"] { color: #220e38 !important; }
-body:has(.osminok-dive) .md-nav--secondary a[href="#_1"] { color: #1a0a2e !important; }
 
 /* "Surface" pill — all Osminok pages */
 body:has(.osminok-ocean) .md-top {
