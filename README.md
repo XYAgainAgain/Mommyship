@@ -34,6 +34,7 @@ Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of t
 <p align="center">
   <img src="docs/assets/images/MommyshipSpacerSheet-DARK.png" alt="Mommyship Spacer Sheet Dark" width="100%" />
 </p>
+
 ## Got Feedback?
 
 Got thoughts, balance gripes, typos, or site bugs to report? Open an [Issue](../../issues) — all feedback is welcome! Worst case, you fail a Fear Save. Best case, we fix it.
