@@ -5,6 +5,8 @@
   <img src="docs/assets/images/MOMMYSHIP-logo.svg" alt="MOMMYSHIP" />
 </p>
 
+---
+
 ***A mildly friendlier, more robust, and ever-so-slightly less deadly homebrew ruleset for the Mothership Sci-Fi Horror RPG. Lots of things have been rebalanced and reconfigured, but for those familiar, it's easy to jump in!***
 
 **Read the full rules at [mommyship.mom](https://mommyship.mom/)**! (That's dot-MOM not dot-COM. Important distinction.)
