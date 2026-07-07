@@ -1,38 +1,43 @@
 <p align="center">
   <img src="docs/assets/images/MothershipSplash0b.webp" alt="Mommyship — A Homebrew Table Ruleset for Mothership" width="100%" />
 </p>
-<h1 align="center">Mommyship</h1>
-
-***A mildly friendlier, more robust, and ever-so-slightly less deadly homebrew ruleset for the Mothership Sci-Fi Horror RPG.***
+<p align="center">
+  <img src="docs/assets/images/MOMMYSHIP-logo.svg" alt="MOMMYSHIP" />
+</p>
+***A mildly friendlier, more robust, and ever-so-slightly less deadly homebrew ruleset for the Mothership Sci-Fi Horror RPG. Lots of things have been rebalanced and reconfigured, but for those familiar, it's easy to jump in!***
 
 **Read the full rules at [mommyship.mom](https://mommyship.mom/)**! (That's dot-MOM not dot-COM. Important distinction.)
 
 ---
 
-Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of the excellent [Mothership RPG](https://www.tuesdayknightgames.com/pages/mothership-rpg) by Tuesday Knight Games. It patches some gaps we kept hitting at our own table: more character options, deeper ship rules, a whole mech-droid companion system, and a whole custom galaxy to actually fly around in (and play in, if you want to use it!) The time-tested frame of Mothership is still doing all the heavy lifting, we just bolted some extra modules onto the hull and polished the hell out of it. 
+Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of the excellent [Mothership RPG](https://www.tuesdayknightgames.com/pages/mothership-rpg) by Tuesday Knight Games. It patches some gaps we kept hitting at our own table: MANY more character options, an actual social stat, broadened gear variety, deeper and more customizable ship rules, a modular mech-droid companion system, a brand-new character sheet, and a whole original galaxy to actually fly around in (and play in, if you want to use it!) The time-tested frame of Mothership is still doing all the heavy lifting, we just bolted some extra modules onto the hull and polished the hell out of it.
 
-What could go wrong?
+<p align="center">What could possibly go wrong?</p>
 
-Mommyship was created by two big nerds, **Jaz** & **Sam**, with much love and appreciation for the source material. It's completely free and always will be, so grab a vaccsuit and try not to panic!
+***Mommyship*** was created by two big nerds, **Jaz** & **Sam**, with much love and appreciation for the source material. It's completely free and always will be, so grab a vaccsuit and try not to panic!
 
 <p align="center">🚀💜🌌</p>
 
 ## Running Quick Scan...
 
 - **[Player's Survival Guide](https://mommyship.mom/players-survival-guide/):** Character creation, stats, skills, classes, species, combat, & gear. Everything you need to make a doomed little spacer of your very own!
-- **[Shipbreaker's Toolkit](https://mommyship.mom/shipbreakers-toolkit/):** Ships, space travel, operating costs, & ship combat, because the endless void wants you dead *and* broke.
+- **[Shipbreaker's Toolkit](https://mommyship.mom/shipbreakers-toolkit/):** Spaceships galore, travel times/hazards, operating costs, crew roster, & ship combat, because the endless void wants you dead *and* broke.
 - **[D.A.V.E. Pilot Manual](https://mommyship.mom/dave-pilot-manual/):** Design & pilot your very own D.A.V.E. (**D**efense **A**nd **V**iolent **E**ncounter) droid. He's your best friend and he's covered in guns and painted with hot pink leopard print.
-- **[The Galaxy Map](https://mommyship.mom/galaxy.html):** A fully explorable 3D galaxy rendered right in your browser with hundreds of stars & planets, hyperlanes, factions, nebulae, asteroids, and one *very* hungry supermassive black hole. Go on, fly into it. See what happens. Bet you'll like it.
+- **[The Known Galaxy Map](https://mommyship.mom/galaxy.html):** A fully-explorable 3D galaxy (and 2D for flat map fans) rendered right in your browser with hundreds of stars & planets, hyperlanes, factions, nebulae, asteroids, and one *very* hungry supermassive black hole. Go on, fly into it. See what happens. Bet you'll like it.
 - **Secrets:** There may or may not be more lurking on this site than the nav lets on. Keep your eyes peeled, your sci-fi SCUBA gear ready, and your dosimeter handy. Things await in the deep dark.
-- **FREE FOREVER!** No paywalls, no trackers, no ads. If you somehow paid for this, file an incident report immediately. I don't know who with. Just a trusted adult, I guess.
+- **FREE FOREVER!** No paywalls, no trackers, no ads, no bullshit. If you somehow paid for this, file an incident report immediately. I don't know who with. Just a trusted unionized adult, I guess.
 
+## Character Sheet Sneak Peek
+<p align="center">
+  <img src="docs/assets/images/MommyshipSpacerSheet-DARK.png" alt="Mommyship Spacer Sheet Dark" width="100%" />
+</p>
 ## Got Feedback?
 
 Got thoughts, balance gripes, typos, or site bugs to report? Open an [Issue](../../issues) — all feedback is welcome! Worst case, you fail a Fear Save. Best case, we fix it.
 
 ## Under the Hull Plating
 
-The site is built with [Zensical](https://zensical.org/) and hosted on GitHub Pages. The galaxy map is custom [Three.js](https://threejs.org/) with hand-rolled shaders, the fonts are self-hosted, and all the neon glow and weird little touches are custom CSS and JavaScript! :)
+The site is built with [Zensical](https://zensical.org/) and hosted on GitHub Pages. The galaxy map is custom [Three.js](https://threejs.org/) with hand-rolled shaders, the fonts are all self-hosted, and all the neon glow & weird little touches are custom CSS and JavaScript! :)
 
 ## The Corpo Stuff
 
