@@ -115,7 +115,8 @@ export async function createBlackHole(scene, renderer) {
   volMat.side = THREE.DoubleSide;
   volMat.transparent = true;
   volMat.depthWrite = false;
-  volMat.depthTest = false;
+  // depthTest on: nearer scene objects (ships!) must occlude the disk instead of being painted over.
+  volMat.depthTest = true;
   const volMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), volMat);
   volMesh.scale.setScalar(DISC_OUTER_RADIUS);
   volMesh.renderOrder = 2;

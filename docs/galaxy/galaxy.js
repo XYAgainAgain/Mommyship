@@ -13,6 +13,7 @@ import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
 import { createSystems } from './systems.js';
 import * as asteroids from './asteroids.js';
+import * as ships from './ships.js';
 import * as ui from './galaxy-ui.js';
 import { createPerfMonitor } from './perf-monitor.js';
 
@@ -197,6 +198,7 @@ async function init() {
   const markerWarm = systems.warmUpShaders(renderer, cam.camera);
   progress();
   await asteroids.init(scene, systems.getData(), lightmap);
+  await ships.init(scene, lightmap, systems);
   await scenePrecompile;
   await warmStep();
   await markerWarm;
@@ -515,7 +517,10 @@ async function init() {
     const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
     bh.update(rotationTime, lodFactor, cam.camera);
 
-    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode);
+    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode, cam.camera.position);
+    /* Ships AFTER systems: they read bodyWorldPos, which systems just moved for this frame
+       (reading last frame's positions put every dock-tracking ship out of step). Ships stay visible in Photo/Muse — they're physical objects, not data overlays. */
+    ships.update(elapsed, rotationTime);
 
     /* Camera follows tracked body */
     if (trackedId) {

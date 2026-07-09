@@ -158,6 +158,13 @@ function orbitMatrix(omega, Omega, incl) {
 }
 
 /* Line segment vs sphere — returns true if the segment passes through the sphere */
+function pointSegDist(p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+  const t = Math.max(0, Math.min(1,
+    ((p.x - a.x) * abx + (p.y - a.y) * aby + (p.z - a.z) * abz) / (abx * abx + aby * aby + abz * abz || 1)));
+  return Math.hypot(a.x + abx * t - p.x, a.y + aby * t - p.y, a.z + abz * t - p.z);
+}
+
 function lineHitsSphere(from, to, center, radius) {
   const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z;
   const fx = from.x - center.x, fy = from.y - center.y, fz = from.z - center.z;
@@ -207,12 +214,19 @@ function angularSpeed(radius) {
   return 0.06 + 0.008 / (radius + 60) + coreBoost;
 }
 
-function canonicalToRotated(cx, cz, rotationTime) {
+/* Out-param variant for per-frame callers (ships) — avoids per-frame object churn. */
+function canonicalToRotatedInto(out, cx, cz, rotationTime) {
   const r = Math.sqrt(cx * cx + cz * cz);
-  if (r < 0.001) return { x: cx, z: cz };
+  if (r < 0.001) { out.x = cx; out.z = cz; return out; }
   const angle = angularSpeed(r) * rotationTime;
   const cos = Math.cos(angle), sin = Math.sin(angle);
-  return { x: cx * cos - cz * sin, z: cx * sin + cz * cos };
+  out.x = cx * cos - cz * sin;
+  out.z = cx * sin + cz * cos;
+  return out;
+}
+
+function canonicalToRotated(cx, cz, rotationTime) {
+  return canonicalToRotatedInto({ x: 0, z: 0 }, cx, cz, rotationTime);
 }
 
 function rotatedToCanonical(rx, rz, rotationTime) {
@@ -1294,7 +1308,7 @@ export async function createSystems(scene, camera, renderer) {
   let cachedBhNdcX = 0, cachedBhNdcY = 0, cachedBhScreenR = 0;
 
   /* Per-frame update: rotate markers + labels to match galactic disk */
-  function update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode) {
+  function update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode, camPos) {
     lastRotationTime = rotationTime;
     const hasStars = starMarkers && starIds.length > 0;
     const hasSpheres = sphereMarkers && sphereIds.length > 0;
@@ -1575,18 +1589,26 @@ export async function createSystems(scene, camera, renderer) {
       const to = bodyWorldPos.get(toId);
       if (!from || !to) { hl.fade = 0; hl.line.visible = false; continue; }
 
-      /* Occlusion: check if lane passes through any body (throttled to every 4 frames) */
+      /* Occlusion: check if lane passes through any body (throttled to every 4 frames). Only
+         the RESOLVED endpoints are exempt now — a lane's root star must still fade it, or stationless-system lanes beam straight through their sun; stars use the same avoidance-sphere factor as ship traffic. */
       if (runOcclusion) {
         let blocked = false;
         for (const bid of depthBuckets[0]) {
-          if (bid === hl.fromId || bid === hl.toId || bid === fromId || bid === toId) continue;
+          if (bid === fromId || bid === toId) continue;
           const bwp = bodyWorldPos.get(bid);
           const bm = bodyMeta.get(bid);
           if (!bwp || !bm) continue;
-          const r = LANDMARK_IDS.has(bid) ? (bid === 'smbh' ? 15 : 0) : MARKER_RADIUS * bm.instanceScale * 1.5;
+          const isStar = galaxyData.bodies[bid]?.type === 'star';
+          const r = LANDMARK_IDS.has(bid) ? (bid === 'smbh' ? 15 : 0)
+            : MARKER_RADIUS * bm.instanceScale * (isStar ? 2.0 : 1.5);
           if (r > 0 && lineHitsSphere(from, to, bwp, r)) { blocked = true; break; }
         }
         hl.targetFade = blocked ? 0 : 1;
+      }
+      // Camera proximity fades the lane out gradually, replacing hard near-plane truncation.
+      if (camPos) {
+        const dCam = pointSegDist(camPos, from, to);
+        if (dCam < 25) hl.targetFade = Math.min(hl.targetFade, Math.max(0, (dCam - 8) / 17));
       }
 
       hl.fade += (hl.targetFade - hl.fade) * laneFadeK;
@@ -1919,12 +1941,16 @@ export async function createSystems(scene, camera, renderer) {
     rebakeSingleStar,
     angularSpeed,
     canonicalToRotated,
+    canonicalToRotatedInto,
     rotatedToCanonical,
     getBodyWorldPos: (id) => bodyWorldPos.get(id) || null,
     getBodyMeta: (id) => bodyMeta.get(id) || null,
     flattenPositions,
     sampleOrbitXZ,
     getPreferStation: (id) => preferStation.get(id) || id,
+    /* Ships.js LOD hook: the star id currently anchoring the detail-mesh crossfade
+       (camera-near or tracked), or null when nothing is close. Root-star id in practice. */
+    getFocusedSystemId: () => { const it = detailActiveIds.values().next(); return it.done ? null : it.value; },
     showOrbitsForBody,
     hideOrbits,
     get needsLabelRender() { return needsLabelRender; },
