@@ -1,17 +1,11 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
-import { main as composeFrag, uSpaceTexture, uDistortionTexture, uSceneDepth, uBHDepth, uBlackHolePosition, uDistortionStrength, uRGBShiftRadius, uAnnulus, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
-import { main as activeFrag } from './tsl/frag/distortion-active.tsl.js';
-import { main as maskFrag } from './tsl/frag/distortion-mask.tsl.js';
+import { main as composeFrag, uSpaceTexture, uSceneDepth, uBHDepth, uBlackHolePosition, uDistortionStrength, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
 
-/* Multi-pass composition pipeline for black hole lensing.
-   When active: scene → spaceRT, distortion planes → distortionRT,
-   full-screen quad composites with UV displacement + chromatic aberration.
-   When LOD = 0 (camera far away), none of this runs. */
+/* Multi-pass BH-lensing pipeline: scene → spaceRT, then a quad composites the Einstein-lens
+   remap + chromatic aberration — pure math, no extra distortion RT. Skipped when LOD = 0. */
 
-/* 60 matches masshole's 2:1 distortion-to-disk ratio (disk outer = 30) */
-const DISTORTION_SCALE = 60;
 const PHOTON_RING_RADIUS = 6.9; /* photon ring = uRingRadius 0.23 × 30 sphere scale */
 
 const _origin = new THREE.Vector3();
@@ -23,36 +17,9 @@ export async function createCompositor(renderer) {
   const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   orthoCamera.position.z = 1;
   const composeScene = new THREE.Scene();
-  const distortionScene = new THREE.Scene();
 
-  /* Active distortion plane — faces camera each frame, radial gradient */
-  const activeMat = new MeshBasicNodeMaterial();
-  activeMat.fragmentNode = activeFrag();
-  activeMat.side = THREE.DoubleSide;
-  activeMat.transparent = true;
-
-  const activePlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1), activeMat
-  );
-  activePlane.scale.set(DISTORTION_SCALE, DISTORTION_SCALE, DISTORTION_SCALE);
-  distortionScene.add(activePlane);
-
-  /* Mask plane — lies flat in XZ, shapes distortion into a disc */
-  const maskMat = new MeshBasicNodeMaterial();
-  maskMat.fragmentNode = maskFrag();
-  maskMat.side = THREE.DoubleSide;
-  maskMat.transparent = true;
-
-  const maskPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1), maskMat
-  );
-  maskPlane.scale.set(DISTORTION_SCALE, DISTORTION_SCALE, DISTORTION_SCALE);
-  maskPlane.rotation.x = Math.PI * 0.5;
-  distortionScene.add(maskPlane);
-
-  /* Render targets — created lazily on first LOD > 0 */
+  /* Render target — created lazily on first LOD > 0 */
   let spaceRT = null;
-  let distortionRT = null;
   let rtsReady = false;
 
   const composeMat = new MeshBasicNodeMaterial();
@@ -60,13 +27,8 @@ export async function createCompositor(renderer) {
   composeMat.depthWrite = false;
   composeMat.depthTest = false;
 
-  /* Initial uniform values */
   uBlackHolePosition.value.set(0.5, 0.5);
   uDistortionStrength.value = 0.0;
-  uRGBShiftRadius.value = 0.00001;
-
-  /* Photon-ring annulus lensing for the volumetric BH disk */
-  uAnnulus.value = 1;
 
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), composeMat);
   quad.frustumCulled = false;
@@ -84,15 +46,8 @@ export async function createCompositor(renderer) {
     /* Depth readable by the compose pass for the lensing gate; setSize resizes it */
     spaceRT.depthTexture = new THREE.DepthTexture(w, h);
     uSceneDepth.value = spaceRT.depthTexture;
-    distortionRT = new THREE.RenderTarget(
-      Math.floor(w * 0.5), Math.floor(h * 0.5), {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter
-      }
-    );
 
     uSpaceTexture.value = spaceRT.texture;
-    uDistortionTexture.value = distortionRT.texture;
     rtsReady = true;
   }
 
@@ -101,14 +56,15 @@ export async function createCompositor(renderer) {
     const w = renderer.domElement.width;
     const h = renderer.domElement.height;
     spaceRT.setSize(w, h);
-    distortionRT.setSize(Math.floor(w * 0.5), Math.floor(h * 0.5));
   }
 
-  function render(scene, camera, bhScreenPos, lodFactor, markerScene) {
+  /* lensLod: true distance-based LOD for warp strength. Cinema forces lodFactor to 1 for
+     pipeline quality; the lens must not inherit that or the galaxy view warps full-tilt. */
+  function render(scene, camera, bhScreenPos, lodFactor, markerScene, lensLod) {
     ensureRTs();
 
     uBlackHolePosition.value.copy(bhScreenPos);
-    uDistortionStrength.value = lodFactor;
+    uDistortionStrength.value = lensLod ?? lodFactor;
 
     /* Project the photon-ring radius to a screen-space (y-UV) radius so the lensing hugs the photon
        ring (not the disk's outer rim) and scales with distance. Clamped for the inside (Muse) case. */
@@ -126,9 +82,6 @@ export async function createCompositor(renderer) {
       : bhBehind ? 2
       : Math.min(1, Math.max(0, _origin.z));
 
-    /* Active plane tracks camera so lensing works from any angle */
-    activePlane.lookAt(camera.position);
-
     /* Pass 1: entire galaxy scene → spaceRT */
     renderer.setRenderTarget(spaceRT);
     renderer.clear();
@@ -140,16 +93,11 @@ export async function createCompositor(renderer) {
       renderer.render(markerScene, camera);
     }
 
-    /* Pass 2: distortion planes → distortionRT */
-    renderer.setRenderTarget(distortionRT);
-    renderer.clear();
-    renderer.render(distortionScene, camera);
-
-    /* Pass 3: composition quad → screen */
+    /* Pass 2: composition quad → screen */
     renderer.setRenderTarget(null);
     renderer.clear();
     renderer.render(composeScene, orthoCamera);
   }
 
-  return { render, resize, distortionScene, composeMat };
+  return { render, resize, composeMat };
 }

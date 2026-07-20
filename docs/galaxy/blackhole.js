@@ -1,10 +1,20 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { uniform, float, Fn, length, mix, smoothstep, positionLocal, vec3, vec4 } from 'three/tsl';
+import { Fn, If, Discard, uniform, float, vec4 } from 'three/tsl';
 
-import { main as bhVolFrag, uLocalCam as volLocalCam, uTime as volTime, uOpacity as volOpacity, uNoiseTexture as volNoiseTex, uStepSize as volStepSize, uMaxSteps as volMaxSteps } from './tsl/frag/blackhole-volumetric.tsl.js';
+import { main as bhVolFrag, ignPixel, uLocalCam as volLocalCam, uTime as volTime, uOpacity as volOpacity, uNoiseTexture as volNoiseTex, uStepSize as volStepSize, uMaxSteps as volMaxSteps, uCrossFade } from './tsl/frag/blackhole-volumetric.tsl.js';
+import { main as bhFarFrag, uSinElev } from './tsl/frag/blackhole-far.tsl.js';
 
 const DISC_OUTER_RADIUS = 30;
+const OCCLUDER_RADIUS = 6.9;
+
+/* IGN-dithered black: discarded pixels skip the depth write too, so occlusion
+   melts away statistically instead of popping when the disc toggles. */
+const uOccFade = uniform(float(1));
+const occFragNode = /*@__PURE__*/ Fn(() => {
+  If(ignPixel().greaterThanEqual(uOccFade), () => { Discard(); });
+  return vec4(0, 0, 0, 1);
+});
 
 /* Volumetric-disk raymarch LOD. BASE_STEP is the approved-look step size at MAX_STEPS;
    step count ramps down with distance to keep far/small black holes cheap. */
@@ -17,99 +27,41 @@ function lodSmoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
-/* Mid-LOD ring: inline TSL for the 5-stop radial gradient band.
-   Computes radial position directly in frag from positionLocal — no vert needed. */
-const uRingOpacity = uniform(float(1.0));
-const ringFragNode = /*@__PURE__*/ Fn(() => {
-  const radial = length(positionLocal.xy).sub(8.0).div(14.0);
-  const c0 = vec3(1.0, 0.90, 0.97);
-  const c1 = vec3(0.95, 0.30, 0.60);
-  const c2 = vec3(0.12, 0.30, 0.55);
-  const c3 = vec3(0.51, 0.20, 0.67);
-  const c4 = vec3(0.80, 0.65, 0.30);
-  const surfaceColor = mix(c0, c1, smoothstep(0.0, 0.15, radial)).toVar();
-  surfaceColor.assign(mix(surfaceColor, c2, smoothstep(0.15, 0.35, radial)));
-  surfaceColor.assign(mix(surfaceColor, c3, smoothstep(0.35, 0.60, radial)));
-  surfaceColor.assign(mix(surfaceColor, c4, smoothstep(0.60, 0.90, radial)));
-  const edgeFade = smoothstep(0.0, 0.15, radial).mul(smoothstep(1.0, 0.7, radial));
-  return vec4(surfaceColor, edgeFade.mul(uRingOpacity));
-});
-
 export async function createBlackHole(scene, renderer) {
   const group = new THREE.Group();
 
-  /* Far-LOD glow sprite — ring texture with transparent center for event horizon rim */
-  const spriteCanvas = document.createElement('canvas');
-  spriteCanvas.width = 64;
-  spriteCanvas.height = 64;
-  const ctx = spriteCanvas.getContext('2d');
-  const cx = 32, cy = 32;
-
-  /* Outer glow falloff */
-  const outerGlow = ctx.createRadialGradient(cx, cy, 10, cx, cy, 32);
-  outerGlow.addColorStop(0, 'rgba(131, 50, 172, 0.6)');
-  outerGlow.addColorStop(0.5, 'rgba(54, 51, 255, 0.2)');
-  outerGlow.addColorStop(1, 'rgba(54, 51, 255, 0)');
-  ctx.fillStyle = outerGlow;
-  ctx.fillRect(0, 0, 64, 64);
-
-  /* Bright ring band — reads as Einstein ring/event horizon glow from far away */
-  const ring = ctx.createRadialGradient(cx, cy, 0, cx, cy, 32);
-  ring.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  ring.addColorStop(0.25, 'rgba(0, 0, 0, 0)');
-  ring.addColorStop(0.32, 'rgba(246, 121, 229, 0.9)');
-  ring.addColorStop(0.38, 'rgba(246, 121, 229, 0.9)');
-  ring.addColorStop(0.5, 'rgba(131, 50, 172, 0.3)');
-  ring.addColorStop(0.7, 'rgba(0, 0, 0, 0)');
-  ring.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = ring;
-  ctx.fillRect(0, 0, 64, 64);
-
-  const spriteTexture = new THREE.CanvasTexture(spriteCanvas);
-  const spriteMat = new THREE.SpriteMaterial({
-    map: spriteTexture,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    transparent: true
-  });
-  const glowSprite = new THREE.Sprite(spriteMat);
-  glowSprite.scale.set(28, 28, 1);
-  group.add(glowSprite);
-
-  /* Black depth disc just under the photon ring (6.6 vs 6.9): the volumetric black hides it
-     while it depth-occludes markers/lanes/stars behind the hole. */
-  const occluderGeo = new THREE.CircleGeometry(5.5, 32);
-  const occluderMat = new THREE.MeshBasicMaterial({
-    color: 0x000000,
-    depthWrite: true,
-    depthTest: true
-  });
+  /* Black depth disc at the photon ring radius: covers the ray-steering-darkened zone,
+     edge hides under the bright ring, depth-occludes markers/lanes/stars behind the hole. */
+  const occluderGeo = new THREE.CircleGeometry(OCCLUDER_RADIUS, 48);
+  const occluderMat = new MeshBasicNodeMaterial();
+  occluderMat.fragmentNode = occFragNode();
+  occluderMat.depthWrite = true;
+  occluderMat.depthTest = true;
   const occluder = new THREE.Mesh(occluderGeo, occluderMat);
-  occluder.scale.setScalar(1.2);
   occluder.renderOrder = 1;
   group.add(occluder);
 
-  /* Mid-LOD ring mesh — shows accretion disk orientation at medium distance.
-     Flat in XZ like the real disk, uses radial gradient from vertex position. */
-  const ringGeo = new THREE.RingGeometry(8, 22, 48);
-  const ringMat = new MeshBasicNodeMaterial();
-  ringMat.fragmentNode = ringFragNode();
-  ringMat.side = THREE.DoubleSide;
-  ringMat.blending = THREE.AdditiveBlending;
-  ringMat.depthWrite = false;
-  ringMat.depthTest = true;
-  ringMat.transparent = true;
-  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-  ringMesh.rotation.x = Math.PI * 0.5;
-  ringMesh.renderOrder = 1.5;
-  group.add(ringMesh);
-
-  /* Volumetric-sphere disk — single-material raymarch in unit-local space,
-     unit sphere scaled to the disk outer radius. */
+  /* Shared noise texture — volumetric raymarch and far billboard sample the same node. */
   const volNoise = await new THREE.TextureLoader().loadAsync('galaxy/textures/noise_deep.png');
   volNoise.wrapS = volNoise.wrapT = THREE.RepeatWrapping;
   volNoise.colorSpace = THREE.NoColorSpace;
   volNoiseTex.value = volNoise;
+
+  /* Far-LOD billboard: analytic disk + ring + wrap arc, IGN-dither crossfaded with the
+     volumetric (complementary discards). Normal-blended coverage so dark lanes still occlude the core. */
+  const farMat = new MeshBasicNodeMaterial();
+  farMat.fragmentNode = bhFarFrag();
+  farMat.transparent = true;
+  farMat.depthWrite = false;
+  farMat.depthTest = true;
+  const farQuad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), farMat);
+  farQuad.scale.setScalar(DISC_OUTER_RADIUS * 2);
+  farQuad.renderOrder = 1.5;
+  farQuad.frustumCulled = false;
+  group.add(farQuad);
+
+  /* Volumetric-sphere disk — single-material raymarch in unit-local space,
+     unit sphere scaled to the disk outer radius. */
   const volMat = new MeshBasicNodeMaterial();
   volMat.fragmentNode = bhVolFrag();
   volMat.side = THREE.DoubleSide;
@@ -128,25 +80,25 @@ export async function createBlackHole(scene, renderer) {
   scene.add(group);
 
   function update(elapsed, lodFactor, camera) {
-    /* Glow sprite: fades out as real disk appears */
-    glowSprite.material.opacity = 1 - lodFactor;
-    glowSprite.visible = lodFactor < 0.99;
-
-    /* Occluder off inside the core (Muse). A flat disc matches the sphere silhouette only
-       from afar — apparent radius grows as R/√(1−(R/d)²), else markers peek as crescents. */
+    /* A flat disc matches the sphere silhouette only from afar — apparent radius grows
+       as R/√(1−(R/d)²), else markers peek as crescents. */
     occluder.quaternion.copy(camera.quaternion);
     const occDist = camera.position.length();
-    const occRatio = Math.min(6.6 / Math.max(occDist, 1e-3), 0.94);
-    occluder.scale.setScalar(1.2 / Math.sqrt(1 - occRatio * occRatio));
-    occluder.visible = occDist > 8;
+    const occRatio = Math.min(OCCLUDER_RADIUS / Math.max(occDist, 1e-3), 0.94);
+    occluder.scale.setScalar(1 / Math.sqrt(1 - occRatio * occRatio));
 
-    /* Ring mesh: always visible at far range, bridges gap until real disk takes over */
-    const ringOpacity = 1 - lodSmoothstep(0.3, 0.6, lodFactor);
-    uRingOpacity.value = ringOpacity;
-    ringMesh.visible = ringOpacity > 0.01;
+    /* IGN crossfade: one uniform drives both discards — far billboard owns the pixels
+       the volumetric gives up, so the handoff never double-exposes. Snapped to exact
+       0/1 outside the band so a hidden mesh never strands discarded pixels unowned. */
+    /* Band sits far out (dist ≈ 234–278) where the BH is small on screen — a close-in
+       dither band gets magnified by the lens into visible spokes. */
+    let xf = lodSmoothstep(0.1, 0.35, lodFactor);
+    xf = xf > 0.999 ? 1 : xf < 0.001 ? 0 : xf;
+    uCrossFade.value = xf;
+    farQuad.quaternion.copy(camera.quaternion);
+    uSinElev.value = camera.position.y / Math.max(occDist, 1e-3);
+    farQuad.visible = xf < 1;
 
-    /* Disk: delayed start so the far-LOD elements hand off first */
-    const diskOpacity = lodSmoothstep(0.2, 0.8, lodFactor);
     volTime.value = elapsed;
     volMesh.updateMatrixWorld();
     _volCam.copy(camera.position);
@@ -155,20 +107,23 @@ export async function createBlackHole(scene, renderer) {
     /* Fade the whole disk out as the camera enters the core (Muse) so the galaxy shows through
        instead of the dense disk center flooding the screen. */
     const insideFade = Math.min(1, Math.max(0, (camera.position.length() - 4) / 8));
-    volOpacity.value = diskOpacity * insideFade;
+    volOpacity.value = insideFade;
+    /* Occlusion melts on the same ramp as the disk — one "falling in" transition. */
+    uOccFade.value = insideFade;
+    occluder.visible = insideFade > 0.001;
     /* Step-count LOD: full steps up close (approved look, Cinema/Muse), fewer far+small;
        stepSize scales up inversely so the ray still crosses the whole sphere. */
     const q = lodSmoothstep(0.2, 1.0, lodFactor);
     const steps = Math.round(BH_VOL_MIN_STEPS + (BH_VOL_MAX_STEPS - BH_VOL_MIN_STEPS) * q);
     volMaxSteps.value = steps;
     volStepSize.value = BH_VOL_BASE_STEP * (BH_VOL_MAX_STEPS / steps);
-    volMesh.visible = volOpacity.value > 0.01;
+    volMesh.visible = xf > 0 && insideFade > 0.001;
 
     return { lodFactor };
   }
 
-  /* No viewport-dependent uniforms after the quads conversion; kept as a stable
-     API surface in case future LOD effects need it. */
+  /* No viewport-dependent uniforms right now; kept as a stable API surface
+     in case future LOD effects need it. */
   function resize() {}
 
   return { group, update, resize };

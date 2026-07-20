@@ -521,7 +521,9 @@ async function init() {
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
-    const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
+    /* Cinema/Muse outrank the perf watchdog: a forced-far BH inside the core renders as a
+       screen-filling billboard wash, and the watchdog is bypassed in those modes anyway. */
+    const lodFactor = cinemaMode || museActive ? 1 : compositorForced ? 0 : computeLOD(cam.camera);
     bh.update(rotationTime, lodFactor, cam.camera);
 
     systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode, cam.camera.position);
@@ -552,7 +554,7 @@ async function init() {
 
     if (lodFactor > 0) {
       const screenPos = projectToScreen(cam.camera);
-      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene);
+      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene, computeLOD(cam.camera));
     } else {
       renderer.setRenderTarget(null);
       renderer.clear();
@@ -695,9 +697,9 @@ async function init() {
     }
   }, systems);
 
-  /* One LOD-1 frame through the full BH compositor: its RTs and pipelines
-     otherwise compile on the first core approach, mid-flight */
-  bh.update(0, 1, cam.camera);
+  /* Warm-up frame through the full BH compositor so its RTs/pipelines compile now instead
+     of on first core approach, mid-flight. lodFactor 0.4 keeps both billboard and volumetric materials visible so both compile. */
+  bh.update(0, 0.4, cam.camera);
   compositor.render(scene, cam.camera, projectToScreen(cam.camera), 1, systems.markerScene);
 
   updateScaleBar();

@@ -1,18 +1,15 @@
 import * as THREE from 'three';
 import {
-  Fn, Loop, If, Break, select, float, vec2, vec3, vec4, mat3, uniform, texture,
+  Fn, Loop, If, Break, Discard, select, float, vec2, vec3, vec4, mat3, uniform, texture,
   sin, cos, abs, min, max, clamp, mix, step, smoothstep, fract,
-  dot, normalize, remapClamp, positionLocal, faceDirection
+  dot, normalize, remapClamp, positionLocal, faceDirection, screenCoordinate
 } from 'three/tsl';
 
 /* Volumetric accretion disk: object-space raymarch with inverse-square ray-steering for the
-   over/under wrap. Ported from .dev/prototypes/blackhole; helpers adapted from
-   prashantkoirala465/Singularity (MIT). Runs in unit-local space — mesh scale sets world size.
-   Disk lies in local XZ (Y = galactic pole). Output is transparent so the galaxy shows through. */
+   over/under wrap, ported from prashantkoirala465/Singularity (MIT). Unit-local space (disk in XZ, Y = pole); output is transparent so the galaxy shows through. */
 
-/* sRGB hex → raw 0–1 vec3. The galaxy renders LinearSRGBColorSpace (no sRGB encode), so colors are
-   authored as direct framebuffer values. Vector3 (not THREE.Color) avoids a cross-build node-type
-   mismatch: the galaxy maps bare `three` to three.module.js, separate from three/tsl. */
+/* sRGB hex → raw 0–1 vec3, authored as direct framebuffer values (galaxy renders LinearSRGBColorSpace,
+   no sRGB encode). Vector3 not THREE.Color — avoids a cross-build node-type mismatch (bare `three` maps to three.module.js, separate from three/tsl). */
 const hexVec = (hex) => new THREE.Vector3(
   parseInt(hex.slice(1, 3), 16) / 255,
   parseInt(hex.slice(3, 5), 16) / 255,
@@ -42,10 +39,19 @@ export const uEmissionColor = uniform(hexVec('#311d5a'));
 export const uRingStrength = uniform(float(0.6));
 export const uRingRadius = uniform(float(0.23));
 export const uRingWidth = uniform(float(0.025));
-export const uDopplerAmp = uniform(float(0.0));
+export const uDopplerAmp = uniform(float(0.5));
 export const uDopplerPulse = uniform(float(0.2));
 export const uDopplerPulseSpeed = uniform(float(1.5));
 export const uMaxSteps = uniform(float(128));
+
+/* LOD crossfade vs the far billboard: 1 = volumetric owns every pixel. */
+export const uCrossFade = uniform(float(1));
+
+/* IGN (Jimenez) — complementary discard splits each screen pixel between the far
+   billboard and the volumetric, so the crossfade never double-exposes additively. */
+export const ignPixel = /*@__PURE__*/ Fn(() => fract(float(52.9829189).mul(
+  fract(float(0.06711056).mul(screenCoordinate.x)
+    .add(float(0.00583715).mul(screenCoordinate.y))))));
 
 const rotateAxis = /*@__PURE__*/ Fn(([axisIn, angleIn]) => {
   const angle = float(angleIn).toVar();
@@ -68,7 +74,7 @@ const catmulRom = /*@__PURE__*/ Fn(([T, D, C, B, A]) => {
 });
 
 /* 3-stop B-spline ramp, r184-safe (no Return inside single-branch If). */
-const ramp3 = /*@__PURE__*/ Fn(([T, A, B, C]) => {
+export const ramp3 = /*@__PURE__*/ Fn(([T, A, B, C]) => {
   const iAB = T.sub(A.w).div(B.w.sub(A.w)).saturate();
   const iBC = T.sub(B.w).div(C.w.sub(B.w)).saturate();
   const cA = catmulRom(float(1).sub(iAB), A.xyz, A.xyz, B.xyz, C.xyz);
@@ -87,6 +93,8 @@ const smoothRange = /*@__PURE__*/ Fn(([value, inMin, inMax, outMin, outMax]) => 
 });
 
 export const main = /*@__PURE__*/ Fn(() => {
+  If(ignPixel().greaterThanEqual(uCrossFade), () => { Discard(); });
+
   const objCoords = positionLocal.mul(vec3(1, 1, -1)).xzy;
   const isBackface = step(0.0, faceDirection.negate());
   const camObj = uLocalCam.mul(vec3(1, 1, -1)).xzy;
