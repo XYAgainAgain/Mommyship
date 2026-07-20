@@ -170,7 +170,6 @@ const shipVert = /*@__PURE__*/ Fn(() => {
   const mLen = length(m).toVar();
   const hasDir = smoothstep(0.1, 0.5, mLen).toVar();
   const axis = m.div(max(mLen, 1e-5)).toVar();
-  const toCam = cameraPosition.sub(worldPos).toVar();
   const crossAT = cross(axis, toCam).toVar();
   const cLen = length(crossAT).toVar();
   const rightA = crossAT.div(max(cLen, 1e-5)).toVar();

@@ -121,6 +121,7 @@ function createLoadingTracker(totalSteps) {
     step++;
     target = step / totalSteps;
     if (textEl) textEl.textContent = nextMessage();
+    if (window.gxBoot) window.gxBoot.ping();
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(tick);
   };
@@ -129,6 +130,9 @@ function createLoadingTracker(totalSteps) {
 async function init() {
   const container = document.querySelector('.experience');
   const progress = createLoadingTracker(13);
+
+  /* Reaching this line proves the CDN modules arrived; a hang past it is the GPU */
+  if (window.gxBoot) window.gxBoot.stage('Waking up the GPU...');
 
   const renderer = new WebGPURenderer({ antialias: true });
   /* All galaxy shaders are custom fragmentNode — bypass sRGB gamma encode to match
@@ -198,8 +202,11 @@ async function init() {
   const markerWarm = systems.warmUpShaders(renderer, cam.camera);
   progress();
   await asteroids.init(scene, systems.getData(), lightmap);
+  if (window.gxBoot) window.gxBoot.ping();
   await ships.init(scene, lightmap, systems);
+  if (window.gxBoot) window.gxBoot.ping();
   await scenePrecompile;
+  if (window.gxBoot) window.gxBoot.ping();
   await warmStep();
   await markerWarm;
   progress();
@@ -697,6 +704,7 @@ async function init() {
   renderer.setAnimationLoop(animate);
 
   /* Dismiss loading overlay */
+  if (window.gxBoot) window.gxBoot.done();
   const loadingEl = document.getElementById('gx-loading');
   if (loadingEl) {
     loadingEl.classList.add('fade-out');
@@ -706,6 +714,5 @@ async function init() {
 
 init().catch(err => {
   console.error('Galaxy init failed:', err);
-  const el = document.querySelector('.experience');
-  if (el) el.textContent = 'Failed to load galaxy map. Check console for details.';
+  if (window.gxBoot) window.gxBoot.fail(err);
 });

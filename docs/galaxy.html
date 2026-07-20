@@ -31,9 +31,73 @@
         <circle class="gx-loading-orbit gx-orbit-3" cx="50" cy="12" r="2" fill="#fffaff" fill-opacity="0.7"/>
         <circle class="gx-loading-head" id="gx-loading-head" cx="50" cy="7" r="3" fill="#41ead4"/>
       </svg>
-      <div class="gx-loading-text" id="gx-loading-text">Placeholder text 1...</div>
+      <div class="gx-loading-text" id="gx-loading-text">Dialing up the CDN...</div>
+      <div class="gx-loading-hint" id="gx-loading-hint" hidden></div>
     </div>
   </div>
+
+  <!-- Boot monitor: each load stage stamps the overlay, so a hang names its stage on screen -->
+  <script>
+    window.gxBoot = (function () {
+      var textEl = document.getElementById('gx-loading-text');
+      var hintEl = document.getElementById('gx-loading-hint');
+      var last = Date.now();
+      var state = 'loading';
+      /* Two tiers: cold-cache shader compiles legitimately sit 20-40s on one step,
+         so only a 45s silence earns the reload advice */
+      var watchdog = setInterval(function () {
+        if (state !== 'loading') return;
+        var quiet = Date.now() - last;
+        if (quiet > 45000) {
+          hintEl.hidden = false;
+          hintEl.textContent = 'Stuck on this step. The network or GPU is not answering.\n\nPress Ctrl/Cmd+Shift+R and cross your fingers.';
+        } else if (quiet > 20000) {
+          hintEl.hidden = false;
+          hintEl.textContent = 'Taking a while, probably first-run shader compiling. Hang tight...';
+        }
+      }, 5000);
+      function stage(msg) {
+        if (state !== 'loading') return;
+        detachGlobal();
+        last = Date.now();
+        textEl.textContent = msg;
+        hintEl.hidden = true;
+      }
+      function ping() {
+        if (state !== 'loading') return;
+        last = Date.now();
+        hintEl.hidden = true;
+      }
+      function fail(err) {
+        if (state !== 'loading') return;
+        state = 'failed';
+        clearInterval(watchdog);
+        textEl.textContent = 'Sorry, the galaxy is having some trouble.';
+        hintEl.hidden = false;
+        hintEl.classList.add('gx-loading-error');
+        hintEl.textContent = String((err && err.message) || err || 'Unknown error')
+          + '\n\nPress Ctrl/Cmd+Shift+R and cross your fingers. Details are in the console.';
+      }
+      function done() {
+        state = 'done';
+        clearInterval(watchdog);
+      }
+      /* Only our own modules or the CDN can fail the boot — Firefox extension content
+         scripts throw during this window too, and their filenames filter them out */
+      function onError(e) {
+        var src = e.filename || '';
+        if (src.indexOf(location.origin) !== 0 && src.indexOf('cdn.jsdelivr.net') === -1) return;
+        fail(e.error || e.message);
+      }
+      /* Trap only covers the module fetch/eval window (before init runs);
+         once init() stamps its first stage, its own catch owns error reporting */
+      function detachGlobal() {
+        window.removeEventListener('error', onError);
+      }
+      window.addEventListener('error', onError);
+      return { stage: stage, ping: ping, fail: fail, done: done };
+    })();
+  </script>
 
   <!-- 3D canvas -->
   <div class="experience"></div>
