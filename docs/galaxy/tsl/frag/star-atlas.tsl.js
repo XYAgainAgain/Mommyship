@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { Fn, int, mix, texture, varyingProperty, vec4 } from 'three/tsl';
+import { Discard, float, Fn, fract, If, int, mix, screenCoordinate, texture, varyingProperty, vec4 } from 'three/tsl';
 
 /* Atlas is a DataArrayTexture (from WebGLArrayRenderTarget.texture). TSL r184
    uses .depth(int) to set the layer index on array textures — this is the
@@ -8,11 +8,19 @@ import { Fn, int, mix, texture, varyingProperty, vec4 } from 'three/tsl';
 const vUv = varyingProperty( 'vec2', 'vUv' );
 const vLayer = varyingProperty( 'float', 'vLayer' );
 const vCrossfade = varyingProperty( 'float', 'vCrossfade' );
+const vDetailFade = varyingProperty( 'float', 'vDetailFade' );
 const vInstanceColor = varyingProperty( 'vec3', 'vInstanceColor' );
 
 export const uAtlas = texture( null );
 
 export const main = /*@__PURE__*/ Fn( () => {
+
+	/* IGN (Jimenez 2014) complementary discard with the star detail mesh —
+	   each screen pixel draws from exactly one LOD surface, no alpha blend */
+	const ign = fract( float( 52.9829189 ).mul(
+		fract( float( 0.06711056 ).mul( screenCoordinate.x )
+			.add( float( 0.00583715 ).mul( screenCoordinate.y ) ) ) ) );
+	If( ign.lessThan( vDetailFade ), () => { Discard(); } );
 
 	/* Round, don't truncate: varying interpolation can wobble a flat 17.0 down to
 	   16.9999 on some GPUs (Firefox), flipping fragments to the neighboring layer */

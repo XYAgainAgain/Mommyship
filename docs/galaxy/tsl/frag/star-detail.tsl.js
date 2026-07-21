@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { abs, add, clamp, cos, cross, div, dot, float, floor, Fn, fract, length, log, Loop, mat3, max, mix, mul, normalize, pow, select, sin, smoothstep, sqrt, sub, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
+import { abs, add, clamp, cos, cross, Discard, div, dot, float, floor, Fn, fract, If, length, log, Loop, mat3, max, mix, mul, normalize, pow, screenCoordinate, select, sin, smoothstep, sqrt, sub, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
 
 const vLocalPos = varyingProperty( 'vec3', 'vLocalPos' );
 const vNormal = varyingProperty( 'vec3', 'vNormal' );
@@ -8,6 +8,13 @@ const vViewDir = varyingProperty( 'vec3', 'vViewDir' );
 
 /* Shared across all detail instances */
 export const uTime = uniform( float( 0 ) );
+
+/* Shared surface-look tuning knobs, exposed on window.starTweak for live tweaking.
+   Safe range 0–1 for all four; limbStrength > 1 sign-flips color at the limb. */
+export const uLimbStrength = uniform( float( 0.45 ) );
+export const uLimbTempDrop = uniform( float( 0.12 ) );
+export const uShadeAmp = uniform( float( 0.6 ) );
+export const uGlowBoost = uniform( float( 1.0 ) );
 
 /* Per-instance uniforms accepted as parameters for multi-instance pool rendering */
 
@@ -73,7 +80,13 @@ export const fbmd = /*@__PURE__*/ Fn( ( [ p_immutable, slopeness, time ] ) => {
 
 /* blackbodyRGB imported from shared noise-common — removed inline copy */
 
-export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale, uSpotAmp, uSize, uSlopeness, uEmissive, uRotation, uAtmosphereColor, uAtmosphereIntensity ] ) => {
+export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale, uSpotAmp, uSize, uSlopeness, uEmissive, uRotation, uAtmosphereColor, uAtmosphereIntensity, uFade ] ) => {
+
+	/* IGN dither complementary to star-atlas.tsl.js — detail keeps ign < fade */
+	const ign = fract( float( 52.9829189 ).mul(
+		fract( float( 0.06711056 ).mul( screenCoordinate.x )
+			.add( float( 0.00583715 ).mul( screenCoordinate.y ) ) ) ) );
+	If( ign.greaterThanEqual( uFade ), () => { Discard(); } );
 
 	const objNormal = normalize( vLocalPos );
 	const rotated = uRotation.mul( objNormal );
@@ -99,7 +112,14 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale
 	const brightPatch = clamp( r.x.mul( 0.6 ).add( 0.5 ), 0.0, 1.0 );
 	const tempFactor = clamp( base.sub( cellEdge.mul( 0.8 ) ).add( brightPatch.mul( 0.4 ) ).sub( 0.15 ), 0.0, 1.0 ).toVar();
 	tempFactor.assign( tempFactor.mul( tempFactor ).mul( sub( 3.0, mul( 2.0, tempFactor ) ) ) );
-	const kelvin = mix( uLowTemp, uHighTemp, tempFactor );
+	const N = normalize( vNormal );
+	const V = normalize( vViewDir );
+	const mu = max( 0.0, dot( N, V ) );
+
+	/* Limb cooling: disc-edge sightlines exit through cooler, shallower gas —
+	   the redder rim sells "glowing volume" over "lit ball" */
+	const kelvin = mix( uLowTemp, uHighTemp, tempFactor )
+		.mul( mix( sub( 1.0, uLimbTempDrop ), 1.0, sqrt( mu ) ) );
 	const surfaceColor = blackbodyRGB( kelvin ).toVar();
 
 	/* HDR emissive boost — only the hottest 25% of cells clip to white */
@@ -109,22 +129,24 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale
 
 	/* Perturb normal with noise derivatives for surface depth illusion */
 
-	const N = normalize( vNormal );
-	const V = normalize( vViewDir );
 	const up = select( abs( N.y ).lessThan( 0.999 ), vec3( 0.0, 1.0, 0.0 ), vec3( 1.0, 0.0, 0.0 ) );
 	const T = normalize( cross( up, N ) );
 	const B = cross( N, T );
 	const perturbedN = normalize( N.sub( mul( 0.15, noiseDeriv.x.mul( T ).add( noiseDeriv.y.mul( B ) ) ) ) );
-	const NdotV = max( 0.0, dot( perturbedN, V ) );
+	const muP = max( 0.0, dot( perturbedN, V ) );
 
-	/* sqrt spreads the darkening more gradually across the disc */
+	/* Relief split from limb darkening: only bumps tipping away from view darken.
+	   Full perturbed-NdotV shading read as specular sheen — that was the "shiny" */
+	surfaceColor.mulAssign( sub( 1.0, uShadeAmp.mul( clamp( mu.sub( muP ), 0.0, 1.0 ) ) ) );
 
-	surfaceColor.mulAssign( mix( 0.55, 1.0, sqrt( NdotV ) ) );
+	/* Limb darkening on the smooth geometric normal, sqrt-spread across the disc */
+
+	surfaceColor.mulAssign( sub( 1.0, uLimbStrength.mul( sub( 1.0, sqrt( mu ) ) ) ) );
+	surfaceColor.mulAssign( uGlowBoost );
 
 	/* Rim glow uses smooth geometric normal — stays clean at edges */
 
-	const rimNdotV = max( 0.0, dot( N, V ) );
-	const rimFactor = pow( sub( 1.0, rimNdotV ), 4.0 );
+	const rimFactor = pow( sub( 1.0, mu ), 4.0 );
 	surfaceColor.addAssign( uAtmosphereColor.mul( uAtmosphereIntensity ).mul( rimFactor ) );
 	return vec4( surfaceColor, 1.0 );
 

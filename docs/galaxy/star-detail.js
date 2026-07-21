@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial, NodeMaterial } from 'three/webgpu';
 import { uniform, float, vec3, mat3 } from 'three/tsl';
 import { main as starDetailVert, uTime as vertUTime } from './tsl/vert/star-detail.tsl.js';
-import { main as starDetailFrag, uTime as fragUTime } from './tsl/frag/star-detail.tsl.js';
+import { main as starDetailFrag, uTime as fragUTime, uLimbStrength, uLimbTempDrop, uShadeAmp, uGlowBoost } from './tsl/frag/star-detail.tsl.js';
 import { main as torusVert, uTime as torusVertUTime } from './tsl/vert/pulsar-torus.tsl.js';
 import { main as torusFrag, uTime as torusFragUTime } from './tsl/frag/pulsar-torus.tsl.js';
 import { createRng } from './rng.js';
@@ -16,6 +16,8 @@ const POOL_SIZE = 4;
    sits below activate for hysteresis. Matched to the old 25u distance trigger. */
 const SIZE_ACTIVATE = 0.0533;
 const SIZE_RELEASE = 0.0427;
+/* Apparent size where the atlas→detail dither crossfade completes */
+const SIZE_FULL = 0.064;
 
 function hashString(str) {
   let h = 0;
@@ -87,10 +89,11 @@ export async function createStarDetail(renderer) {
     const pRotation = uniform(mat3());
     const pAtmoColor = uniform(vec3(1.0, 0.93, 0.67));
     const pAtmoIntensity = uniform(float(0.4));
+    const pFade = uniform(float(1.0));
 
     const mat = new NodeMaterial();
     mat.positionNode = starDetailVert(pSeed, pGranScale, pSize, pBubbleAmp, pRotation);
-    mat.fragmentNode = starDetailFrag(pSeed, pLowTemp, pHighTemp, pGranScale, pSpotAmp, pSize, pSlopeness, pEmissive, pRotation, pAtmoColor, pAtmoIntensity);
+    mat.fragmentNode = starDetailFrag(pSeed, pLowTemp, pHighTemp, pGranScale, pSpotAmp, pSize, pSlopeness, pEmissive, pRotation, pAtmoColor, pAtmoIntensity, pFade);
 
     const mesh = new THREE.Mesh(surfaceGeo, mat);
     mesh.scale.setScalar(0.87);
@@ -169,11 +172,17 @@ export async function createStarDetail(renderer) {
       torusMesh, torusMat, pulsarGlow, pulsarGlowMat, pulsarCore, pulsarCoreMat,
       bodyId: null, radius: 1.0, isPulsar: false, isWolfRayet: false,
       rotAxis: new THREE.Vector3(0, 1, 0), rotSpeed: 0.1,
+      baseCoronaOp: 1.0, baseHaloOp: 1.0,
       /* Per-instance uniform refs for direct .value access */
       pSeed, pLowTemp, pHighTemp, pGranScale, pSpotAmp, pSize, pSlopeness,
-      pEmissive, pBubbleAmp, pRotation, pAtmoColor, pAtmoIntensity,
+      pEmissive, pBubbleAmp, pRotation, pAtmoColor, pAtmoIntensity, pFade,
       pTorusSeed, pTorusColor, pTorusIntensity,
     });
+  }
+
+  /* Live surface-tuning knobs, e.g. starTweak.limbStrength.value = 0.6 */
+  if (typeof window !== 'undefined') {
+    window.starTweak = { limbStrength: uLimbStrength, limbTempDrop: uLimbTempDrop, shadeAmp: uShadeAmp, glowBoost: uGlowBoost };
   }
 
   /* Shared scratch objects for rotation math */
@@ -187,6 +196,8 @@ export async function createStarDetail(renderer) {
 
   let cachedStarIds = null;
   const activeIds = new Set();
+  /* id → 0–1 dither fade, read by systems.js for the atlas-side discard */
+  const fades = new Map();
 
   function activate(entry, bodyId, body) {
     const params = parseMK(body.spectralClass, body.visual?.size);
@@ -223,11 +234,12 @@ export async function createStarDetail(renderer) {
       entry.pTorusColor.value.set(_c.r, _c.g, _c.b);
     }
 
-    /* Wolf-Rayet: boosted corona/halo opacity for enlarged glow */
-    if (entry.isWolfRayet) {
-      entry.coronaMat.opacity = 0.9;
-      entry.haloMat.opacity = 0.6;
-    }
+    /* Wolf-Rayet: enlarged sprites carry the glow, dimmer base opacity balances.
+       Actual opacity is base × fade, applied each frame in update(). */
+    entry.baseCoronaOp = entry.isWolfRayet ? 0.9 : 1.0;
+    entry.baseHaloOp = entry.isWolfRayet ? 0.6 : 1.0;
+    entry.coronaMat.opacity = 0;
+    entry.haloMat.opacity = 0;
 
     /* T Tauri: enhanced atmosphere for accretion envelope */
     if (params.isTTauri) entry.pAtmoIntensity.value = 0.7;
@@ -248,6 +260,7 @@ export async function createStarDetail(renderer) {
   }
 
   function deactivate(entry) {
+    if (entry.bodyId) fades.delete(entry.bodyId);
     entry.bodyId = null;
     entry.group.userData.bodyId = null;
     entry.group.visible = false;
@@ -363,6 +376,21 @@ export async function createStarDetail(renderer) {
       const meta = bodyMeta?.get(entry.bodyId);
       if (meta) entry.group.scale.setScalar(meta.instanceScale * entry.radius);
 
+      /* Dither crossfade vs the instanced atlas star — same size metric as anchoring */
+      const fdx = cameraPos.x - wp.x, fdy = cameraPos.y - wp.y, fdz = cameraPos.z - wp.z;
+      const fDist = Math.sqrt(fdx * fdx + fdy * fdy + fdz * fdz) || 1e-6;
+      const fRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+      const fade = Math.min(1, Math.max(0, (fRadius / fDist - SIZE_ACTIVATE) / (SIZE_FULL - SIZE_ACTIVATE)));
+      fades.set(entry.bodyId, fade);
+      entry.pFade.value = fade;
+      entry.coronaMat.opacity = entry.baseCoronaOp * fade;
+      entry.haloMat.opacity = entry.baseHaloOp * fade;
+      if (entry.isPulsar) {
+        entry.pulsarGlowMat.opacity = fade;
+        entry.pulsarCoreMat.opacity = fade;
+        entry.pTorusIntensity.value = 2.0 * fade;
+      }
+
       _rotQuat.setFromAxisAngle(entry.rotAxis, entry.rotSpeed * rotationTime);
       _rotMat4.makeRotationFromQuaternion(_rotQuat);
       _rotMat3.setFromMatrix4(_rotMat4);
@@ -412,5 +440,5 @@ export async function createStarDetail(renderer) {
     activeIds.delete(bodyId);
   }
 
-  return { update, container, dispose, invalidateBody };
+  return { update, container, dispose, invalidateBody, fades };
 }

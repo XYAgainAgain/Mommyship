@@ -372,6 +372,7 @@ export async function createSystems(scene, camera, renderer) {
   let starAtlasData = null;
   let planetAtlasData = null;
   let crossfadeAttr = null;
+  let starFadeAttr = null;
   let planetPackedAttr = null;
   let planetLightDirAttr = null;
   let planetIds = [];
@@ -809,6 +810,7 @@ export async function createSystems(scene, camera, renderer) {
     cubeMarkers = null;
     planetMarkers = null;
     crossfadeAttr = null;
+    starFadeAttr = null;
     planetPackedAttr = null;
     planetLightDirAttr = null;
     planetIds = [];
@@ -865,8 +867,11 @@ export async function createSystems(scene, camera, renderer) {
       const layerAttr = new THREE.InstancedBufferAttribute(layers, 1);
       crossfadeAttr = new THREE.InstancedBufferAttribute(crossfades, 1);
       crossfadeAttr.setUsage(THREE.DynamicDrawUsage);
+      starFadeAttr = new THREE.InstancedBufferAttribute(new Float32Array(starIds.length), 1);
+      starFadeAttr.setUsage(THREE.DynamicDrawUsage);
       starMarkers.geometry.setAttribute('aLayer', layerAttr);
       starMarkers.geometry.setAttribute('aCrossfade', crossfadeAttr);
+      starMarkers.geometry.setAttribute('aDetailFade', starFadeAttr);
 
       starMarkers.instanceMatrix.needsUpdate = true;
       if (starMarkers.instanceColor) starMarkers.instanceColor.needsUpdate = true;
@@ -1348,17 +1353,35 @@ export async function createSystems(scene, camera, renderer) {
 
     /* Write star instance matrices + crossfade from faction color to atlas texture */
     if (hasStars) {
+      /* Detail pool updates FIRST so the instance loop writes matching dither fades.
+         Walk parent chain so tracking a planet activates its parent star. */
+      if (starDetail) {
+        let starTrackId = trackedId || null;
+        if (starTrackId && galaxyData.bodies[starTrackId]?.type !== 'star') {
+          let cur = galaxyData.bodies[starTrackId]?.parentId;
+          while (cur && galaxyData.bodies[cur]?.type !== 'star') cur = galaxyData.bodies[cur]?.parentId;
+          if (cur) starTrackId = cur;
+        }
+        detailActiveIds = starDetail.update(starTrackId, camera.position, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode);
+      }
+
       _dummy.quaternion.identity();
       const camPos = camera.position;
-      let cfDirty = false;
+      let cfDirty = false, fadeDirty = false;
       for (let i = 0; i < starIds.length; i++) {
-        /* Detail-active stars must stay at scale 0 every frame to avoid one-frame ghost */
-        if (detailActiveIds.has(starIds[i])) {
+        const id = starIds[i];
+        const fade = detailActiveIds.has(id) ? (starDetail?.fades.get(id) ?? 1) : 0;
+        if (starFadeAttr.array[i] !== fade) {
+          starFadeAttr.array[i] = fade;
+          fadeDirty = true;
+        }
+        /* Fully-faded stars must stay at scale 0 every frame to avoid one-frame ghost */
+        if (fade >= 1) {
           _dummy.scale.setScalar(0); _dummy.updateMatrix();
           starMarkers.setMatrixAt(i, _dummy.matrix); continue;
         }
-        const meta = bodyMeta.get(starIds[i]);
-        const wp = bodyWorldPos.get(starIds[i]);
+        const meta = bodyMeta.get(id);
+        const wp = bodyWorldPos.get(id);
         _dummy.position.set(wp.x, wp.y, wp.z);
         _dummy.scale.setScalar(meta.instanceScale * (meta.mkRadius || 1));
         _dummy.updateMatrix();
@@ -1374,48 +1397,10 @@ export async function createSystems(scene, camera, renderer) {
       }
       starMarkers.instanceMatrix.needsUpdate = true;
       if (cfDirty) crossfadeAttr.needsUpdate = true;
-
-      /* Detail mesh: show high-poly stars when tracked or close.
-         Walk parent chain so tracking a planet activates its parent star. */
-      if (starDetail) {
-        let starTrackId = trackedId || null;
-        if (starTrackId && galaxyData.bodies[starTrackId]?.type !== 'star') {
-          let cur = galaxyData.bodies[starTrackId]?.parentId;
-          while (cur && galaxyData.bodies[cur]?.type !== 'star') cur = galaxyData.bodies[cur]?.parentId;
-          if (cur) starTrackId = cur;
-        }
-        const prevIds = new Set(detailActiveIds);
-        detailActiveIds = starDetail.update(starTrackId, camPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode);
-
-        /* Hide instanced stars that just became active detail meshes */
-        for (const id of detailActiveIds) {
-          if (prevIds.has(id)) continue;
-          const idx = starIds.indexOf(id);
-          if (idx < 0) continue;
-          _dummy.scale.setScalar(0);
-          _dummy.updateMatrix();
-          starMarkers.setMatrixAt(idx, _dummy.matrix);
-          starMarkers.instanceMatrix.needsUpdate = true;
-        }
-
-        /* Restore instanced stars that just lost detail meshes */
-        for (const id of prevIds) {
-          if (detailActiveIds.has(id)) continue;
-          const idx = starIds.indexOf(id);
-          if (idx < 0) continue;
-          const wp = bodyWorldPos.get(id);
-          if (!wp) continue;
-          const pm = bodyMeta.get(id);
-          _dummy.position.set(wp.x, wp.y, wp.z);
-          _dummy.scale.setScalar(pm.instanceScale * (pm.mkRadius || 1));
-          _dummy.updateMatrix();
-          starMarkers.setMatrixAt(idx, _dummy.matrix);
-          starMarkers.instanceMatrix.needsUpdate = true;
-        }
-      }
+      if (fadeDirty) starFadeAttr.needsUpdate = true;
     }
 
-    /* Pulsar far-LOD tori: same shader as detail, hidden when detail takes over.
+    /* Pulsar far-LOD tori: same shader as detail, crossfading as detail takes over.
        uTime is module-level shared — set once outside the loop (torusVertUTime/torusFragUTime). */
     torusVertUTime.value = rotationTime;
     torusFragUTime.value = rotationTime;
@@ -1423,9 +1408,11 @@ export async function createSystems(scene, camera, renderer) {
       for (const pt of pulsarFarTori) {
         const wp = bodyWorldPos.get(pt.id);
         if (!wp) { pt.mesh.visible = false; continue; }
-        if (detailActiveIds.has(pt.id)) { pt.mesh.visible = false; continue; }
+        const ptFade = detailActiveIds.has(pt.id) ? (starDetail?.fades.get(pt.id) ?? 1) : 0;
+        if (ptFade >= 1) { pt.mesh.visible = false; continue; }
         pt.mesh.position.set(wp.x, wp.y, wp.z);
-        pt.pIntensity.value = 2.0;
+        /* Complementary to the detail torus's 2.0 × fade — the additive sum stays constant */
+        pt.pIntensity.value = 2.0 * (1 - ptFade);
         /* Match detail torus orientation — gentle wobble, no mesh spin
            (the shader's time-based animation provides all the visual motion) */
         const wobble = Math.sin(rotationTime * 0.25) * 0.08;
