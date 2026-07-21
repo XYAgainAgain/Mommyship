@@ -212,10 +212,12 @@ export async function createBackground(scene) {
   galaxies.frustumCulled = false;
   scene.add(galaxies);
 
-  function update(time, cameraPos) {
+  /* Galaxies take rotationTime so the pause button freezes their spin;
+     skybox/twinkle stay on wall clock — ambient sparkle, not motion */
+  function update(time, galaxyTime, cameraPos) {
     skyboxUTime.value = time;
     starfieldUTime.value = time;
-    galaxyUTime.value = time;
+    galaxyUTime.value = galaxyTime;
     skybox.position.copy(cameraPos);
     twinkle.position.copy(cameraPos);
     galaxies.position.copy(cameraPos);

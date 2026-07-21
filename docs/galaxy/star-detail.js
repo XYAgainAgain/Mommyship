@@ -1,8 +1,12 @@
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial, NodeMaterial } from 'three/webgpu';
+import { MeshBasicNodeMaterial, NodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
 import { uniform, float, vec3, mat3 } from 'three/tsl';
 import { main as starDetailVert, uTime as vertUTime } from './tsl/vert/star-detail.tsl.js';
-import { main as starDetailFrag, uTime as fragUTime, uLimbStrength, uLimbTempDrop, uShadeAmp, uGlowBoost } from './tsl/frag/star-detail.tsl.js';
+import {
+  main as starDetailFrag, uTime as fragUTime, uLimbStrength, uLimbTempDrop, uShadeAmp, uGlowBoost,
+  uSupergranuleScale, uFilamentStrength, uLaneStrength, uChurnSpeed, uPromIntensity, uCmeRate, uDetailBoost,
+} from './tsl/frag/star-detail.tsl.js';
+import { main as promFrag } from './tsl/frag/star-prominence.tsl.js';
 import { main as torusVert, uTime as torusVertUTime } from './tsl/vert/pulsar-torus.tsl.js';
 import { main as torusFrag, uTime as torusFragUTime } from './tsl/frag/pulsar-torus.tsl.js';
 import { createRng } from './rng.js';
@@ -13,11 +17,14 @@ const DETAIL_ROWS = 48;
 const MARKER_RADIUS = 2.5;
 const POOL_SIZE = 4;
 /* Apparent size (visualRadius/dist) to swap a system to detail meshes; release
-   sits below activate for hysteresis. Matched to the old 25u distance trigger. */
+   sits below activate for hysteresis. */
 const SIZE_ACTIVATE = 0.0533;
 const SIZE_RELEASE = 0.0427;
 /* Apparent size where the atlas→detail dither crossfade completes */
 const SIZE_FULL = 0.064;
+/* Pulsars rank by their field-torus span (world ~8u, counter-scaled), not the tiny
+   sphere — otherwise the torus decorations pop in far too late */
+const PULSAR_VISUAL_RADIUS = 8.0;
 
 function hashString(str) {
   let h = 0;
@@ -81,6 +88,7 @@ export async function createStarDetail(renderer) {
     const pLowTemp = uniform(float(5200));
     const pHighTemp = uniform(float(6000));
     const pGranScale = uniform(float(4.0));
+    const pCellScale = uniform(float(2.0));
     const pSpotAmp = uniform(float(0.7));
     const pSize = uniform(float(1.0));
     const pSlopeness = uniform(float(1.0));
@@ -90,10 +98,11 @@ export async function createStarDetail(renderer) {
     const pAtmoColor = uniform(vec3(1.0, 0.93, 0.67));
     const pAtmoIntensity = uniform(float(0.4));
     const pFade = uniform(float(1.0));
+    const pGate = uniform(float(0.0));
 
     const mat = new NodeMaterial();
     mat.positionNode = starDetailVert(pSeed, pGranScale, pSize, pBubbleAmp, pRotation);
-    mat.fragmentNode = starDetailFrag(pSeed, pLowTemp, pHighTemp, pGranScale, pSpotAmp, pSize, pSlopeness, pEmissive, pRotation, pAtmoColor, pAtmoIntensity, pFade);
+    mat.fragmentNode = starDetailFrag(pSeed, pLowTemp, pHighTemp, pGranScale, pCellScale, pSpotAmp, pSize, pSlopeness, pEmissive, pRotation, pAtmoColor, pAtmoIntensity, pFade, pGate);
 
     const mesh = new THREE.Mesh(surfaceGeo, mat);
     mesh.scale.setScalar(0.87);
@@ -113,6 +122,17 @@ export async function createStarDetail(renderer) {
     const halo = new THREE.Sprite(hMat);
     halo.scale.setScalar(MARKER_RADIUS * 4.0);
     halo.renderOrder = 3;
+
+    /* Prominence ring — procedural limb flames + CME; fade multiplies in-shader
+       via the shared pFade node, so no per-frame opacity write is needed */
+    const promMat = new SpriteNodeMaterial();
+    promMat.colorNode = promFrag(pSeed, pLowTemp, pFade);
+    promMat.blending = THREE.AdditiveBlending;
+    promMat.depthWrite = false;
+    promMat.transparent = true;
+    const prom = new THREE.Sprite(promMat);
+    prom.scale.setScalar(MARKER_RADIUS * 3.0);
+    prom.renderOrder = 4;
 
     /* Per-instance TSL uniform nodes for pulsar torus */
     const pTorusSeed = uniform(float(0));
@@ -153,6 +173,7 @@ export async function createStarDetail(renderer) {
     /* Only the surface mesh should intercept raycasts */
     corona.raycast = () => {};
     halo.raycast = () => {};
+    prom.raycast = () => {};
     torusMesh.raycast = () => {};
     pulsarGlow.raycast = () => {};
     pulsarCore.raycast = () => {};
@@ -160,6 +181,7 @@ export async function createStarDetail(renderer) {
     const group = new THREE.Group();
     group.add(halo);
     group.add(corona);
+    group.add(prom);
     group.add(mesh);
     group.add(torusMesh);
     group.add(pulsarGlow);
@@ -168,21 +190,25 @@ export async function createStarDetail(renderer) {
     group.renderOrder = 5;
 
     pool.push({
-      group, mat, mesh, corona, halo, coronaMat: cMat, haloMat: hMat,
+      group, mat, mesh, corona, halo, coronaMat: cMat, haloMat: hMat, prom, promMat,
       torusMesh, torusMat, pulsarGlow, pulsarGlowMat, pulsarCore, pulsarCoreMat,
       bodyId: null, radius: 1.0, isPulsar: false, isWolfRayet: false,
       rotAxis: new THREE.Vector3(0, 1, 0), rotSpeed: 0.1,
       baseCoronaOp: 1.0, baseHaloOp: 1.0,
       /* Per-instance uniform refs for direct .value access */
-      pSeed, pLowTemp, pHighTemp, pGranScale, pSpotAmp, pSize, pSlopeness,
-      pEmissive, pBubbleAmp, pRotation, pAtmoColor, pAtmoIntensity, pFade,
+      pSeed, pLowTemp, pHighTemp, pGranScale, pCellScale, pSpotAmp, pSize, pSlopeness,
+      pEmissive, pBubbleAmp, pRotation, pAtmoColor, pAtmoIntensity, pFade, pGate,
       pTorusSeed, pTorusColor, pTorusIntensity,
     });
   }
 
   /* Live surface-tuning knobs, e.g. starTweak.limbStrength.value = 0.6 */
   if (typeof window !== 'undefined') {
-    window.starTweak = { limbStrength: uLimbStrength, limbTempDrop: uLimbTempDrop, shadeAmp: uShadeAmp, glowBoost: uGlowBoost };
+    window.starTweak = {
+      limbStrength: uLimbStrength, limbTempDrop: uLimbTempDrop, shadeAmp: uShadeAmp, glowBoost: uGlowBoost,
+      supergranuleScale: uSupergranuleScale, filamentStrength: uFilamentStrength, laneStrength: uLaneStrength,
+      churnSpeed: uChurnSpeed, promIntensity: uPromIntensity, cmeRate: uCmeRate, detailBoost: uDetailBoost,
+    };
   }
 
   /* Shared scratch objects for rotation math */
@@ -195,6 +221,7 @@ export async function createStarDetail(renderer) {
   for (const entry of pool) container.add(entry.group);
 
   let cachedStarIds = null;
+  let pulsarIds = null;
   const activeIds = new Set();
   /* id → 0–1 dither fade, read by systems.js for the atlas-side discard */
   const fades = new Map();
@@ -207,6 +234,7 @@ export async function createStarDetail(renderer) {
     entry.pLowTemp.value = params.lowTemp;
     entry.pHighTemp.value = params.highTemp;
     entry.pGranScale.value = params.granScale;
+    entry.pCellScale.value = params.cellScale;
     entry.pSpotAmp.value = params.spotAmp;
     entry.pSlopeness.value = params.slopeness;
     entry.pEmissive.value = params.emissive;
@@ -275,15 +303,19 @@ export async function createStarDetail(renderer) {
     entry.halo.scale.setScalar(MARKER_RADIUS * 4.0);
   }
 
+  function buildStarCache(bodies) {
+    cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
+    pulsarIds = new Set(cachedStarIds.filter(id =>
+      parseMK(bodies[id].spectralClass, bodies[id].visual?.size).isPulsar));
+  }
+
   /* Find all stars in the same system as targetId (handles nested hierarchies) */
   function getSystemStars(targetId, bodies) {
     let rootId = targetId;
     while (bodies[rootId]?.parentId && bodies[bodies[rootId].parentId]?.type === 'star') {
       rootId = bodies[rootId].parentId;
     }
-    if (!cachedStarIds) {
-      cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
-    }
+    if (!cachedStarIds) buildStarCache(bodies);
     /* BFS from root to find all descendant stars */
     const family = [rootId];
     const queue = [rootId];
@@ -311,43 +343,36 @@ export async function createStarDetail(renderer) {
     torusFragUTime.value = rotationTime;
 
     const bodies = galaxyData.bodies;
-    if (!cachedStarIds) {
-      cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
+    if (!cachedStarIds) buildStarCache(bodies);
+
+    /* Rank every star by apparent size with per-star hysteresis so the pool serves
+       the top entries — neighboring giants can keep detail and glow simultaneously */
+    const candidates = [];
+    for (const id of cachedStarIds) {
+      const wp = bodyWorldPos.get(id);
+      if (!wp) continue;
+      const meta = bodyMeta?.get(id);
+      const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+      let visualRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+      if (pulsarIds.has(id)) visualRadius = Math.max(visualRadius, PULSAR_VISUAL_RADIUS);
+      const appSize = visualRadius / dist;
+      const threshold = activeIds.has(id) ? SIZE_RELEASE : SIZE_ACTIVATE;
+      if (appSize > threshold) candidates.push([id, appSize]);
     }
+    candidates.sort((a, b) => b[1] - a[1]);
 
-    let anchorId = null;
-
-    /* Tracking (already resolved to a parent star upstream) always anchors,
-       so cinema mode's full-system pin needs no extra branch here. */
+    const desired = new Set();
+    /* Tracked star's whole BFS family rides along so binary companions stay lit */
     if (trackedId && bodies[trackedId]?.type === 'star') {
-      anchorId = trackedId;
-    }
-
-    /* Otherwise the largest on-screen star, gated by apparent size + hysteresis */
-    if (!anchorId) {
-      let best = null, bestSize = 0;
-      for (const id of cachedStarIds) {
-        const wp = bodyWorldPos.get(id);
-        if (!wp) continue;
-        const meta = bodyMeta?.get(id);
-        const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-        const visualRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
-        const appSize = visualRadius / dist;
-        if (appSize > bestSize) { bestSize = appSize; best = id; }
+      for (const id of getSystemStars(trackedId, bodies)) {
+        if (desired.size < POOL_SIZE) desired.add(id);
       }
-      /* Active family holds down to the release size so binaries don't flicker */
-      const threshold = (best && activeIds.has(best)) ? SIZE_RELEASE : SIZE_ACTIVATE;
-      if (best && bestSize > threshold) anchorId = best;
     }
-
-    /* Whole system (binaries/triskelions) activates together via BFS family */
-    const targetIds = anchorId
-      ? getSystemStars(anchorId, bodies)
-      : [];
-
-    /* Build set of desired IDs for fast lookup */
-    const desired = new Set(targetIds);
+    for (const [id] of candidates) {
+      if (desired.size >= POOL_SIZE) break;
+      desired.add(id);
+    }
 
     /* Deactivate pool entries no longer needed */
     for (const entry of pool) {
@@ -358,7 +383,7 @@ export async function createStarDetail(renderer) {
     }
 
     /* Activate new stars from the pool */
-    for (const id of targetIds) {
+    for (const id of desired) {
       if (activeIds.has(id)) continue;
       const freeEntry = pool.find(e => !e.bodyId);
       if (!freeEntry) break;
@@ -379,10 +404,14 @@ export async function createStarDetail(renderer) {
       /* Dither crossfade vs the instanced atlas star — same size metric as anchoring */
       const fdx = cameraPos.x - wp.x, fdy = cameraPos.y - wp.y, fdz = cameraPos.z - wp.z;
       const fDist = Math.sqrt(fdx * fdx + fdy * fdy + fdz * fdz) || 1e-6;
-      const fRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
-      const fade = Math.min(1, Math.max(0, (fRadius / fDist - SIZE_ACTIVATE) / (SIZE_FULL - SIZE_ACTIVATE)));
+      let fRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+      if (entry.isPulsar) fRadius = Math.max(fRadius, PULSAR_VISUAL_RADIUS);
+      const appSize = fRadius / fDist;
+      const fade = Math.min(1, Math.max(0, (appSize - SIZE_ACTIVATE) / (SIZE_FULL - SIZE_ACTIVATE)));
       fades.set(entry.bodyId, fade);
       entry.pFade.value = fade;
+      /* Octave gate: extra fBm octaves ramp in continuously as the star fills the view */
+      entry.pGate.value = Math.min(1, Math.max(0, (appSize - 0.1) / 0.4));
       entry.coronaMat.opacity = entry.baseCoronaOp * fade;
       entry.haloMat.opacity = entry.baseHaloOp * fade;
       if (entry.isPulsar) {
@@ -426,6 +455,7 @@ export async function createStarDetail(renderer) {
       entry.mat.dispose();
       entry.coronaMat.dispose();
       entry.haloMat.dispose();
+      entry.promMat.dispose();
       entry.torusMat.dispose();
       entry.pulsarGlowMat.dispose();
       entry.pulsarCoreMat.dispose();

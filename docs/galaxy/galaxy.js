@@ -511,7 +511,7 @@ async function init() {
       scaleBarFrame = 0;
       updateScaleBar();
     }
-    bg.update(elapsed, cam.camera.position);
+    bg.update(elapsed, rotationTime, cam.camera.position);
     disk.update(delta, rotationTime);
     nebula.update(delta, rotationTime);
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);

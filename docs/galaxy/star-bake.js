@@ -4,7 +4,7 @@ import { texture } from 'three/tsl';
 import { main as bakeVert } from './tsl/vert/star-bake.tsl.js';
 import {
   main as bakeFrag, uSeed, uLowTemp, uHighTemp,
-  uGranScale, uSpotAmp, uSize, uSlopeness, uEmissive,
+  uGranScale, uCellScale, uSpotAmp, uSize, uSlopeness, uEmissive,
 } from './tsl/frag/star-bake.tsl.js';
 import { parseMK } from './star-params.js';
 
@@ -18,7 +18,6 @@ function hashString(str) {
 
 /**
  * Bake procedural star surfaces into a DataArrayTexture atlas.
- * Checks IndexedDB cache per star — skips GPU bake on hit.
  * @param {THREE.WebGPURenderer} renderer
  * @param {Object} bodies — galaxyData.bodies keyed by ID
  * @returns {{ atlas: THREE.DataArrayTexture, layerMap: Map<string,number> }}
@@ -71,6 +70,7 @@ export async function bakeStarAtlas(renderer, bodies) {
     uLowTemp.value = params.lowTemp;
     uHighTemp.value = params.highTemp;
     uGranScale.value = params.granScale;
+    uCellScale.value = params.cellScale;
     uSpotAmp.value = params.spotAmp;
     uSlopeness.value = params.slopeness;
     uEmissive.value = params.emissive;
