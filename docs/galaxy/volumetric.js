@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { uniform, texture3D, float, Fn, Discard, If, length, smoothstep, exp, sub, vec2, vec3, vec4, varyingProperty, mix } from 'three/tsl';
+import { uniform, texture3D, float, Fn, Discard, If, length, smoothstep, exp, sub, uv, vec2, vec3, vec4, mix } from 'three/tsl';
 import { createRng } from './rng.js';
 import { bakeVolumeTexture } from './volume-bake.js';
 
@@ -46,11 +46,10 @@ const DARK_COLORS = [
   new THREE.Color(0.60, 0.45, 0.55),
 ];
 
-/* LOD quad shaders — inline TSL for the simple Gaussian blob fallback */
-const quadVUv = varyingProperty('vec2', 'vQuadUv');
-
+/* LOD quad shaders — inline TSL for the simple Gaussian blob fallback.
+   Quads set fragmentNode only, so uv() reads the plane attribute directly. */
 const quadFragEmission = /*@__PURE__*/ Fn(([ quadColor, quadOpacity ]) => {
-  const centered = quadVUv.sub(0.5);
+  const centered = uv().sub(0.5);
   const dist = length(centered).mul(2.0);
   const alpha = exp(dist.mul(dist).mul(-3.0)).mul(quadOpacity);
   If(alpha.lessThan(0.005), () => { Discard(); });
@@ -58,7 +57,7 @@ const quadFragEmission = /*@__PURE__*/ Fn(([ quadColor, quadOpacity ]) => {
 });
 
 const quadFragDark = /*@__PURE__*/ Fn(([ quadColor, quadOpacity ]) => {
-  const centered = quadVUv.sub(0.5);
+  const centered = uv().sub(0.5);
   const dist = length(centered).mul(2.0);
   const strength = exp(dist.mul(dist).mul(-3.0)).mul(quadOpacity);
   If(strength.lessThan(0.005), () => { Discard(); });
@@ -143,11 +142,6 @@ function armPos(r, armIdx) {
 export async function createVolumetric(scene, renderer) {
   const rng = createRng(VOLUMETRIC_SEED);
 
-  const [volumeTex1, volumeTex2] = await Promise.all([
-    bakeVolumeTexture({ seed: 31337, frequency: 4.0, octaves: 5 }),
-    bakeVolumeTexture({ seed: 80085, frequency: 3.0, octaves: 4 }),
-  ]);
-
   /* Sphere container for raymarch; BackSide rendering handles fly-through */
   const sphereGeo = new THREE.SphereGeometry(0.5, 16, 12);
   const quadGeo = new THREE.PlaneGeometry(1, 1);
@@ -225,83 +219,96 @@ export async function createVolumetric(scene, renderer) {
 
   const allPlacements = [...emissionPlacements, ...darkPlacements, ...brokenArm];
   const volumes = [];
+  let buildPromise = null;
 
-  for (let i = 0; i < allPlacements.length; i++) {
-    const p = allPlacements[i];
-    const tex = (i % 2 === 0) ? volumeTex1 : volumeTex2;
+  /* The two 128^3 bakes block the main thread for ~1.5s on a cache miss, so they wait
+     until Fancy Nebulae is actually switched on instead of taxing every page load. */
+  async function buildVolumes() {
+    const [volumeTex1, volumeTex2] = await Promise.all([
+      bakeVolumeTexture({ seed: 31337, frequency: 4.0, octaves: 5 }),
+      bakeVolumeTexture({ seed: 80085, frequency: 3.0, octaves: 4 }),
+    ]);
 
-    /* Per-sphere uniform nodes for the raymarch material */
-    const pVolTex = texture3D(tex);
-    const pSeed = uniform(float(p.seed));
-    const pColor = uniform(vec3(p.color.r, p.color.g, p.color.b));
-    const pColor2 = uniform(vec3(p.color2.r, p.color2.g, p.color2.b));
-    const pDensity = uniform(float(p.density));
-    const pAbsorption = uniform(float(p.absorption));
-    const pBrightness = uniform(float(p.brightness));
-    const pCameraDist = uniform(float(1000));
-    const pOpacity = uniform(float(1.0));
-    /* Camera in this sphere's local space — computed JS-side per frame to avoid
-       the modelWorldMatrixInverse read that trips TSL's positionNode auto-MVP.
-       Uses new THREE.Vector3 (not vec3()) so .value is the mutable Vector3. */
-    const pLocalCam = uniform(new THREE.Vector3(0, 0, 0));
+    for (let i = 0; i < allPlacements.length; i++) {
+      const p = allPlacements[i];
+      const tex = (i % 2 === 0) ? volumeTex1 : volumeTex2;
 
-    const mat = new MeshBasicNodeMaterial();
-    mat.positionNode = volVert( pLocalCam );
-    mat.fragmentNode = volFrag(
-      pVolTex, pSeed, pColor, pColor2,
-      pDensity, pAbsorption, pBrightness,
-      pCameraDist, pOpacity
-    );
-    mat.side = THREE.BackSide;
-    mat.transparent = true;
-    mat.depthWrite = false;
-    mat.depthTest = true;
-    mat.blending = p.isDark ? THREE.MultiplyBlending : THREE.AdditiveBlending;
-    if (p.isDark) mat.premultipliedAlpha = true;
+      /* Per-sphere uniform nodes for the raymarch material */
+      const pVolTex = texture3D(tex);
+      const pSeed = uniform(float(p.seed));
+      const pColor = uniform(vec3(p.color.r, p.color.g, p.color.b));
+      const pColor2 = uniform(vec3(p.color2.r, p.color2.g, p.color2.b));
+      const pDensity = uniform(float(p.density));
+      const pAbsorption = uniform(float(p.absorption));
+      const pBrightness = uniform(float(p.brightness));
+      const pCameraDist = uniform(float(1000));
+      const pOpacity = uniform(float(1.0));
+      /* Camera in this sphere's local space — computed JS-side per frame to avoid
+         the modelWorldMatrixInverse read that trips TSL's positionNode auto-MVP.
+         Uses new THREE.Vector3 (not vec3()) so .value is the mutable Vector3. */
+      const pLocalCam = uniform(new THREE.Vector3(0, 0, 0));
 
-    const sphere = new THREE.Mesh(sphereGeo, mat);
-    sphere.position.set(p.x, p.y, p.z);
+      const mat = new MeshBasicNodeMaterial();
+      mat.positionNode = volVert( pLocalCam );
+      mat.fragmentNode = volFrag(
+        pVolTex, pSeed, pColor, pColor2,
+        pDensity, pAbsorption, pBrightness,
+        pCameraDist, pOpacity
+      );
+      mat.side = THREE.BackSide;
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.depthTest = true;
+      mat.blending = p.isDark ? THREE.MultiplyBlending : THREE.AdditiveBlending;
+      if (p.isDark) mat.premultipliedAlpha = true;
 
-    const ySquash = p.isDark ? 0.25 : 0.35;
-    sphere.scale.set(p.scale, p.scale * ySquash, p.scale);
-    sphere.renderOrder = p.isDark ? 0.5 : -1.5;
-    /* BackSide rendering confuses Three.js bounding sphere culling */
-    sphere.frustumCulled = false;
+      const sphere = new THREE.Mesh(sphereGeo, mat);
+      sphere.position.set(p.x, p.y, p.z);
 
-    /* Per-sphere quad uniform nodes for LOD fallback */
-    const qColor = uniform(vec3(p.color.r, p.color.g, p.color.b));
-    const qOpacity = uniform(float(0.0));
+      const ySquash = p.isDark ? 0.25 : 0.35;
+      sphere.scale.set(p.scale, p.scale * ySquash, p.scale);
+      sphere.renderOrder = p.isDark ? 0.5 : -1.5;
+      /* BackSide rendering confuses Three.js bounding sphere culling */
+      sphere.frustumCulled = false;
 
-    const quadMat = new MeshBasicNodeMaterial();
-    quadMat.fragmentNode = p.isDark ? quadFragDark(qColor, qOpacity) : quadFragEmission(qColor, qOpacity);
-    quadMat.transparent = true;
-    quadMat.depthWrite = false;
-    quadMat.depthTest = true;
-    quadMat.blending = p.isDark ? THREE.MultiplyBlending : THREE.AdditiveBlending;
-    if (p.isDark) quadMat.premultipliedAlpha = true;
+      /* Per-sphere quad uniform nodes for LOD fallback */
+      const qColor = uniform(vec3(p.color.r, p.color.g, p.color.b));
+      const qOpacity = uniform(float(0.0));
 
-    const quad = new THREE.Mesh(quadGeo, quadMat);
-    quad.position.set(p.x, p.y, p.z);
-    quad.scale.set(p.scale, p.scale, 1);
-    quad.renderOrder = p.isDark ? 0.5 : -1.5;
-    quad.frustumCulled = true;
+      const quadMat = new MeshBasicNodeMaterial();
+      quadMat.fragmentNode = p.isDark ? quadFragDark(qColor, qOpacity) : quadFragEmission(qColor, qOpacity);
+      quadMat.transparent = true;
+      quadMat.depthWrite = false;
+      quadMat.depthTest = true;
+      quadMat.blending = p.isDark ? THREE.MultiplyBlending : THREE.AdditiveBlending;
+      if (p.isDark) quadMat.premultipliedAlpha = true;
 
-    volumes.push({
-      sphere, quad,
-      pCameraDist, pOpacity, qOpacity, pLocalCam,
-      baseTheta: p.theta,
-      radius: p.radius,
-      baseY: p.y,
-      boxInScene: false,
-      quadInScene: false,
-      lodState: 'quad'
-    });
+      const quad = new THREE.Mesh(quadGeo, quadMat);
+      quad.position.set(p.x, p.y, p.z);
+      quad.scale.set(p.scale, p.scale, 1);
+      quad.renderOrder = p.isDark ? 0.5 : -1.5;
+      quad.frustumCulled = true;
+
+      volumes.push({
+        sphere, quad,
+        pCameraDist, pOpacity, qOpacity, pLocalCam,
+        baseTheta: p.theta,
+        radius: p.radius,
+        baseY: p.y,
+        boxInScene: false,
+        quadInScene: false,
+        lodState: 'quad'
+      });
+    }
   }
 
   let active = false;
 
+  /* Resolves once the volumes exist; update() no-ops until then */
   function addToScene() {
     active = true;
+    if (!buildPromise) buildPromise = buildVolumes();
+    return buildPromise;
   }
 
   function removeFromScene() {

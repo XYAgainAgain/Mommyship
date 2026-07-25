@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
-import { main as composeFrag, uSpaceTexture, uSceneDepth, uBHDepth, uBlackHolePosition, uDistortionStrength, uBHScreenRadius, uAspect } from './tsl/frag/compose.tsl.js';
+import { main as composeFrag, uSpaceTexture, uSceneDepth, uBHDepth, uBlackHolePosition, uDistortionStrength, uBHScreenRadius, uAspect,
+  uLensStrength, uLensReach, uSecondaryStrength, uEdgeMargin, uReachFloor, uEaseStart, uEaseEnd, uMuseWarp } from './tsl/frag/compose.tsl.js';
 
 /* Multi-pass BH-lensing pipeline: scene → spaceRT, then a quad composites the Einstein-lens
    remap + chromatic aberration — pure math, no extra distortion RT. Skipped when LOD = 0. */
@@ -30,6 +31,15 @@ export async function createCompositor(renderer) {
   uBlackHolePosition.value.set(0.5, 0.5);
   uDistortionStrength.value = 0.0;
 
+  /* Live lens-tuning knobs, e.g. lensTweak.lensReach.value = 0.5 — see compose.tsl.js for what each does */
+  if (typeof window !== 'undefined') {
+    window.lensTweak = {
+      lensStrength: uLensStrength, lensReach: uLensReach, secondaryStrength: uSecondaryStrength,
+      edgeMargin: uEdgeMargin, reachFloor: uReachFloor, easeStart: uEaseStart, easeEnd: uEaseEnd,
+      museWarp: uMuseWarp, // Muse-only smear bypass; 0-1 sane, up to ~1.5 before edge streaks
+    };
+  }
+
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), composeMat);
   quad.frustumCulled = false;
   composeScene.add(quad);
@@ -39,9 +49,12 @@ export async function createCompositor(renderer) {
     const w = renderer.domElement.width;
     const h = renderer.domElement.height;
 
+    /* Match the canvas path's MSAA (antialias: true → 4) so crossing the LOD threshold
+       into the compositor doesn't silently drop antialiasing. */
     spaceRT = new THREE.RenderTarget(w, h, {
       minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter
+      magFilter: THREE.LinearFilter,
+      samples: 4
     });
     /* Depth readable by the compose pass for the lensing gate; setSize resizes it */
     spaceRT.depthTexture = new THREE.DepthTexture(w, h);
@@ -99,5 +112,5 @@ export async function createCompositor(renderer) {
     renderer.render(composeScene, orthoCamera);
   }
 
-  return { render, resize, composeMat };
+  return { render, resize, composeMat, setMuseWarp: (v) => { uMuseWarp.value = v; } };
 }

@@ -1,4 +1,4 @@
-import { clamp, float, Fn, Loop, mix, mx_noise_float, pow, sin, vec3 } from 'three/tsl';
+import { Break, clamp, float, Fn, If, Loop, mix, mx_noise_float, pow, sin, vec3 } from 'three/tsl';
 
 /* Colordodge nebula core! Every param is a tunable node: skybox, auroras, gas bands, etc. */
 
@@ -12,6 +12,7 @@ export const cloudNoiseCD = /*@__PURE__*/ Fn(([pos, frq, seed, octaves]) => {
   const n = float(0).toVar();
   const gain = float(1).toVar();
   Loop({ start: 0, end: 8 }, ({ i }) => {
+    If(float(i).greaterThanEqual(octaves), () => { Break(); });
     const w = clamp(octaves.sub(float(i)), float(0), float(1));
     n.addAssign(cloudCD(pos.mul(gain).div(frq), seed.add(float(i).mul(10.0))).mul(float(0.5).div(gain)).mul(w));
     gain.mulAssign(2.0);

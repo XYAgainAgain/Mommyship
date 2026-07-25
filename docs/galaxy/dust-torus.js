@@ -119,7 +119,9 @@ export async function createDustTorus(scene, renderer, lightmap) {
     for (const { mesh, def, pLightmapAngle, pLocalCam } of tori) {
       const torusAngle = -rotationTime * BASE_SPEED * def.speedFraction;
       mesh.rotation.y = torusAngle;
-      pLightmapAngle.value = (torusAngle - galaxyAngle) * def.lightmapLag;
+      /* Three's RotY(t) is a 2D rotation by -t in XZ, so undoing the torus spin into the
+         galaxy frame needs galaxy - torus, not the reverse. */
+      pLightmapAngle.value = (galaxyAngle - torusAngle) * def.lightmapLag;
       /* Each torus has its own rotation; can't share one local-cam. */
       mesh.updateMatrixWorld();
       _tmpCamLocal.copy(camera.position);

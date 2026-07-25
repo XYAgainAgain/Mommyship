@@ -128,47 +128,53 @@ export const main = /*@__PURE__*/ Fn(() => {
     const advance = rayDir.mul(uStepSize);
     rayPos.addAssign(advance);
 
-    const xyLen = len3(rayPos.mul(vec3(1, 1, 0)));
-    const rotPhase = xyLen.mul(-4.27).add(uTime.mul(uSpeed));
-    const nuv = rayPos.mul(rotateAxis(vec3(0, 0, 1), rotPhase)).mul(uNoiseScale);
+    /* Empty-space skip: zBand vanishes past |z| = 2 × uWidth and the core shadow past
+       |z| = uOriginRadius, so beyond both this sample can only contribute weight 0. */
+    If(abs(rayPos.z).lessThan(max(uWidth.mul(2), uOriginRadius)), () => {
 
-    const bandEnds = vec3(uWidth.negate(), 0.0, uWidth);
-    const dz = bandEnds.sub(vec3(rayPos.z));
-    const zBand = max(uWidth.sub(dz.mul(dz).div(uWidth)).div(uWidth), 0.0);
+      const xyLen = len3(rayPos.mul(vec3(1, 1, 0)));
+      const rotPhase = xyLen.mul(-4.27).add(uTime.mul(uSpeed));
+      const nuv = rayPos.mul(rotateAxis(vec3(0, 0, 1), rotPhase)).mul(uNoiseScale);
 
-    const noiseAmpLen = len3(uNoiseTexture.sample(nuv.xy).xyz.mul(zBand));
-    const noiseNrmLen = len3(uNoiseTexture.sample(nuv.xy.mul(1.002)).xyz.mul(zBand));
+      const bandEnds = vec3(uWidth.negate(), 0.0, uWidth);
+      const dz = bandEnds.sub(vec3(rayPos.z));
+      const zBand = max(uWidth.sub(dz.mul(dz).div(uWidth)).div(uWidth), 0.0);
 
-    const rampInput = xyLen
-      .add(noiseAmpLen.sub(0.78).mul(1.5))
-      .add(noiseAmpLen.sub(noiseNrmLen).mul(19.75));
+      const noiseAmpLen = len3(uNoiseTexture.sample(nuv.xy).xyz.mul(zBand));
+      const noiseNrmLen = len3(uNoiseTexture.sample(nuv.xy.mul(1.002)).xyz.mul(zBand));
 
-    const baseCol = ramp3(rampInput, vec4(uRampCol1, uRampPos1), vec4(uRampCol2, uRampPos2), vec4(uRampCol3, uRampPos3));
-    const emissiveCol = baseCol.mul(uRampEmission).add(uEmissionColor).toVar();
+      const rampInput = xyLen
+        .add(noiseAmpLen.sub(0.78).mul(1.5))
+        .add(noiseAmpLen.sub(noiseNrmLen).mul(19.75));
 
-    const ring = float(1).sub(smoothstep(0.0, uRingWidth, abs(xyLen.sub(uRingRadius)))).mul(uRingStrength);
-    emissiveCol.addAssign(uRampCol1.mul(ring));
+      const baseCol = ramp3(rampInput, vec4(uRampCol1, uRampPos1), vec4(uRampCol2, uRampPos2), vec4(uRampCol3, uRampPos3));
+      const emissiveCol = baseCol.mul(uRampEmission).add(uEmissionColor).toVar();
 
-    const radial = normalize(vec3(rayPos.x, rayPos.y, 0).add(vec3(1e-4, 0, 0)));
-    const tangent = vec3(radial.y.negate(), radial.x, 0);
-    const beamAmt = uDopplerAmp.add(sin(uTime.mul(uDopplerPulseSpeed)).mul(uDopplerPulse));
-    emissiveCol.mulAssign(max(float(1).add(tangent.dot(rayDir).mul(beamAmt)), 0.0));
+      const ring = float(1).sub(smoothstep(0.0, uRingWidth, abs(xyLen.sub(uRingRadius)))).mul(uRingStrength);
+      emissiveCol.addAssign(uRampCol1.mul(ring));
 
-    const inCore = len3(rayPos).lessThan(uOriginRadius);
-    const coreF = select(inCore, float(1), float(0));
-    const shadedCol = mix(emissiveCol, vec3(0), coreF);
+      const radial = normalize(vec3(rayPos.x, rayPos.y, 0).add(vec3(1e-4, 0, 0)));
+      const tangent = vec3(radial.y.negate(), radial.x, 0);
+      const beamAmt = uDopplerAmp.add(sin(uTime.mul(uDopplerPulseSpeed)).mul(uDopplerPulse));
+      emissiveCol.mulAssign(max(float(1).add(tangent.dot(rayDir).mul(beamAmt)), 0.0));
 
-    const aNoise = noiseAmpLen.sub(0.75).mul(-0.60);
-    const aRadial = smoothRange(xyLen, 1.0, 0.0, 0.0, 1.0);
-    const aBand = smoothRange(abs(rayPos.z).add(aNoise), uWidth, float(0), float(0), aRadial);
-    const alphaLocal = mix(aBand, float(1), coreF);
+      const inCore = len3(rayPos).lessThan(uOriginRadius);
+      const coreF = select(inCore, float(1), float(0));
+      const shadedCol = mix(emissiveCol, vec3(0), coreF);
 
-    const weight = alphaAcc.oneMinus().mul(alphaLocal);
-    colorAcc.assign(mix(colorAcc, shadedCol, weight));
-    alphaAcc.assign(mix(alphaAcc, float(1), alphaLocal));
+      const aNoise = noiseAmpLen.sub(0.75).mul(-0.60);
+      const aRadial = smoothRange(xyLen, 1.0, 0.0, 0.0, 1.0);
+      const aBand = smoothRange(abs(rayPos.z).add(aNoise), uWidth, float(0), float(0), aRadial);
+      const alphaLocal = mix(aBand, float(1), coreF);
 
-    /* Front-to-back saturation early-out: once opaque, later samples contribute ~0. */
-    If(alphaAcc.greaterThan(0.99), () => { Break(); });
+      const weight = alphaAcc.oneMinus().mul(alphaLocal);
+      colorAcc.assign(mix(colorAcc, shadedCol, weight));
+      alphaAcc.assign(mix(alphaAcc, float(1), alphaLocal));
+
+      /* Front-to-back saturation early-out: once opaque, later samples contribute ~0. */
+      If(alphaAcc.greaterThan(0.99), () => { Break(); });
+
+    });
 
     rayPos.addAssign(advance);
     rayDir.assign(steeredDir);

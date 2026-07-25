@@ -363,12 +363,14 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 	If( oceanMask.greaterThan( 0.01 ), () => {
 
 		const depth = max( 0.0, uOceanLevel.sub( height ) );
-		const terrainDerivs = gDetailDerivs;
+
+		/* Snapshot: oceanSurface() overwrites gDetailDerivs, so an alias would lose these */
+
+		const terrainDerivs = gDetailDerivs.toVar();
 
 		/* Dampen waves for rocky planets — land constrains fetch */
 
 		const oceanColor = oceanSurface( sp, s, depth, uWarpStrength.mul( 0.4 ), uBaseColor1 ).toVar();
-		const oceanDerivs = gDetailDerivs;
 
 		/* Polar ice over ocean */
 
@@ -391,7 +393,7 @@ export const renderRocky = /*@__PURE__*/ Fn( ( [ sp, s, uSlopeness, uTemperature
 
 		} ).Else( () => {
 
-			gDetailDerivs.assign( mix( terrainDerivs, oceanDerivs, oceanMask ) );
+			gDetailDerivs.assign( mix( terrainDerivs, gDetailDerivs, oceanMask ) );
 			surfaceColor.assign( mix( surfaceColor, oceanColor, oceanMask ) );
 
 		} );
@@ -1158,11 +1160,13 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	} );
 
-	/* Wrap-light NdotL — shifts terminator softward so small spheres
-	     don't get knife-edge shadow boundaries */
+	/* Wrap-light NdotL — softens the terminator, but only where there's air to
+	     scatter light past the limb; airless bodies fall back to plain Lambert */
 
+	const atmoF = smoothstep( 0.0, 0.1, uAtmoIntensity );
+	const wrap = float( 0.35 ).mul( atmoF );
 	const NdotL_raw = dot( perturbedN, L );
-	const NdotL = max( 0.0, NdotL_raw.mul( 0.65 ).add( 0.35 ) );
+	const NdotL = max( 0.0, NdotL_raw.mul( sub( 1.0, wrap ) ).add( wrap ) );
 	const H = normalize( L.add( V ) );
 	const NdotH = max( 0.0, dot( perturbedN, H ) );
 	const NdotV = max( 0.0, dot( perturbedN, V ) );
@@ -1182,11 +1186,15 @@ export const main = /*@__PURE__*/ Fn( ( [
 	     map, so the PI divisor just makes everything too dark. */
 
 	const kD = vec3( 1.0 ).sub( F ).mul( sub( 1.0, uMetalness ) );
+
+	/* Snapshot: albedo aliases surfaceColor, which the next line overwrites with the lit result */
+
+	const unlitAlbedo = surfaceColor.toVar();
 	surfaceColor.assign( kD.mul( albedo ).add( specular ).mul( NdotL ) );
 
 	/* Ambient floor — uses albedo so dark side stays readable */
 
-	surfaceColor.addAssign( kD.mul( albedo ).mul( 0.12 ) );
+	surfaceColor.addAssign( kD.mul( unlitAlbedo ).mul( 0.12 ) );
 
 	/* Crystalline — boosted ambient (gems scatter light internally) + edge glow */
 

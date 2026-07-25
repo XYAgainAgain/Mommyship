@@ -312,11 +312,22 @@ export async function createSystems(scene, camera, renderer) {
   /* Per-lane material so occlusion fades each lane independently; the shared
      color node keeps every lane on one compiled pipeline. */
   function makeLaneMaterial() {
+    /* transparent MUST stay false: Line2NodeMaterial forces NoBlending and, when transparent,
+       replaces its output with a composite that samples a copy of the framebuffer. */
     const mat = new Line2NodeMaterial({
-      color: 0xffffff, transparent: true, opacity: HL_OPACITY,
+      color: 0xffffff, transparent: false, opacity: HL_OPACITY,
       depthWrite: false, worldUnits: true, linewidth: 0.8,
       alphaToCoverage: true
     });
+    /* CustomBlending is the one mode WebGPU honors with transparent false, so the ribbon
+       blends for real instead of overwriting. */
+    mat.blending = THREE.CustomBlending;
+    mat.blendEquation = THREE.AddEquation;
+    mat.blendSrc = THREE.SrcAlphaFactor;
+    mat.blendDst = THREE.OneMinusSrcAlphaFactor;
+    mat.blendEquationAlpha = THREE.AddEquation;
+    mat.blendSrcAlpha = THREE.OneFactor;
+    mat.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
     mat.lineColorNode = laneColorNode;
     return mat;
   }
@@ -357,9 +368,12 @@ export async function createSystems(scene, camera, renderer) {
   }
 
   function restoreMarkerColors() {
+    /* The snapshot outlives edits that change instance count, so clamp like applyMuseShift. */
     const put = (mesh, base) => {
       if (!mesh || !mesh.instanceColor || !base) return;
-      mesh.instanceColor.array.set(base);
+      const arr = mesh.instanceColor.array;
+      const n = Math.min(mesh.count * 3, base.length);
+      for (let i = 0; i < n; i++) arr[i] = base[i];
       mesh.instanceColor.needsUpdate = true;
     };
     put(sphereMarkers, museBaseColors.sphere);
@@ -561,15 +575,21 @@ export async function createSystems(scene, camera, renderer) {
   async function rebakeStarAtlas() {
     if (!starAtlasMat) return;
     try {
-      if (starAtlasData?.atlas) starAtlasData.atlas.dispose();
-      starAtlasData = await bakeStarAtlas(renderer, galaxyData.bodies);
-      starUAtlas.value = starAtlasData.atlas;
-      if (starDetail) {
-        markerScene.remove(starDetail.container);
-        starDetail.dispose();
-        detailActiveIds = new Set();
-        starDetail = await createStarDetail(renderer);
-        markerScene.add(starDetail.container);
+      /* Bake before swapping: markers keep sampling the old atlas across the
+         bake's awaits, and a failed bake leaves it intact. */
+      const newData = await bakeStarAtlas(renderer, galaxyData.bodies);
+      if (newData.atlas) {
+        const oldAtlas = starAtlasData?.atlas;
+        starAtlasData = newData;
+        starUAtlas.value = newData.atlas;
+        if (oldAtlas) oldAtlas.dispose();
+        if (starDetail) {
+          markerScene.remove(starDetail.container);
+          starDetail.dispose();
+          detailActiveIds = new Set();
+          starDetail = await createStarDetail(renderer);
+          markerScene.add(starDetail.container);
+        }
       }
     } catch (e) {
       console.warn('Star atlas re-bake failed:', e);

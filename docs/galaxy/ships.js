@@ -39,7 +39,7 @@ const SHEET_CAPACITY = 600;    // per-sheet instance ceiling
 const SHIP_STRETCH = 0.6;      // hull elongation at full jump speed (1 + this at plateau)
 const TRAIL_LEN = 6.0;         // trail-quad length at full speed, in sprite widths
 const TRAIL_OPACITY = 0.85;    // additive strength at the nozzle end of the trail
-/* Star avoidance sphere = MARKER_RADIUS (2.5, mirrors systems.js) × star instanceScale × K.
+/* Star avoidance sphere = MARKER_RADIUS (2.5, mirrors systems.js) × star instanceScale × mkRadius × K.
    Ships arc over the limb instead of flying through the photosphere. */
 const STAR_MARKER_R = 2.5;
 const STAR_AVOID_K = 2.0;
@@ -116,7 +116,9 @@ const rFlash = varyingProperty('float', 'vShipFlash');
 const rTrail = varyingProperty('float', 'vShipTrail');
 const rTrailSpan = varyingProperty('float', 'vShipTrailSpan');
 
-let sceneRef = null;
+/* Ships live in markerScene (pass 2) so the BH lens warps them like the bodies around them;
+   groupOrder 7 keeps their additive glow above the planet detail group (5) and the lines (6). */
+let shipGroup = null;
 let hullMeshes = [];
 let engineMeshes = [];
 let instanceHandles = [];
@@ -420,7 +422,7 @@ function buildSheetMeshes(sheet, lightmap) {
 
   const hullMesh = new THREE.Mesh(hullGeo, hullMat);
   hullMesh.frustumCulled = false;
-  sceneRef.add(hullMesh);
+  shipGroup.add(hullMesh);
   hullMeshes.push(hullMesh);
 
   let engineGeo = null;
@@ -440,7 +442,7 @@ function buildSheetMeshes(sheet, lightmap) {
 
     const engineMesh = new THREE.Mesh(engineGeo, engineMat);
     engineMesh.frustumCulled = false;
-    sceneRef.add(engineMesh);
+    shipGroup.add(engineMesh);
     engineMeshes.push(engineMesh);
 
     // Trail quad rides the same instance data; degenerate (zero-area) when a ship is idle.
@@ -459,7 +461,7 @@ function buildSheetMeshes(sheet, lightmap) {
 
     const trailMesh = new THREE.Mesh(trailGeo, trailMat);
     trailMesh.frustumCulled = false;
-    sceneRef.add(trailMesh);
+    shipGroup.add(trailMesh);
     engineMeshes.push(trailMesh);
     engineGeo.trailGeo = trailGeo;
   }
@@ -556,7 +558,9 @@ function buildDockTargets() {
     }
     if (b.type === 'star') {
       const bm = sysApi.getBodyMeta(id);
-      if (bm) starAvoid.set(id, STAR_MARKER_R * bm.instanceScale * STAR_AVOID_K);
+      /* mkRadius is the luminosity-class size the star actually renders at; without it
+         giants get a keep-out smaller than their own photosphere. */
+      if (bm) starAvoid.set(id, STAR_MARKER_R * bm.instanceScale * (bm.mkRadius || 1) * STAR_AVOID_K);
       continue;
     }
     // Destroyed worlds are off-limits to every ship, no matter how scenic the devouring.
@@ -1290,9 +1294,11 @@ function buildDerelicts() {
   derelictReady = derelictShips.length > 0;
 }
 
-export async function init(scene, lightmapTexture, systemsApi) {
-  sceneRef = scene;
+export async function init(lightmapTexture, systemsApi) {
   sysApi = systemsApi;
+  shipGroup = new THREE.Group();
+  shipGroup.renderOrder = 7;
+  systemsApi.markerScene.add(shipGroup);
   const found = [];
 
   for (let i = 0; i < MAX_SHEETS; i++) {
@@ -1504,10 +1510,11 @@ export { computeWindow };
 
 export function dispose() {
   for (const m of [...hullMeshes, ...engineMeshes]) {
-    sceneRef?.remove(m);
     m.geometry.dispose();
     m.material.dispose();
   }
+  shipGroup?.removeFromParent();
+  shipGroup = null;
   hullMeshes = [];
   engineMeshes = [];
   instanceHandles = [];

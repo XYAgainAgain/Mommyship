@@ -374,8 +374,8 @@ function createAsteroidMesh(cfg, _unused, rng, exclusionZones, lightmap, megaMod
   const pLightmap = texture(lightmap);
 
   const mat = new MeshBasicNodeMaterial();
-  mat.positionNode = asteroidVert(pColumns, pRows, pTotalFrames, pFPS);
-  mat.fragmentNode = asteroidFrag(pSpriteSheet, pLightmap);
+  mat.positionNode = asteroidVert(pColumns, pRows, pTotalFrames, pFPS, pLightmap);
+  mat.fragmentNode = asteroidFrag(pSpriteSheet);
   mat.side = THREE.DoubleSide;
   mat.depthWrite = true;
   mat.depthTest = true;
@@ -615,10 +615,11 @@ function stepDrift(delta, now) {
   }
 }
 
+/* Returns false when the spare pool is empty and no split could happen */
 function splitBigBoi(rec, now) {
   const count = SPLIT_MIN + Math.floor(Math.random() * (SPLIT_MAX - SPLIT_MIN + 1));
   const available = Math.min(count, spareIndices.length);
-  if (available === 0) return;
+  if (available === 0) return false;
 
   /* Hide the BigBoi */
   populations.big.scaleAttr.setX(rec.index, 0);
@@ -631,7 +632,7 @@ function splitBigBoi(rec, now) {
     const angle = (i / available) * Math.PI * 2 + Math.random() * 0.5;
     const spread = rec.radius * 0.5 + Math.random() * rec.radius * 0.3;
     const fragScale = LILGUY.sizeMin + Math.random() * (LILGUY.sizeMax - LILGUY.sizeMin);
-    const speed = DRIFT_SPEED_MIN + Math.random() * DRIFT_SPEED_MAX;
+    const speed = DRIFT_SPEED_MIN + (DRIFT_SPEED_MAX - DRIFT_SPEED_MIN) * Math.random();
 
     /* Position fragments around the split point with outward velocity */
     const fx = rec.x + Math.cos(angle) * spread;
@@ -671,6 +672,7 @@ function splitBigBoi(rec, now) {
   pop.radiusAttr.needsUpdate = true;
   pop.tintAttr.needsUpdate = true;
   pop.animDirAttr.needsUpdate = true;
+  return true;
 }
 
 /* Flip animation direction while preserving the current frame (no visual discontinuity).
@@ -800,8 +802,9 @@ function resolveCollisions(now, rotationTime) {
   for (const rec of pendingSplits) {
     const key = 'big-' + rec.index;
     if (!activeSet.has(key)) continue;
-    splitBigBoi(rec, now);
-    activeSet.delete(key);
+    /* A failed split must keep its entry — dropping it strands the rock visible and lets
+       rebuildActiveSet re-adopt its drifted position as a permanent new origin */
+    if (splitBigBoi(rec, now)) activeSet.delete(key);
   }
 }
 

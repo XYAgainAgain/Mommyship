@@ -203,7 +203,7 @@ async function init() {
   progress();
   await asteroids.init(scene, systems.getData(), lightmap);
   if (window.gxBoot) window.gxBoot.ping();
-  await ships.init(scene, lightmap, systems);
+  await ships.init(lightmap, systems);
   if (window.gxBoot) window.gxBoot.ping();
   await scenePrecompile;
   if (window.gxBoot) window.gxBoot.ping();
@@ -255,7 +255,7 @@ async function init() {
 
   if (volumetricActive) {
     scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
-    volumetric.addToScene();
+    await volumetric.addToScene();
   }
 
   /* Absolute Cinema */
@@ -280,8 +280,10 @@ async function init() {
       cinemaMode = false;
     }
     if (volumetricActive) {
-      scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
-      volumetric.addToScene();
+      /* Billboards stay up until the volumes exist, so a first-enable bake leaves no gap */
+      volumetric.addToScene().then(() => {
+        if (volumetricActive) scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
+      });
     } else {
       volumetric.removeFromScene();
       scene.add(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
@@ -293,6 +295,9 @@ async function init() {
   const perfMonitor = createPerfMonitor((level, direction, p95) => {
     const dpr = level >= 2 ? 1.0 : level >= 1 ? 1.5 : Math.min(window.devicePixelRatio, 2);
     renderer.setPixelRatio(dpr);
+    /* spaceRT only tracks the drawing buffer through this call, so without it the
+       compositor path keeps a stale-size RT the compose quad rescales. */
+    compositor.resize();
 
     if (level >= 3 && volumetricActive) {
       fancyCheckbox.checked = false;
@@ -392,6 +397,7 @@ async function init() {
     }
     systems.setClickDisabled(museActive);
     systems.setMuseActive(museActive);
+    compositor.setMuseWarp(museActive ? 1 : 0);
     perfMonitor.setBypass(cinemaMode || museActive);
   });
 

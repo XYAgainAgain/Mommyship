@@ -1,6 +1,6 @@
 // Three.js Transpiler r183
 
-import { add, attribute, cameraPosition, clamp, cos, cross, div, exp, float, floor, Fn, fract, If, mod, mul, normalize, positionLocal, sin, sub, varying, uniform, uv, vec2, vec3 } from 'three/tsl';
+import { add, attribute, cameraPosition, clamp, cos, cross, div, dot, exp, float, floor, Fn, fract, If, mix, mod, mul, normalize, positionLocal, sin, smoothstep, sub, varying, uniform, uv, vec2, vec3 } from 'three/tsl';
 
 /* Per-instance attributes (from InstancedBufferAttribute) */
 
@@ -18,7 +18,8 @@ const vUv1 = varying( vec2(), 'vUv1' );
 const vBlend = varying( float(), 'vBlend' );
 const vTint = varying( float(), 'vTint' );
 const vRadius = varying( float(), 'vRadius' );
-const vCanonicalXZ = varying( vec2(), 'vCanonicalXZ' );
+const vTintColor = varying( vec3(), 'vTintColor' );
+const vRimColor = varying( vec3(), 'vRimColor' );
 
 /* Map a frame index to sprite sheet UVs for this quad corner */
 
@@ -41,7 +42,7 @@ export const frameUV = /*@__PURE__*/ Fn( ( [ frame_immutable, corner, columns, r
 
 /* Per-population uniforms accepted as parameters (columns, rows, totalFrames, fps differ per population) */
 
-export const main = /*@__PURE__*/ Fn( ( [ columns, rows, totalFrames, fps ] ) => {
+export const main = /*@__PURE__*/ Fn( ( [ columns, rows, totalFrames, fps, lightmapTex ] ) => {
 
 	/* Differential rotation — matches disk.js core boost (0.30) */
 
@@ -89,7 +90,16 @@ export const main = /*@__PURE__*/ Fn( ( [ columns, rows, totalFrames, fps ] ) =>
 	vBlend.assign( clamp( t.mul( t ).mul( t ).mul( t.mul( t.mul( 6.0 ).sub( 15.0 ) ).add( 10.0 ) ), 0.0, 1.0 ) );
 	vTint.assign( aTint );
 	vRadius.assign( aRadius );
-	vCanonicalXZ.assign( aOffset.xz );
+
+	/* Lightmap sampled at canonical XZ (+-500 map units -> 0-1 UV). Constant across the quad, so
+	   an explicit LOD-0 sample here is value-identical to the old per-fragment one. */
+
+	const lmUV = aOffset.xz.div( 1000.0 ).add( 0.5 );
+	const illum = lightmapTex.sample( lmUV ).level( 0 ).rgb;
+	const illumBright = dot( illum, vec3( 0.299, 0.587, 0.114 ) );
+	const baseTint = vec3( 0.78, 0.72, 0.88 );
+	vTintColor.assign( mix( baseTint.mul( 0.4 ), illum.add( baseTint.mul( 0.15 ) ), smoothstep( 0.02, 0.15, illumBright ) ) );
+	vRimColor.assign( illum.mul( 0.25 ).add( baseTint.mul( 0.12 ) ) );
 
 	return billboarded;
 
