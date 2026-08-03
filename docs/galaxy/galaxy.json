@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0.0",
     "name": "The Known Galaxy",
-    "lastModified": "2026-04-12T19:00:19.019Z",
+    "lastModified": "2026-08-03T23:41:39.363Z",
     "authors": [
       "Sam",
       "Jaz"
@@ -3482,17 +3482,26 @@
     },
     "padania-planet-1": {
       "type": "planet",
-      "subtype": "volcanic",
+      "subtype": "fungal",
       "name": "Padania I",
-      "description": "",
+      "description": "Has intelligent life.",
       "notes": "",
       "class": "U",
       "position": null,
       "parentId": "padania",
       "orbital": {
-        "order": 1
+        "order": 1,
+        "e": 0.1
       },
-      "visual": null,
+      "visual": {
+        "color": "#38593a",
+        "metalness": 0.26,
+        "atmosphereTint": "#9baa8e",
+        "temperature": 0.17,
+        "atmosphereIntensity": 1.85,
+        "roughness": 0.46,
+        "spinSpeed": 0.14
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -3507,21 +3516,30 @@
         "habitability": 60,
         "size": "M",
         "toxic": true
-      }
+      },
+      "axialTilt": 56,
+      "subtitle": "Hyperjungle"
     },
     "padania-moon-1": {
       "type": "moon",
       "subtype": "barren",
-      "name": "Padania Moon I",
-      "description": "",
+      "name": "Padigo",
+      "description": "Fun Fact: This is where Dr. Qwell got his medical degree! It has has 3 Fuddruckers locations.",
       "notes": "",
       "class": "C",
       "position": null,
       "parentId": "padania-planet-1",
       "orbital": {
-        "order": 1
+        "order": 1,
+        "e": 0.18,
+        "incl": 105,
+        "period": 40
       },
-      "visual": null,
+      "visual": {
+        "spinSpeed": 0.22,
+        "roughness": 0.5,
+        "metalness": 0.53
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -3530,10 +3548,14 @@
       "tags": [
         "colony"
       ],
-      "hasFuddruckers": false,
+      "hasFuddruckers": true,
       "stats": {
-        "class": "C"
-      }
+        "class": "C",
+        "size": "S",
+        "habitability": 65,
+        "population": 235163
+      },
+      "axialTilt": 70
     },
     "padania-planet-2": {
       "type": "planet",
