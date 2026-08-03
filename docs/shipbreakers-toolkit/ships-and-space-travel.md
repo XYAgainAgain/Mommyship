@@ -44,7 +44,7 @@ Ships don't fly themselves (at least, not always). Crewing a ship requires at le
 
 | ROLE | PREREQ. | DESCRIPTION |
 | :---: | :---: | :---: |
-| **CAPTAIN** | None |  Adds their Influence or Command Skill to ship Morale Checks. |
+| **CAPTAIN** | None but gumption |  Adds their Influence or Command Skill to ship Morale Checks. |
 | **PILOT** | Piloting or Hyperspace | Adds their Piloting or Hyperspace Skill to Thrusters Checks. |
 | **X.O.** | Influence, Military Training, Psychology, or Command | Can grant [+] to any crew member on any Check within Close Range. |
 | **ENGINEER** | Mechanical Repair or Engineering | Adds their Mechanical Repair or Engineering Skill to Systems Checks. |
@@ -55,6 +55,7 @@ Ships don't fly themselves (at least, not always). Crewing a ship requires at le
 | **COOK** | Botany, Chemistry, or Zoology |  Can give the crew [+] on a Rest Save when they have prepared a home-cooked meal during that rest period. |
 | **ACCOUNTANT** | Mathematics, Computers, or Rimwise | [+] on all Bankruptcy and Debt Checks. |
 | **COUNSELOR** | Art, Theology, or Psychology | [+] on Panic Checks when crew members and Counselor are both onboard. |
+| **GARDENER** | Botany, Ecology, Exobiology, or Planetology | [+] on Sanity Saves when crew members and Gardener are both onboard. |
 
 Both player characters and Contractors can be assigned a Role, as long as they have the Prerequisite Skills. Assigning a Contractor to a **Liaison**, **Custodian**, **Cook**, or **Accountant** Role increases their Salary by 500cr and adds +1 to their Loyalty. Contractors assigned to any other Role increase their Salary by 1kcr and add +2 to their Loyalty.
 
