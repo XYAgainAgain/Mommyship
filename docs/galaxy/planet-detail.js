@@ -5,6 +5,7 @@ import { main as planetDetailVert, uTime as vertUTime } from './tsl/vert/planet-
 import { main as planetDetailFrag, uTime as fragUTime } from './tsl/frag/planet-detail.tsl.js';
 import { main as atmoVert } from './tsl/vert/planet-atmo.tsl.js';
 import { main as atmoFrag, uTime as atmoUTime } from './tsl/frag/planet-atmo.tsl.js';
+import { uPxGrid, uPxLevels, uPxDither, uPxStar, uPxStarRange, uPxPlanetRange, uPxNoSnap, uPxNoFlat } from './tsl/pixel.tsl.js';
 import { createRng } from './rng.js';
 import { parsePlanetType, findParentStar, hashString } from './planet-params.js';
 
@@ -37,6 +38,12 @@ function computeAtmoDensity(params) {
   }
 }
 
+/* Pixel-art opt-in test: window.pixelTweak.bodies is 'all' or a list of body-ID prefixes */
+function pxMatches(id) {
+  const b = globalThis.pixelTweak?.bodies;
+  return b === 'all' ? true : Array.isArray(b) && b.some(p => id.startsWith(p));
+}
+
 /* Uniform, not a literal: an inlined 1.0 makes mix(2,4,q) all-literal, and Firefox's
    Naga rejects abstract-typed expressions outside const contexts (Chrome tolerates) */
 const uDetailQuality = uniform(float(1.0));
@@ -67,6 +74,17 @@ export async function createPlanetDetail(renderer) {
   const surfaceGeo = new THREE.SphereGeometry(MARKER_RADIUS, DETAIL_SEGMENTS, DETAIL_ROWS);
   /* Match surface tessellation — the limb silhouette needs smooth geometry */
   const atmoGeo = new THREE.SphereGeometry(MARKER_RADIUS, DETAIL_SEGMENTS, DETAIL_ROWS);
+
+  /* Live pixel-art knobs, e.g. pixelTweak.levels.value = 8 */
+  if (typeof window !== 'undefined') {
+    window.pixelTweak = {
+      /* body-ID prefixes to pixelate, or 'all'; stars is a global 0/1 uniform toggle */
+      bodies: ['steepborto', 'los-kuaran'],
+      stars: uPxStar, grid: uPxGrid, levels: uPxLevels, dither: uPxDither,
+      starRange: uPxStarRange, planetRange: uPxPlanetRange,
+      noSnap: uPxNoSnap, noFlat: uPxNoFlat,
+    };
+  }
 
   const pool = [];
   const container = new THREE.Group();
@@ -113,6 +131,7 @@ export async function createPlanetDetail(renderer) {
     const pLumpiness = uniform(float(0.0));
     const pTerrainType = uniform(int(1));
     const pCrackPattern = uniform(int(0));
+    const pPxOn = uniform(float(0));
 
     const mat = new NodeMaterial();
     mat.positionNode = planetDetailVert(pSeed, pDisplacementAmp, pLumpiness, pRotation, pFadeIn);
@@ -123,7 +142,8 @@ export async function createPlanetDetail(renderer) {
       pCrackScale, pSubsurfaceColor, pEmissiveIntensity, pEmissiveColor, pBulbosity,
       pRoughness, pMetalness, pCrystalMetric, pMoistureOffset, pBiomeCount,
       pRotation, pLightDir, pLodDist, pFadeIn, pOpacity,
-      pCloudCover, pCloudColor, pStorminess, uDetailQuality, pTerrainType, pCrackPattern
+      pCloudCover, pCloudColor, pStorminess, uDetailQuality, pTerrainType, pCrackPattern,
+      pPxOn
     );
     mat.transparent = true;
     /* IGN (interleaved gradient noise) crossfade keeps pixels opaque, so depth
@@ -157,7 +177,7 @@ export async function createPlanetDetail(renderer) {
     atmoMat.fragmentNode = atmoFrag(
       pAtmoTintA, pAtmoIntensityA, pAtmoLightDir, pAtmoFadeIn,
       pAtmoCloudCover, pAtmoCloudColor, pAtmoStorminess,
-      pAtmoSeed, pAtmoPlanetMode, pAtmoBandCount
+      pAtmoSeed, pAtmoPlanetMode, pAtmoBandCount, pPxOn
     );
     atmoMat.transparent = true;
     atmoMat.blending = THREE.CustomBlending;
@@ -214,7 +234,7 @@ export async function createPlanetDetail(renderer) {
       pEmissiveIntensity, pEmissiveColor, pBulbosity, pRoughness, pMetalness,
       pCrystalMetric, pMoistureOffset, pBiomeCount, pRotation, pLightDir,
       pLodDist, pFadeIn, pOpacity, pCloudCover, pCloudColor, pStorminess,
-      pDisplacementAmp, pLumpiness, pTerrainType, pCrackPattern,
+      pDisplacementAmp, pLumpiness, pTerrainType, pCrackPattern, pPxOn,
       /* Atmo uniform refs */
       pAtmoTintA, pAtmoIntensityA, pAtmoLightDir, pAtmoFadeIn,
       pAtmoCloudCover, pAtmoCloudColor, pAtmoStorminess, pAtmoSeed,
@@ -475,6 +495,8 @@ export async function createPlanetDetail(renderer) {
       if (!entry.bodyId) continue;
       const wp = bodyWorldPos.get(entry.bodyId);
       if (!wp) { activeIds.delete(entry.bodyId); deactivate(entry); continue; }
+
+      entry.pPxOn.value = pxMatches(entry.bodyId) ? 1 : 0;
 
       entry.group.position.set(wp.x, wp.y, wp.z);
       const meta = bodyMeta?.get(entry.bodyId);

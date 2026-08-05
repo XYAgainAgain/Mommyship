@@ -17,6 +17,8 @@ import {
 	cellNoise3D, cellNoise3DDelta, crystals3D, crystals3DDelta
 } from '../glsl/noise-common.tsl.js';
 
+import { pxSnapDir, pxPosterize, uPxPlanetRange, uPxNoSnap, uPxNoFlat } from '../pixel.tsl.js';
+
 /* Inline noise-common copies removed — now imported from ../glsl/noise-common.tsl.js */
 
 /* Captured by render functions for normal perturbation */
@@ -979,7 +981,7 @@ export const main = /*@__PURE__*/ Fn( ( [
 	uCrackScale, uSubsurfaceColor, uEmissiveIntensity, uEmissiveColor, uBulbosity,
 	uRoughness, uMetalness, uCrystalMetric, uMoistureOffset, uBiomeCount,
 	uRotation, uLightDir, uLodDist, uFadeIn, uOpacity,
-	uCloudCover, uCloudColor, uStorminess, uQuality, uTerrainType, uCrackPattern
+	uCloudCover, uCloudColor, uStorminess, uQuality, uTerrainType, uCrackPattern, uPxOn
 ] ) => {
 
 	/* IGN discard complementary to planet-atlas.tsl.js — atlas keeps ign >= fade,
@@ -991,13 +993,22 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	/* vLocalPos is body-local — texture sticks to surface, geometry rotation is separate */
 
-	const rotated = normalize( vLocalPos );
+	const rotated = normalize( vLocalPos ).toVar();
+
+	/* Snap before churn so the churn animates whole texels instead of smearing them */
+	If( uPxOn.greaterThan( 0.5 ).and( uPxNoSnap.lessThan( 0.5 ) ), () => { rotated.assign( pxSnapDir( rotated ) ); } );
+
 	const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
 
 	/* LOD tiers — 0 = closest, 1 = at activation boundary.
 	     Features fade in progressively as camera approaches. */
 
-	const lod = smoothstep( 6.0, 16.0, uLodDist );
+	const lod = smoothstep( 6.0, 16.0, uLodDist ).toVar();
+
+	/* Pixel mode point-samples noise at texel centers — high-freq tiers alias into
+	   per-texel static, so force the far tier regardless of camera distance */
+	If( uPxOn.greaterThan( 0.5 ), () => { lod.assign( max( lod, 0.6 ) ); } );
+
 	const lodClose = lod.lessThan( 0.5 );
 	const lodMedium = lod.lessThan( 0.75 );
 
@@ -1081,7 +1092,9 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 		} );
 
-		const fineDetail = fn1.x.mul( 0.5 ).add( fine2.mul( 0.25 ) );
+		/* Pixel mode: freq-18–43 noise point-sampled per texel flips whole posterize
+		   bands — random dark/light pepper — so mute the fine layer there */
+		const fineDetail = fn1.x.mul( 0.5 ).add( fine2.mul( 0.25 ) ).mul( sub( 1.0, uPxOn ) );
 
 		If( isFluid, () => {
 
@@ -1097,7 +1110,12 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	} );
 
-	const N = normalize( vRotNormal );
+	const N = normalize( vRotNormal ).toVar();
+
+	/* Flat per-texel shading: rotated is the snapped local dir, uRotation lifts it
+	   into the same world frame vRotNormal lives in */
+	If( uPxOn.greaterThan( 0.5 ).and( uPxNoFlat.lessThan( 0.5 ) ), () => { N.assign( normalize( uRotation.mul( rotated ) ) ); } );
+
 	const V = normalize( cameraPosition.sub( positionWorld ) );
 
 	/* Analytical sphere tangent — continuous at poles, no binary switch seam */
@@ -1113,7 +1131,8 @@ export const main = /*@__PURE__*/ Fn( ( [
 
 	const bumpCap = select( uPlanetMode.equal( 0 ).or( uPlanetMode.equal( 6 ) ).or( uPlanetMode.equal( 7 ) ), 1.0, 0.35 );
 	const bumpMul = select( uPlanetMode.equal( 0 ).or( uPlanetMode.equal( 6 ) ).or( uPlanetMode.equal( 7 ) ), 0.7, 0.25 );
-	const bumpStrength = min( bumpCap, derivLen.mul( bumpMul ) ).mul( sub( 1.0, lod ) ).mul( uFadeIn );
+	/* Pixel mode: bump derivs are point-sampled noise (random per texel) — flat-shade instead */
+	const bumpStrength = min( bumpCap, derivLen.mul( bumpMul ) ).mul( sub( 1.0, lod ) ).mul( uFadeIn ).mul( sub( 1.0, uPxOn ) );
 	const perturbedN = normalize( N.sub( bumpStrength.mul( gDetailDerivs.x.mul( T ).add( gDetailDerivs.y.mul( B ) ) ) ) );
 	const L = normalize( uLightDir );
 
@@ -1190,7 +1209,8 @@ export const main = /*@__PURE__*/ Fn( ( [
 	/* Snapshot: albedo aliases surfaceColor, which the next line overwrites with the lit result */
 
 	const unlitAlbedo = surfaceColor.toVar();
-	surfaceColor.assign( kD.mul( albedo ).add( specular ).mul( NdotL ) );
+	/* Pixel mode drops specular — the GGX lobe posterizes into a hard white smear */
+	surfaceColor.assign( kD.mul( albedo ).add( specular.mul( sub( 1.0, uPxOn ) ) ).mul( NdotL ) );
 
 	/* Ambient floor — uses albedo so dark side stays readable */
 
@@ -1238,6 +1258,14 @@ export const main = /*@__PURE__*/ Fn( ( [
 		const bodyTransp = fract( s.mul( 0.137 ) ).toVar();
 		bodyTransp.mulAssign( bodyTransp );
 		alpha.mulAssign( mix( sub( 1.0, bodyTransp.mul( 0.03 ) ), sub( 1.0, bodyTransp.mul( 0.10 ) ), gCrystalEdgeMask ) );
+
+	} );
+
+	If( uPxOn.greaterThan( 0.5 ), () => {
+
+		/* Posterize SDR only — HDR excess (lava, fungal glow) rides through to bloom unquantized */
+		const sdr = clamp( surfaceColor, 0.0, 1.0 );
+		surfaceColor.assign( pxPosterize( sdr, uPxPlanetRange ).add( surfaceColor.sub( sdr ) ) );
 
 	} );
 
