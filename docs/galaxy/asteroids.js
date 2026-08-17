@@ -361,7 +361,10 @@ function createAsteroidMesh(cfg, _unused, rng, exclusionZones, lightmap, megaMod
   instGeo.setAttribute('aAnimDir',
     new THREE.InstancedBufferAttribute(animDirArr, 1));
 
-  const tex = new THREE.TextureLoader().load(cfg.texture);
+  /* A missing sheet leaves the zero-alpha default texture, so the cutout discards every
+     sprite and the whole Bubble goes invisible with nothing else to show for it */
+  const tex = new THREE.TextureLoader().load(cfg.texture, undefined, undefined,
+    () => console.error('Asteroid sprite sheet failed to load:', cfg.texture));
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.magFilter = THREE.LinearFilter;
 

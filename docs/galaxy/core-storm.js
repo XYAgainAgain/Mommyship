@@ -16,10 +16,11 @@ export async function createCoreStorm(scene, renderer) {
 
   const loader = new THREE.TextureLoader();
   const [shroudTex, gravityTex] = await Promise.all([
+    /* Keep the original: 404, CORS, decode, and SecurityError are otherwise one string */
     loader.loadAsync('galaxy/textures/shroud_storm_color.webp')
-      .catch(e => { throw new Error('Core storm: shroud texture failed'); }),
+      .catch(e => { console.warn(e); throw new Error('Core storm: shroud texture failed', { cause: e }); }),
     loader.loadAsync('galaxy/textures/gravity_storm_color.webp')
-      .catch(e => { throw new Error('Core storm: gravity texture failed'); })
+      .catch(e => { console.warn(e); throw new Error('Core storm: gravity texture failed', { cause: e }); })
   ]);
 
   for (const tex of [shroudTex, gravityTex]) {

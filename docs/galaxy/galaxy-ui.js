@@ -25,66 +25,129 @@ const TOXIC_SVG = '<svg class="gx-p-toxic" viewBox="0 0 988.6 988.6" xmlns="http
   '<path d="M843.8,144.8C753.5,54.5,633.2,0,494.3,0S235.1,54.5,144.8,144.8C54.5,235.1,0,355.4,0,494.3s54.5,259.2,144.8,349.5S355.4,988.6,494.3,988.6s259.2-54.5,349.5-144.8c90.3-90.3,144.8-210.6,144.8-349.5S934.1,235.1,843.8,144.8zM862.3,649.7c-20.1,47.5-48.9,90.2-85.6,126.9s-79.4,65.5-126.9,85.6C600.6,883,548.3,893.6,494.4,893.6s-106.2-10.6-155.4-31.4c-47.5-20.1-90.2-48.9-126.9-85.6c-36.7-36.7-65.5-79.4-85.6-126.9C105.6,600.5,95,548.2,95,494.3s10.6-106.2,31.4-155.4c20.1-47.5,48.9-90.2,85.6-126.9s79.4-65.5,126.9-85.6C388.2,105.6,440.5,95,494.4,95s106.2,10.6,155.4,31.4c47.5,20.1,90.2,48.9,126.9,85.6c36.7,36.7,65.5,79.4,85.6,126.9c20.8,49.2,31.4,101.5,31.4,155.4S883.1,600.5,862.3,649.7z"/>' +
   '</svg>';
 
+/* Storage-blocked browsers throw SecurityError; a module-scope throw would kill the whole import chain */
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { } };
+
 /* Editor mode state — expires after 5 min of inactivity so it's opt-in each session */
 const EDITOR_COOLDOWN_MS = 5 * 60 * 1000;
-const lastEditTime = parseInt(localStorage.getItem('mommyship-galaxy-editor-ts') || '0', 10);
-let editorMode = localStorage.getItem('mommyship-galaxy-editor') === 'true'
+const lastEditTime = parseInt(lsGet('mommyship-galaxy-editor-ts') || '0', 10);
+let editorMode = lsGet('mommyship-galaxy-editor') === 'true'
   && (Date.now() - lastEditTime < EDITOR_COOLDOWN_MS);
 let editorSystems = null;
 let editorDirty = false;
 let colorPickerOpen = false;
 let deleteTimer = null;
-let rebakeTimer = null;
+
+/* Keyed by body so a second body's edit flushes the first instead of canceling it */
+let rebakePending = null;
+function scheduleRebake(id) {
+  if (rebakePending) {
+    clearTimeout(rebakePending.timer);
+    if (rebakePending.id !== id) rebakePending.run();
+  }
+  const run = () => {
+    rebakePending = null;
+    if (!editorSystems) return;
+    if (galaxyData.bodies[id]?.type === 'star') editorSystems.rebakeSingleStar?.(id);
+    else editorSystems.rebakeSinglePlanet?.(id);
+    editorSystems.rebuildMarkers();
+  };
+  rebakePending = { id, run, timer: setTimeout(run, 100) };
+}
 
 /* Undo/redo — body state snapshots, 15-step circular buffer */
 const UNDO_MAX = 15;
 const undoStack = [];
 let undoPos = -1;
 
-function pushUndo(bodyId) {
-  const body = galaxyData.bodies[bodyId];
-  if (!body) return;
+/* Two entry shapes: single-body { id, state } and compound { bodies, lanes } for a
+   cascade delete. A null state/lane in either map means "this key was absent". */
+const cloneState = (v) => (v ? JSON.parse(JSON.stringify(v)) : null);
+
+function pushEntry(entry) {
   undoStack.length = undoPos + 1;
-  undoStack.push({ id: bodyId, state: JSON.parse(JSON.stringify(body)) });
+  undoStack.push(entry);
   if (undoStack.length > UNDO_MAX) undoStack.shift();
   undoPos = undoStack.length - 1;
 }
 
+function pushUndo(bodyId) {
+  const body = galaxyData.bodies[bodyId];
+  if (!body) return;
+  pushEntry({ id: bodyId, state: cloneState(body) });
+}
+
+/* removeBody cascades, so one entry has to carry the whole doomed subtree and its lanes */
+function pushUndoRemoved(removed) {
+  if (removed?.bodies) pushEntry({ bodies: removed.bodies, lanes: removed.lanes });
+}
+
+/* Live state of exactly the keys an entry covers, so applying it is the entry's inverse */
+function snapshotOf(entry) {
+  if (!entry.bodies) return { id: entry.id, state: cloneState(galaxyData.bodies[entry.id]) };
+  const bodies = {}, lanes = {};
+  for (const bid of Object.keys(entry.bodies)) bodies[bid] = cloneState(galaxyData.bodies[bid]);
+  for (const lid of Object.keys(entry.lanes || {})) lanes[lid] = cloneState(galaxyData.hyperlanes[lid]);
+  return { bodies, lanes };
+}
+
 function restoreState(entry) {
   if (!editorSystems) return;
-  galaxyData.bodies[entry.id] = JSON.parse(JSON.stringify(entry.state));
+  const ids = entry.bodies ? Object.keys(entry.bodies) : [entry.id];
+  if (entry.bodies) {
+    for (const [bid, state] of Object.entries(entry.bodies)) {
+      if (state) galaxyData.bodies[bid] = cloneState(state);
+      else delete galaxyData.bodies[bid];
+    }
+    for (const [lid, lane] of Object.entries(entry.lanes || {})) {
+      if (lane) galaxyData.hyperlanes[lid] = cloneState(lane);
+      else delete galaxyData.hyperlanes[lid];
+    }
+  } else if (entry.state) {
+    galaxyData.bodies[entry.id] = cloneState(entry.state);
+  } else {
+    delete galaxyData.bodies[entry.id];
+  }
   editorSystems.autosave();
-  editorSystems.rebakeSinglePlanet?.(entry.id);
-  editorSystems.rebakeSingleStar?.(entry.id);
+  for (const bid of ids) {
+    if (!galaxyData.bodies[bid]) continue;
+    editorSystems.rebakeSinglePlanet?.(bid);
+    editorSystems.rebakeSingleStar?.(bid);
+  }
   editorSystems.rebuildMarkers();
   markDirty();
   /* Always re-select the undone body so the user sees the change */
-  selectBody(entry.id);
+  if (galaxyData.bodies[ids[0]]) selectBody(ids[0]);
+  else deselectBody();
 }
 
+/* Invariant after any undo/redo: the applied state is undoStack[undoPos + 1]; undoPos is the next undo target */
 function editorUndo() {
   if (undoPos < 0) return;
   const entry = undoStack[undoPos];
-  /* Save current state for redo before overwriting */
-  const cur = galaxyData.bodies[entry.id];
-  if (cur) {
-    undoStack.splice(undoPos + 1, 0, { id: entry.id, state: JSON.parse(JSON.stringify(cur)) });
-    if (undoStack.length > UNDO_MAX + 5) { undoStack.shift(); undoPos = Math.max(-1, undoPos - 1); }
+  /* Bank the live state unless the successor slot already holds it — consecutive undos of
+     one body would otherwise insert duplicates and stretch the redo chain unboundedly */
+  const live = snapshotOf(entry);
+  const succ = undoStack[undoPos + 1];
+  if (!succ || JSON.stringify(succ) !== JSON.stringify(live)) {
+    undoStack.splice(undoPos + 1, 0, live);
+    if (undoStack.length > UNDO_MAX * 2 && undoPos > 0) { undoStack.shift(); undoPos--; }
   }
   restoreState(entry);
-  undoPos = Math.max(-1, undoPos - 1);
+  undoPos--;
 }
 
 function editorRedo() {
-  if (undoPos + 1 >= undoStack.length) return;
+  if (undoPos + 2 >= undoStack.length) return;
   undoPos++;
-  restoreState(undoStack[undoPos]);
+  restoreState(undoStack[undoPos + 1]);
 }
 
 const PREDEFINED_TAGS = ['landmark', 'colony', 'settlement', 'port', 'uninhabited', 'destroyed', 'hostile', 'homeworld', 'ringed', 'picturesque'];
 
 function markDirty() {
-  localStorage.setItem('mommyship-galaxy-editor-ts', String(Date.now()));
+  lsSet('mommyship-galaxy-editor-ts', String(Date.now()));
   if (editorDirty) return;
   editorDirty = true;
   const btn = document.getElementById('ed-export-nav');
@@ -99,9 +162,9 @@ function markDirty() {
 /* Walk from any body up to the system root, then build a tree of that entire system */
 function buildSystemTree(bodyId) {
   if (!galaxyData?.bodies[bodyId]) return null;
-  /* Walk up to root */
-  let rootId = bodyId;
-  while (galaxyData.bodies[rootId]?.parentId) rootId = galaxyData.bodies[rootId].parentId;
+  /* Depth-guarded: a cyclic parentId would otherwise freeze the tab */
+  let rootId = bodyId, rootGuard = 0;
+  while (galaxyData.bodies[rootId]?.parentId && rootGuard++ < 16) rootId = galaxyData.bodies[rootId].parentId;
   /* Build children map for the whole system */
   const childrenOf = new Map();
   for (const [id, b] of Object.entries(galaxyData.bodies)) {
@@ -115,13 +178,14 @@ function buildSystemTree(bodyId) {
   }
   /* Build ancestry set for highlight path */
   const ancestry = new Set();
-  let walk = bodyId;
-  while (walk) { ancestry.add(walk); walk = galaxyData.bodies[walk]?.parentId || null; }
+  let walk = bodyId, walkGuard = 0;
+  while (walk && walkGuard++ < 16) { ancestry.add(walk); walk = galaxyData.bodies[walk]?.parentId || null; }
 
-  function buildNode(id) {
+  /* Depth cap matches the walk guards: a cycle would otherwise recurse until the stack blows */
+  function buildNode(id, depth = 0) {
     const body = galaxyData.bodies[id];
-    const kids = childrenOf.get(id) || [];
-    return { id, name: body?.name || id, type: body?.type || '?', body, children: kids.map(buildNode) };
+    const kids = depth < 16 ? (childrenOf.get(id) || []) : [];
+    return { id, name: body?.name || id, type: body?.type || '?', body, children: kids.map(k => buildNode(k, depth + 1)) };
   }
   /* Root might be a star system with sibling stars at the same level */
   return { root: buildNode(rootId), ancestry, selectedId: bodyId };
@@ -604,7 +668,8 @@ function buildEditorPanel(body, id) {
   }
 
   html += '<div class="gx-ed-field" data-tooltip="Safety/vibe rating; no visuals, but stations inherit as subtitle"><label>Class</label>';
-  html += edSelect('stats.class', stats.class || '', [''].concat(CLASSES), false);
+  /* Class lives in two places historically; stats.class is the newer home */
+  html += edSelect('stats.class', stats.class ?? body.class ?? '', [''].concat(CLASSES), false);
   html += '</div>';
 
   html += '<div class="gx-ed-field" data-tooltip="Political/corporate allegiance; sets default distant color"><label>Faction</label>';
@@ -972,7 +1037,8 @@ function wireEditorEvents(id) {
     undoDebounce = setTimeout(() => { undoSnapshotPending = true; }, 1000);
   }
 
-  const save = () => { if (editorSystems) { editorSystems.autosave(); editorSystems.rebuildMarkers(); markDirty(); } };
+  /* autosave() last: a storage quota throw must not take rebuildMarkers/markDirty down with it */
+  const save = () => { if (editorSystems) { editorSystems.rebuildMarkers(); markDirty(); editorSystems.autosave(); } };
   /* Debounced save — writes data immediately but delays expensive rebuildMarkers for spinner hold */
   let saveTimer = 0;
   const debouncedSave = () => {
@@ -983,15 +1049,7 @@ function wireEditorEvents(id) {
     saveTimer = setTimeout(() => editorSystems.rebuildMarkers(), 150);
   };
   /* Lightweight single-body rebake — updates paramsCache then rebuilds markers to pick up new sizes */
-  const rebakeVisuals = () => {
-    if (!editorSystems) return;
-    clearTimeout(rebakeTimer);
-    rebakeTimer = setTimeout(() => {
-      if (body.type === 'star') editorSystems.rebakeSingleStar?.(id);
-      else editorSystems.rebakeSinglePlanet?.(id);
-      editorSystems.rebuildMarkers();
-    }, 100);
-  };
+  const rebakeVisuals = () => { if (editorSystems) scheduleRebake(id); };
 
   /* Star hex — click to copy */
   const starHex = document.getElementById('ed-star-hex');
@@ -1020,6 +1078,11 @@ function wireEditorEvents(id) {
         const key = field.slice(6);
         if (val === undefined || val === '') delete body.stats[key];
         else body.stats[key] = val;
+        /* Station subtitles read the top-level `class`; keep both copies in step */
+        if (key === 'class') {
+          if (val === undefined || val === '') delete body.class;
+          else body.class = val;
+        }
       } else if (field === 'factionId' || field === 'zoneId') {
         body[field] = val || null;
       } else if (field === 'name') {
@@ -1397,7 +1460,8 @@ function wireEditorEvents(id) {
         }, 3000);
       } else {
         clearTimeout(deleteTimer);
-        if (editorSystems) editorSystems.removeBody(id);
+        /* Direct push, not captureUndo(): a delete must snapshot even mid-edit-burst */
+        if (editorSystems) pushUndoRemoved(editorSystems.removeBody(id));
         deselectBody();
       }
     });
@@ -1455,15 +1519,10 @@ function initColorPicker(body, bodyId, cfg, onBeforeEdit) {
     body.visual = body.visual || {};
     body.visual[key] = hex;
     if (editorSystems) {
-      editorSystems.autosave();
       editorSystems.rebuildMarkers();
       markDirty();
-      clearTimeout(rebakeTimer);
-      rebakeTimer = setTimeout(() => {
-        if (body.type === 'star') editorSystems.rebakeSingleStar?.(bodyId);
-        else editorSystems.rebakeSinglePlanet?.(bodyId);
-        editorSystems.rebuildMarkers();
-      }, 100);
+      editorSystems.autosave();
+      scheduleRebake(bodyId);
     }
   }
 
@@ -1553,7 +1612,7 @@ function wireTagEditor(body, id) {
   if (!wrap || !input) return;
   const dropdown = getFloatingDropdown();
 
-  const save = () => { if (editorSystems) { editorSystems.autosave(); editorSystems.rebuildMarkers(); markDirty(); } };
+  const save = () => { if (editorSystems) { editorSystems.rebuildMarkers(); markDirty(); editorSystems.autosave(); } };
 
   function closeDropdown() { dropdown.classList.remove('open'); dropdown.innerHTML = ''; }
 
@@ -1562,6 +1621,7 @@ function wireTagEditor(body, id) {
     if (!tag) return;
     body.tags = body.tags || [];
     if (body.tags.includes(tag)) return;
+    pushUndo(id);
     body.tags.push(tag);
     save();
     const pill = document.createElement('span');
@@ -1576,6 +1636,7 @@ function wireTagEditor(body, id) {
 
   function removeTag(tag, pill) {
     if (!body.tags) return;
+    pushUndo(id);
     body.tags = body.tags.filter(t => t !== tag);
     save();
     pill.remove();
@@ -1639,11 +1700,27 @@ function wireParentEditor(body, id) {
   const input = document.getElementById('ed-parent-input');
   if (!input) return;
   const dropdown = getParentDropdown();
-  const save = () => { if (editorSystems) { editorSystems.autosave(); editorSystems.rebuildMarkers(); markDirty(); } };
+  const save = () => { if (editorSystems) { editorSystems.rebuildMarkers(); markDirty(); editorSystems.autosave(); } };
 
   function closeDD() { dropdown.classList.remove('open'); dropdown.innerHTML = ''; }
 
+  /* A parent that is this body or one of its descendants makes a cycle, which poisons every root-walk */
+  function wouldCycle(candidateId) {
+    let walk = candidateId, guard = 0;
+    while (walk && guard++ < 32) {
+      if (walk === id) return true;
+      walk = galaxyData.bodies[walk]?.parentId || null;
+    }
+    return false;
+  }
+
   function setParent(newParentId) {
+    if (newParentId && wouldCycle(newParentId)) {
+      input.value = galaxyData.bodies[body.parentId]?.name || '';
+      closeDD();
+      return;
+    }
+    pushUndo(id);
     body.parentId = newParentId || null;
     if (!newParentId) body.position = body.position || { x: 0, y: 0, z: 0 };
     save();
@@ -1792,8 +1869,8 @@ function deselectBody() {
 
 function toggleEditorMode() {
   editorMode = !editorMode;
-  localStorage.setItem('mommyship-galaxy-editor', String(editorMode));
-  if (editorMode) localStorage.setItem('mommyship-galaxy-editor-ts', String(Date.now()));
+  lsSet('mommyship-galaxy-editor', String(editorMode));
+  if (editorMode) lsSet('mommyship-galaxy-editor-ts', String(Date.now()));
   const navExport = document.getElementById('ed-export-nav');
   if (navExport) navExport.classList.toggle('visible', editorMode);
   updateControlsVisibility();
@@ -1961,10 +2038,15 @@ document.addEventListener('keydown', (e) => {
   if (editorMode && e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); editorUndo(); return; }
   if (editorMode && e.ctrlKey && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); editorRedo(); return; }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (e.key === 'F2') { e.preventDefault(); toggleScreenshot(); }
-  if (e.key === '1') { resetView(); }
-  if (e.key === '2') { setViewMode('2d'); }
-  if (e.key === '3') { setViewMode('3d'); }
+  /* Photo Mode's hide list only covers 3D chrome — in 2D it half-strips the UI with no visible undo */
+  if (e.key === 'F2' && viewMode === '3d') { e.preventDefault(); toggleScreenshot(); }
+  /* Bare 1/2/3 only (Ctrl+2 is a browser tab switch), and never mid-Muse — 2D hides Muse's exit affordance */
+  const museOn = document.getElementById('btn-muse')?.classList.contains('active');
+  if (!e.ctrlKey && !e.altKey && !e.metaKey && !museOn) {
+    if (e.key === '1') resetView();
+    else if (e.key === '2') setViewMode('2d');
+    else if (e.key === '3') setViewMode('3d');
+  }
   /* Close color picker on Escape */
   if (e.key === 'Escape' && colorPickerOpen) {
     const picker = document.getElementById('ed-color-picker');
@@ -2018,7 +2100,7 @@ let viewMode = '3d';
 const VIEW_KEY = 'mommyship-galaxy-view';
 
 function setViewMode(mode) {
-  try { localStorage.setItem(VIEW_KEY, mode); } catch { }
+  lsSet(VIEW_KEY, mode);
   viewMode = mode;
   document.getElementById('btn-3d').classList.toggle('active', mode === '3d');
   document.getElementById('btn-2d').classList.toggle('active', mode === '2d');
@@ -2038,7 +2120,11 @@ function setViewMode(mode) {
 }
 
 document.getElementById('btn-3d').addEventListener('click', () => setViewMode('3d'));
-document.getElementById('btn-2d').addEventListener('click', () => setViewMode('2d'));
+/* Same gate as the 1/2/3 keys: 2D hides Muse's exit affordance */
+document.getElementById('btn-2d').addEventListener('click', () => {
+  if (document.getElementById('btn-muse')?.classList.contains('active')) return;
+  setViewMode('2d');
+});
 
 export function init(data, cbs, systems) {
   galaxyData = data;
@@ -2058,8 +2144,7 @@ export function init(data, cbs, systems) {
     }
   });
   /* Restore last-used view; also catches '2' pressed during load */
-  let savedView = null;
-  try { savedView = localStorage.getItem(VIEW_KEY); } catch { }
+  const savedView = lsGet(VIEW_KEY);
   if (savedView === '2d' && viewMode !== '2d') setViewMode('2d');
   else map2dView.setActive(viewMode === '2d');
 
@@ -2086,7 +2171,7 @@ export function init(data, cbs, systems) {
     smbhCircle.style.cursor = 'pointer';
     smbhCircle.style.pointerEvents = 'auto';
     const COMPASS_KEY = 'mommyship-galaxy-compass-mini';
-    let mini = localStorage.getItem(COMPASS_KEY) === 'true';
+    let mini = lsGet(COMPASS_KEY) === 'true';
     function applyCompass() {
       compassEl.style.transform = mini ? 'scale(0.5) translate(-200px, -200px)' : '';
       compassEl.style.opacity = mini ? '0.85' : '';
@@ -2094,7 +2179,7 @@ export function init(data, cbs, systems) {
     applyCompass();
     smbhCircle.addEventListener('click', () => {
       mini = !mini;
-      localStorage.setItem(COMPASS_KEY, String(mini));
+      lsSet(COMPASS_KEY, String(mini));
       applyCompass();
     });
   }

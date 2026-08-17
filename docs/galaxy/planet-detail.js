@@ -312,9 +312,9 @@ export async function createPlanetDetail(renderer) {
     entry.isCrystalline = params.mode === 6;
 
     /* Cache parent star ID for per-frame light direction lookups */
-    let sid = bodies[bodyId]?.parentId;
-    while (sid && bodies[sid]?.type !== 'star') sid = bodies[sid]?.parentId;
-    entry.parentStarId = sid || null;
+    let sid = bodies[bodyId]?.parentId, sidGuard = 0;
+    while (sid && bodies[sid]?.type !== 'star' && sidGuard++ < 16) sid = bodies[sid]?.parentId;
+    entry.parentStarId = bodies[sid]?.type === 'star' ? sid : null;
 
     const rng = createRng(seed + 777);
     const isLumpy = (params.lumpiness || 0) > 0.05;

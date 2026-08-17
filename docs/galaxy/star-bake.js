@@ -58,44 +58,47 @@ export async function bakeStarAtlas(renderer, bodies) {
   const layerMap = new Map();
   const prevRT = renderer.getRenderTarget();
 
-  for (let i = 0; i < starIds.length; i++) {
-    const id = starIds[i];
-    const body = bodies[id];
-    const params = parseMK(body.spectralClass, body.visual?.size);
-    const seed = hashString(id);
+  /* finally, not catch: a throw mid-bake must still unbind the RT and free tempRT */
+  try {
+    for (let i = 0; i < starIds.length; i++) {
+      const id = starIds[i];
+      const body = bodies[id];
+      const params = parseMK(body.spectralClass, body.visual?.size);
+      const seed = hashString(id);
 
-    layerMap.set(id, i);
+      layerMap.set(id, i);
 
-    uSeed.value = seed;
-    uLowTemp.value = params.lowTemp;
-    uHighTemp.value = params.highTemp;
-    uGranScale.value = params.granScale;
-    uCellScale.value = params.cellScale;
-    uSpotAmp.value = params.spotAmp;
-    uSlopeness.value = params.slopeness;
-    uEmissive.value = params.emissive;
-    uSize.value = params.radius;
+      uSeed.value = seed;
+      uLowTemp.value = params.lowTemp;
+      uHighTemp.value = params.highTemp;
+      uGranScale.value = params.granScale;
+      uCellScale.value = params.cellScale;
+      uSpotAmp.value = params.spotAmp;
+      uSlopeness.value = params.slopeness;
+      uEmissive.value = params.emissive;
+      uSize.value = params.radius;
 
-    renderer.setRenderTarget(tempRT);
-    renderer.clear();
-    try { renderer.render(bakeScene, bakeCam); }
-    catch (e) { if (i === 0) console.error('Star bake render failed:', e.message); }
+      renderer.setRenderTarget(tempRT);
+      renderer.clear();
+      try { renderer.render(bakeScene, bakeCam); }
+      catch (e) { if (i === 0) console.error('Star bake render failed:', e.message); }
 
-    uCopySrc.value = tempRT.texture;
-    quad.material = copyMat;
-    renderer.setRenderTarget(arrayRT, i);
-    renderer.clear();
-    renderer.render(bakeScene, bakeCam);
-    quad.material = bakeMat;
+      uCopySrc.value = tempRT.texture;
+      quad.material = copyMat;
+      renderer.setRenderTarget(arrayRT, i);
+      renderer.clear();
+      renderer.render(bakeScene, bakeCam);
+      quad.material = bakeMat;
 
-    if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
+      if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
+    }
+  } finally {
+    renderer.setRenderTarget(prevRT);
+    quad.geometry.dispose();
+    bakeMat.dispose();
+    copyMat.dispose();
+    tempRT.dispose();
   }
-
-  renderer.setRenderTarget(prevRT);
-  quad.geometry.dispose();
-  bakeMat.dispose();
-  copyMat.dispose();
-  tempRT.dispose();
 
   /* WebGPU never auto-generates array RT mips — see planet-bake.js */
   try { renderer.backend.generateMipmaps(arrayRT.texture); }

@@ -24,6 +24,12 @@ function openDB() {
       }
     };
     req.onsuccess = () => resolve(req.result);
+    /* Another tab holding an older version blocks the upgrade forever — settle instead
+       of hanging init at the volume-bake step */
+    req.onblocked = () => {
+      dbPromise = null;
+      reject(new Error('Galaxy cache DB blocked by another tab'));
+    };
     req.onerror = () => {
       console.warn('Galaxy cache DB failed to open:', req.error);
       dbPromise = null;
@@ -92,7 +98,12 @@ export async function putEntry(storeName, key, data) {
   try {
     const db = await openDB();
     const tx = db.transaction(storeName, 'readwrite');
-    tx.objectStore(storeName).put(data, key);
+    const req = tx.objectStore(storeName).put(data, key);
+    /* Quota failures land asynchronously, long after this catch is out of scope —
+       without these the bake silently re-runs on every load forever */
+    req.onerror = () => console.warn('Galaxy cache put failed:', storeName, req.error);
+    tx.onabort = () => console.warn('Galaxy cache write aborted:', storeName, tx.error);
+    tx.onerror = () => console.warn('Galaxy cache transaction failed:', storeName, tx.error);
   } catch (e) {
     console.warn('Galaxy cache write failed:', e);
   }
@@ -105,13 +116,16 @@ export async function clearStore(storeName) {
   } catch {}
 }
 
+/* Rejects if the clear doesn't commit, so callers can tell a real prune from a failed one */
 export async function clearAll() {
-  try {
-    const db = await openDB();
-    const names = Object.values(STORES);
-    const tx = db.transaction(names, 'readwrite');
-    for (const name of names) tx.objectStore(name).clear();
-  } catch {}
+  const db = await openDB();
+  const names = Object.values(STORES);
+  const tx = db.transaction(names, 'readwrite');
+  for (const name of names) tx.objectStore(name).clear();
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(tx.error);
+  });
 }
 
 /* Keys are content hashes, so entries from older CACHE_VERSIONs become
@@ -119,8 +133,11 @@ export async function clearAll() {
 try {
   const lsKey = 'mommyship-galaxy-cache-version';
   if (localStorage.getItem(lsKey) !== String(CACHE_VERSION)) {
-    clearAll();
-    localStorage.setItem(lsKey, String(CACHE_VERSION));
+    /* Record the bump only once the prune commits, or the stale entries are unprunable forever */
+    clearAll().then(
+      () => { try { localStorage.setItem(lsKey, String(CACHE_VERSION)); } catch {} },
+      e => console.warn('Galaxy cache prune failed, retrying next load:', e)
+    );
   }
 } catch {}
 

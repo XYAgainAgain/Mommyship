@@ -213,6 +213,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     zoneEls.length = 0;
     zonesBuilt = false;
     positions = null;
+    hoveredId = null;
     dirty = true;
   }
 
@@ -920,6 +921,8 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     const p = positions.get(id);
     if (!p) return;
     trackedId = id;
+    /* Mirror the track into 3D so it survives a view switch */
+    callbacks.onTrack?.(id);
     const info = bodyInfo(id);
     const targetScale = info.tier === 'landmark' ? 2 : info.tier === 'star' ? 4 : info.tier === 'gng' ? 8 : 6;
     flyAnim = {
@@ -1064,11 +1067,8 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     }
     const hit = hitTest(e.clientX, e.clientY);
     if (hit) {
-      trackedId = hit;
       callbacks.onSelect?.(hit);
       flyTo(hit);
-      /* Set up 3D tracking so it persists across view switches */
-      callbacks.onTrack?.(hit);
     } else if (trackedId) {
       releaseTracking();
       dirty = true;
@@ -1148,6 +1148,10 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
         invalidate();
         lastBarK = -1;
         resize();
+      } else {
+        /* Pointer leaves without a move event — else a stale hover ring greets the return */
+        hoveredId = null;
+        dirty = true;
       }
     },
     setSelected(id) {
@@ -1161,6 +1165,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     },
     clearTracking() {
       trackedId = null;
+      dirty = true;
     },
     getCamera: () => ({ cx, cz, k })
   };

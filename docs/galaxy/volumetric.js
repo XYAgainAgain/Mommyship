@@ -281,7 +281,9 @@ export async function createVolumetric(scene, renderer) {
       quadMat.depthWrite = false;
       quadMat.depthTest = true;
       quadMat.blending = p.isDark ? THREE.MultiplyBlending : THREE.AdditiveBlending;
-      if (p.isDark) quadMat.premultipliedAlpha = true;
+      /* Both quad shaders output premultiplied color; without the flag r184 maps
+         AdditiveBlending to SrcAlpha/One and the emission quads dim by alpha squared */
+      quadMat.premultipliedAlpha = true;
 
       const quad = new THREE.Mesh(quadGeo, quadMat);
       quad.position.set(p.x, p.y, p.z);

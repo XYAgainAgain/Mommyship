@@ -186,9 +186,13 @@ export function createCamera(renderer) {
   function setMuseMode(enabled) {
     museMode = enabled;
     if (enabled) {
+      /* Re-entry mid-exit: that ease's destination is the true pre-Muse pose,
+         and the ease must die or it fights the entry spiral */
+      const exiting = museExit;
+      museExit = null;
       preMuse = {
-        pos: camera.position.clone(),
-        target: controls.target.clone(),
+        pos: exiting ? exiting.to : camera.position.clone(),
+        target: exiting ? exiting.toTarget : controls.target.clone(),
         minDist: controls.minDistance,
         maxDist: controls.maxDistance
       };

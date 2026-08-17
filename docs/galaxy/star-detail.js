@@ -311,8 +311,8 @@ export async function createStarDetail(renderer) {
 
   /* Find all stars in the same system as targetId (handles nested hierarchies) */
   function getSystemStars(targetId, bodies) {
-    let rootId = targetId;
-    while (bodies[rootId]?.parentId && bodies[bodies[rootId].parentId]?.type === 'star') {
+    let rootId = targetId, rootGuard = 0;
+    while (bodies[rootId]?.parentId && bodies[bodies[rootId].parentId]?.type === 'star' && rootGuard++ < 16) {
       rootId = bodies[rootId].parentId;
     }
     if (!cachedStarIds) buildStarCache(bodies);
@@ -322,7 +322,7 @@ export async function createStarDetail(renderer) {
     while (queue.length > 0) {
       const parentId = queue.shift();
       for (const id of cachedStarIds) {
-        if (bodies[id].parentId === parentId && !family.includes(id)) {
+        if (bodies[id]?.parentId === parentId && !family.includes(id)) {
           family.push(id);
           queue.push(id);
         }
@@ -360,7 +360,11 @@ export async function createStarDetail(renderer) {
       const threshold = activeIds.has(id) ? SIZE_RELEASE : SIZE_ACTIVATE;
       if (appSize > threshold) candidates.push([id, appSize]);
     }
-    candidates.sort((a, b) => b[1] - a[1]);
+    /* Rank hysteresis: actives get a 15% size bonus so a marginally bigger
+       newcomer can't thrash the pool cutoff frame-to-frame (mirrors planet-detail) */
+    candidates.sort((a, b) =>
+      b[1] * (activeIds.has(b[0]) ? 1.15 : 1) -
+      a[1] * (activeIds.has(a[0]) ? 1.15 : 1));
 
     const desired = new Set();
     /* Tracked star's whole BFS family rides along so binary companions stay lit */
@@ -385,9 +389,11 @@ export async function createStarDetail(renderer) {
     /* Activate new stars from the pool */
     for (const id of desired) {
       if (activeIds.has(id)) continue;
+      const body = galaxyData.bodies[id];
+      if (!body) continue;
       const freeEntry = pool.find(e => !e.bodyId);
       if (!freeEntry) break;
-      activate(freeEntry, id, galaxyData.bodies[id]);
+      activate(freeEntry, id, body);
       activeIds.add(id);
     }
 
@@ -462,13 +468,20 @@ export async function createStarDetail(renderer) {
     }
   }
 
+  /* Body set or spectral classes changed — both caches rebuild lazily next update() */
+  function invalidateCaches() {
+    cachedStarIds = null;
+    pulsarIds = null;
+  }
+
   /* Invalidate one star — force re-activation with fresh params */
   function invalidateBody(bodyId) {
     for (const entry of pool) {
       if (entry.bodyId === bodyId) { deactivate(entry); break; }
     }
     activeIds.delete(bodyId);
+    invalidateCaches();
   }
 
-  return { update, container, dispose, invalidateBody, fades };
+  return { update, container, dispose, invalidateCaches, invalidateBody, fades };
 }

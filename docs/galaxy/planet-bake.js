@@ -115,68 +115,71 @@ export async function bakePlanetAtlas(renderer, bodies) {
     parentStarCache.set(id, findParentStar(id, bodies));
   }
 
-  for (let i = 0; i < planetIds.length; i++) {
-    const id = planetIds[i];
-    const body = bodies[id];
-    const parentStar = parentStarCache.get(id);
-    const params = parsePlanetType(body, id, parentStar, bodies);
+  /* finally, not catch: a throw mid-bake must still unbind the RT and free tempRT */
+  try {
+    for (let i = 0; i < planetIds.length; i++) {
+      const id = planetIds[i];
+      const body = bodies[id];
+      const parentStar = parentStarCache.get(id);
+      const params = parsePlanetType(body, id, parentStar, bodies);
 
-    layerMap.set(id, i);
-    churnMap.set(id, params.churn || 0);
-    paramsCache.set(id, params);
+      layerMap.set(id, i);
+      churnMap.set(id, params.churn || 0);
+      paramsCache.set(id, params);
 
-    uSeed.value              = params.seed;
-    uPlanetMode.value        = params.mode;
-    uSlopeness.value         = params.slopeness;
-    uOceanLevel.value        = params.oceanLevel;
-    uTemperature.value       = params.temperature;
-    uCraterDensity.value     = params.craterDensity;
-    uSpecular.value          = params.specular;
-    _color.set(params.baseColor1);
-    uBaseColor1.value.set(_color.r, _color.g, _color.b);
-    _color.set(params.baseColor2);
-    uBaseColor2.value.set(_color.r, _color.g, _color.b);
-    _color.set(params.baseColor3);
-    uBaseColor3.value.set(_color.r, _color.g, _color.b);
-    uAtmoIntensity.value     = params.atmosphereIntensity;
-    _color.set(params.atmosphereTint);
-    uAtmoTint.value.set(_color.r, _color.g, _color.b);
-    uBandCount.value         = params.bandCount;
-    uWarpStrength.value      = params.warpStrength;
-    uStormSize.value         = params.stormSize;
-    uCrackScale.value        = params.crackScale;
-    _color.set(params.subsurfaceColor);
-    uSubsurfaceColor.value.set(_color.r, _color.g, _color.b);
-    uEmissiveIntensity.value = params.emissiveIntensity;
-    _color.set(params.emissiveColor);
-    uEmissiveColor.value.set(_color.r, _color.g, _color.b);
-    uBulbosity.value         = params.bulbosity;
-    uCrystalMetric.value     = params.crystalMetric ?? 0;
-    uMoistureOffset.value    = params.moistureOffset ?? 0.0;
-    uBiomeCount.value        = params.biomeCount ?? 0.5;
-    uTerrainType.value       = params.terrainType ?? 1;
-    uCrackPattern.value      = params.crackPattern ?? 0;
+      uSeed.value              = params.seed;
+      uPlanetMode.value        = params.mode;
+      uSlopeness.value         = params.slopeness;
+      uOceanLevel.value        = params.oceanLevel;
+      uTemperature.value       = params.temperature;
+      uCraterDensity.value     = params.craterDensity;
+      uSpecular.value          = params.specular;
+      _color.set(params.baseColor1);
+      uBaseColor1.value.set(_color.r, _color.g, _color.b);
+      _color.set(params.baseColor2);
+      uBaseColor2.value.set(_color.r, _color.g, _color.b);
+      _color.set(params.baseColor3);
+      uBaseColor3.value.set(_color.r, _color.g, _color.b);
+      uAtmoIntensity.value     = params.atmosphereIntensity;
+      _color.set(params.atmosphereTint);
+      uAtmoTint.value.set(_color.r, _color.g, _color.b);
+      uBandCount.value         = params.bandCount;
+      uWarpStrength.value      = params.warpStrength;
+      uStormSize.value         = params.stormSize;
+      uCrackScale.value        = params.crackScale;
+      _color.set(params.subsurfaceColor);
+      uSubsurfaceColor.value.set(_color.r, _color.g, _color.b);
+      uEmissiveIntensity.value = params.emissiveIntensity;
+      _color.set(params.emissiveColor);
+      uEmissiveColor.value.set(_color.r, _color.g, _color.b);
+      uBulbosity.value         = params.bulbosity;
+      uCrystalMetric.value     = params.crystalMetric ?? 0;
+      uMoistureOffset.value    = params.moistureOffset ?? 0.0;
+      uBiomeCount.value        = params.biomeCount ?? 0.5;
+      uTerrainType.value       = params.terrainType ?? 1;
+      uCrackPattern.value      = params.crackPattern ?? 0;
 
-    renderer.setRenderTarget(tempRT);
-    renderer.clear();
-    renderer.render(bakeScene, bakeCam);
+      renderer.setRenderTarget(tempRT);
+      renderer.clear();
+      renderer.render(bakeScene, bakeCam);
 
-    /* Copy baked result into the atlas array layer */
-    uCopySrc.value = tempRT.texture;
-    quad.material = copyMat;
-    renderer.setRenderTarget(arrayRT, i);
-    renderer.clear();
-    renderer.render(bakeScene, bakeCam);
-    quad.material = bakeMat;
+      /* Copy baked result into the atlas array layer */
+      uCopySrc.value = tempRT.texture;
+      quad.material = copyMat;
+      renderer.setRenderTarget(arrayRT, i);
+      renderer.clear();
+      renderer.render(bakeScene, bakeCam);
+      quad.material = bakeMat;
 
-    if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
+      if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
+    }
+  } finally {
+    renderer.setRenderTarget(prevRT);
+    quad.geometry.dispose();
+    bakeMat.dispose();
+    copyMat.dispose();
+    tempRT.dispose();
   }
-
-  renderer.setRenderTarget(prevRT);
-  quad.geometry.dispose();
-  bakeMat.dispose();
-  copyMat.dispose();
-  tempRT.dispose();
 
   /* WebGPU never auto-generates array RT mips — without this, mips 1+ stay
      zero and distant planets alias into checkerboard shimmer */

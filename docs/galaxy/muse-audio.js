@@ -1,3 +1,5 @@
+import { warnPlay } from './audio.js';
+
 var XFADE = 2.0;
 var MUSE_PATH = 'assets/audio/Muse - Supermassive Black Hole.ogg';
 var IR_PATHS = [
@@ -59,7 +61,7 @@ export function createMuseAudio() {
           loopTrack.connectSource(conv);
           conv.connect(irGains[i]);
         })
-        .catch(function() {});
+        .catch(function(err) { console.warn('[muse audio] reverb IR failed: ' + url, err); });
     });
   }
 
@@ -159,7 +161,7 @@ function createLoopTrack(ctx, src, outputNode) {
     }
 
     fadingIn.currentTime = 0;
-    fadingIn.play().catch(function() {});
+    fadingIn.play().catch(warnPlay);
 
     gOut.gain.setTargetAtTime(0, now, XFADE / 4);
     gIn.gain.setTargetAtTime(1, now, XFADE / 4);
@@ -177,14 +179,14 @@ function createLoopTrack(ctx, src, outputNode) {
   elB.addEventListener('timeupdate', onTimeUpdate);
 
   return {
-    play: function() { elA.play().catch(function() {}); },
+    play: function() { elA.play().catch(warnPlay); },
     restart: function() {
       elA.pause(); elB.pause();
       elA.currentTime = 0; elB.currentTime = 0;
       gainA.gain.value = 1; gainB.gain.value = 0;
       active = 'A'; crossfading = false;
       if (xfadeTimer) { clearTimeout(xfadeTimer); xfadeTimer = null; }
-      elA.play().catch(function() {});
+      elA.play().catch(warnPlay);
     },
     pause: function() {
       elA.pause();
@@ -192,9 +194,10 @@ function createLoopTrack(ctx, src, outputNode) {
       if (xfadeTimer) { clearTimeout(xfadeTimer); xfadeTimer = null; }
       crossfading = false;
     },
+    /* Tap POST-crossfade — off srcA/srcB the wet path doubles for XFADE at every loop point */
     connectSource: function(node) {
-      srcA.connect(node);
-      srcB.connect(node);
+      gainA.connect(node);
+      gainB.connect(node);
     }
   };
 }

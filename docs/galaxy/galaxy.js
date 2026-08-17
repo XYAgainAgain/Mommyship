@@ -20,6 +20,20 @@ import { createPerfMonitor } from './perf-monitor.js';
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
 
+/* Inside this band the far billboard reads as a screen-filling wash, so the watchdog's
+   forced-far override ramps out; a hard cut flips the disk and compositor on and off */
+const BH_NEAR_DIST = 55, BH_FAR_DIST = 75;
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/* Storage-blocked browsers throw on every localStorage touch — never let that kill the boot */
+function safeGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function safeSet(key, value) { try { localStorage.setItem(key, value); } catch {} }
+function safeRemove(key) { try { localStorage.removeItem(key); } catch {} }
+
 function computeLOD(camera) {
   const dist = camera.position.length();
   return Math.max(0, Math.min(1, (300 - dist) / 220));
@@ -134,7 +148,17 @@ async function init() {
   /* Reaching this line proves the CDN modules arrived; a hang past it is the GPU */
   if (window.gxBoot) window.gxBoot.stage('Waking up the GPU...');
 
-  const renderer = new WebGPURenderer({ antialias: true });
+  /* r184 keeps no adapter reference and requests empty limits, so device.limits would
+     report the 8192 spec floor on every GPU — probe the adapter with three's own options */
+  const adapter = navigator.gpu
+    ? await navigator.gpu.requestAdapter({ featureLevel: 'compatibility' }).catch(() => null)
+    : null;
+  const adapterMaxTex = adapter?.limits.maxTextureDimension2D ?? 0;
+  /* Asking for exactly what this adapter reports can't be refused; asking for nothing on
+     8192 hardware keeps the default path untouched */
+  const requiredLimits = adapterMaxTex > 8192 ? { maxTextureDimension2D: adapterMaxTex } : undefined;
+
+  const renderer = new WebGPURenderer({ antialias: true, requiredLimits });
   /* All galaxy shaders are custom fragmentNode — bypass sRGB gamma encode to match
      WebGL's raw gl_FragColor output (colors were authored for direct framebuffer write) */
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -148,8 +172,8 @@ async function init() {
   const scene = new THREE.Scene();
   const cam = createCamera(renderer);
 
-  /* Render whatever exists so far: each pass compiles only the newly added pipelines,
-     spreading PSO cost across the load steps; the overlay covers every warm render */
+  /* Single warm render, run once every subsystem exists — compileAsync and markerWarm do
+     the actual spreading; this only forces whatever they missed, under the overlay */
   const warmStep = async () => {
     renderer.render(scene, cam.camera);
     await new Promise(r => setTimeout(r, 0));
@@ -158,8 +182,12 @@ async function init() {
   const timer = new THREE.Timer();
   timer.connect(document);
 
-  /* 12k → 8k → 4k based on GPU max texture dimension */
-  const maxTex = renderer.backend?.device?.limits?.maxTextureDimension2D ?? 16384;
+  /* 12k → 8k → 4k based on GPU max texture dimension. The WebGL2 fallback backend has no
+     device at all, so it answers from the live GL context instead. */
+  const gl = renderer.backend?.gl;
+  const maxTex = gl
+    ? gl.getParameter(gl.MAX_TEXTURE_SIZE)
+    : renderer.backend?.device?.limits?.maxTextureDimension2D ?? 8192;
   const tier = maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
   const lightmapUrl = 'galaxy/textures/galaxy-lightmap-' + tier + '.webp';
 
@@ -249,7 +277,7 @@ async function init() {
   });
 
   /* Fancy Nebulae toggle */
-  let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
+  let volumetricActive = safeGet('mommyship-galaxy-volumetric') === 'true';
   const fancyCheckbox = document.getElementById('fancy-nebulae');
   fancyCheckbox.checked = volumetricActive;
 
@@ -273,7 +301,7 @@ async function init() {
 
   fancyCheckbox.addEventListener('change', () => {
     volumetricActive = fancyCheckbox.checked;
-    localStorage.setItem('mommyship-galaxy-volumetric', String(volumetricActive));
+    safeSet('mommyship-galaxy-volumetric', String(volumetricActive));
     /* Turn off Cinema if Fancy is disabled */
     if (!volumetricActive && cinemaMode) {
       cinemaCheckbox.checked = false;
@@ -342,6 +370,7 @@ async function init() {
 
   /* FOV slider — horizontal FOV display, persisted to localStorage */
   const DEFAULT_HFOV = 90;
+  const FOV_KEY = 'mommyship-galaxy-fov';
   const fovSlider = document.getElementById('fov-slider');
   const fovVal = document.getElementById('fov-val');
   const fovReset = document.getElementById('fov-reset');
@@ -354,18 +383,24 @@ async function init() {
     if (fovSlider) fovSlider.value = hfov;
   }
 
-  const savedFov = localStorage.getItem('mommyship-galaxy-fov');
-  if (savedFov) setHFov(parseFloat(savedFov));
+  /* Unsaved (and unparseable) means the 90° default, which still needs the hFov→vFov
+     conversion — without it the camera sits at Three's 60° vertical while the slider says 90 */
+  function storedHFov() {
+    const saved = parseFloat(safeGet(FOV_KEY));
+    return Number.isFinite(saved) ? saved : DEFAULT_HFOV;
+  }
+
+  setHFov(storedHFov());
 
   if (fovSlider) fovSlider.addEventListener('input', () => {
     const hfov = parseInt(fovSlider.value, 10);
     setHFov(hfov);
-    localStorage.setItem('mommyship-galaxy-fov', String(hfov));
+    safeSet(FOV_KEY, String(hfov));
   });
 
   if (fovReset) fovReset.addEventListener('click', () => {
     setHFov(DEFAULT_HFOV);
-    localStorage.removeItem('mommyship-galaxy-fov');
+    safeRemove(FOV_KEY);
   });
 
   /* Muse Mode */
@@ -408,9 +443,8 @@ async function init() {
 
   window.addEventListener('resize', () => {
     cam.resize();
-    /* Recalculate vFOV from stored hFOV since aspect changed */
-    const curHfov = localStorage.getItem('mommyship-galaxy-fov');
-    if (curHfov) setHFov(parseFloat(curHfov));
+    /* Recalculate vFOV from the current hFOV since aspect changed */
+    setHFov(storedHFov());
     renderer.setSize(window.innerWidth, window.innerHeight);
     /* Respect watchdog's current pixel ratio cap */
     const level = perfMonitor.getLevel();
@@ -527,9 +561,12 @@ async function init() {
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
-    /* Cinema/Muse outrank the perf watchdog: a forced-far BH inside the core renders as a
-       screen-filling billboard wash, and the watchdog is bypassed in those modes anyway. */
-    const lodFactor = cinemaMode || museActive ? 1 : compositorForced ? 0 : computeLOD(cam.camera);
+    /* Cinema/Muse and close approaches outrank the perf watchdog: a forced-far BH inside
+       the core renders as a screen-filling billboard wash. Far field still reaches 0. */
+    const lod = computeLOD(cam.camera);
+    const lodFactor = cinemaMode || museActive ? 1
+      : compositorForced ? lod * (1 - smoothstep(BH_NEAR_DIST, BH_FAR_DIST, cam.camera.position.length()))
+      : lod;
     bh.update(rotationTime, lodFactor, cam.camera);
 
     systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode, cam.camera.position);
@@ -560,7 +597,7 @@ async function init() {
 
     if (lodFactor > 0) {
       const screenPos = projectToScreen(cam.camera);
-      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene, computeLOD(cam.camera));
+      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene, lod);
     } else {
       renderer.setRenderTarget(null);
       renderer.clear();

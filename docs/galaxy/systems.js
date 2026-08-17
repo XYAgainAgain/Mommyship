@@ -24,6 +24,9 @@ import { createPlanetDetail, SIZE_RELEASE as PLANET_SIZE_RELEASE } from './plane
 import { parsePlanetType, findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
+/* Blocked storage throws on every touch — never let that reject createSystems and kill boot */
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { console.error('Galaxy read from localStorage failed:', e); return null; } };
+const lsRemove = (k) => { try { localStorage.removeItem(k); } catch { } };
 const MARKER_RADIUS = 2.5;
 /* 24×16 keeps silhouettes round when the atlas mesh fills the screen mid-crossfade */
 const MARKER_SEGMENTS = 24;
@@ -445,29 +448,43 @@ export async function createSystems(scene, camera, renderer) {
   let clickDisabled = false;
 
   /* Data loading */
+
+  /* Swap contents, never the object: galaxy-ui, ships, and asteroids each captured
+     this reference at init, so rebinding it would orphan all of them */
+  function adoptData(next) {
+    if (!galaxyData) { galaxyData = next; return; }
+    for (const k of Object.keys(galaxyData)) delete galaxyData[k];
+    Object.assign(galaxyData, next);
+  }
+
   async function loadData() {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = lsGet(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         /* Detect garbled UTF-8 (double/triple encoded) — discard and re-fetch */
         if (!/\u00c3[\u0080-\u00bf]/.test(saved)) {
-          galaxyData = parsed;
-          return;
+          if (parsed?.bodies) { adoptData(parsed); return; }
+          console.error('Saved galaxy has no bodies — discarding it, re-fetching galaxy.json');
         }
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (e) { /* fall through */ }
+        lsRemove(STORAGE_KEY);
+      } catch (e) { console.error('Saved galaxy is unparseable, re-fetching:', e); }
     }
+    let failure;
     try {
       const resp = await fetch('galaxy/galaxy.json');
-      if (resp.ok) { galaxyData = await resp.json(); return; }
-    } catch (e) { /* fall through */ }
-    galaxyData = createEmptyGalaxy();
+      if (resp.ok) { adoptData(await resp.json()); return; }
+      failure = 'HTTP ' + resp.status + ' ' + resp.statusText;
+    } catch (e) { failure = e.message; }
+    console.error('galaxy.json failed to load (' + failure + ') — rendering an EMPTY galaxy');
+    adoptData(createEmptyGalaxy());
   }
 
   function autosave() {
     galaxyData.meta.lastModified = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(galaxyData));
+    /* A quota or blocked-storage throw must not break the caller's edit chain */
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(galaxyData)); }
+    catch (e) { console.error('Galaxy autosave to localStorage failed:', e); }
   }
 
   function exportJSON() {
@@ -483,7 +500,9 @@ export async function createSystems(scene, camera, renderer) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          galaxyData = JSON.parse(e.target.result);
+          const next = JSON.parse(e.target.result);
+          if (!next?.bodies) throw new Error('imported JSON has no bodies');
+          adoptData(next);
           await rebakeStarAtlas();
           await rebakePlanetAtlas();
           rebuildMarkers();
@@ -497,7 +516,7 @@ export async function createSystems(scene, camera, renderer) {
   }
 
   async function revertToSaved() {
-    localStorage.removeItem(STORAGE_KEY);
+    lsRemove(STORAGE_KEY);
     await loadData();
     await rebakeStarAtlas();
     await rebakePlanetAtlas();
@@ -584,11 +603,16 @@ export async function createSystems(scene, camera, renderer) {
         starUAtlas.value = newData.atlas;
         if (oldAtlas) oldAtlas.dispose();
         if (starDetail) {
-          markerScene.remove(starDetail.container);
-          starDetail.dispose();
+          /* Clear the handle before awaiting — a second concurrent rebake would
+             otherwise dispose this same instance twice and orphan its container */
+          const old = starDetail;
+          starDetail = null;
+          markerScene.remove(old.container);
+          old.dispose();
           detailActiveIds = new Set();
-          starDetail = await createStarDetail(renderer);
-          markerScene.add(starDetail.container);
+          const next = await createStarDetail(renderer);
+          starDetail = next;
+          markerScene.add(next.container);
         }
       }
     } catch (e) {
@@ -683,11 +707,6 @@ export async function createSystems(scene, camera, renderer) {
         const childIds = (childrenOf.get(parentId) || []).filter(id => galaxyData.bodies[id]);
         if (childIds.length === 0) continue;
 
-        /* Track orbital stations for hyperlane endpoint redirect (pick outermost) */
-        for (const cid of childIds) {
-          if (galaxyData.bodies[cid]?.type === 'station') preferStation.set(parentId, cid);
-        }
-
         /* Compute max child radius for spacing — larger bodies need more room */
         let maxChildRadius = 1.0;
         for (const cid of childIds) {
@@ -755,6 +774,15 @@ export async function createSystems(scene, camera, renderer) {
               spacing / (2 * newA + spacing));
         }
 
+        /* Hyperlane endpoints redirect to the outermost station, so this has to
+           run after explicit-a overrides and resonance nudging settle the radii */
+        let outerStation = null, outerA = -Infinity;
+        for (const o of orbitals) {
+          if (galaxyData.bodies[o.id]?.type !== 'station') continue;
+          if (o.orbital.a > outerA) { outerA = o.orbital.a; outerStation = o.id; }
+        }
+        if (outerStation) preferStation.set(parentId, outerStation);
+
         if (depth >= 2) {
           /* Moons: inherit parent's orbital plane + planet's own axial tilt */
           const parentOrb = bodyMeta.get(parentId)?.orbital;
@@ -774,6 +802,8 @@ export async function createSystems(scene, camera, renderer) {
               orbitals[i].orbital.Omega = baseAz + scatter.gauss() * 8 * (Math.PI / 180);
             if (src?.omega != null)
               orbitals[i].orbital.omega = src.omega * (Math.PI / 180);
+            if (src?.M0 != null)
+              orbitals[i].orbital.M0 = src.M0 * (Math.PI / 180);
           }
         } else {
           /* Planets: shared orbital plane from star's pole axis (overridable via poleAngle) */
@@ -1173,6 +1203,14 @@ export async function createSystems(scene, camera, renderer) {
     }
 
     labelAssignFrame = LABEL_REASSIGN_EVERY;
+    /* Pool only repaints a slot when its body changes, so force it — otherwise a
+       rename/subtitle/destroyed edit never reaches the label */
+    for (const entry of labelPool) entry.bodyId = null;
+    labelsDirty = true;
+
+    /* Every add/remove/edit funnels through here, so this is the one place the
+       star caches must drop (a deleted star otherwise crashes the render loop) */
+    if (starDetail) starDetail.invalidateCaches();
 
     /* Restore orbit visibility if a body was being tracked */
     if (trackedOrbitId) showOrbitsForBody(trackedOrbitId);
@@ -1246,10 +1284,12 @@ export async function createSystems(scene, camera, renderer) {
           nameSpan.textContent = body.name || id;
           if (isDestroyed) nameSpan.style.textDecoration = 'line-through';
           entry.el.appendChild(nameSpan);
-          if (body.type === 'station' && body.class) {
+          /* Class lives top-level on most stations but only under stats on some */
+          const stationClass = body.class ?? body.stats?.class;
+          if (body.type === 'station' && stationClass) {
             const sub = document.createElement('div');
             sub.className = 'label-class';
-            sub.textContent = body.class + '-Class';
+            sub.textContent = stationClass + '-Class';
             entry.el.appendChild(sub);
           } else if (body.subtitle) {
             const sub = document.createElement('div');
@@ -1378,9 +1418,9 @@ export async function createSystems(scene, camera, renderer) {
       if (starDetail) {
         let starTrackId = trackedId || null;
         if (starTrackId && galaxyData.bodies[starTrackId]?.type !== 'star') {
-          let cur = galaxyData.bodies[starTrackId]?.parentId;
-          while (cur && galaxyData.bodies[cur]?.type !== 'star') cur = galaxyData.bodies[cur]?.parentId;
-          if (cur) starTrackId = cur;
+          let cur = galaxyData.bodies[starTrackId]?.parentId, curGuard = 0;
+          while (cur && galaxyData.bodies[cur]?.type !== 'star' && curGuard++ < 16) cur = galaxyData.bodies[cur]?.parentId;
+          if (galaxyData.bodies[cur]?.type === 'star') starTrackId = cur;
         }
         detailActiveIds = starDetail.update(starTrackId, camera.position, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode);
       }
@@ -1847,16 +1887,34 @@ export async function createSystems(scene, camera, renderer) {
   }
 
   function removeBody(id) {
-    delete galaxyData.bodies[id];
+    /* Cascade the whole subtree — orphaned children vanish from the scene but
+       linger in localStorage and exports as unreachable data */
+    const doomed = new Set([id]);
+    const queue = [id];
+    while (queue.length > 0) {
+      const parentId = queue.shift();
+      for (const [cid, body] of Object.entries(galaxyData.bodies)) {
+        if (body.parentId === parentId && !doomed.has(cid)) { doomed.add(cid); queue.push(cid); }
+      }
+    }
+    /* Hand back everything removed so one undo entry can reinstate the whole cascade */
+    const removed = { bodies: {}, lanes: {} };
+    for (const doomedId of doomed) {
+      removed.bodies[doomedId] = galaxyData.bodies[doomedId];
+      delete galaxyData.bodies[doomedId];
+    }
     for (const [hlId, hl] of Object.entries(galaxyData.hyperlanes)) {
-      if (hl.fromId === id || hl.toId === id) {
+      if (doomed.has(hl.fromId) || doomed.has(hl.toId)) {
+        removed.lanes[hlId] = hl;
         delete galaxyData.hyperlanes[hlId];
-      } else if (hl.via) {
-        hl.via = hl.via.filter(v => v !== id);
+      } else if (hl.via?.some(v => doomed.has(v))) {
+        removed.lanes[hlId] = JSON.parse(JSON.stringify(hl));
+        hl.via = hl.via.filter(v => !doomed.has(v));
       }
     }
     rebuildMarkers();
     autosave();
+    return removed;
   }
 
   function initZoneLabels() {
