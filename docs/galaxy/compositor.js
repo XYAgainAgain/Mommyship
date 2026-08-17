@@ -10,6 +10,7 @@ import { main as composeFrag, uSpaceTexture, uSceneDepth, uBHDepth, uBlackHolePo
 const PHOTON_RING_RADIUS = 6.9; /* photon ring = uRingRadius 0.23 × 30 sphere scale */
 
 const _origin = new THREE.Vector3();
+const _gate = new THREE.Vector3();
 const _edge = new THREE.Vector3();
 const _camUp = new THREE.Vector3();
 const _camFwd = new THREE.Vector3();
@@ -91,9 +92,12 @@ export async function createCompositor(renderer) {
        wraps the origin back on-screen, so push the gate past the far plane instead. */
     _camFwd.setFromMatrixColumn(camera.matrixWorld, 2).negate();
     const bhBehind = _camFwd.dot(camera.position) > 0;
+    /* Gate one photon-ring radius IN FRONT of the hole: the depth occluder writes the centre's
+       exact depth, so gating there is an equality test that strobes as the camera moves. */
+    _gate.copy(camera.position).setLength(PHOTON_RING_RADIUS).project(camera);
     uBHDepth.value = camera.position.lengthSq() < 64 ? 0
       : bhBehind ? 2
-      : Math.min(1, Math.max(0, _origin.z));
+      : Math.min(1, Math.max(0, _gate.z));
 
     /* Pass 1: entire galaxy scene → spaceRT */
     renderer.setRenderTarget(spaceRT);
@@ -106,10 +110,13 @@ export async function createCompositor(renderer) {
       renderer.render(markerScene, camera);
     }
 
-    /* Pass 2: composition quad → screen */
+    /* Pass 2: composition quad → screen. Clear via autoClear, never a standalone
+       renderer.clear(): setRenderTarget(null) defers its bindFramebuffer, so on the WebGL2
+       backend a bare clear lands on spaceRT and erases the pass we just rendered. */
     renderer.setRenderTarget(null);
-    renderer.clear();
+    renderer.autoClear = true;
     renderer.render(composeScene, orthoCamera);
+    renderer.autoClear = false;
   }
 
   return { render, resize, composeMat, setMuseWarp: (v) => { uMuseWarp.value = v; } };

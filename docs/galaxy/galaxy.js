@@ -148,9 +148,14 @@ async function init() {
   /* Reaching this line proves the CDN modules arrived; a hang past it is the GPU */
   if (window.gxBoot) window.gxBoot.stage('Waking up the GPU...');
 
+  /* ?webgl=1 debug override: A/B the WebGL2 backend. Its compositor blackout is fixed, but
+     first load costs ~165 s of shader warm-up, so it stays opt-in. */
+  const backendParams = new URLSearchParams(location.search);
+  const forceWebGL = backendParams.get('webgl') === '1';
+
   /* r184 keeps no adapter reference and requests empty limits, so device.limits would
      report the 8192 spec floor on every GPU — probe the adapter with three's own options */
-  const adapter = navigator.gpu
+  const adapter = navigator.gpu && !forceWebGL
     ? await navigator.gpu.requestAdapter({ featureLevel: 'compatibility' }).catch(() => null)
     : null;
   const adapterMaxTex = adapter?.limits.maxTextureDimension2D ?? 0;
@@ -158,7 +163,7 @@ async function init() {
      8192 hardware keeps the default path untouched */
   const requiredLimits = adapterMaxTex > 8192 ? { maxTextureDimension2D: adapterMaxTex } : undefined;
 
-  const renderer = new WebGPURenderer({ antialias: true, requiredLimits });
+  const renderer = new WebGPURenderer({ antialias: true, requiredLimits, forceWebGL });
   /* All galaxy shaders are custom fragmentNode — bypass sRGB gamma encode to match
      WebGL's raw gl_FragColor output (colors were authored for direct framebuffer write) */
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -188,8 +193,12 @@ async function init() {
   const maxTex = gl
     ? gl.getParameter(gl.MAX_TEXTURE_SIZE)
     : renderer.backend?.device?.limits?.maxTextureDimension2D ?? 8192;
-  const tier = maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
+  /* ?lightmap=8k debug override — A/B the tier without a code edit */
+  const tierParam = new URLSearchParams(location.search).get('lightmap');
+  const tier = ['12k', '8k', '4k'].includes(tierParam) ? tierParam
+    : maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
   const lightmapUrl = 'galaxy/textures/galaxy-lightmap-' + tier + '.webp';
+  console.log('Galaxy renderer: ' + (gl ? 'WebGL2 fallback' : 'WebGPU') + ', maxTex ' + maxTex + ', lightmap ' + tier);
 
   const lightmapImg = document.getElementById('lightmap-img');
   if (lightmapImg) lightmapImg.src = lightmapUrl;
@@ -599,9 +608,12 @@ async function init() {
       const screenPos = projectToScreen(cam.camera);
       compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene, lod);
     } else {
+      /* autoClear, not renderer.clear() — see compositor.js pass 2. Markers render
+         after with it off so they keep the scene's depth. */
       renderer.setRenderTarget(null);
-      renderer.clear();
+      renderer.autoClear = true;
       renderer.render(scene, cam.camera);
+      renderer.autoClear = false;
       renderer.render(systems.markerScene, cam.camera);
     }
 
@@ -741,8 +753,9 @@ async function init() {
   }, systems);
 
   /* Warm-up frame through the full BH compositor so its RTs/pipelines compile now instead
-     of on first core approach, mid-flight. lodFactor 0.4 keeps both billboard and volumetric materials visible so both compile. */
-  bh.update(0, 0.4, cam.camera);
+     of on first core approach, mid-flight. lodFactor 0.2 sits inside the 0.1–0.35 crossfade
+     band, so the far billboard AND the volumetric are both visible and both compile. */
+  bh.update(0, 0.2, cam.camera);
   compositor.render(scene, cam.camera, projectToScreen(cam.camera), 1, systems.markerScene);
 
   updateScaleBar();

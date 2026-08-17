@@ -12,7 +12,9 @@ const OCCLUDER_RADIUS = 6.9;
    melts away statistically instead of popping when the disc toggles. */
 const uOccFade = uniform(float(1));
 const occFragNode = /*@__PURE__*/ Fn(() => {
-  If(ignPixel().greaterThanEqual(uOccFade), () => { Discard(); });
+  /* Strict > : float32 fract() can round to exactly 1.0, and >= would then punch
+     depth pinholes through the fully-opaque (uOccFade = 1) occluder. */
+  If(ignPixel().greaterThan(uOccFade), () => { Discard(); });
   return vec4(0, 0, 0, 1);
 });
 
