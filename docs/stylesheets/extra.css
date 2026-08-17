@@ -839,6 +839,15 @@ body:has(.homepage-hero) .galacticity-control {
   .galacticity-control {
     display: none !important;
   }
+  /* Slider hidden → warp canvas hidden; checkVisibility() in warp-bg.js then parks the render loop */
+  #warp-bg {
+    display: none !important;
+  }
+}
+
+/* Phones never load the warp module (loader in overrides/main.html sets this) */
+.no-warp .galacticity-control {
+  display: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

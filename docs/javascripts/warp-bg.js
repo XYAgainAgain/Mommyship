@@ -681,6 +681,9 @@ if (jumpBtn) {
   jumpBtn.addEventListener('click', startJump);
 }
 
+/* Crossing the slider-hiding breakpoint hides/shows the canvas via CSS — re-check the loop */
+matchMedia('(max-width: 29.984375em)').addEventListener('change', syncActive);
+
 new MutationObserver(syncActive).observe(document.documentElement, {
   attributes: true, attributeFilter: ['data-md-color-scheme'],
 });

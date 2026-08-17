@@ -11,5 +11,11 @@
     }
   }
   </script>
-  <script type="module" src="{{ 'javascripts/warp-bg.js' | url }}"></script>
+  <script type="module">
+    /* Phones chug on the warp renderer: skip the module entirely. 600 = Android's
+       phone/tablet dp cutoff; the html class survives navigation.instant body morphs. */
+    const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+    if (phone) document.documentElement.classList.add('no-warp');
+    else import("{{ 'javascripts/warp-bg.js' | url }}");
+  </script>
 {% endblock %}
