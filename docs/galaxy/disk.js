@@ -1,6 +1,9 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { createRng } from './rng.js';
+
+import { main as diskVert, uTime } from './tsl/vert/galaxy-disk.tsl.js';
+import { main as diskFrag } from './tsl/frag/galaxy-disk.tsl.js';
 
 const GALAXY_SEED = 42;
 const GALAXY_RADIUS = 450;
@@ -59,7 +62,7 @@ let rng;
 function pickFromTable(table) {
   const r = rng.next();
   const idx = table.cumulative.findIndex(w => r <= w);
-  return table.palette[Math.max(0, idx)];
+  return { ...table.palette[Math.max(0, idx)] };
 }
 
 function hash2d(x, y) {
@@ -239,13 +242,32 @@ function generateDiskParticles() {
       col = pickFromTable(dimTable);
     }
 
-    colors[placed * 3]     = col.r;
-    colors[placed * 3 + 1] = col.g;
-    colors[placed * 3 + 2] = col.b;
-
     const baseSize = 1.0 + rng.next() * 2.0;
     const edgeFade = t > 0.6 ? 1.0 - (t - 0.6) * 1.5 : 1.0;
     sizes[placed] = baseSize * Math.max(edgeFade, 0.3);
+
+    /* Size→color correlation: big → cool white-blue, small → warm amber/rose.
+       Stronger bias + per-star jitter for more visual variety. */
+    const sizeFrac = (baseSize - 1.0) / 2.0;
+    const jitter = (rng.next() - 0.5) * 0.08;
+    if (sizeFrac > 0.5) {
+      const blend = (sizeFrac - 0.5) * 2.0 * 0.25;
+      col.r = col.r * (1 - blend) + blend * 0.82 + jitter;
+      col.g = col.g * (1 - blend) + blend * 0.88 + jitter;
+      col.b = col.b * (1 - blend) + blend * 1.0 + jitter * 0.5;
+    } else {
+      const blend = (0.5 - sizeFrac) * 2.0 * 0.18;
+      col.r = col.r * (1 - blend) + blend * 1.0 + jitter * 0.3;
+      col.g = col.g * (1 - blend) + blend * 0.7 + jitter;
+      col.b = col.b * (1 - blend) + blend * 0.5 + jitter;
+    }
+    col.r = Math.max(0, Math.min(1, col.r));
+    col.g = Math.max(0, Math.min(1, col.g));
+    col.b = Math.max(0, Math.min(1, col.b));
+
+    colors[placed * 3]     = col.r;
+    colors[placed * 3 + 1] = col.g;
+    colors[placed * 3 + 2] = col.b;
 
     let bright = 0.2 + rng.next() * 0.5;
     if (t < CORE_FRACTION) { /* core brightness unchanged */ }
@@ -258,39 +280,39 @@ function generateDiskParticles() {
   }
 
   const count = placed;
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position',    new THREE.BufferAttribute(positions.slice(0, count * 3), 3));
-  geo.setAttribute('color',       new THREE.BufferAttribute(colors.slice(0, count * 3), 3));
-  geo.setAttribute('aSize',       new THREE.BufferAttribute(sizes.slice(0, count), 1));
-  geo.setAttribute('aBrightness', new THREE.BufferAttribute(brightness.slice(0, count), 1));
-  geo.setAttribute('aRadius',     new THREE.BufferAttribute(radii.slice(0, count), 1));
+  const base = new THREE.PlaneGeometry(1, 1);
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = base.index;
+  geo.setAttribute('position', base.getAttribute('position'));
+  geo.setAttribute('uv',       base.getAttribute('uv'));
+  geo.setAttribute('normal',   base.getAttribute('normal'));
+  geo.setAttribute('aOffset',     new THREE.InstancedBufferAttribute(positions.slice(0, count * 3), 3));
+  geo.setAttribute('color',       new THREE.InstancedBufferAttribute(colors.slice(0, count * 3), 3));
+  geo.setAttribute('aSize',       new THREE.InstancedBufferAttribute(sizes.slice(0, count), 1));
+  geo.setAttribute('aBrightness', new THREE.InstancedBufferAttribute(brightness.slice(0, count), 1));
+  geo.setAttribute('aRadius',     new THREE.InstancedBufferAttribute(radii.slice(0, count), 1));
+  geo.instanceCount = count;
 
   return { geo, count };
 }
 
 export async function createDisk(scene) {
-  const { vert, frag } = await loadShaderPair('galaxy-disk');
   const { geo, count } = generateDiskParticles();
 
-  const mat = new THREE.ShaderMaterial({
-    vertexShader: vert,
-    fragmentShader: frag,
-    uniforms: {
-      uViewHeight: { value: window.innerHeight },
-      uTime: { value: 0 }
-    },
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    transparent: true
-  });
+  const mat = new MeshBasicNodeMaterial();
+  mat.positionNode = diskVert();
+  mat.fragmentNode = diskFrag();
+  mat.blending = THREE.AdditiveBlending;
+  mat.depthWrite = false;
+  mat.transparent = true;
+  mat.side = THREE.DoubleSide;
 
-  const mesh = new THREE.Points(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.frustumCulled = false;
   scene.add(mesh);
 
   function update(delta, elapsed) {
-    mat.uniforms.uViewHeight.value = window.innerHeight;
-    mat.uniforms.uTime.value = elapsed;
+    uTime.value = elapsed;
   }
 
   return { mesh, update, count };

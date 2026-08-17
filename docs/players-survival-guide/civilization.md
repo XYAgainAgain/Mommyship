@@ -36,7 +36,7 @@ Shore Leave can be as detailed or abstract as your group prefers. You might play
 | A-CLASS | 2d10×10kcr | 2d10 |
 | S-CLASS | 2d10×100kcr | All |
 
-2. **Make a Sanity Save.** In order to process Stress into something useful, make a Sanity Save. Example: *Shore Leave at Anarene's Folly…*
+2. **Make a Sanity Save.** In order to process Stress into something useful, make a Sanity Save.
 
 - **Success**: Convert some of the Stress into improved Saves & Stats. Each port converts a different amount of Stress as shown in the table. Whatever Stress you don't convert is relieved, setting the character back to Minimum Stress.  
 - **Critical Success**: Convert the maximum amount of Stress allowed at that port into improved Saves and/or Stats, and relieve the remainder.  

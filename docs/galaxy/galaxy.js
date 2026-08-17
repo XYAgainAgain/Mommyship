@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 import { createCamera } from './camera.js';
 import { createBackground } from './background.js';
 import { createDisk } from './disk.js';
@@ -12,11 +13,26 @@ import { createDustTorus } from './dust-torus.js';
 import { createMuseAudio, preloadMuse } from './muse-audio.js';
 import { createSystems } from './systems.js';
 import * as asteroids from './asteroids.js';
+import * as ships from './ships.js';
 import * as ui from './galaxy-ui.js';
 import { createPerfMonitor } from './perf-monitor.js';
 
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
+
+/* Inside this band the far billboard reads as a screen-filling wash, so the watchdog's
+   forced-far override ramps out; a hard cut flips the disk and compositor on and off */
+const BH_NEAR_DIST = 55, BH_FAR_DIST = 75;
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/* Storage-blocked browsers throw on every localStorage touch — never let that kill the boot */
+function safeGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function safeSet(key, value) { try { localStorage.setItem(key, value); } catch {} }
+function safeRemove(key) { try { localStorage.removeItem(key); } catch {} }
 
 function computeLOD(camera) {
   const dist = camera.position.length();
@@ -26,7 +42,8 @@ function computeLOD(camera) {
 function projectToScreen(camera) {
   _bhScreen.set(0, 0, 0);
   _bhScreen.project(camera);
-  _bhScreen2.set(_bhScreen.x * 0.5 + 0.5, _bhScreen.y * 0.5 + 0.5);
+  /* Y flipped to match compose shader's RT-corrected UV space */
+  _bhScreen2.set(_bhScreen.x * 0.5 + 0.5, -_bhScreen.y * 0.5 + 0.5);
   return _bhScreen2;
 }
 
@@ -118,6 +135,7 @@ function createLoadingTracker(totalSteps) {
     step++;
     target = step / totalSteps;
     if (textEl) textEl.textContent = nextMessage();
+    if (window.gxBoot) window.gxBoot.ping();
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(tick);
   };
@@ -127,22 +145,60 @@ async function init() {
   const container = document.querySelector('.experience');
   const progress = createLoadingTracker(13);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  /* Reaching this line proves the CDN modules arrived; a hang past it is the GPU */
+  if (window.gxBoot) window.gxBoot.stage('Waking up the GPU...');
+
+  /* ?webgl=1 debug override: A/B the WebGL2 backend. Its compositor blackout is fixed, but
+     first load costs ~165 s of shader warm-up, so it stays opt-in. */
+  const backendParams = new URLSearchParams(location.search);
+  const forceWebGL = backendParams.get('webgl') === '1';
+
+  /* r184 keeps no adapter reference and requests empty limits, so device.limits would
+     report the 8192 spec floor on every GPU — probe the adapter with three's own options */
+  const adapter = navigator.gpu && !forceWebGL
+    ? await navigator.gpu.requestAdapter({ featureLevel: 'compatibility' }).catch(() => null)
+    : null;
+  const adapterMaxTex = adapter?.limits.maxTextureDimension2D ?? 0;
+  /* Asking for exactly what this adapter reports can't be refused; asking for nothing on
+     8192 hardware keeps the default path untouched */
+  const requiredLimits = adapterMaxTex > 8192 ? { maxTextureDimension2D: adapterMaxTex } : undefined;
+
+  const renderer = new WebGPURenderer({ antialias: true, requiredLimits, forceWebGL });
+  /* All galaxy shaders are custom fragmentNode — bypass sRGB gamma encode to match
+     WebGL's raw gl_FragColor output (colors were authored for direct framebuffer write) */
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000);
   renderer.autoClear = false;
   container.appendChild(renderer.domElement);
+  await renderer.init();
 
   const scene = new THREE.Scene();
   const cam = createCamera(renderer);
 
-  const clock = new THREE.Clock();
+  /* Single warm render, run once every subsystem exists — compileAsync and markerWarm do
+     the actual spreading; this only forces whatever they missed, under the overlay */
+  const warmStep = async () => {
+    renderer.render(scene, cam.camera);
+    await new Promise(r => setTimeout(r, 0));
+  };
 
-  /* 12k → 8k → 4k based on GPU max texture dimension */
-  const maxTex = renderer.capabilities.maxTextureSize;
-  const tier = maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
+  const timer = new THREE.Timer();
+  timer.connect(document);
+
+  /* 12k → 8k → 4k based on GPU max texture dimension. The WebGL2 fallback backend has no
+     device at all, so it answers from the live GL context instead. */
+  const gl = renderer.backend?.gl;
+  const maxTex = gl
+    ? gl.getParameter(gl.MAX_TEXTURE_SIZE)
+    : renderer.backend?.device?.limits?.maxTextureDimension2D ?? 8192;
+  /* ?lightmap=8k debug override — A/B the tier without a code edit */
+  const tierParam = new URLSearchParams(location.search).get('lightmap');
+  const tier = ['12k', '8k', '4k'].includes(tierParam) ? tierParam
+    : maxTex >= 16384 ? '12k' : maxTex >= 8192 ? '8k' : '4k';
   const lightmapUrl = 'galaxy/textures/galaxy-lightmap-' + tier + '.webp';
+  console.log('Galaxy renderer: ' + (gl ? 'WebGL2 fallback' : 'WebGPU') + ', maxTex ' + maxTex + ', lightmap ' + tier);
 
   const lightmapImg = document.getElementById('lightmap-img');
   if (lightmapImg) lightmapImg.src = lightmapUrl;
@@ -172,10 +228,24 @@ async function init() {
   progress();
   const dustTorus = await createDustTorus(scene, renderer, lightmap);
 
+  /* All visual-scene materials exist now — compile their pipelines on driver threads
+     WHILE the JS-heavy systems/bake steps run, so the final step has nothing left to stall on */
+  const scenePrecompile = renderer.compileAsync(scene, cam.camera);
+
   progress();
   const systems = await createSystems(scene, cam.camera, renderer);
+  /* markerScene pipelines (incl. the big live-atlas module) compile on driver
+     threads while asteroids.init does its CPU-side setup */
+  const markerWarm = systems.warmUpShaders(renderer, cam.camera);
   progress();
   await asteroids.init(scene, systems.getData(), lightmap);
+  if (window.gxBoot) window.gxBoot.ping();
+  await ships.init(lightmap, systems);
+  if (window.gxBoot) window.gxBoot.ping();
+  await scenePrecompile;
+  if (window.gxBoot) window.gxBoot.ping();
+  await warmStep();
+  await markerWarm;
   progress();
 
   /* Volume — controls drone gain when Muse is off, Muse volume when on */
@@ -216,13 +286,13 @@ async function init() {
   });
 
   /* Fancy Nebulae toggle */
-  let volumetricActive = localStorage.getItem('mommyship-galaxy-volumetric') === 'true';
+  let volumetricActive = safeGet('mommyship-galaxy-volumetric') === 'true';
   const fancyCheckbox = document.getElementById('fancy-nebulae');
   fancyCheckbox.checked = volumetricActive;
 
   if (volumetricActive) {
     scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
-    volumetric.addToScene();
+    await volumetric.addToScene();
   }
 
   /* Absolute Cinema */
@@ -240,15 +310,17 @@ async function init() {
 
   fancyCheckbox.addEventListener('change', () => {
     volumetricActive = fancyCheckbox.checked;
-    localStorage.setItem('mommyship-galaxy-volumetric', String(volumetricActive));
+    safeSet('mommyship-galaxy-volumetric', String(volumetricActive));
     /* Turn off Cinema if Fancy is disabled */
     if (!volumetricActive && cinemaMode) {
       cinemaCheckbox.checked = false;
       cinemaMode = false;
     }
     if (volumetricActive) {
-      scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
-      volumetric.addToScene();
+      /* Billboards stay up until the volumes exist, so a first-enable bake leaves no gap */
+      volumetric.addToScene().then(() => {
+        if (volumetricActive) scene.remove(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
+      });
     } else {
       volumetric.removeFromScene();
       scene.add(nebula.emissionMesh, nebula.flowerMesh, nebula.darkMesh);
@@ -260,6 +332,9 @@ async function init() {
   const perfMonitor = createPerfMonitor((level, direction, p95) => {
     const dpr = level >= 2 ? 1.0 : level >= 1 ? 1.5 : Math.min(window.devicePixelRatio, 2);
     renderer.setPixelRatio(dpr);
+    /* spaceRT only tracks the drawing buffer through this call, so without it the
+       compositor path keeps a stale-size RT the compose quad rescales. */
+    compositor.resize();
 
     if (level >= 3 && volumetricActive) {
       fancyCheckbox.checked = false;
@@ -304,6 +379,7 @@ async function init() {
 
   /* FOV slider — horizontal FOV display, persisted to localStorage */
   const DEFAULT_HFOV = 90;
+  const FOV_KEY = 'mommyship-galaxy-fov';
   const fovSlider = document.getElementById('fov-slider');
   const fovVal = document.getElementById('fov-val');
   const fovReset = document.getElementById('fov-reset');
@@ -316,18 +392,24 @@ async function init() {
     if (fovSlider) fovSlider.value = hfov;
   }
 
-  const savedFov = localStorage.getItem('mommyship-galaxy-fov');
-  if (savedFov) setHFov(parseFloat(savedFov));
+  /* Unsaved (and unparseable) means the 90° default, which still needs the hFov→vFov
+     conversion — without it the camera sits at Three's 60° vertical while the slider says 90 */
+  function storedHFov() {
+    const saved = parseFloat(safeGet(FOV_KEY));
+    return Number.isFinite(saved) ? saved : DEFAULT_HFOV;
+  }
+
+  setHFov(storedHFov());
 
   if (fovSlider) fovSlider.addEventListener('input', () => {
     const hfov = parseInt(fovSlider.value, 10);
     setHFov(hfov);
-    localStorage.setItem('mommyship-galaxy-fov', String(hfov));
+    safeSet(FOV_KEY, String(hfov));
   });
 
   if (fovReset) fovReset.addEventListener('click', () => {
     setHFov(DEFAULT_HFOV);
-    localStorage.removeItem('mommyship-galaxy-fov');
+    safeRemove(FOV_KEY);
   });
 
   /* Muse Mode */
@@ -359,6 +441,7 @@ async function init() {
     }
     systems.setClickDisabled(museActive);
     systems.setMuseActive(museActive);
+    compositor.setMuseWarp(museActive ? 1 : 0);
     perfMonitor.setBypass(cinemaMode || museActive);
   });
 
@@ -367,14 +450,10 @@ async function init() {
   const showCoordsCheckbox = document.getElementById('show-coords');
   const showFpsCheckbox = document.getElementById('show-fps');
 
-  /* Confirmation dialog on any navigation away */
-  window.addEventListener('beforeunload', e => { e.preventDefault(); });
-
   window.addEventListener('resize', () => {
     cam.resize();
-    /* Recalculate vFOV from stored hFOV since aspect changed */
-    const curHfov = localStorage.getItem('mommyship-galaxy-fov');
-    if (curHfov) setHFov(parseFloat(curHfov));
+    /* Recalculate vFOV from the current hFOV since aspect changed */
+    setHFov(storedHFov());
     renderer.setSize(window.innerWidth, window.innerHeight);
     /* Respect watchdog's current pixel ratio cap */
     const level = perfMonitor.getLevel();
@@ -434,14 +513,13 @@ async function init() {
 
   let lastFrameTime = performance.now();
 
-  function animate() {
-    requestAnimationFrame(animate);
-
+  function animate(timestamp) {
     const now = performance.now();
     perfMonitor.sample(now - lastFrameTime);
     lastFrameTime = now;
 
-    const delta = Math.min(clock.getDelta(), 0.1);
+    timer.update(timestamp);
+    const delta = Math.min(timer.getDelta(), 0.1);
 
     fpsFrames++;
     fpsTime += delta;
@@ -454,14 +532,20 @@ async function init() {
 
     if (hudDirty) { updateHUD(); hudDirty = false; }
 
-    /* Skip 3D rendering in 2D mode */
-    if (ui.getViewMode() === '2d') return;
-
-    const elapsed = clock.getElapsedTime();
-
+    /* Single clock for both views — tick before the 2D branch so orbits keep moving there */
     if (!rotationPaused) rotationTime += delta;
 
+    if (ui.getViewMode() === '2d') {
+      ui.frame2d(delta, rotationTime, !rotationPaused, cinemaMode);
+      return;
+    }
+
+    const elapsed = timer.getElapsed();
+
     cam.update(delta);
+    /* Refresh matrixWorld now so the BH lens projection matches the sphere's live camera position
+       this frame; without it .project() lags a frame and the layers smear when the camera moves. */
+    cam.camera.updateMatrixWorld();
 
     const cameraMoved = !lastCamPos.equals(cam.camera.position)
                      || !lastCamQuat.equals(cam.camera.quaternion);
@@ -476,20 +560,28 @@ async function init() {
       scaleBarFrame = 0;
       updateScaleBar();
     }
-    bg.update(elapsed, cam.camera.position);
+    bg.update(elapsed, rotationTime, cam.camera.position);
     disk.update(delta, rotationTime);
     nebula.update(delta, rotationTime);
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);
     coreStorm.update(elapsed, rotationTime);
     dustTorus.update(elapsed, rotationTime, cam.camera, cinemaMode);
-    asteroids.update(delta, rotationTime, cam.camera.position);
+    asteroids.update(delta, rotationTime, cam.camera.position, cam.camera);
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
-    const lodFactor = compositorForced ? 0 : cinemaMode ? 1 : computeLOD(cam.camera);
-    bh.update(elapsed, lodFactor, cam.camera);
+    /* Cinema/Muse and close approaches outrank the perf watchdog: a forced-far BH inside
+       the core renders as a screen-filling billboard wash. Far field still reaches 0. */
+    const lod = computeLOD(cam.camera);
+    const lodFactor = cinemaMode || museActive ? 1
+      : compositorForced ? lod * (1 - smoothstep(BH_NEAR_DIST, BH_FAR_DIST, cam.camera.position.length()))
+      : lod;
+    bh.update(rotationTime, lodFactor, cam.camera);
 
-    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId);
+    systems.update(delta, rotationTime, lodFactor, worldDirty, trackedId, cinemaMode, cam.camera.position);
+    /* Ships AFTER systems: they read bodyWorldPos, which systems just moved for this frame
+       (reading last frame's positions put every dock-tracking ship out of step). Ships stay visible in Photo/Muse — they're physical objects, not data overlays. */
+    ships.update(elapsed, rotationTime);
 
     /* Camera follows tracked body */
     if (trackedId) {
@@ -514,11 +606,14 @@ async function init() {
 
     if (lodFactor > 0) {
       const screenPos = projectToScreen(cam.camera);
-      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene);
+      compositor.render(scene, cam.camera, screenPos, lodFactor, systems.markerScene, lod);
     } else {
+      /* autoClear, not renderer.clear() — see compositor.js pass 2. Markers render
+         after with it off so they keep the scene's depth. */
       renderer.setRenderTarget(null);
-      renderer.clear();
+      renderer.autoClear = true;
       renderer.render(scene, cam.camera);
+      renderer.autoClear = false;
       renderer.render(systems.markerScene, cam.camera);
     }
 
@@ -547,7 +642,12 @@ async function init() {
     }
     if (showCoords && !cinemaMode && !museActive) {
       if (text) text += '\n';
-      text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+      if (ui.getViewMode() === '2d') {
+        const c2 = ui.get2DCamera();
+        text += c2 ? 'X: ' + c2.cx.toFixed(1) + '  Z: ' + c2.cz.toFixed(1) : '';
+      } else {
+        text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+      }
     }
     hudEl.textContent = text;
   }
@@ -573,7 +673,7 @@ async function init() {
         trackedLastPos = null;
         cam.controls.enablePan = false;
         cam.setTrackMode(true, bodyVisualRadius(result.bodyId));
-        ui.setTracking(true);
+        ui.setTracking(true, result.bodyId);
         systems.showOrbitsForBody(result.bodyId);
       } else {
         trackedId = null;
@@ -628,8 +728,16 @@ async function init() {
       trackedLastPos = { x: wp.x, y: wp.y, z: wp.z };
       cam.controls.enablePan = false;
       cam.setTrackMode(true, bodyVisualRadius(id));
-      ui.setTracking(true);
+      ui.setTracking(true, id);
       systems.showOrbitsForBody(id);
+    },
+    onUntrack: () => {
+      trackedId = null;
+      trackedLastPos = null;
+      cam.controls.enablePan = true;
+      cam.setTrackMode(false);
+      ui.setTracking(false);
+      systems.hideOrbits();
     },
     onResetView: () => {
       if (museActive) return;
@@ -640,19 +748,21 @@ async function init() {
       ui.setTracking(false);
       systems.hideOrbits();
       systems.setSelectedId(null);
-      cam.flyTo(new THREE.Vector3(0, 0, 0), 550);
+      cam.flyHome();
     }
   }, systems);
 
-  /* Pre-compile all shaders — force hidden detail meshes visible for one frame
-     so the GPU compiles their programs during loading, not on first flyby */
-  renderer.compile(scene, cam.camera);
-  systems.warmUpShaders(renderer, cam.camera);
+  /* Warm-up frame through the full BH compositor so its RTs/pipelines compile now instead
+     of on first core approach, mid-flight. lodFactor 0.2 sits inside the 0.1–0.35 crossfade
+     band, so the far billboard AND the volumetric are both visible and both compile. */
+  bh.update(0, 0.2, cam.camera);
+  compositor.render(scene, cam.camera, projectToScreen(cam.camera), 1, systems.markerScene);
 
   updateScaleBar();
-  animate();
+  renderer.setAnimationLoop(animate);
 
   /* Dismiss loading overlay */
+  if (window.gxBoot) window.gxBoot.done();
   const loadingEl = document.getElementById('gx-loading');
   if (loadingEl) {
     loadingEl.classList.add('fade-out');
@@ -662,6 +772,5 @@ async function init() {
 
 init().catch(err => {
   console.error('Galaxy init failed:', err);
-  const el = document.querySelector('.experience');
-  if (el) el.textContent = 'Failed to load galaxy map. Check console for details.';
+  if (window.gxBoot) window.gxBoot.fail(err);
 });

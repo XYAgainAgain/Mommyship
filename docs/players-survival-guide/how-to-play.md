@@ -200,7 +200,7 @@ You've received the equivalent of a doctorate or have many years of experience i
     - **Requires:** Military Training or Rimwise
 - **Hacking:** Unauthorized access to computer systems and networks.
     - **Requires:** Computers or Military Training
-- **Hand-to-Hand Combat:** Melee fighting, brawling, martial arts, etc.
+- **Hand-to-Hand Combat:** Melee fighting with weaponry, brawling, martial arts, etc.
     - **Requires:** Rimwise or Athletics
 - **Mechanical Repair:** Fixing broken machines.
     - **Requires:** Industrial Equipment or Jury-Rigging
@@ -337,7 +337,7 @@ When taking Damage (DMG), subtract it from your Health. If your Health reaches z
 
 While wearing armor, you are shielded from damage under your current Armor Points (AP). Any hits you suffer that deal damage less than your AP instead deal no damage to you.
 
-When you suffer damage higher than your current AP value (per hit), subtract your AP from the damage, and your armor gets -1 to its AP until you can repair it. This penalty can stack, and armor breaks completely at 0 AP. Different armor requires different resources and tools for repair. 
+When you suffer damage equal to or higher than your current AP value (per hit), subtract your AP from the damage, and your armor gets -1 to its AP until you can repair it. This penalty can stack, and armor breaks completely at 0 AP. Different armor requires different resources and tools for repair. 
 
 Anti-armor weapons/attacks ignore armor's damage reduction and reduce any worn armor's AP by 1, and break the armor as normal when it reaches 0 AP.
 

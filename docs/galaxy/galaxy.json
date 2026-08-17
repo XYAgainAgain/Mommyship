@@ -3801,7 +3801,10 @@
       "position": null,
       "parentId": "neotypian",
       "orbital": null,
-      "visual": null,
+      "visual": {
+        "color": "#830101",
+        "temperature": 0.62
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
@@ -8044,11 +8047,6 @@
       "toId": "ivutlis",
       "via": []
     },
-    "gas-n-gripe-17--ivutlis": {
-      "fromId": "gas-n-gripe-17",
-      "toId": "ivutlis",
-      "via": []
-    },
     "caronia--rho-bees": {
       "fromId": "caronia",
       "toId": "rho-bees",
@@ -8092,11 +8090,6 @@
     "cholyoke--padania": {
       "fromId": "cholyoke",
       "toId": "padania",
-      "via": []
-    },
-    "durury--gas-n-gripe-17": {
-      "fromId": "durury",
-      "toId": "gas-n-gripe-17",
       "via": []
     },
     "durury--ivutlis": {
@@ -8149,11 +8142,6 @@
       "toId": "vamburdia-greater",
       "via": []
     },
-    "gantropic--gas-n-gripe-8": {
-      "fromId": "gantropic",
-      "toId": "gas-n-gripe-8",
-      "via": []
-    },
     "homi-eaomi--majestlon": {
       "fromId": "homi-eaomi",
       "toId": "majestlon",
@@ -8161,11 +8149,6 @@
     },
     "gas-n-gripe-8--halcyon": {
       "fromId": "gas-n-gripe-8",
-      "toId": "halcyon",
-      "via": []
-    },
-    "gas-n-gripe-alpha--halcyon": {
-      "fromId": "gas-n-gripe-alpha",
       "toId": "halcyon",
       "via": []
     },

@@ -1,13 +1,30 @@
 import * as THREE from 'three';
-import { loadShaderPair } from './shaders.js';
+import { MeshBasicNodeMaterial, NodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
+import { uniform, float, vec3, mat3 } from 'three/tsl';
+import { main as starDetailVert, uTime as vertUTime } from './tsl/vert/star-detail.tsl.js';
+import {
+  main as starDetailFrag, uTime as fragUTime, uLimbStrength, uLimbTempDrop, uShadeAmp, uGlowBoost,
+  uSupergranuleScale, uFilamentStrength, uLaneStrength, uChurnSpeed, uPromIntensity, uCmeRate, uDetailBoost,
+} from './tsl/frag/star-detail.tsl.js';
+import { main as promFrag } from './tsl/frag/star-prominence.tsl.js';
+import { main as torusVert, uTime as torusVertUTime } from './tsl/vert/pulsar-torus.tsl.js';
+import { main as torusFrag, uTime as torusFragUTime } from './tsl/frag/pulsar-torus.tsl.js';
 import { createRng } from './rng.js';
 import { parseMK } from './star-params.js';
 
 const DETAIL_SEGMENTS = 64;
 const DETAIL_ROWS = 48;
 const MARKER_RADIUS = 2.5;
-const ACTIVATE_DIST = 25;
 const POOL_SIZE = 4;
+/* Apparent size (visualRadius/dist) to swap a system to detail meshes; release
+   sits below activate for hysteresis. */
+const SIZE_ACTIVATE = 0.0533;
+const SIZE_RELEASE = 0.0427;
+/* Apparent size where the atlas→detail dither crossfade completes */
+const SIZE_FULL = 0.064;
+/* Pulsars rank by their field-torus span (world ~8u, counter-scaled), not the tiny
+   sphere — otherwise the torus decorations pop in far too late */
+const PULSAR_VISUAL_RADIUS = 8.0;
 
 function hashString(str) {
   let h = 0;
@@ -31,17 +48,13 @@ function bakeGradientTexture(stops) {
 /**
  * Creates the detail mesh manager for close-up star rendering.
  * Supports multiple concurrent detail meshes via a pool of POOL_SIZE entries.
- * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.WebGPURenderer} renderer
  * @returns {{ update, container, dispose }}
  */
 export async function createStarDetail(renderer) {
-  const [{ vert, frag }, torusShaders] = await Promise.all([
-    loadShaderPair('star-detail'),
-    loadShaderPair('pulsar-torus'),
-  ]);
   const surfaceGeo = new THREE.SphereGeometry(MARKER_RADIUS, DETAIL_SEGMENTS, DETAIL_ROWS);
   /* Fat torus: r just under R so inner edge intersects the star at the poles.
-     Ring in vertical plane (rotated 90° X) so lobes extend along rotation axis. */
+     Ring in vertical plane (rotated 90 deg X) so lobes extend along rotation axis. */
   const torusGeo = new THREE.TorusGeometry(4, 3.95, 32, 64);
 
   /* Shared sprite textures */
@@ -70,26 +83,26 @@ export async function createStarDetail(renderer) {
   /* Pool of detail mesh groups — each can render one star independently */
   const pool = [];
   for (let p = 0; p < POOL_SIZE; p++) {
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: vert,
-      fragmentShader: frag,
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        uSeed:               { value: 0 },
-        uLowTemp:            { value: 5200 },
-        uHighTemp:           { value: 6000 },
-        uGranScale:          { value: 4.0 },
-        uSpotAmp:            { value: 0.7 },
-        uSlopeness:          { value: 1.0 },
-        uEmissive:           { value: 0.8 },
-        uSize:               { value: 1.0 },
-        uBubbleAmp:          { value: 0.0 },
-        uTime:               { value: 0 },
-        uRotation:           { value: new THREE.Matrix3() },
-        uAtmosphereColor:    { value: new THREE.Color('#ffeeaa') },
-        uAtmosphereIntensity:{ value: 0.4 },
-      },
-    });
+    /* Per-instance TSL uniform nodes for surface shader */
+    const pSeed = uniform(float(0));
+    const pLowTemp = uniform(float(5200));
+    const pHighTemp = uniform(float(6000));
+    const pGranScale = uniform(float(4.0));
+    const pCellScale = uniform(float(2.0));
+    const pSpotAmp = uniform(float(0.7));
+    const pSize = uniform(float(1.0));
+    const pSlopeness = uniform(float(1.0));
+    const pEmissive = uniform(float(0.8));
+    const pBubbleAmp = uniform(float(0.0));
+    const pRotation = uniform(mat3());
+    const pAtmoColor = uniform(vec3(1.0, 0.93, 0.67));
+    const pAtmoIntensity = uniform(float(0.4));
+    const pFade = uniform(float(1.0));
+    const pGate = uniform(float(0.0));
+
+    const mat = new NodeMaterial();
+    mat.positionNode = starDetailVert(pSeed, pGranScale, pSize, pBubbleAmp, pRotation);
+    mat.fragmentNode = starDetailFrag(pSeed, pLowTemp, pHighTemp, pGranScale, pCellScale, pSpotAmp, pSize, pSlopeness, pEmissive, pRotation, pAtmoColor, pAtmoIntensity, pFade, pGate);
 
     const mesh = new THREE.Mesh(surfaceGeo, mat);
     mesh.scale.setScalar(0.87);
@@ -110,21 +123,30 @@ export async function createStarDetail(renderer) {
     halo.scale.setScalar(MARKER_RADIUS * 4.0);
     halo.renderOrder = 3;
 
-    const torusMat = new THREE.ShaderMaterial({
-      vertexShader: torusShaders.vert,
-      fragmentShader: torusShaders.frag,
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        uTime:      { value: 0 },
-        uSeed:      { value: 0 },
-        uColor:     { value: new THREE.Color('#aaddff') },
-        uIntensity: { value: 2.0 },
-      },
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-      side: THREE.DoubleSide,
-    });
+    /* Prominence ring — procedural limb flames + CME; fade multiplies in-shader
+       via the shared pFade node, so no per-frame opacity write is needed */
+    const promMat = new SpriteNodeMaterial();
+    promMat.colorNode = promFrag(pSeed, pLowTemp, pFade);
+    promMat.blending = THREE.AdditiveBlending;
+    promMat.depthWrite = false;
+    promMat.transparent = true;
+    const prom = new THREE.Sprite(promMat);
+    prom.scale.setScalar(MARKER_RADIUS * 3.0);
+    prom.renderOrder = 4;
+
+    /* Per-instance TSL uniform nodes for pulsar torus */
+    const pTorusSeed = uniform(float(0));
+    const pTorusColor = uniform(vec3(0.67, 0.87, 1.0));
+    const pTorusIntensity = uniform(float(2.0));
+
+    const torusMat = new NodeMaterial();
+    torusMat.positionNode = torusVert(pTorusSeed);
+    torusMat.fragmentNode = torusFrag(pTorusSeed, pTorusColor, pTorusIntensity);
+    torusMat.blending = THREE.AdditiveBlending;
+    torusMat.depthWrite = false;
+    torusMat.transparent = true;
+    torusMat.side = THREE.DoubleSide;
+
     const torusMesh = new THREE.Mesh(torusGeo, torusMat);
     torusMesh.rotation.x = Math.PI / 2;
     torusMesh.visible = false;
@@ -151,6 +173,7 @@ export async function createStarDetail(renderer) {
     /* Only the surface mesh should intercept raycasts */
     corona.raycast = () => {};
     halo.raycast = () => {};
+    prom.raycast = () => {};
     torusMesh.raycast = () => {};
     pulsarGlow.raycast = () => {};
     pulsarCore.raycast = () => {};
@@ -158,6 +181,7 @@ export async function createStarDetail(renderer) {
     const group = new THREE.Group();
     group.add(halo);
     group.add(corona);
+    group.add(prom);
     group.add(mesh);
     group.add(torusMesh);
     group.add(pulsarGlow);
@@ -166,11 +190,25 @@ export async function createStarDetail(renderer) {
     group.renderOrder = 5;
 
     pool.push({
-      group, mat, mesh, corona, halo, coronaMat: cMat, haloMat: hMat,
+      group, mat, mesh, corona, halo, coronaMat: cMat, haloMat: hMat, prom, promMat,
       torusMesh, torusMat, pulsarGlow, pulsarGlowMat, pulsarCore, pulsarCoreMat,
       bodyId: null, radius: 1.0, isPulsar: false, isWolfRayet: false,
       rotAxis: new THREE.Vector3(0, 1, 0), rotSpeed: 0.1,
+      baseCoronaOp: 1.0, baseHaloOp: 1.0,
+      /* Per-instance uniform refs for direct .value access */
+      pSeed, pLowTemp, pHighTemp, pGranScale, pCellScale, pSpotAmp, pSize, pSlopeness,
+      pEmissive, pBubbleAmp, pRotation, pAtmoColor, pAtmoIntensity, pFade, pGate,
+      pTorusSeed, pTorusColor, pTorusIntensity,
     });
+  }
+
+  /* Live surface-tuning knobs, e.g. starTweak.limbStrength.value = 0.6 */
+  if (typeof window !== 'undefined') {
+    window.starTweak = {
+      limbStrength: uLimbStrength, limbTempDrop: uLimbTempDrop, shadeAmp: uShadeAmp, glowBoost: uGlowBoost,
+      supergranuleScale: uSupergranuleScale, filamentStrength: uFilamentStrength, laneStrength: uLaneStrength,
+      churnSpeed: uChurnSpeed, promIntensity: uPromIntensity, cmeRate: uCmeRate, detailBoost: uDetailBoost,
+    };
   }
 
   /* Shared scratch objects for rotation math */
@@ -183,24 +221,28 @@ export async function createStarDetail(renderer) {
   for (const entry of pool) container.add(entry.group);
 
   let cachedStarIds = null;
+  let pulsarIds = null;
   const activeIds = new Set();
+  /* id → 0–1 dither fade, read by systems.js for the atlas-side discard */
+  const fades = new Map();
 
   function activate(entry, bodyId, body) {
     const params = parseMK(body.spectralClass, body.visual?.size);
     const seed = hashString(bodyId);
-    const u = entry.mat.uniforms;
 
-    u.uSeed.value = seed;
-    u.uLowTemp.value = params.lowTemp;
-    u.uHighTemp.value = params.highTemp;
-    u.uGranScale.value = params.granScale;
-    u.uSpotAmp.value = params.spotAmp;
-    u.uSlopeness.value = params.slopeness;
-    u.uEmissive.value = params.emissive;
-    u.uSize.value = params.radius;
-    u.uBubbleAmp.value = params.bubbleAmp;
-    u.uAtmosphereColor.value.set(params.atmoColor);
-    u.uAtmosphereIntensity.value = params.lumClass === 'V' ? 0.4 : 0.6;
+    entry.pSeed.value = seed;
+    entry.pLowTemp.value = params.lowTemp;
+    entry.pHighTemp.value = params.highTemp;
+    entry.pGranScale.value = params.granScale;
+    entry.pCellScale.value = params.cellScale;
+    entry.pSpotAmp.value = params.spotAmp;
+    entry.pSlopeness.value = params.slopeness;
+    entry.pEmissive.value = params.emissive;
+    entry.pSize.value = params.radius;
+    entry.pBubbleAmp.value = params.bubbleAmp;
+    const _c = new THREE.Color(params.atmoColor);
+    entry.pAtmoColor.value.set(_c.r, _c.g, _c.b);
+    entry.pAtmoIntensity.value = params.lumClass === 'V' ? 0.4 : 0.6;
 
     entry.coronaMat.color.set(params.atmoColor);
     entry.haloMat.color.set(params.atmoColor);
@@ -215,18 +257,20 @@ export async function createStarDetail(renderer) {
     entry.pulsarGlow.visible = entry.isPulsar;
     entry.pulsarCore.visible = entry.isPulsar;
     if (entry.isPulsar) {
-      entry.torusMat.uniforms.uSeed.value = seed;
-      entry.torusMat.uniforms.uColor.value.set(params.atmoColor);
+      entry.pTorusSeed.value = seed;
+      _c.set(params.atmoColor);
+      entry.pTorusColor.value.set(_c.r, _c.g, _c.b);
     }
 
-    /* Wolf-Rayet: boosted corona/halo opacity for enlarged glow */
-    if (entry.isWolfRayet) {
-      entry.coronaMat.opacity = 0.9;
-      entry.haloMat.opacity = 0.6;
-    }
+    /* Wolf-Rayet: enlarged sprites carry the glow, dimmer base opacity balances.
+       Actual opacity is base × fade, applied each frame in update(). */
+    entry.baseCoronaOp = entry.isWolfRayet ? 0.9 : 1.0;
+    entry.baseHaloOp = entry.isWolfRayet ? 0.6 : 1.0;
+    entry.coronaMat.opacity = 0;
+    entry.haloMat.opacity = 0;
 
     /* T Tauri: enhanced atmosphere for accretion envelope */
-    if (params.isTTauri) u.uAtmosphereIntensity.value = 0.7;
+    if (params.isTTauri) entry.pAtmoIntensity.value = 0.7;
 
     const rng = createRng(seed + 555);
     const tiltRad = (5 + rng.next() * 25) * Math.PI / 180;
@@ -244,6 +288,7 @@ export async function createStarDetail(renderer) {
   }
 
   function deactivate(entry) {
+    if (entry.bodyId) fades.delete(entry.bodyId);
     entry.bodyId = null;
     entry.group.userData.bodyId = null;
     entry.group.visible = false;
@@ -258,22 +303,26 @@ export async function createStarDetail(renderer) {
     entry.halo.scale.setScalar(MARKER_RADIUS * 4.0);
   }
 
+  function buildStarCache(bodies) {
+    cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
+    pulsarIds = new Set(cachedStarIds.filter(id =>
+      parseMK(bodies[id].spectralClass, bodies[id].visual?.size).isPulsar));
+  }
+
   /* Find all stars in the same system as targetId (handles nested hierarchies) */
   function getSystemStars(targetId, bodies) {
-    let rootId = targetId;
-    while (bodies[rootId]?.parentId && bodies[bodies[rootId].parentId]?.type === 'star') {
+    let rootId = targetId, rootGuard = 0;
+    while (bodies[rootId]?.parentId && bodies[bodies[rootId].parentId]?.type === 'star' && rootGuard++ < 16) {
       rootId = bodies[rootId].parentId;
     }
-    if (!cachedStarIds) {
-      cachedStarIds = Object.keys(bodies).filter(id => bodies[id].type === 'star');
-    }
+    if (!cachedStarIds) buildStarCache(bodies);
     /* BFS from root to find all descendant stars */
     const family = [rootId];
     const queue = [rootId];
     while (queue.length > 0) {
       const parentId = queue.shift();
       for (const id of cachedStarIds) {
-        if (bodies[id].parentId === parentId && !family.includes(id)) {
+        if (bodies[id]?.parentId === parentId && !family.includes(id)) {
           family.push(id);
           queue.push(id);
         }
@@ -286,39 +335,48 @@ export async function createStarDetail(renderer) {
    * Per-frame update — activates detail for all stars in the nearest system.
    * @returns {Set<string>} active body IDs (caller hides their instanced versions)
    */
-  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta) {
-    let anchorId = null;
+  function update(trackedId, cameraPos, bodyWorldPos, galaxyData, rotationTime, bodyMeta, cinemaMode) {
+    /* Set shared uTime across all materials */
+    vertUTime.value = rotationTime;
+    fragUTime.value = rotationTime;
+    torusVertUTime.value = rotationTime;
+    torusFragUTime.value = rotationTime;
 
-    /* If tracking a star, use it as anchor */
-    if (trackedId && galaxyData.bodies[trackedId]?.type === 'star') {
-      anchorId = trackedId;
+    const bodies = galaxyData.bodies;
+    if (!cachedStarIds) buildStarCache(bodies);
+
+    /* Rank every star by apparent size with per-star hysteresis so the pool serves
+       the top entries — neighboring giants can keep detail and glow simultaneously */
+    const candidates = [];
+    for (const id of cachedStarIds) {
+      const wp = bodyWorldPos.get(id);
+      if (!wp) continue;
+      const meta = bodyMeta?.get(id);
+      const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+      let visualRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+      if (pulsarIds.has(id)) visualRadius = Math.max(visualRadius, PULSAR_VISUAL_RADIUS);
+      const appSize = visualRadius / dist;
+      const threshold = activeIds.has(id) ? SIZE_RELEASE : SIZE_ACTIVATE;
+      if (appSize > threshold) candidates.push([id, appSize]);
     }
+    /* Rank hysteresis: actives get a 15% size bonus so a marginally bigger
+       newcomer can't thrash the pool cutoff frame-to-frame (mirrors planet-detail) */
+    candidates.sort((a, b) =>
+      b[1] * (activeIds.has(b[0]) ? 1.15 : 1) -
+      a[1] * (activeIds.has(a[0]) ? 1.15 : 1));
 
-    /* Otherwise find closest star by proximity */
-    if (!anchorId) {
-      if (!cachedStarIds) {
-        cachedStarIds = Object.keys(galaxyData.bodies).filter(id => galaxyData.bodies[id].type === 'star');
-      }
-      let closestDistSq = ACTIVATE_DIST * ACTIVATE_DIST;
-      for (const id of cachedStarIds) {
-        const wp = bodyWorldPos.get(id);
-        if (!wp) continue;
-        const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-        if (distSq < closestDistSq) {
-          closestDistSq = distSq;
-          anchorId = id;
-        }
+    const desired = new Set();
+    /* Tracked star's whole BFS family rides along so binary companions stay lit */
+    if (trackedId && bodies[trackedId]?.type === 'star') {
+      for (const id of getSystemStars(trackedId, bodies)) {
+        if (desired.size < POOL_SIZE) desired.add(id);
       }
     }
-
-    /* Determine which stars need detail */
-    const targetIds = anchorId
-      ? getSystemStars(anchorId, galaxyData.bodies)
-      : [];
-
-    /* Build set of desired IDs for fast lookup */
-    const desired = new Set(targetIds);
+    for (const [id] of candidates) {
+      if (desired.size >= POOL_SIZE) break;
+      desired.add(id);
+    }
 
     /* Deactivate pool entries no longer needed */
     for (const entry of pool) {
@@ -329,11 +387,13 @@ export async function createStarDetail(renderer) {
     }
 
     /* Activate new stars from the pool */
-    for (const id of targetIds) {
+    for (const id of desired) {
       if (activeIds.has(id)) continue;
+      const body = galaxyData.bodies[id];
+      if (!body) continue;
       const freeEntry = pool.find(e => !e.bodyId);
       if (!freeEntry) break;
-      activate(freeEntry, id, galaxyData.bodies[id]);
+      activate(freeEntry, id, body);
       activeIds.add(id);
     }
 
@@ -347,17 +407,34 @@ export async function createStarDetail(renderer) {
       const meta = bodyMeta?.get(entry.bodyId);
       if (meta) entry.group.scale.setScalar(meta.instanceScale * entry.radius);
 
+      /* Dither crossfade vs the instanced atlas star — same size metric as anchoring */
+      const fdx = cameraPos.x - wp.x, fdy = cameraPos.y - wp.y, fdz = cameraPos.z - wp.z;
+      const fDist = Math.sqrt(fdx * fdx + fdy * fdy + fdz * fdz) || 1e-6;
+      let fRadius = MARKER_RADIUS * (meta ? meta.instanceScale * (meta.mkRadius || 1) : 1);
+      if (entry.isPulsar) fRadius = Math.max(fRadius, PULSAR_VISUAL_RADIUS);
+      const appSize = fRadius / fDist;
+      const fade = Math.min(1, Math.max(0, (appSize - SIZE_ACTIVATE) / (SIZE_FULL - SIZE_ACTIVATE)));
+      fades.set(entry.bodyId, fade);
+      entry.pFade.value = fade;
+      /* Octave gate: extra fBm octaves ramp in continuously as the star fills the view */
+      entry.pGate.value = Math.min(1, Math.max(0, (appSize - 0.1) / 0.4));
+      entry.coronaMat.opacity = entry.baseCoronaOp * fade;
+      entry.haloMat.opacity = entry.baseHaloOp * fade;
+      if (entry.isPulsar) {
+        entry.pulsarGlowMat.opacity = fade;
+        entry.pulsarCoreMat.opacity = fade;
+        entry.pTorusIntensity.value = 2.0 * fade;
+      }
+
       _rotQuat.setFromAxisAngle(entry.rotAxis, entry.rotSpeed * rotationTime);
       _rotMat4.makeRotationFromQuaternion(_rotQuat);
       _rotMat3.setFromMatrix4(_rotMat4);
-      entry.mat.uniforms.uRotation.value.copy(_rotMat3);
-      entry.mat.uniforms.uTime.value = rotationTime;
+      entry.pRotation.value.copy(_rotMat3);
 
       /* Pulsar field torus: counter-scale + wobble around vertical axis */
       if (entry.isPulsar) {
         const gs = entry.group.scale.x;
         if (gs > 0) entry.torusMesh.scale.setScalar(1.0 / gs);
-        entry.torusMat.uniforms.uTime.value = rotationTime;
         const wobble = Math.sin(rotationTime * 0.25) * 0.08;
         entry.torusMesh.rotation.set(Math.PI / 2, wobble, 0);
       }
@@ -384,10 +461,17 @@ export async function createStarDetail(renderer) {
       entry.mat.dispose();
       entry.coronaMat.dispose();
       entry.haloMat.dispose();
+      entry.promMat.dispose();
       entry.torusMat.dispose();
       entry.pulsarGlowMat.dispose();
       entry.pulsarCoreMat.dispose();
     }
+  }
+
+  /* Body set or spectral classes changed — both caches rebuild lazily next update() */
+  function invalidateCaches() {
+    cachedStarIds = null;
+    pulsarIds = null;
   }
 
   /* Invalidate one star — force re-activation with fresh params */
@@ -396,7 +480,8 @@ export async function createStarDetail(renderer) {
       if (entry.bodyId === bodyId) { deactivate(entry); break; }
     }
     activeIds.delete(bodyId);
+    invalidateCaches();
   }
 
-  return { update, container, dispose, invalidateBody };
+  return { update, container, dispose, invalidateCaches, invalidateBody, fades };
 }

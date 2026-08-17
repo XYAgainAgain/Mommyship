@@ -99,6 +99,11 @@ The base frames above can be further modified at additional cost. Most frames av
 | Thrusters +5 | 250kcr | 500kcr | 1mcr | 1.5mcr | 2mcr | 2.5mcr |
 | Systems +5 | 150kcr | 300kcr | 600kcr | 900kcr | 1.2mcr | 1.5mcr |
 | Escape Pod +1 | 750kcr | 1.5mcr | 3mcr | 4.5mcr | 6mcr | 7.5mcr |
+| Cryopod +1 | — | 250kcr | 500kcr | 750mcr | 1mcr | 1.25mcr |
+| Crew Capacity +1 | 75kcr (max +1) | 150kcr | 300kcr | 450kcr | 600kcr | 750kcr |
+| Fuel Capacity +1 | — | 100kcr | 200kcr | 300kcr | 400kcr | 500kcr |
+| Passenger Capacity +1 | 25kcr (max +10) | 50kcr | 100kcr | 150kcr | 200kcr | 250kcr |
+| Cargo Capacity +1 | 37.5kcr | 75kcr | 150kcr | 225kcr | 300kcr | 375kcr |
 
 ## 1.3 UPGRADES & HARDPOINTS
 
@@ -183,6 +188,8 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Light Missile Launcher** | 5mcr | 2 weeks | Grants +15 to Battle. Many smaller explosives. |
 | **Particle Beam** | 2mcr | 2 weeks | Grants +5 to Battle. Enemy must make a Systems Check or increase their Radiation Level by 1. |
 | **Railgun** | 7mcr | 2 weeks | Grants +15 to Battle. Can be fired at Detection Range. |
+| **MILITARY HARDPOINTS** | — | — | — |
+| **Classified** | — | — | Not available to you. |
 
 ## 1.4 DRIVES
 
@@ -192,9 +199,9 @@ Jump-Drives don't require an Upgrade slot to install, but you may only have one 
 
 | DRIVE | COST | INST. | DESCRIPTION |
 | :---: | :---: | :---: | :---: |
-| **JUMP-1** | 10mcr | 1 month | Standard commercial Jump Drive. Allows for single system jumps. |
+| **JUMP-1** | 10mcr | 1 month | Standard commercial Jump Drive. Allows for single-system jumps. |
 | **JUMP-2** | 50mcr | 2 months | Standard military Jump Drive. Allows for 2-system jumps. |
-| **JUMP-3** | 100mcr | 3 months | Long Range, cutting edge Jump Drive. Allows for 3-system jumps. |
+| **JUMP-3** | 100mcr | 3 months | Long-range, cutting edge Jump Drive. Allows for 3-system jumps. |
 
 ## 1.5 USED AND SALVAGED UPGRADES
 

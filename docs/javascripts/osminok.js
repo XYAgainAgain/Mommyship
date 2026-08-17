@@ -1,6 +1,6 @@
 /* Osminok Ocean — bioluminescence, scroll effects, megastorm, and dive mode.
    Ecology pages: three bio layers with scroll-percentage zones.
-   Dive page: depth-mapped zones, rain/alt-lightning, TOC depth meter, marine snow. */
+   Dive page: depth-mapped zones, rain/alt-lightning, marine snow. */
 
 var osminokCleanup = null;
 
@@ -724,6 +724,9 @@ document$.subscribe(function () {
     bubbleCtx = bubbleCanvas.getContext('2d');
     bubbleCtx.scale(canvasScale, canvasScale);
 
+    /* Deepest possible bubble/formation maxDepth — below this the canvas is provably blank */
+    var BUBBLE_MAX_DEPTH = 18000;
+
     function makeBubble() {
       return {
         x: Math.random() * vw,
@@ -731,7 +734,7 @@ document$.subscribe(function () {
         speed: 4 + Math.random() * 10,
         radius: 0.5 + Math.random() * 7.5,
         opacity: 0.05 + Math.random() * 0.25,
-        maxDepth: Math.random() < 0.12 ? rand(14000, 18000) : Math.random() * 10000
+        maxDepth: Math.random() < 0.12 ? rand(14000, BUBBLE_MAX_DEPTH) : Math.random() * 10000
       };
     }
 
@@ -744,7 +747,7 @@ document$.subscribe(function () {
       var type = Math.random();
       var cx = rand(vw * 0.1, vw * 0.9);
       var cy = vh + rand(50, 200);
-      var f = { type: '', bubbles: [], maxDepth: rand(500, 18000), born: 0 };
+      var f = { type: '', bubbles: [], maxDepth: rand(500, BUBBLE_MAX_DEPTH), born: 0 };
 
       if (type < 0.4) {
         /* Stream — vertical column of 8–15 bubbles with staggered starts */
@@ -853,9 +856,17 @@ document$.subscribe(function () {
     }
 
     var lastBubbleMask = '';
+    var bubbleCleared = false;
     function bubbleLoop(now) {
       if (document.hidden) { bubbleAnimId = requestAnimationFrame(bubbleLoop); return; }
       var depth = window.scrollY / 10;
+      /* Every bubble/formation has depth-faded to zero — clear once, then skip draws */
+      if (depth > BUBBLE_MAX_DEPTH) {
+        if (!bubbleCleared) { bubbleCtx.clearRect(0, 0, vw, vh); bubbleCleared = true; }
+        bubbleAnimId = requestAnimationFrame(bubbleLoop);
+        return;
+      }
+      bubbleCleared = false;
       /* Dynamic mask tracks ocean surface — 100px fade (bottom 10% of 0m div) */
       var surfaceOnScreen = vh * 0.66 - window.scrollY;
       var fadeStart = Math.max(0, surfaceOnScreen).toFixed(0);
@@ -1012,10 +1023,31 @@ document$.subscribe(function () {
     }
 
     var lastFishMask = '';
+    var fishCleared = false;
     function fishLoop(now) {
       if (document.hidden) { fishAnimId = requestAnimationFrame(fishLoop); return; }
       var depth = window.scrollY / 10;
       var t = now * 0.001;
+
+      /* Determine how many fish should be active based on depth */
+      var maxFish = QUALITY.fish;
+      var targetCount;
+      if (depth < 200) targetCount = 0;
+      else if (depth < 500) targetCount = Math.floor(((depth - 200) / 300) * maxFish);
+      else if (depth < 3000) targetCount = maxFish;
+      else targetCount = 0;
+
+      /* No fish alive and none due to spawn — clear once, then skip draws */
+      var anyFishActive = false;
+      for (var fa = 0; fa < fish.length; fa++) {
+        if (fish[fa].active) { anyFishActive = true; break; }
+      }
+      if (!anyFishActive && targetCount === 0) {
+        if (!fishCleared) { fishCtx.clearRect(0, 0, vw, vh); fishCleared = true; }
+        fishAnimId = requestAnimationFrame(fishLoop);
+        return;
+      }
+      fishCleared = false;
       fishCtx.clearRect(0, 0, vw, vh);
 
       /* Same surface mask as bubbles */
@@ -1028,14 +1060,6 @@ document$.subscribe(function () {
         fishCanvas.style.webkitMaskImage = mask;
         lastFishMask = mask;
       }
-
-      /* Determine how many fish should be active based on depth */
-      var maxFish = QUALITY.fish;
-      var targetCount;
-      if (depth < 200) targetCount = 0;
-      else if (depth < 500) targetCount = Math.floor(((depth - 200) / 300) * maxFish);
-      else if (depth < 3000) targetCount = maxFish;
-      else targetCount = 0;
 
       /* Scatter at 3000m — fish jet upward in random directions */
       if (depth >= 3000 && !fishScattered) {
@@ -1148,6 +1172,14 @@ document$.subscribe(function () {
     creatureCtx = creatureCanvas.getContext('2d');
     creatureCtx.scale(creatureScale, creatureScale);
 
+    /* Increments once per drawn frame — continuously-varying gradients
+       (mood cycling, lure pulse) rebuild every 3rd frame off this. */
+    var creatureFrameCount = 0;
+
+    /* Union of all five creature systems' spawn bands (eels/blooms span the widest) */
+    var CREATURE_MIN_DEPTH = 200;
+    var CREATURE_MAX_DEPTH = 11000;
+
     /* Color interpolation for Thoughtwater mood cycling */
     function lerpColor(a, b, t) {
       return [
@@ -1217,7 +1249,7 @@ document$.subscribe(function () {
 
     function updateEels(depth, now) {
       var t = now * 0.001;
-      if (now > nextEelTime && depth >= 200 && depth <= 11000) {
+      if (now > nextEelTime && depth >= CREATURE_MIN_DEPTH && depth <= CREATURE_MAX_DEPTH) {
         var interval = spawnEel(depth);
         nextEelTime = now + interval;
       }
@@ -1477,11 +1509,15 @@ document$.subscribe(function () {
           else creatureCtx.lineTo(lpx, lpy);
         }
         creatureCtx.closePath();
-        var lureGrad = creatureCtx.createRadialGradient(lureX, lureY - lureH * 0.2, 0, lureX, lureY, lureH);
-        lureGrad.addColorStop(0, 'rgba(230, 240, 250,' + lureAlpha.toFixed(3) + ')');
-        lureGrad.addColorStop(0.5, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.7).toFixed(3) + ')');
-        lureGrad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.2).toFixed(3) + ')');
-        creatureCtx.fillStyle = lureGrad;
+        /* Pulse/jitter make this genuinely continuous — rebuilding every 3rd frame
+           instead of every frame is imperceptible but skips most allocations. */
+        if (creatureFrameCount % 3 === 0 || !d.lureGrad) {
+          d.lureGrad = creatureCtx.createRadialGradient(lureX, lureY - lureH * 0.2, 0, lureX, lureY, lureH);
+          d.lureGrad.addColorStop(0, 'rgba(230, 240, 250,' + lureAlpha.toFixed(3) + ')');
+          d.lureGrad.addColorStop(0.5, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.7).toFixed(3) + ')');
+          d.lureGrad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (lureAlpha * 0.2).toFixed(3) + ')');
+        }
+        creatureCtx.fillStyle = d.lureGrad;
         creatureCtx.fill();
       }
     }
@@ -1700,11 +1736,15 @@ document$.subscribe(function () {
           creatureCtx.beginPath();
           creatureCtx.ellipse(jx, jy, bw, bh, 0, Math.PI, 0, true);
           creatureCtx.closePath();
-          var bellGrad = creatureCtx.createRadialGradient(jx, jy - bh * 0.3, 0, jx, jy, bw);
-          bellGrad.addColorStop(0, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.6).toFixed(3) + ')');
-          bellGrad.addColorStop(0.7, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.25).toFixed(3) + ')');
-          bellGrad.addColorStop(1, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.05).toFixed(3) + ')');
-          creatureCtx.fillStyle = bellGrad;
+          /* Mood color hue-cycles continuously — rebuilding every 3rd frame
+             instead of every frame is imperceptible but skips most allocations. */
+          if (creatureFrameCount % 3 === 0 || !jf.bellGrad) {
+            jf.bellGrad = creatureCtx.createRadialGradient(jx, jy - bh * 0.3, 0, jx, jy, bw);
+            jf.bellGrad.addColorStop(0, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.6).toFixed(3) + ')');
+            jf.bellGrad.addColorStop(0.7, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.25).toFixed(3) + ')');
+            jf.bellGrad.addColorStop(1, 'rgba(' + mc[0] + ',' + mc[1] + ',' + mc[2] + ',' + (bellAlpha * 0.05).toFixed(3) + ')');
+          }
+          creatureCtx.fillStyle = jf.bellGrad;
           creatureCtx.fill();
 
           /* Tentacles — wavy lines trailing below the bell */
@@ -1736,6 +1776,27 @@ document$.subscribe(function () {
        Each bloom is a cluster of 6–12 "lobes" sharing one color. */
     var blooms = [];
     var nextBloomCheck = 0;
+
+    /* Bloom lobe colors are desaturated-with-depth but land on the same rounded
+       rgb repeatedly — cache the radial gradient as a sprite and reposition/scale
+       it with drawImage instead of allocating a fresh CanvasGradient every lobe. */
+    var bloomSprites = {};
+    function getBloomSprite(c) {
+      var key = c[0] + ',' + c[1] + ',' + c[2];
+      var sprite = bloomSprites[key];
+      if (sprite) return sprite;
+      sprite = document.createElement('canvas');
+      sprite.width = sprite.height = 256;
+      var sx = sprite.getContext('2d');
+      var grad = sx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      grad.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.7)');
+      grad.addColorStop(0.35, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.3)');
+      grad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+      sx.fillStyle = grad;
+      sx.fillRect(0, 0, 256, 256);
+      bloomSprites[key] = sprite;
+      return sprite;
+    }
 
     function spawnBloom(depth) {
       var params;
@@ -1774,8 +1835,8 @@ document$.subscribe(function () {
 
       if (now > nextBloomCheck) {
         nextBloomCheck = now + 5000;
-        if (depth >= 200 && depth <= 11000 && blooms.length < 3) spawnBloom(depth);
-        if (depth >= 200 && depth <= 11000 && blooms.length < 5 && Math.random() < 0.3) spawnBloom(depth);
+        if (depth >= CREATURE_MIN_DEPTH && depth <= CREATURE_MAX_DEPTH && blooms.length < 3) spawnBloom(depth);
+        if (depth >= CREATURE_MIN_DEPTH && depth <= CREATURE_MAX_DEPTH && blooms.length < 5 && Math.random() < 0.3) spawnBloom(depth);
       }
 
       for (var i = blooms.length - 1; i >= 0; i--) {
@@ -1817,23 +1878,30 @@ document$.subscribe(function () {
           var lr = lb.radius * (1 + noise(t * 0.3, lb.seed + 100) * 0.35);
           var la = lb.alphaBase * b.alpha * alphaScale;
 
-          var grad = creatureCtx.createRadialGradient(lx, ly, 0, lx, ly, lr);
-          grad.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (la * 0.7).toFixed(3) + ')');
-          grad.addColorStop(0.35, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (la * 0.3).toFixed(3) + ')');
-          grad.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
-          creatureCtx.beginPath();
-          creatureCtx.arc(lx, ly, lr, 0, Math.PI * 2);
-          creatureCtx.fillStyle = grad;
-          creatureCtx.fill();
+          var sprite = getBloomSprite(c);
+          creatureCtx.globalAlpha = la;
+          creatureCtx.drawImage(sprite, lx - lr, ly - lr, lr * 2, lr * 2);
+          creatureCtx.globalAlpha = 1;
         }
       }
     }
 
     /* Creature canvas rAF loop */
     var lastCreatureMask = '';
+    var creatureCleared = false;
     function creatureLoop(now) {
       if (document.hidden) { creatureAnimId = requestAnimationFrame(creatureLoop); return; }
       var depth = window.scrollY / 10;
+      /* Nothing alive and outside every spawn band — clear once, then skip draws */
+      if (eels.length === 0 && darkmaws.length === 0 && spiralGroups.length === 0 &&
+          jellyClusters.length === 0 && blooms.length === 0 &&
+          (depth < CREATURE_MIN_DEPTH || depth > CREATURE_MAX_DEPTH)) {
+        if (!creatureCleared) { creatureCtx.clearRect(0, 0, vw, vh); creatureCleared = true; }
+        creatureAnimId = requestAnimationFrame(creatureLoop);
+        return;
+      }
+      creatureCleared = false;
+      creatureFrameCount++;
       creatureCtx.clearRect(0, 0, vw, vh);
 
       /* Surface mask — same as bubbles/shimmerfish */
@@ -1862,6 +1930,7 @@ document$.subscribe(function () {
      Splits into per-character spans, then rAF applies sine wave flow (R→L)
      plus layered-sine noise for organic scale/skew jitter. */
   var abyssUnknownAnimId = null;
+  var unknownObserver = null;
   if (isDive && !reducedMotion) {
     /* attr_list can't parse headings made entirely of punctuation */
     var unknownH3 = null;
@@ -1895,6 +1964,7 @@ document$.subscribe(function () {
       var nextDotPulse = performance.now() + rand(2000, 5000);
 
       var unknownFrame = 0;
+      var unknownRunning = false;
       function animateUnknown(now) {
         if (document.hidden) { abyssUnknownAnimId = requestAnimationFrame(animateUnknown); return; }
         unknownFrame++;
@@ -1971,7 +2041,20 @@ document$.subscribe(function () {
 
         abyssUnknownAnimId = requestAnimationFrame(animateUnknown);
       }
-      abyssUnknownAnimId = requestAnimationFrame(animateUnknown);
+
+      /* ?????? sits ~125,000px down — don't animate it until scroll gets close */
+      unknownObserver = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) {
+          if (!unknownRunning) {
+            unknownRunning = true;
+            abyssUnknownAnimId = requestAnimationFrame(animateUnknown);
+          }
+        } else if (unknownRunning) {
+          unknownRunning = false;
+          if (abyssUnknownAnimId) cancelAnimationFrame(abyssUnknownAnimId);
+        }
+      }, { rootMargin: '200% 0px' });
+      unknownObserver.observe(unknownH3);
     }
   }
 
@@ -2092,22 +2175,11 @@ document$.subscribe(function () {
   var abyssFadeZone = 300;
   var abyssWaveOverhang = 150;
   var header = document.querySelector('.md-header');
-
-  /* Phase 4: TOC depth meter — cached once per page lifecycle (instant-nav
-     reinits everything via document$.subscribe, so no stale refs). */
-  var lastTocDepth = -999;
-  var tocEntries = [];
-  if (isDive) {
-    var rawTocLinks = document.querySelectorAll('.md-nav--secondary .md-nav__link');
-    for (var ti = 0; ti < rawTocLinks.length; ti++) {
-      var tocHref = rawTocLinks[ti].getAttribute('href');
-      if (!tocHref || tocHref.charAt(0) !== '#') continue;
-      var tocSlug = tocHref.slice(1);
-      var tocD = parseInt(tocSlug);
-      if (isNaN(tocD)) { if (tocSlug === '_1') tocD = 12500; else continue; }
-      tocEntries.push({ el: rawTocLinks[ti], depth: tocD });
-    }
-  }
+  /* Last-value caches for onScroll's per-tick style writes — deep scroll pins
+     most of these at a stable value for the rest of the descent. */
+  var lastHeaderAlpha = -1;
+  var lastSnowClip = null;
+  var lastSnowOpacity = null;
 
   /* Dive Audio — scroll-reactive spatial audio with depth-mapped crossfades.
      All state lives inside the closure returned by initDiveAudio(). */
@@ -2310,18 +2382,29 @@ document$.subscribe(function () {
     /* Passby pool config — add new rows to extend.
        Overlapping depth ranges get weighted random selection. */
     var passbyPools = [
-      { id: 'A', count: 18, min: 200,  max: 4000  },
-      { id: 'B', count: 14, min: 3000, max: 7000  },
-      { id: 'C', count: 13, min: 6000, max: 10000 },
-      { id: 'D', count: 12, min: 9000, max: 11000 },
-      { id: 'E', count: 7,  min: 200,  max: 11000 }
+      { id: 'A', count: 18, min: 200,  max: 4000,  loaded: false },
+      { id: 'B', count: 14, min: 3000, max: 7000,  loaded: false },
+      { id: 'C', count: 13, min: 6000, max: 10000, loaded: false },
+      { id: 'D', count: 12, min: 9000, max: 11000, loaded: false },
+      { id: 'E', count: 7,  min: 200,  max: 11000, loaded: false }
     ];
+
+    function loadPassbyPool(p) {
+      if (p.loaded) return;
+      p.loaded = true;
+      for (var i = 1; i <= p.count; i++)
+        loadBuffer('Passby' + p.id + i, audioBasePath + 'passby/Passby' + p.id + i + '.ogg');
+    }
 
     function loadEarly() {
       nearSurf.load();
+      /* Only the shallowest pool(s) decode on "Dive!" — deeper ones lazy-load in updateDepth */
+      var shallowestMin = passbyPools[0].min;
+      for (var pm = 1; pm < passbyPools.length; pm++) {
+        if (passbyPools[pm].min < shallowestMin) shallowestMin = passbyPools[pm].min;
+      }
       passbyPools.forEach(function(p) {
-        for (var i = 1; i <= p.count; i++)
-          loadBuffer('Passby' + p.id + i, audioBasePath + 'passby/Passby' + p.id + i + '.ogg');
+        if (p.min === shallowestMin) loadPassbyPool(p);
       });
     }
 
@@ -2405,6 +2488,11 @@ document$.subscribe(function () {
       if (!abyssLoaded && depth > 6000) {
         abyssLoaded = true;
         abyss.load();
+      }
+      /* Passby pools decode 500m before their range starts, not all at once */
+      for (var pIdx = 0; pIdx < passbyPools.length; pIdx++) {
+        var pool = passbyPools[pIdx];
+        if (!pool.loaded && depth > pool.min - 500) loadPassbyPool(pool);
       }
 
       /* Plunge one-shot — triggers at 50% of the surface zone for earlier impact */
@@ -2636,7 +2724,11 @@ document$.subscribe(function () {
           L.hidden = false;
         }
         if (!L.hidden) {
-          L.el.style.opacity = Math.min(Math.max(opacity, 0), 1).toFixed(2);
+          var opStr = Math.min(Math.max(opacity, 0), 1).toFixed(2);
+          if (opStr !== L.lastOpacity) {
+            L.el.style.opacity = opStr;
+            L.lastOpacity = opStr;
+          }
           L.el.style.transform = 'translateY(' + (-window.scrollY * L.rate).toFixed(0) + 'px)';
         }
       }
@@ -2649,22 +2741,21 @@ document$.subscribe(function () {
         snowContainer.style.transform = 'translateY(' + snowOff.toFixed(0) + 'px)';
         var surfacePx = vh * 0.66;
         var clipTop = Math.max(0, surfacePx - window.scrollY);
-        snowContainer.style.clipPath = clipTop > 0 ? 'inset(' + clipTop.toFixed(0) + 'px 0 0 0)' : 'none';
+        var snowClip = clipTop > 0 ? 'inset(' + clipTop.toFixed(0) + 'px 0 0 0)' : 'none';
+        if (snowClip !== lastSnowClip) {
+          snowContainer.style.clipPath = snowClip;
+          lastSnowClip = snowClip;
+        }
         /* Fade in 100–500m, full 500–10,000m, fade out 10,000–12,000m */
         var snowFade;
         if (depth < 100) snowFade = 0;
         else if (depth < 500) snowFade = (depth - 100) / 400;
         else if (depth < 10000) snowFade = 1;
         else snowFade = Math.max(0.03, 1 - (depth - 10000) / 2000);
-        snowContainer.style.opacity = snowFade.toFixed(2);
-      }
-
-      if (Math.abs(depth - lastTocDepth) > 25) {
-        lastTocDepth = depth;
-        for (var i = 0; i < tocEntries.length; i++) {
-          var distance = Math.abs(depth - tocEntries[i].depth);
-          var t = Math.min(distance / 2000, 1);
-          tocEntries[i].el.style.setProperty('opacity', (1 - t * t).toFixed(2), 'important');
+        var snowFadeR = snowFade.toFixed(2);
+        if (snowFadeR !== lastSnowOpacity) {
+          snowContainer.style.opacity = snowFadeR;
+          lastSnowOpacity = snowFadeR;
         }
       }
 
@@ -2708,11 +2799,15 @@ document$.subscribe(function () {
       } else {
         headerAlpha = pct < 0.8 ? (1 - pct / 0.8) * 0.92 : 0;
       }
-      header.style.setProperty('background', 'rgba(18,25,38,' + headerAlpha.toFixed(2) + ')', 'important');
-      header.style.setProperty('border-bottom-color', 'rgba(40,55,75,' + (headerAlpha * 0.27).toFixed(2) + ')', 'important');
-      var blurVal = headerAlpha > 0.01 ? 'blur(' + (headerAlpha * 10).toFixed(0) + 'px)' : 'none';
-      header.style.setProperty('backdrop-filter', blurVal, 'important');
-      header.style.setProperty('-webkit-backdrop-filter', blurVal, 'important');
+      var headerAlphaR = headerAlpha.toFixed(2);
+      if (headerAlphaR !== lastHeaderAlpha) {
+        lastHeaderAlpha = headerAlphaR;
+        header.style.setProperty('background', 'rgba(18,25,38,' + headerAlphaR + ')', 'important');
+        header.style.setProperty('border-bottom-color', 'rgba(40,55,75,' + (headerAlpha * 0.27).toFixed(2) + ')', 'important');
+        var blurVal = headerAlpha > 0.01 ? 'blur(' + (headerAlpha * 10).toFixed(0) + 'px)' : 'none';
+        header.style.setProperty('backdrop-filter', blurVal, 'important');
+        header.style.setProperty('-webkit-backdrop-filter', blurVal, 'important');
+      }
     }
 
     /* Brightness ramp + abyss mask (ecology only — dive layers handle themselves) */
@@ -2780,6 +2875,7 @@ document$.subscribe(function () {
     if (fishMouseHandler) document.removeEventListener('mousemove', fishMouseHandler);
     if (fishCanvas) fishCanvas.remove();
     if (abyssUnknownAnimId) cancelAnimationFrame(abyssUnknownAnimId);
+    if (unknownObserver) unknownObserver.disconnect();
     if (creatureAnimId) cancelAnimationFrame(creatureAnimId);
     if (creatureCanvas) creatureCanvas.remove();
     if (eatCheckInterval) clearInterval(eatCheckInterval);
@@ -2790,7 +2886,6 @@ document$.subscribe(function () {
         if (n.nodeType === 3 && n.textContent.trim()) n.textContent = '\n  Back to top\n';
       });
     }
-    for (var i = 0; i < tocEntries.length; i++) tocEntries[i].el.style.removeProperty('opacity');
     if (diveAudio) { diveAudio.cleanup(); diveAudio = null; }
     var diveOverlay = document.getElementById('dive-overlay');
     if (diveOverlay) diveOverlay.remove();

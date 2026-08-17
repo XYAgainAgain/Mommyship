@@ -2,6 +2,6 @@
 site/
 docs/.obsidian/
 docs/*.canvas
+docs/galaxy/galaxy-update.json
 .cache/
 .dev/
-docs/galaxy/galaxy-update.json

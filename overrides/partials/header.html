@@ -9,7 +9,15 @@
 {% endif %}
 <header class="{{ class }}" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="{{ lang.t('header') }}">
-    <a href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" title="Fly Home!" class="md-header__button md-logo" aria-label="Fly Home!" data-md-component="logo">
+    {#- On the homepage the ship flies you to the galaxy; everywhere else it flies you home -#}
+    {% if page and page.url == '' %}
+      {% set logo_href = 'galaxy.html' | url %}
+      {% set logo_title = "Fly to the Galaxy!" %}
+    {% else %}
+      {% set logo_href = config.extra.homepage | d(nav.homepage.url, true) | url %}
+      {% set logo_title = "Fly Home!" %}
+    {% endif %}
+    <a href="{{ logo_href }}" title="{{ logo_title }}" class="md-header__button md-logo" aria-label="{{ logo_title }}" data-md-component="logo">
       {% include "partials/logo.html" %}
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -56,8 +64,8 @@
     {% if config.extra.alternate %}
       {% include "partials/alternate.html" %}
     {% endif %}
-    {% if "material/search" in config.plugins %}
-      {% set search = config.plugins["material/search"] | attr("config") %}
+    {% if "search" in config.plugins %}
+      {% set search = config.plugins["search"] | attr("config") %}
       {% if search.enabled %}
         <label class="md-header__button md-icon" for="__search">
           {% set icon = config.theme.icon.search or "material/magnify" %}

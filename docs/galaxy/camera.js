@@ -186,9 +186,13 @@ export function createCamera(renderer) {
   function setMuseMode(enabled) {
     museMode = enabled;
     if (enabled) {
+      /* Re-entry mid-exit: that ease's destination is the true pre-Muse pose,
+         and the ease must die or it fights the entry spiral */
+      const exiting = museExit;
+      museExit = null;
       preMuse = {
-        pos: camera.position.clone(),
-        target: controls.target.clone(),
+        pos: exiting ? exiting.to : camera.position.clone(),
+        target: exiting ? exiting.toTarget : controls.target.clone(),
         minDist: controls.minDistance,
         maxDist: controls.maxDistance
       };
@@ -305,5 +309,18 @@ export function createCamera(renderer) {
     };
   }
 
-  return { camera, controls, update, resize, setMuseMode, setTrackMode, flyTo, snapToOrbit };
+  function flyHome() {
+    if (museMode) return;
+    const homePos = new THREE.Vector3(0, 350, 550);
+    flyAnim = {
+      startOffset: camera.position.clone().sub(controls.target),
+      endOffset: homePos.clone(),
+      targetPos: new THREE.Vector3(0, 0, 0),
+      startTarget: controls.target.clone(),
+      start: performance.now(),
+      duration: 1200
+    };
+  }
+
+  return { camera, controls, update, resize, setMuseMode, setTrackMode, flyTo, flyHome, snapToOrbit };
 }

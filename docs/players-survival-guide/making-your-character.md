@@ -86,33 +86,33 @@ To choose a Skill, you must have at least one prerequisite Skill (a Skill that h
 
 There are eight class options, as detailed here:
 
-1. **Adherent**: Theology, Mysticism.
-     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill.
+1. **Adherent**: Theology, Mysticism
+     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
 
-2. **Agent**: Computers, Hacking, Influence.
-     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill.
+2. **Agent**: Computers, Hacking, Influence
+     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
 
-3. **Marine**: Military Training, Athletics, Firearms OR Hand-to-Hand Combat
-     - **Bonus:** 1 Expert Skill with prerequisite or 2 Trained Skills.
+3. **Marine**: Military Training, Athletics, Firearms or Hand-to-Hand Combat
+     - **Bonus:** 1 Expert Skill with prerequisite or 2 Trained Skills
 
-4. **Psion**: Psychokinesis with prereqs.
-     - **Bonus:** 1 Trained Skill.
+4. **Psion**: Psychokinesis with prerequisites
+     - **Bonus:** 1 Trained Skill
 
-5. **Scientist**: Any Master Skill with prereqs, except: Command, Psychokinesis, Infiltration.
-     - **Bonus:** 1 Trained Skill.
+5. **Scientist**: Any Master Skill with prerequisites, except: Command, Psychokinesis, Infiltration
+     - **Bonus:** 1 Trained Skill
 
-6. **Scum**: Rimwise, Hand-to-Hand Combat OR Firearms.
-     - **Bonus:** 3 Trained Skills.
+6. **Scum**: Rimwise, Hand-to-Hand Combat or Firearms
+     - **Bonus:** 3 Trained Skills
 
-7. **Teamster**: Industrial Equipment, Zero-G.
-     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill.
+7. **Teamster**: Industrial Equipment, Zero-G
+     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
 
-8. **Virtuoso**: Art, Influence, Linguistics.
-     - **Bonus:** 1 Expert Skill with prerequisite.
+8. **Virtuoso**: Art, Influence, Linguistics
+     - **Bonus:** 1 Expert Skill with prerequisite
 
 ## 1.7 ROLL FOR GEAR
 
-Roll for a **Loadout** based on your character's class.
+Roll for a **Loadout** based on your character's class. If your Warden is nice, they might let you roll twice and choose.
 
 | D10 | ADHERENT                                                                                                         | AGENT                                                                                                               | MARINE                                                                                                                    | PSION                                                                                                             |
 | :-: | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -220,7 +220,7 @@ Roll for a **Starting Patch**.
 | 45 | NASA Logo [+2 Archeology] |
 | 46 | Smiley Face (glow in the dark) [+2 Art] |
 | 47 | (ass)-teroids [+2 Asteroid Mining] |
-| 48 | (dumbells with asteroids as weights) [+2 Athletics] |
+| 48 | (dumbbells with asteroids as weights) [+2 Athletics] |
 | 49 | "Meatbag" [+2 Body Save] |
 | 50 | "Biosphere Dweller" [+2 Botany] |
 | 51 | Periodic Table [+2 Chemistry] |

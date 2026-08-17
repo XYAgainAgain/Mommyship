@@ -15,7 +15,7 @@ function grad3d(hash, x, y, z) {
   return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
 }
 
-function buildPermutationTable(rng) {
+export function buildPermutationTable(rng) {
   const p = new Uint8Array(256);
   for (let i = 0; i < 256; i++) p[i] = i;
   for (let i = 255; i > 0; i--) {
@@ -27,7 +27,7 @@ function buildPermutationTable(rng) {
   return perm;
 }
 
-function perlin3d(x, y, z, perm) {
+export function perlin3d(x, y, z, perm) {
   const X = Math.floor(x) & 255;
   const Y = Math.floor(y) & 255;
   const Z = Math.floor(z) & 255;

@@ -5,6 +5,12 @@ var MIN_DIST = 20;
 var MAX_DIST = 900;
 var SRC_PATH = 'galaxy/audio/HopefulHole.ogg';
 
+/* Autoplay blocks are expected (the gesture retry handles them); anything else is a real failure */
+export function warnPlay(err) {
+  if (err && err.name === 'NotAllowedError') return;
+  console.warn('[galaxy audio] playback failed', err);
+}
+
 export function createAudio(camera) {
   var ctx = null;
   var masterGain = null;
@@ -13,20 +19,31 @@ export function createAudio(camera) {
 
   function initOnGesture() {
     if (started) return;
+    /* Latched up front so concurrent gestures can't double-init; released below on failure */
     started = true;
-    ctx = new AudioContext();
-    masterGain = ctx.createGain();
-    masterGain.gain.value = 0;
-    masterGain.connect(ctx.destination);
-    loopTrack = createLoopTrack(ctx, SRC_PATH, masterGain);
-    loopTrack.play();
+    if (!ctx) {
+      ctx = new AudioContext();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0;
+      masterGain.connect(ctx.destination);
+      loopTrack = createLoopTrack(ctx, SRC_PATH, masterGain);
+    }
+    if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+    Promise.resolve(loopTrack.play()).catch(function(err) {
+      started = false;
+      warnPlay(err);
+      armGesture();
+    });
   }
 
   /* Web Audio requires user gesture — attach to common interactions */
   var gestureEvents = ['click', 'keydown', 'pointerdown'];
-  gestureEvents.forEach(function(evt) {
-    window.addEventListener(evt, initOnGesture, { once: true });
-  });
+  function armGesture() {
+    gestureEvents.forEach(function(evt) {
+      window.addEventListener(evt, initOnGesture, { once: true });
+    });
+  }
+  armGesture();
 
   var externalGain = 1.0;
 
@@ -88,7 +105,7 @@ function createLoopTrack(ctx, src, outputNode) {
     }
 
     fadingIn.currentTime = 0;
-    fadingIn.play().catch(function() {});
+    fadingIn.play().catch(warnPlay);
 
     /* Exponential ramp — time constant = XFADE/4 reaches ~98% in XFADE seconds */
     gOut.gain.setTargetAtTime(0, now, XFADE / 4);
@@ -107,7 +124,7 @@ function createLoopTrack(ctx, src, outputNode) {
   elB.addEventListener('timeupdate', onTimeUpdate);
 
   return {
-    play: function() { elA.play().catch(function() {}); },
+    play: function() { return elA.play(); },
     pause: function() {
       elA.pause();
       elB.pause();

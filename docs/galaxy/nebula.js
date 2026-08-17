@@ -1,6 +1,10 @@
 import * as THREE from 'three';
-import { loadShader } from './shaders.js';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { cos, Discard, float, Fn, If, length, mix, mul, sin, smoothstep, uv, varyingProperty, vec2, vec3, vec4 } from 'three/tsl';
 import { createRng } from './rng.js';
+
+import { main as nebulaVert, uTime } from './tsl/vert/nebula.tsl.js';
+import { main as nebulaFrag, hash, noise } from './tsl/frag/nebula.tsl.js';
 
 const GALAXY_RADIUS = 450;
 const SPIRAL_FACTOR = -5.0;
@@ -96,12 +100,8 @@ function scatterParticles(placements, perSphere, rng, opts) {
   const total = placements.length * perSphere;
   const positions  = new Float32Array(total * 3);
   const colors     = new Float32Array(total * 3);
-  const sizes      = new Float32Array(total);
-  const brightness = new Float32Array(total);
-  const radii      = new Float32Array(total);
-  const stretches  = new Float32Array(total);
-  const angles     = new Float32Array(total);
-  const phases     = new Float32Array(total);
+  const packedA    = new Float32Array(total * 4);
+  const anglePhase = new Float32Array(total * 2);
 
   let placed = 0;
   for (const p of placements) {
@@ -110,80 +110,66 @@ function scatterParticles(placements, perSphere, rng, opts) {
       positions[placed * 3]     = p.x + rng.gauss() * scatter;
       positions[placed * 3 + 1] = p.y + rng.gauss() * scatter * opts.ySquash;
       positions[placed * 3 + 2] = p.z + rng.gauss() * scatter;
-      radii[placed] = p.radius;
 
       const blend = rng.next();
       colors[placed * 3]     = p.color.r * (1 - blend) + p.color2.r * blend;
       colors[placed * 3 + 1] = p.color.g * (1 - blend) + p.color2.g * blend;
       colors[placed * 3 + 2] = p.color.b * (1 - blend) + p.color2.b * blend;
 
-      sizes[placed] = opts.minSize + rng.next() * (opts.maxSize - opts.minSize);
-      brightness[placed] = opts.minBright + rng.next() * (opts.maxBright - opts.minBright);
-      stretches[placed] = 0.4 + rng.next() * 0.6;
-      angles[placed] = rng.next() * Math.PI;
-      phases[placed] = rng.next() * 100.0;
+      /* Pack size, brightness, radius, stretch into vec4 */
+      packedA[placed * 4]     = opts.minSize + rng.next() * (opts.maxSize - opts.minSize);
+      packedA[placed * 4 + 1] = opts.minBright + rng.next() * (opts.maxBright - opts.minBright);
+      packedA[placed * 4 + 2] = p.radius;
+      packedA[placed * 4 + 3] = 0.4 + rng.next() * 0.6;
+
+      anglePhase[placed * 2]     = rng.next() * Math.PI;
+      anglePhase[placed * 2 + 1] = rng.next() * 100.0;
       placed++;
     }
   }
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position',    new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color',       new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('aSize',       new THREE.BufferAttribute(sizes, 1));
-  geo.setAttribute('aBrightness', new THREE.BufferAttribute(brightness, 1));
-  geo.setAttribute('aRadius',     new THREE.BufferAttribute(radii, 1));
-  geo.setAttribute('aStretch',    new THREE.BufferAttribute(stretches, 1));
-  geo.setAttribute('aAngle',      new THREE.BufferAttribute(angles, 1));
-  geo.setAttribute('aPhase',      new THREE.BufferAttribute(phases, 1));
+  const base = new THREE.PlaneGeometry(1, 1);
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = base.index;
+  geo.setAttribute('position', base.getAttribute('position'));
+  geo.setAttribute('uv',       base.getAttribute('uv'));
+  geo.setAttribute('normal',   base.getAttribute('normal'));
+  geo.setAttribute('aOffset',     new THREE.InstancedBufferAttribute(positions, 3));
+  geo.setAttribute('color',       new THREE.InstancedBufferAttribute(colors, 3));
+  geo.setAttribute('aPackedA',    new THREE.InstancedBufferAttribute(packedA, 4));
+  geo.setAttribute('aAnglePhase', new THREE.InstancedBufferAttribute(anglePhase, 2));
+  geo.instanceCount = placed;
 
   return { geo, count: placed };
 }
 
-const darkFrag = `
-precision highp float;
-varying vec3 vColor;
-varying float vBrightness;
-varying float vStretch;
-varying float vAngle;
-varying float vPhase;
+/* Dark nebula frag — inline TSL for multiply-blended dust absorption.
+   Uses hash/noise from the emission nebula frag since the algorithm is identical. */
+const darkVColor = varyingProperty('vec3', 'vColor');
+const darkVBrightness = varyingProperty('float', 'vBrightness');
+const darkVStretch = varyingProperty('float', 'vStretch');
+const darkVAngle = varyingProperty('float', 'vAngle');
+const darkVPhase = varyingProperty('float', 'vPhase');
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-void main() {
-  vec2 uv = gl_PointCoord - vec2(0.5);
-  float cosA = cos(vAngle);
-  float sinA = sin(vAngle);
-  vec2 rotated = vec2(uv.x * cosA - uv.y * sinA, uv.x * sinA + uv.y * cosA);
-  rotated.y /= vStretch;
-  float warp = noise(rotated * 3.0 + vPhase) * 0.15;
-  float dist = length(rotated) + warp;
-  if (dist > 0.5) discard;
-  float shape = smoothstep(0.5, 0.0, dist);
-  shape *= shape;
-  vec3 tint = mix(vec3(1.0), vColor, shape * vBrightness);
-  gl_FragColor = vec4(tint, 1.0);
-}
-`;
+const darkFragNode = /*@__PURE__*/ Fn(() => {
+  const uvCoord = uv().sub(vec2(0.5));
+  const cosA = cos(darkVAngle);
+  const sinA = sin(darkVAngle);
+  const rotated = vec2(
+    uvCoord.x.mul(cosA).sub(uvCoord.y.mul(sinA)),
+    uvCoord.x.mul(sinA).add(uvCoord.y.mul(cosA))
+  ).toVar();
+  rotated.y.divAssign(darkVStretch);
+  const warp = noise(rotated.mul(3.0).add(darkVPhase)).mul(0.15);
+  const dist = length(rotated).add(warp);
+  If(dist.greaterThan(0.5), () => { Discard(); });
+  const shape = smoothstep(0.5, 0.0, dist).toVar();
+  shape.mulAssign(shape);
+  const tint = mix(vec3(1.0), darkVColor, shape.mul(darkVBrightness));
+  return vec4(tint, 1.0);
+});
 
 export async function createNebula(scene) {
-  const [nebulaVert, nebulaFrag] = await Promise.all([
-    loadShader('galaxy/shaders/nebula.vert'),
-    loadShader('galaxy/shaders/nebula.frag')
-  ]);
-
   /* Same seed as volumetric.js so billboard clusters align with raymarched spheres */
   const volRng = createRng(42069);
 
@@ -265,70 +251,56 @@ export async function createNebula(scene) {
     minBright: 0.25, maxBright: 0.5
   });
 
-  const emissionMat = new THREE.ShaderMaterial({
-    vertexShader: nebulaVert,
-    fragmentShader: nebulaFrag,
-    uniforms: {
-      uViewHeight: { value: window.innerHeight },
-      uTime: { value: 0 }
-    },
-    vertexColors: true,
-    blending: THREE.CustomBlending,
-    blendEquation: THREE.AddEquation,
-    blendSrc: THREE.OneFactor,
-    blendDst: THREE.OneMinusSrcColorFactor,
-    depthWrite: false,
-    transparent: true
-  });
+  /* Emission + flower: screen-style blending (additive with source color attenuation) */
+  const emissionMat = new MeshBasicNodeMaterial();
+  emissionMat.positionNode = nebulaVert();
+  emissionMat.fragmentNode = nebulaFrag();
+  emissionMat.blending = THREE.CustomBlending;
+  emissionMat.blendEquation = THREE.AddEquation;
+  emissionMat.blendSrc = THREE.OneFactor;
+  emissionMat.blendDst = THREE.OneMinusSrcColorFactor;
+  emissionMat.depthWrite = false;
+  emissionMat.transparent = true;
+  emissionMat.side = THREE.DoubleSide;
 
-  const emissionMesh = new THREE.Points(emission.geo, emissionMat);
+  const emissionMesh = new THREE.Mesh(emission.geo, emissionMat);
   emissionMesh.renderOrder = -1;
+  emissionMesh.frustumCulled = false;
   scene.add(emissionMesh);
 
-  const flowerMat = new THREE.ShaderMaterial({
-    vertexShader: nebulaVert,
-    fragmentShader: nebulaFrag,
-    uniforms: {
-      uViewHeight: { value: window.innerHeight },
-      uTime: { value: 0 }
-    },
-    vertexColors: true,
-    blending: THREE.CustomBlending,
-    blendEquation: THREE.AddEquation,
-    blendSrc: THREE.OneFactor,
-    blendDst: THREE.OneMinusSrcColorFactor,
-    depthWrite: false,
-    transparent: true
-  });
+  const flowerMat = new MeshBasicNodeMaterial();
+  flowerMat.positionNode = nebulaVert();
+  flowerMat.fragmentNode = nebulaFrag();
+  flowerMat.blending = THREE.CustomBlending;
+  flowerMat.blendEquation = THREE.AddEquation;
+  flowerMat.blendSrc = THREE.OneFactor;
+  flowerMat.blendDst = THREE.OneMinusSrcColorFactor;
+  flowerMat.depthWrite = false;
+  flowerMat.transparent = true;
+  flowerMat.side = THREE.DoubleSide;
 
-  const flowerMesh = new THREE.Points(flowers.geo, flowerMat);
+  const flowerMesh = new THREE.Mesh(flowers.geo, flowerMat);
   flowerMesh.renderOrder = -1;
+  flowerMesh.frustumCulled = false;
   scene.add(flowerMesh);
 
-  const darkMat = new THREE.ShaderMaterial({
-    vertexShader: nebulaVert,
-    fragmentShader: darkFrag,
-    uniforms: {
-      uViewHeight: { value: window.innerHeight },
-      uTime: { value: 0 }
-    },
-    vertexColors: true,
-    blending: THREE.MultiplyBlending,
-    depthWrite: false,
-    transparent: true
-  });
+  /* Dark dust: multiply-blending dims the starfield behind */
+  const darkMat = new MeshBasicNodeMaterial();
+  darkMat.positionNode = nebulaVert();
+  darkMat.fragmentNode = darkFragNode();
+  darkMat.blending = THREE.MultiplyBlending;
+  darkMat.premultipliedAlpha = true;
+  darkMat.depthWrite = false;
+  darkMat.transparent = true;
+  darkMat.side = THREE.DoubleSide;
 
-  const darkMesh = new THREE.Points(dark.geo, darkMat);
+  const darkMesh = new THREE.Mesh(dark.geo, darkMat);
   darkMesh.renderOrder = -2;
+  darkMesh.frustumCulled = false;
   scene.add(darkMesh);
 
   function update(delta, elapsed) {
-    emissionMat.uniforms.uViewHeight.value = window.innerHeight;
-    emissionMat.uniforms.uTime.value = elapsed;
-    flowerMat.uniforms.uViewHeight.value = window.innerHeight;
-    flowerMat.uniforms.uTime.value = elapsed;
-    darkMat.uniforms.uViewHeight.value = window.innerHeight;
-    darkMat.uniforms.uTime.value = elapsed;
+    uTime.value = elapsed;
   }
 
   return { emissionMesh, flowerMesh, darkMesh, update };

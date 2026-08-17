@@ -85,7 +85,7 @@ D.A.V.E. has one Utility slot, which can be used to install one of the following
 - **Long-Range Comms:** Communication device for use in surface-to-ship communication.
 - **Infrared Array:** Allows the wearer to see heat signatures, sometimes up to several hours old.
 - **Integrated Terminal:** Interface which allows the user to hack into external computers and networks, as well as perform standard computational tasks. 
-- **Radio Jammer:** When activated, renders all radio signals within Contact Range incomprehensible.
+- **Radio Jammer:** When activated, renders all radio signals within Extreme Range incomprehensible.
 - **Winch**: 50m retractable high-tension cable with hook.
 
 **Premium Utilities (100kcr)**

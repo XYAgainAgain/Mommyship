@@ -30,9 +30,17 @@ const ATMO_COLORS = {
  * Parse a MK string like "M4V", "B3III", "DA2", "G4IV+L2V" into shader params.
  * @param {string} raw - spectralClass from galaxy.json
  * @param {number} visualSize - body.visual.size (0.5–3.0), used as fallback
- * @returns {{ lowTemp, highTemp, granScale, spotAmp, slopeness, emissive, bubbleAmp, radius, atmoColor, lumClass }}
+ * @returns {{ lowTemp, highTemp, granScale, cellScale, spotAmp, slopeness, emissive, bubbleAmp, radius, atmoColor, lumClass }}
  */
 export function parseMK(raw, visualSize) {
+  const params = parseMKCore(raw, visualSize);
+  /* Supergranule frequency scales with size (bigger stars show MORE cells, capped
+     against aliasing) — derived here so bake and detail get the identical value */
+  params.cellScale = 2.0 * Math.min(Math.max(params.radius, 0.4), 2.2);
+  return params;
+}
+
+function parseMKCore(raw, visualSize) {
   if (!raw) return defaults(visualSize);
   const s = raw.trim().toUpperCase();
 
@@ -90,7 +98,7 @@ export function parseMK(raw, visualSize) {
   /* Subdwarf — same as base class but 40% radius */
   if (primary.startsWith('SD') && primary.length > 2) {
     const base = primary.slice(2);
-    const params = parseMK(base, visualSize);
+    const params = parseMKCore(base, visualSize);
     params.radius *= 0.4;
     return params;
   }
