@@ -1,7 +1,6 @@
 // Three.js Transpiler r183
 
 import { abs, add, Break, clamp, cos, cross, Discard, dot, float, Fn, fract, fwidth, If, length, Loop, max, mix, mod, mul, normalize, pow, screenCoordinate, select, sin, smoothstep, sqrt, sub, uniform, varyingProperty, vec3, vec4 } from 'three/tsl';
-import { pxSnapDir, pxPosterize, uPxStar, uPxStarRange } from '../pixel.tsl.js';
 
 const vLocalPos = varyingProperty( 'vec3', 'vLocalPos' );
 const vNormal = varyingProperty( 'vec3', 'vNormal' );
@@ -106,9 +105,7 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale
 	If( ign.greaterThanEqual( uFade ), () => { Discard(); } );
 
 	const objNormal = normalize( vLocalPos );
-	const rotated = uRotation.mul( objNormal ).toVar();
-	/* Snap after uRotation so the texel grid stays world-stable while the surface churns through it */
-	If( uPxStar.greaterThan( 0.5 ), () => { rotated.assign( pxSnapDir( normalize( rotated ) ) ); } );
+	const rotated = uRotation.mul( objNormal );
 	const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
 
 	/* Two-scale split: fine granulation at fixed angular frequency (crisp at any size),
@@ -117,14 +114,11 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale
 	const pCell = rotated.mul( uCellScale ).mul( uSupergranuleScale );
 	const tt = uTime.mul( uChurnSpeed );
 
-	/* Top-octave AA — fade octaves 4–5 before their cells shrink under a pixel.
-	   fwidth from the unsnapped dir: snapped coords are flat per texel and would defeat the gate */
-	const fw = length( fwidth( uRotation.mul( objNormal ).mul( uGranScale ) ) );
+	/* Top-octave AA — fade octaves 4–5 before their cells shrink under a pixel */
+	const fw = length( fwidth( pFine ) );
 	const gate = uGate.mul( sub( 1.0, smoothstep( 0.005, 0.012, fw ) ) );
 
-	const N = normalize( vNormal ).toVar();
-	/* Quantizing N bands the limb darkening and gives the spicule limb bites chunky texel edges */
-	If( uPxStar.greaterThan( 0.5 ), () => { N.assign( pxSnapDir( N ) ); } );
+	const N = normalize( vNormal );
 	const V = normalize( vViewDir );
 	const mu = max( 0.0, dot( N, V ) );
 
@@ -211,9 +205,6 @@ export const main = /*@__PURE__*/ Fn( ( [ uSeed, uLowTemp, uHighTemp, uGranScale
 
 	const rimFactor = pow( sub( 1.0, mu ), 4.0 ).mul( add( 1.0, spic.mul( sub( 1.0, mu ) ).mul( 1.5 ) ) );
 	surfaceColor.addAssign( uAtmosphereColor.mul( uAtmosphereIntensity ).mul( rimFactor ) );
-
-	/* Posterize last so rim glow and emissive boost land in the same band ladder */
-	If( uPxStar.greaterThan( 0.5 ), () => { surfaceColor.assign( pxPosterize( surfaceColor, uPxStarRange ) ); } );
 	return vec4( surfaceColor, 1.0 );
 
 } );

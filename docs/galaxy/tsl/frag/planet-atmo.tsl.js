@@ -20,8 +20,6 @@ import {
 	cellNoise3D, cellNoise3DDelta, crystals3D, crystals3DDelta
 } from '../glsl/noise-common.tsl.js';
 
-import { pxSnapDir, pxPosterize, uPxPlanetRange } from '../pixel.tsl.js';
-
 /* Inline noise-common copies removed — now imported from ../glsl/noise-common.tsl.js */
 
 export const cloudLayer = /*@__PURE__*/ Fn( ( [ sp, s, cover, storminess, planetMode ] ) => {
@@ -127,13 +125,9 @@ export const lightningFlash = /*@__PURE__*/ Fn( ( [ sp, s, storminess, atmoTint 
 
 } );
 
-export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, uFadeIn, uCloudCover, uCloudColor, uStorminess, uSeed, uPlanetMode, uBandCount, uPxOn ] ) => {
+export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, uFadeIn, uCloudCover, uCloudColor, uStorminess, uSeed, uPlanetMode, uBandCount ] ) => {
 
-	const N = normalize( vSphereNormal ).toVar();
-
-	/* Snapping N quantizes NdotV/edge/NdotL per texel — banded rim, chunky cloud light */
-	If( uPxOn.greaterThan( 0.5 ), () => { N.assign( pxSnapDir( N ) ); } );
-
+	const N = normalize( vSphereNormal );
 	const V = normalize( cameraPosition.sub( positionWorld ) );
 	const L = normalize( uLightDir );
 	const NdotV = max( 0.0, dot( N, V ) );
@@ -151,22 +145,14 @@ export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, 
 		const litGlow = atmo.mul( add( 0.03, sunMask.mul( 0.97 ) ).add( terminator.mul( 0.4 ) ) );
 		const scatter = pow( max( 0.0, dot( V, L.negate() ) ), 5.0 ).mul( edge ).mul( 0.5 );
 		const glow = uAtmoIntensity.mul( litGlow.add( scatter ) ).toVar();
-		glow.assign( min( glow, 0.85 ) );
-
-		/* Posterize before the fade multiply, or the fade-in itself would step visibly */
-		const glowCol = uAtmoTint.mul( glow ).toVar();
-		If( uPxOn.greaterThan( 0.5 ), () => { glowCol.assign( pxPosterize( glowCol, uPxPlanetRange ) ); } );
-
-		result.assign( vec4( glowCol.mul( uFadeIn ), 0.0 ) );
+		glow.assign( min( glow, 0.85 ).mul( uFadeIn ) );
+		result.assign( vec4( uAtmoTint.mul( glow ), 0.0 ) );
 
 	} ).Else( () => {
 
 		/* FRONT FACE — cloud layer (premultiplied alpha → occluding via blend factors) */
 		const s = fract( uSeed.mul( 0.00000013 ) ).mul( 100.0 );
-		const sp = normalize( vLocalPos ).toVar();
-
-		If( uPxOn.greaterThan( 0.5 ), () => { sp.assign( pxSnapDir( sp ) ); } );
-
+		const sp = vLocalPos;
 		const cloudAlpha = cloudLayer( sp, s, uCloudCover, uStorminess, uPlanetMode ).toVar();
 
 		If( uPlanetMode.equal( 2 ).and( cloudAlpha.greaterThan( 0.0 ) ), () => {
@@ -186,13 +172,6 @@ export const main = /*@__PURE__*/ Fn( ( [ uAtmoTint, uAtmoIntensity, uLightDir, 
 
 			const flashResult = lightningFlash( sp, s, uStorminess, uAtmoTint );
 			litCloud.addAssign( flashResult.yzw.mul( flashResult.x ) );
-
-		} );
-
-		If( uPxOn.greaterThan( 0.5 ), () => {
-
-			litCloud.assign( pxPosterize( litCloud, uPxPlanetRange ) );
-			cloudAlpha.assign( pxPosterize( vec3( cloudAlpha ), uPxPlanetRange ).x );
 
 		} );
 

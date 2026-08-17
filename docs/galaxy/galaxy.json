@@ -3801,7 +3801,10 @@
       "position": null,
       "parentId": "neotypian",
       "orbital": null,
-      "visual": null,
+      "visual": {
+        "color": "#830101",
+        "temperature": 0.62
+      },
       "spectralClass": null,
       "luminosity": null,
       "mass": null,
