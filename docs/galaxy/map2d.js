@@ -128,9 +128,12 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   const bgLayerCanvas = document.getElementById('map2d-bg');
   const starsCanvas = document.getElementById('map2d-stars');
   const lmLayerCanvas = document.getElementById('map2d-lightmap');
+  const asteroidsImg = document.getElementById('asteroids-img');
+  const astLayerCanvas = document.getElementById('map2d-asteroids');
   const starsCtx = starsCanvas.getContext('2d');
   let bgBakedSide = 0, bgTf = '';
   let lmBake = null, lmTf = '';
+  let astBake = null, astTf = '';
   /* Mid-gesture zooms ride the CSS scale; layers rebake once, 200 ms after k settles */
   let lastKForSettle = 0, settleAt = 0;
 
@@ -258,6 +261,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     starsCanvas.style.height = viewH + 'px';
     bgBakedSide = 0;
     lmBake = null;
+    astBake = null;
     kMin = Math.max(K_MIN, Math.min(viewW, viewH) * K_FILL / (WORLD_R * 2));
     if (k < kMin) k = kMin;
     dirty = true;
@@ -283,16 +287,20 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
 
   /* Decode once to an ImageBitmap; prescaled 2048 mid tier serves far zoom */
   let lmFull = null, lmMid = null;
-  async function buildLightmapSources() {
-    if (!lightmapImg?.complete || !lightmapImg.naturalWidth) return;
-    lmFull = await createImageBitmap(lightmapImg);
+  let astFull = null, astMid = null;
+  async function buildSources(img, assign) {
+    if (!img?.complete || !img.naturalWidth) return;
+    const full = await createImageBitmap(img);
     const mid = document.createElement('canvas');
     mid.width = mid.height = 2048;
-    mid.getContext('2d').drawImage(lmFull, 0, 0, 2048, 2048);
-    lmMid = await createImageBitmap(mid);
-    lmBake = null;
+    mid.getContext('2d').drawImage(full, 0, 0, 2048, 2048);
+    assign(full, await createImageBitmap(mid));
     dirty = true;
   }
+  const buildLightmapSources = () =>
+    buildSources(lightmapImg, (f, m) => { lmFull = f; lmMid = m; lmBake = null; });
+  const buildAsteroidSources = () =>
+    buildSources(asteroidsImg, (f, m) => { astFull = f; astMid = m; astBake = null; });
 
   /* Firmament space → screen mapping shared by the bg layer transform and live stars */
   function firmamentGeom() {
@@ -305,17 +313,17 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     return { side, dx: viewW / 2 - side / 2 - offX, dz: viewH / 2 - side / 2 - offZ };
   }
 
-  /* Lightmap layer bakes with a margin; pan and moderate zoom ride the CSS transform */
+  /* Lightmap + asteroid layers bake a margin slice; pan and moderate zoom ride the CSS transform.
+     Both use the same ±500 world → full-texture mapping, so one baker serves both. */
   const LM_MARGIN = 1.5;
-  function bakeLightmap() {
-    const src = (k <= 2 ? lmMid : lmFull) || lmFull;
-    if (!src || !viewW) return;
+  function bakeLayer(layerCanvas, src) {
+    if (!src || !viewW) return null;
     const w = Math.ceil(viewW * LM_MARGIN), h = Math.ceil(viewH * LM_MARGIN);
-    lmLayerCanvas.width = Math.round(w * dpr);
-    lmLayerCanvas.height = Math.round(h * dpr);
-    lmLayerCanvas.style.width = w + 'px';
-    lmLayerCanvas.style.height = h + 'px';
-    const c = lmLayerCanvas.getContext('2d');
+    layerCanvas.width = Math.round(w * dpr);
+    layerCanvas.height = Math.round(h * dpr);
+    layerCanvas.style.width = w + 'px';
+    layerCanvas.style.height = h + 'px';
+    const c = layerCanvas.getContext('2d');
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, w, h);
     const N = src.width;
@@ -331,7 +339,26 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
         ((ix0 / N - 0.5) * 1000 - wx0) * k, ((iz0 / N - 0.5) * 1000 - wz0) * k,
         (ix1 - ix0) / N * 1000 * k, (iz1 - iz0) / N * 1000 * k);
     }
-    lmBake = { cx, cz, k, w, h };
+    return { cx, cz, k, w, h };
+  }
+
+  /* Rebakes only when scale drifts or it pans off-margin; returns the (possibly refreshed) bake + transform. */
+  function positionLayer(layerCanvas, bake, srcFn, prevTf, zooming) {
+    if (!bake) bake = bakeLayer(layerCanvas, srcFn());
+    if (!bake) return { bake: null, tf: prevTf };
+    let s = k / bake.k;
+    const sHi = zooming ? 2.2 : 1.3, sLo = zooming ? 0.45 : 0.75;
+    if (s > sHi || s < sLo ||
+        Math.abs((bake.cx - cx) * k) > (bake.w * s - viewW) / 2 ||
+        Math.abs((bake.cz - cz) * k) > (bake.h * s - viewH) / 2) {
+      const fresh = bakeLayer(layerCanvas, srcFn());
+      if (fresh) { bake = fresh; s = 1; }
+    }
+    const tx = (bake.cx - cx) * k + viewW / 2 - s * bake.w / 2;
+    const tz = (bake.cz - cz) * k + viewH / 2 - s * bake.h / 2;
+    const tf = 'translate(' + tx.toFixed(1) + 'px,' + tz.toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
+    if (prevTf !== tf) layerCanvas.style.transform = tf;
+    return { bake, tf };
   }
 
   function updateLayers() {
@@ -347,20 +374,10 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
         if (bgTf !== tf) { bgLayerCanvas.style.transform = tf; bgTf = tf; }
       }
     }
-    if (!lmBake) bakeLightmap();
-    if (!lmBake) return;
-    let s = k / lmBake.k;
-    const sHi = zooming ? 2.2 : 1.3, sLo = zooming ? 0.45 : 0.75;
-    if (s > sHi || s < sLo ||
-        Math.abs((lmBake.cx - cx) * k) > (lmBake.w * s - viewW) / 2 ||
-        Math.abs((lmBake.cz - cz) * k) > (lmBake.h * s - viewH) / 2) {
-      bakeLightmap();
-      s = 1;
-    }
-    const tx = (lmBake.cx - cx) * k + viewW / 2 - s * lmBake.w / 2;
-    const tz = (lmBake.cz - cz) * k + viewH / 2 - s * lmBake.h / 2;
-    const tf = 'translate(' + tx.toFixed(1) + 'px,' + tz.toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
-    if (lmTf !== tf) { lmLayerCanvas.style.transform = tf; lmTf = tf; }
+    const lm = positionLayer(lmLayerCanvas, lmBake, () => (k <= 2 ? lmMid : lmFull) || lmFull, lmTf, zooming);
+    lmBake = lm.bake; lmTf = lm.tf;
+    const ast = positionLayer(astLayerCanvas, astBake, () => (k <= 2 ? astMid : astFull) || astFull, astTf, zooming);
+    astBake = ast.bake; astTf = ast.tf;
   }
 
   /* Map-table framing: rim ring + outside vignette, drawn whenever any of it is on screen */
@@ -1126,6 +1143,11 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     buildLightmapSources();
   } else if (lightmapImg) {
     lightmapImg.addEventListener('load', buildLightmapSources);
+  }
+  if (asteroidsImg?.complete && asteroidsImg.naturalWidth) {
+    buildAsteroidSources();
+  } else if (asteroidsImg) {
+    asteroidsImg.addEventListener('load', buildAsteroidSources);
   }
   /* Remeasure once webfonts land — pre-load widths are wrong for declutter */
   document.fonts?.ready.then(() => {

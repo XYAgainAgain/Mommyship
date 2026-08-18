@@ -202,6 +202,9 @@ async function init() {
 
   const lightmapImg = document.getElementById('lightmap-img');
   if (lightmapImg) lightmapImg.src = lightmapUrl;
+  /* Asteroid-field map layer rides the same tier decision as the lightmap */
+  const asteroidsImg = document.getElementById('asteroids-img');
+  if (asteroidsImg) asteroidsImg.src = 'galaxy/textures/galaxy-asteroids-' + tier + '.webp';
 
   progress();
   const lightmap = await new THREE.TextureLoader().loadAsync(lightmapUrl);

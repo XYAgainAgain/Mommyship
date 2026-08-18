@@ -1615,6 +1615,12 @@ canvas { display: block; }
   filter: brightness(1.12) contrast(1.16);
 }
 
+/* Asteroid field paints above the lightmap glow (later in DOM at equal z), below the vector markers.
+   Normal compositing — the rocks are opaque with their own alpha, not additive glow. */
+.gx-m2-asteroids {
+  z-index: 3;
+}
+
 .gx-map2d-canvas {
   position: absolute;
   inset: 0;
