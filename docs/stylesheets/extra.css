@@ -245,10 +245,9 @@
   }
 }
 
-@media screen and (max-width: 29.984375em) {
-  .text-size-rocker {
-    display: none;
-  }
+/* Inline copy is hidden; extra.js moves the rocker into the header tray */
+.md-header__inner > .text-size-rocker {
+  display: none;
 }
 
 [data-md-color-scheme="slate"] .md-search__input::placeholder {
@@ -309,6 +308,14 @@ html {
 /* Material sets min-width: 5rem on all th; kills 9-column tables */
 .md-typeset table:not([class]) th {
   min-width: 0;
+}
+
+/* Full-width title/sub-header cells merged by extra.js (spanTableBands); tag selectors
+   outrank the theme's th text-align: left, which loads after this file */
+.md-typeset table:not([class]) th.table-band,
+.md-typeset table:not([class]) td.table-band {
+  text-align: center;
+  font-weight: 700;
 }
 
 /* Material's bleed pattern adds padding: 0 .8rem here, creating dead scroll space */
@@ -836,8 +843,9 @@ body:has(.homepage-hero) .galacticity-control {
   box-shadow: 0 0 8px rgba(246, 121, 229, 0.6);
 }
 
-/* JUMP! button */
+/* JUMP button: both labels share one grid cell so JUMP? and JUMP! are the same size */
 .galacticity-control__jump {
+  display: grid;
   background: transparent;
   border: 1px solid rgba(246, 121, 229, 0.6);
   color: #fff;
@@ -865,25 +873,113 @@ body:has(.homepage-hero) .galacticity-control {
   transform: scale(0.95);
 }
 
+.galacticity-control__jump > span {
+  grid-area: 1 / 1;
+}
+
+.galacticity-control__jump:not(.galacticity-control__jump--armed) .galacticity-control__jump-armed,
+.galacticity-control__jump--armed .galacticity-control__jump-idle {
+  visibility: hidden;
+}
+
+/* Greyed JUMP? sits at the far end of the slider as the hint to drag all the way */
+.galacticity-control__jump:disabled {
+  color: rgb(255 255 255 / 0.35);
+  -webkit-text-stroke-color: rgb(255 255 255 / 0.35);
+  border-color: rgb(255 255 255 / 0.25);
+  animation: none;
+  cursor: default;
+}
+
+.galacticity-control__jump:disabled:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
 @keyframes jump-breathe {
   0%, 100% { box-shadow: 0 0 4px rgba(246, 121, 229, 0.15); }
   50% { box-shadow: 0 0 8px rgba(246, 121, 229, 0.35); }
 }
 
-@media screen and (max-width: 29.984375em) {
-  .galacticity-control {
-    display: none !important;
-  }
-  /* Slider hidden → warp canvas hidden; checkVisibility() in warp-bg.js then parks the render loop */
-  #warp-bg {
-    display: none !important;
+/* Inline copy is hidden; extra.js moves the group into the header tray */
+.md-header__inner > .galacticity-control {
+  display: none !important;
+}
+
+/* Header tray: popover that extra.js moves the control groups into */
+.header-tray {
+  --tray-glow: #0075a2;
+  /* left/top are set per open by extra.js (positionHeaderTray) */
+  inset: auto;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+  min-inline-size: 13rem;
+  max-inline-size: calc(100vw - 0.8rem);
+  color: var(--md-default-fg-color);
+  /* No backdrop blur: re-blurring the animated canvas every frame made the slider drag stutter */
+  background: color-mix(in oklab, var(--md-default-bg-color) 94%, var(--tray-glow));
+  border: 1px solid color-mix(in oklab, var(--tray-glow) 60%, transparent);
+  border-radius: 0.4rem;
+  box-shadow: 0 0 0.6rem color-mix(in oklab, var(--tray-glow) 35%, transparent), 0 0.4rem 1.2rem rgb(0 0 0 / 0.4);
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 0.2s, translate 0.2s, display 0.2s allow-discrete, overlay 0.2s allow-discrete;
+}
+
+.header-tray:not(:popover-open) {
+  display: none;
+}
+
+@starting-style {
+  .header-tray:popover-open {
+    opacity: 0;
+    translate: 0 -0.4rem;
   }
 }
 
-/* Phones never load the warp module (loader in overrides/main.html sets this) */
-.no-warp .galacticity-control {
-  display: none !important;
+[data-md-color-scheme="slate"] .header-tray {
+  --tray-glow: #F679E5;
 }
+
+/* Inside the tray the groups stack full-width and drop their inline-header margins */
+.header-tray .galacticity-control,
+.header-tray .text-size-rocker {
+  margin: 0;
+}
+
+.header-tray .galacticity-control {
+  gap: 0.4rem;
+}
+
+.header-tray .galacticity-control__slider {
+  flex: 1;
+  width: auto;
+  min-inline-size: 6rem;
+}
+
+.header-tray .galacticity-control__label {
+  color: var(--md-default-fg-color);
+}
+
+.header-tray .text-size-rocker {
+  justify-content: stretch;
+  border-color: color-mix(in oklab, var(--tray-glow) 50%, transparent);
+}
+
+.header-tray .text-size-rocker__btn {
+  flex: 1;
+  padding-block: 0.4rem;
+}
+
+.header-tray .text-size-rocker__btn[data-text-size="reset"] {
+  border-color: color-mix(in oklab, var(--tray-glow) 50%, transparent);
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .galacticity-control__jump {

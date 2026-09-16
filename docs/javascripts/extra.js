@@ -273,8 +273,77 @@ function applyQuickGuideWidth() {
   }
 }
 
+/* Markdown tables can't colspan, so the rulebook's title rows ("TRAVEL COSTS |  |  |") and
+   sub-header bands ("MINOR REPAIRS | ———— | ————") arrive as one labeled cell plus padding.
+   Merge each into a single full-width cell so the label centers over the whole table. */
+function spanTableBands() {
+  var FILLER = "————";
+  var rows = document.querySelectorAll(".md-typeset table:not([class]) tr");
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].children;
+    if (cells.length < 2 || cells[0].hasAttribute("colspan")) continue;
+    var label = cells[0].textContent.trim();
+    if (!label) continue;
+    /* Body rows must carry the filler: a data row that happens to end in blanks is not a band */
+    var blankOk = rows[i].parentElement.tagName === "THEAD";
+    var isBand = true;
+    for (var j = 1; j < cells.length; j++) {
+      var text = cells[j].textContent.trim();
+      if (text !== FILLER && !(blankOk && text === "")) { isBand = false; break; }
+    }
+    if (!isBand) continue;
+    cells[0].setAttribute("colspan", cells.length);
+    cells[0].classList.add("table-band");
+    while (cells.length > 1) rows[i].removeChild(cells[1]);
+  }
+}
+
+/* The Galacticity and text-size groups live in a popover tray off the header sparkle button.
+   Nodes are moved, not cloned, so their listeners and state come along. */
+var TRAY_GROUPS = [".galacticity-control", ".text-size-rocker"];
+
+function placeHeaderTray() {
+  var tray = document.getElementById("header-tray");
+  if (!tray) return;
+  TRAY_GROUPS.forEach(function(sel) {
+    var el = document.querySelector(sel);
+    if (el && el.parentElement !== tray) tray.appendChild(el);
+  });
+}
+
+/* Light dismiss backstop: some mobile browsers only close auto popovers on a real click, so
+   any touch or scroll outside the tray closes it too */
+document.addEventListener("pointerdown", function(e) {
+  var tray = document.getElementById("header-tray");
+  if (!tray || !tray.matches(":popover-open")) return;
+  if (e.target.closest("#header-tray, .header-tray__toggle")) return;
+  tray.hidePopover();
+}, { passive: true });
+/* Center the tray under its button; CSS anchor positioning isn't in Firefox yet. Runs on
+   open and on resize so it tracks the button across breakpoints. */
+function positionHeaderTray() {
+  var tray = document.getElementById("header-tray");
+  var toggle = document.querySelector(".header-tray__toggle");
+  if (!tray || !toggle || !tray.matches(":popover-open")) return;
+  var gutter = 8;
+  var btn = toggle.getBoundingClientRect();
+  var width = tray.offsetWidth;
+  var left = btn.left + btn.width / 2 - width / 2;
+  left = Math.max(gutter, Math.min(left, window.innerWidth - width - gutter));
+  var header = document.querySelector(".md-header");
+  var headerBottom = header ? header.getBoundingClientRect().bottom : btn.bottom;
+  tray.style.left = left + "px";
+  tray.style.top = (headerBottom + 8) + "px";
+}
+document.addEventListener("toggle", function(e) {
+  if (e.target.id === "header-tray" && e.newState === "open") positionHeaderTray();
+}, true);
+window.addEventListener("resize", positionHeaderTray);
+
 document$.subscribe(function() {
   updateCurrentTocItem();
+  spanTableBands();
+  placeHeaderTray();
   if (!scrollListenerBound) {
     scrollListenerBound = true;
     window.addEventListener("scroll", onScrollThrottled, { passive: true });

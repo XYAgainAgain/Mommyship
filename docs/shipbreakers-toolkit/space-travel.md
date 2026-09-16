@@ -69,7 +69,7 @@ You don't need to own a ship to get across the galaxy, but you need to pay your 
 | Hangar Space | 25kcr | Hangar Space | 500kcr |
 | To a distant planet | ×2 | Jump-2 Ticket | +10kcr |
 | To edge of the system | ×3 | Jump-3 Ticket | +30kcr |
-| **EXECUTIVE TRANSPORT (INTERPLANETARY )** | **COST** | **EXECUTIVE TRANSPORT (INTERSTELLAR )** | **COST** |
+| **EXECUTIVE TRANSPORT (INTERPLANETARY)** | **COST** | **EXECUTIVE TRANSPORT (INTERSTELLAR)** | **COST** |
 | Director Class (private suite, cryopod) | 20kcr | Director Class (private suite, cryopod) | 40kcr |
 | Assistant Class (private cabin, cryopod) | 12kcr | Assistant Class (private cabin, cryopod) | 25kcr |
 | Chartered Vessel | 1mcr | Chartered Vessel | 2mcr |

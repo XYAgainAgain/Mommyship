@@ -1,6 +1,5 @@
-/* Warp background — WebGPU/TSL port of the hyperspace warp lab, replacing the old
-   box-shadow starfield. The Galacticity slider keeps its old contract: 0 hides,
-   opacity + star density scale with it, 100 reveals JUMP (full warp envelope). */
+/* Warp background: WebGPU/TSL port of the hyperspace warp lab. Galacticity slider contract
+   unchanged: 0 hides, opacity and star density scale with it, 100 reveals JUMP. */
 import * as THREE from 'three/webgpu';
 import {
   Fn, attribute, uniform, varyingProperty, positionLocal, uv,
@@ -11,7 +10,12 @@ import {
 const TAU = Math.PI * 2;
 const NEBULA_SEED = crypto.getRandomValues(new Uint32Array(1))[0];
 const GALACTICITY_KEY = 'mommyship-galacticity';
-const GALACTICITY_DEFAULT = 40;
+/* Phones default to off (25–40 FPS on the live build), tablets to 10 */
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const PHONE = COARSE && Math.min(screen.width, screen.height) < 600;
+const GALACTICITY_DEFAULT = PHONE ? 0 : COARSE ? 10 : 40;
+/* Android Firefox can't run the renderer; the slider stays visible but disabled */
+const UNSUPPORTED = /Android/.test(navigator.userAgent) && /Firefox/.test(navigator.userAgent);
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const clampJS = (x, a, b) => x < a ? a : x > b ? b : x;
@@ -58,6 +62,8 @@ const C = {
   coreGlow: 0.06, coreBlend: 'multiply',
 };
 if (REDUCED_MOTION) { C.flySpeed = 0; C.galDrift = 0; C.galSpin = 0; C.nebTwistSpeed = 0; }
+/* Phones: fewer nebula cards and galaxies, for fill cost and to leave more OLED black between them */
+if (PHONE) { C.nebCount = 8; C.galCount = 5; }
 
 const CORE_BLENDS = {
   add:      { kind: 0, pma: false, apply: (m) => { m.blending = THREE.AdditiveBlending; } },
@@ -72,29 +78,34 @@ const U = {
   /* Trig phases accumulate JS-side, wrapped to TAU: WGSL only guarantees sin/cos
      precision below |x| ≈ 65536, and this runs for hours as a site background */
   uTwinklePhase: uniform(0), uGalSpinPhase: uniform(0), uNebTwistT: uniform(0),
-  uMaxR: uniform(800), uDepthExp: uniform(C.depthExp), uStarSize: uniform(C.starSize),
-  uBright: uniform(C.brightness), uColorMix: uniform(C.colorMix), uTwinkle: uniform(REDUCED_MOTION ? 0 : C.twinkle),
-  uPlateau: uniform(C.plateauFade),
-  uStreakLen: uniform(C.streakLen), uStreakGlowW: uniform(C.streakGlowWidth), uStreakCoreW: uniform(C.streakCoreWidth),
-  uWarpPush: uniform(C.warpPush),
-  uGalWarpBright: uniform(C.galWarpBright), uGalStreakGlowBright: uniform(C.galStreakGlowBright),
-  uGalStreakCoreBright: uniform(C.galStreakCoreBright),
-  uGalSize: uniform(C.galSize), uGalBright: uniform(C.galBright),
-  uNebSize: uniform(C.nebSize), uNebBright: uniform(C.nebBright),
-  uNebWarpBlur: uniform(C.nebWarpBlur), uNebWarpTwist: uniform(C.nebWarpTwist),
-  uNebTwistSnap: uniform(C.nebTwistSnap),
-  uNebTwistFalloff: uniform(C.nebTwistFalloff), uNebWarpCondense: uniform(C.nebWarpCondense),
-  uNebWarpStretch: uniform(C.nebWarpStretch), uNebOctDrop: uniform(C.nebWarpOctDrop),
-  uNebWarpBright: uniform(C.nebWarpBright), uNebWarpSaturation: uniform(C.nebWarpSaturation),
-  uNebSpiralArms: uniform(C.nebSpiralArms),
-  uNmsNebs: uniform(1),
-  uNebRes1: uniform(1.75), uNebRes2: uniform(1.45), uNebResMix: uniform(1),
-  uNebDomainWarp: uniform(0.3), uNebOctaves: uniform(4.25), uNebContrast: uniform(4.2),
-  uNebColA: uniform(new THREE.Vector3(0.051, 0.051, 0.102)),
-  uNebColB: uniform(new THREE.Vector3(0.275, 0.086, 0.663)),
-  uNebColC: uniform(new THREE.Vector3(0.851, 0.263, 0.549)),
-  uNebColD: uniform(new THREE.Vector3(0.122, 0.349, 0.502)),
-  uCoreGlow: uniform(C.coreGlow), uGlowDiam: uniform(2000), uCoreBlendKind: uniform(0),
+  uMaxR: uniform(800), uDepthExp: uniform(C.depthExp), uGlowDiam: uniform(2000),
+};
+
+/* Hand-tuned values as literal nodes, not uniforms: WGSL folds them (and the dead math they
+   gate, e.g. condense at 0) out of the shader. Changing one at runtime does nothing. */
+const K = {
+  starSize: float(C.starSize), bright: float(C.brightness), colorMix: float(C.colorMix),
+  twinkle: float(REDUCED_MOTION ? 0 : C.twinkle), plateau: float(C.plateauFade),
+  streakLen: float(C.streakLen), streakGlowW: float(C.streakGlowWidth), streakCoreW: float(C.streakCoreWidth),
+  warpPush: float(C.warpPush),
+  galWarpBright: float(C.galWarpBright), galStreakGlowBright: float(C.galStreakGlowBright),
+  galStreakCoreBright: float(C.galStreakCoreBright),
+  galSize: float(C.galSize), galBright: float(C.galBright),
+  nebSize: float(C.nebSize), nebBright: float(C.nebBright),
+  nebWarpBlur: float(C.nebWarpBlur), nebWarpTwist: float(C.nebWarpTwist),
+  nebTwistSnap: float(C.nebTwistSnap),
+  nebTwistFalloff: float(C.nebTwistFalloff), nebWarpCondense: float(C.nebWarpCondense),
+  nebWarpStretch: float(C.nebWarpStretch), nebOctDrop: float(C.nebWarpOctDrop),
+  nebWarpBright: float(C.nebWarpBright), nebWarpSaturation: float(C.nebWarpSaturation),
+  nebSpiralArms: float(C.nebSpiralArms),
+  nmsNebs: float(1),
+  nebRes1: float(1.75), nebRes2: float(1.45), nebResMix: float(1),
+  nebDomainWarp: float(0.3), nebOctaves: float(4.25), nebContrast: float(4.2),
+  nebColA: vec3(0.051, 0.051, 0.102),
+  nebColB: vec3(0.275, 0.086, 0.663),
+  nebColC: vec3(0.851, 0.263, 0.549),
+  nebColD: vec3(0.122, 0.349, 0.502),
+  coreGlow: float(C.coreGlow), coreBlendKind: float((CORE_BLENDS[C.coreBlend] || CORE_BLENDS.add).kind),
 };
 
 // Packed into vec4s: WebGPU caps a pipeline at 8 vertex buffers, one per attribute.
@@ -102,8 +113,8 @@ const aData0 = attribute('aData0', 'vec4');  // dir.xy, z0, par
 const aData1 = attribute('aData1', 'vec4');  // size, bright, tw, _
 const aColor = attribute('aColor', 'vec3');
 const g0 = attribute('g0', 'vec4');          // dir.xy, z0, incl
-const g1 = attribute('g1', 'vec4');          // rot, spinDir, phase, gB
-const g2 = attribute('g2', 'vec4');          // la, lr, cosRot, sinRot
+const g1 = attribute('g1', 'vec4');          // lr, spinDir, phase, gB
+const g2 = attribute('g2', 'vec4');          // cos(la)·lr, sin(la)·lr, cosRot, sinRot
 const aGColor = attribute('aGColor', 'vec3');
 const n0 = attribute('n0', 'vec4');             // dir.xy, z0, stretch
 const n1 = attribute('n1', 'vec4');             // phase, bright, sizeVar, _
@@ -125,14 +136,14 @@ const starVert = Fn(() => {
   const dir = aData0.xy, z0 = aData0.z, par = aData0.w;
   const sizeBase = aData1.x, brightV = aData1.y, twV = aData1.z;
   const zc = fract(z0.add(U.uFly.mul(par)));
-  const r = U.uMaxR.mul(pow(zc, U.uDepthExp)).mul(float(1).add(U.uWarp.mul(U.uWarpPush).mul(0.5)));
-  const streak = U.uStreakLen.mul(U.uWarp).mul(zc.mul(0.85).add(0.15));
+  const r = U.uMaxR.mul(pow(zc, U.uDepthExp)).mul(float(1).add(U.uWarp.mul(K.warpPush).mul(0.5)));
+  const streak = K.streakLen.mul(U.uWarp).mul(zc.mul(0.85).add(0.15));
   const tailR = max(r.sub(streak), float(0));
   const halfLen = r.sub(tailR).mul(0.5);
   const center = dir.mul(r.add(tailR).mul(0.5));
-  const size = sizeBase.mul(U.uStarSize).mul(zc.mul(0.55).add(0.45));
-  const radGlow = min(size.mul(U.uStreakGlowW), float(26)).mul(0.5);
-  const radCore = max(size.mul(U.uStreakCoreW).mul(0.5), float(0.6));
+  const size = sizeBase.mul(K.starSize).mul(zc.mul(0.55).add(0.45));
+  const radGlow = min(size.mul(K.streakGlowW), float(26)).mul(0.5);
+  const radCore = max(size.mul(K.streakCoreW).mul(0.5), float(0.6));
   const along = positionLocal.x.mul(halfLen.add(radGlow).mul(2));
   const perp = positionLocal.y.mul(radGlow.mul(2));
   const perpDir = vec2(dir.y.negate(), dir.x);
@@ -143,13 +154,13 @@ const starVert = Fn(() => {
   vRadGlow.assign(radGlow);
   vRadCore.assign(radCore);
 
-  const fadeIn = smoothstep(float(0), U.uPlateau, zc);
-  const fadeOut = float(1).sub(smoothstep(float(1).sub(U.uPlateau), float(1), zc));
+  const fadeIn = smoothstep(float(0), K.plateau, zc);
+  const fadeOut = float(1).sub(smoothstep(float(1).sub(K.plateau), float(1), zc));
   const radial = smoothstep(float(0), float(50), r);
   const twRaw = float(0.5).add(float(0.5).mul(sin(U.uTwinklePhase.add(twV.mul(6.2831853)))));
-  const tw = mix(float(1), twRaw, U.uTwinkle.mul(float(1).sub(U.uWarp)));
-  vAlpha.assign(brightV.mul(U.uBright).mul(fadeIn).mul(fadeOut).mul(radial).mul(tw));
-  vColor.assign(mix(vec3(1, 1, 1), aColor, U.uColorMix));
+  const tw = mix(float(1), twRaw, K.twinkle.mul(float(1).sub(U.uWarp)));
+  vAlpha.assign(brightV.mul(K.bright).mul(fadeIn).mul(fadeOut).mul(radial).mul(tw));
+  vColor.assign(mix(vec3(1, 1, 1), aColor, K.colorMix));
 
   return vec3(pos2.x, pos2.y, float(0));
 });
@@ -165,25 +176,24 @@ const starFrag = Fn(() => {
 
 const galVert = Fn(() => {
   const gDir = g0.xy, gz0 = g0.z, gIncl = g0.w;
-  const gSpinDir = g1.y, gPhase = g1.z, gB = g1.w;
-  const la = g2.x, lr = g2.y;
+  const lr = g1.x, gSpinDir = g1.y, gPhase = g1.z, gB = g1.w;
   const gz = fract(gz0.add(U.uGalPhase));
   const center = gDir.mul(U.uMaxR.mul(gz));
-  const gsize = U.uGalSize.mul(gz.mul(0.7).add(0.3));
+  const gsize = K.galSize.mul(gz.mul(0.7).add(0.3));
   const spin = U.uGalSpinPhase.mul(gSpinDir).add(gPhase);
-  /* cr/sr precomputed CPU-side into g2.zw — gRot is constant per galaxy */
+  /* Particle polar → cartesian and the per-galaxy rotation are constant, so both are baked CPU-side into g2 */
   const cs = cos(spin), sn = sin(spin), cr = g2.z, sr = g2.w;
-  const ax = cos(la).mul(lr), ay = sin(la).mul(lr).mul(gIncl);
+  const ax = g2.x, ay = g2.y.mul(gIncl);
   const sx = ax.mul(cs).sub(ay.mul(sn)), sy = ax.mul(sn).add(ay.mul(cs));
   const wx = sx.mul(cr).sub(sy.mul(sr)), wy = sx.mul(sr).add(sy.mul(cr));
   const ppos = center.add(vec2(wx, wy).mul(gsize));
   const psize = max(gsize.mul(0.02).mul(float(1.3).sub(lr)), float(1.5));
-  const streak = U.uStreakLen.mul(U.uWarp).mul(gz.mul(0.85).add(0.15));
+  const streak = K.streakLen.mul(U.uWarp).mul(gz.mul(0.85).add(0.15));
   const halfLen = min(streak, length(ppos)).mul(0.5);
   const streakCenter = ppos.sub(gDir.mul(halfLen));
-  const warpRad = min(psize.mul(U.uStreakGlowW), float(26)).mul(0.5);
+  const warpRad = min(psize.mul(K.streakGlowW), float(26)).mul(0.5);
   const radGlow = mix(psize, warpRad, U.uWarp);
-  const radCore = max(psize.mul(U.uStreakCoreW).mul(0.5), float(0.6));
+  const radCore = max(psize.mul(K.streakCoreW).mul(0.5), float(0.6));
   const along = positionLocal.x.mul(halfLen.add(radGlow).mul(2));
   const perp = positionLocal.y.mul(radGlow.mul(2));
   const perpDir = vec2(gDir.y.negate(), gDir.x);
@@ -197,7 +207,7 @@ const galVert = Fn(() => {
 
   const fadeIn = smoothstep(float(0), float(0.14), gz);
   const fadeOut = float(1).sub(smoothstep(float(0.86), float(1), gz));
-  vGAlpha.assign(U.uGalBright.mul(fadeIn).mul(fadeOut).mul(gB));
+  vGAlpha.assign(K.galBright.mul(fadeIn).mul(fadeOut).mul(gB));
   vGColor.assign(aGColor);
   return vec3(pos2.x, pos2.y, float(0));
 });
@@ -208,7 +218,7 @@ const galFrag = Fn(() => {
   const point = float(1).sub(smoothstep(float(0), vGPointRad, d));
   const glow = float(1).sub(smoothstep(float(0), vGRadGlow, d));
   const core = float(1).sub(smoothstep(float(0), vGRadCore, d));
-  const capsule = glow.mul(U.uGalStreakGlowBright).add(core.mul(U.uGalStreakCoreBright)).mul(U.uGalWarpBright);
+  const capsule = glow.mul(K.galStreakGlowBright).add(core.mul(K.galStreakCoreBright)).mul(K.galWarpBright);
   const a = clamp(mix(point, capsule, U.uWarp).mul(vGAlpha), float(0), float(1));
   return vec4(vGColor, a);
 });
@@ -223,7 +233,7 @@ const nebulaCloudNoise = Fn(([pos, frq, seed]) => {
   const gain = float(1).toVar();
   /* Warp sheds fine octaves: the stretched cards cover ~2× the pixels mid-jump, and the
      radial smear hides the detail anyway — pays for the stretch on fill-bound GPUs */
-  const effOct = max(U.uNebOctaves.sub(U.uNebWarp.mul(U.uNebOctDrop)), float(1));
+  const effOct = max(K.nebOctaves.sub(U.uNebWarp.mul(K.nebOctDrop)), float(1));
   Loop({ start: 0, end: 8 }, ({ i }) => {
     If(float(i).greaterThanEqual(effOct), () => { Break(); });
     const octWeight = clamp(effOct.sub(float(i)), float(0), float(1));
@@ -231,24 +241,6 @@ const nebulaCloudNoise = Fn(([pos, frq, seed]) => {
     gain.mulAssign(2);
   });
   return n;
-});
-
-const nebulaSample = Fn(([rp, phase]) => {
-  const p = vec3(rp.x, rp.y, phase.mul(0.13));
-  const seed = vec3(phase);
-  const c1 = nebulaCloudNoise(p, U.uNebRes1, seed);
-  const c2 = nebulaCloudNoise(p.add(vec3(c1.mul(U.uNebDomainWarp))), U.uNebRes2, seed.add(310.4));
-  const c3 = nebulaCloudNoise(p, U.uNebResMix, seed.add(661.384));
-  return vec3(c1, c2, c3);
-});
-
-/* Dark layer never reads c3 — skipping its FBM stack cuts a third of that pass's noise cost */
-const nebulaSampleDark = Fn(([rp, phase]) => {
-  const p = vec3(rp.x, rp.y, phase.mul(0.13));
-  const seed = vec3(phase);
-  const c1 = nebulaCloudNoise(p, U.uNebRes1, seed);
-  const c2 = nebulaCloudNoise(p.add(vec3(c1.mul(U.uNebDomainWarp))), U.uNebRes2, seed.add(310.4));
-  return vec2(c1, c2);
 });
 
 const nmsRamp = Fn(([t]) => {
@@ -261,19 +253,19 @@ const nmsRamp = Fn(([t]) => {
 });
 
 const warpNebulaUv = Fn(([p, tubePos]) => {
-  const gateBase = smoothstep(float(0), U.uNebTwistSnap, U.uNebWarp);
+  const gateBase = smoothstep(float(0), K.nebTwistSnap, U.uNebWarp);
   const gate = smoothstep(float(0), float(1), gateBase);
   const radius = clamp(length(tubePos), float(0), float(1));
-  const radialWarp = pow(float(1).sub(radius), U.uNebTwistFalloff);
+  const radialWarp = pow(float(1).sub(radius), K.nebTwistFalloff);
   const theta = atan(tubePos.y, tubePos.x.add(0.000001));
-  const turns = U.uNebWarpTwist.add(U.uNebTwistT);
-  const armPhase = theta.mul(U.uNebSpiralArms).sub(radius.mul(9)).add(U.uNebTwistT.mul(6.2831853));
+  const turns = K.nebWarpTwist.add(U.uNebTwistT);
+  const armPhase = theta.mul(K.nebSpiralArms).sub(radius.mul(9)).add(U.uNebTwistT.mul(6.2831853));
   const armWave = sin(armPhase).mul(0.5).add(0.5);
   const angle = turns.mul(gate).mul(float(0.25).add(radialWarp.mul(0.75))).mul(float(0.55).add(armWave.mul(0.45))).mul(6.2831853);
   const cs = cos(angle), sn = sin(angle);
   const warpedTube = vec2(tubePos.x.mul(cs).sub(tubePos.y.mul(sn)), tubePos.x.mul(sn).add(tubePos.y.mul(cs)));
   const tubeOffset = warpedTube.sub(tubePos).mul(2.2);
-  const condensed = p.mul(float(1).add(U.uNebWarpCondense.mul(gate).mul(radialWarp)));
+  const condensed = p.mul(float(1).add(K.nebWarpCondense.mul(gate).mul(radialWarp)));
   return condensed.add(tubeOffset);
 });
 
@@ -283,8 +275,8 @@ const nebulaVert = Fn(() => {
   const nebWarp = smoothstep(float(0), float(1), U.uNebWarp);
   const center = baseDir.mul(U.uMaxR.mul(nz));
   /* Geometric stretch (not blur): cards grow with warp so the twisted tube reaches the screen edges */
-  const size = U.uNebSize.mul(n1.z).mul(nz.mul(0.7).add(0.3)).mul(mix(float(1), U.uNebWarpStretch, nebWarp));
-  const streak = U.uStreakLen.mul(nebWarp).mul(nz.mul(0.85).add(0.15)).mul(U.uNebWarpBlur);
+  const size = K.nebSize.mul(n1.z).mul(nz.mul(0.7).add(0.3)).mul(mix(float(1), K.nebWarpStretch, nebWarp));
+  const streak = K.streakLen.mul(nebWarp).mul(nz.mul(0.85).add(0.15)).mul(K.nebWarpBlur);
   const halfLen = min(streak, length(center)).mul(0.5);
   const streakCenter = center.sub(baseDir.mul(halfLen));
   const along = positionLocal.x.mul(halfLen.add(size).mul(2));
@@ -294,7 +286,7 @@ const nebulaVert = Fn(() => {
 
   const fadeIn = smoothstep(float(0), float(0.18), nz);
   const fadeOut = float(1).sub(smoothstep(float(0.78), float(1), nz));
-  vNAlpha.assign(U.uNebBright.mul(n1.y).mul(fadeIn).mul(fadeOut));
+  vNAlpha.assign(K.nebBright.mul(n1.y).mul(fadeIn).mul(fadeOut));
   vNPhase.assign(n1.x);
   vNCosSin.assign(vec2(cos(n1.x), sin(n1.x)));
   vNJitter.assign(fract(sin(n1.x.mul(12.9898)).mul(43758.5453)));
@@ -302,63 +294,77 @@ const nebulaVert = Fn(() => {
   return vec3(pos2.x, pos2.y, float(0));
 });
 
-const nebulaFrag = Fn(() => {
+/* Shared prologue: card-border reject, rotation, and the uniform-gated tube twist. It folds
+   to identity at warp 0, but the GPU can't know that, so idle frames would pay for the trig */
+const nebulaPrologue = Fn(() => {
   const p = uv().sub(vec2(0.5)).mul(2);
   const cardRadius = max(abs(p.x), abs(p.y));
   const cardGuard = float(1).sub(smoothstep(float(0.78), float(0.98), cardRadius));
-  /* Corners contribute nothing — bail before the FBM stacks run */
   If(cardGuard.lessThan(float(0.005)), () => { Discard(); });
   const cs = vNCosSin.x, sn = vNCosSin.y;
-  const baseRp = vec2(p.x.mul(cs).sub(p.y.mul(sn)), p.x.mul(sn).add(p.y.mul(cs)));
-  const rp = warpNebulaUv(baseRp, vNTubePos);
-  const clouds = nebulaSample(rp, vNPhase);
-  const c1 = clouds.x, c2 = clouds.y, c3 = clouds.z;
+  const rp = vec2(p.x.mul(cs).sub(p.y.mul(sn)), p.x.mul(sn).add(p.y.mul(cs))).toVar();
+  If(U.uNebWarp.greaterThan(float(0.0005)), () => { rp.assign(warpNebulaUv(rp, vNTubePos)); });
+  return vec3(rp, cardGuard);
+});
+
+/* Progressive sampling: c1 alone decides the silhouette, c2 the density, c3 only the hue,
+   so each FBM stack runs only for fragments the previous one couldn't reject */
+const nebulaFrag = Fn(() => {
+  const pro = nebulaPrologue();
+  const rp = pro.xy, cardGuard = pro.z;
+  const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
+  const seed = vec3(vNPhase);
+  const c1 = nebulaCloudNoise(pN, K.nebRes1, seed);
   const warpedDist = length(rp).add(c1.sub(0.5).mul(0.32));
   const edge = float(1).sub(smoothstep(float(0.58), float(1.12), warpedDist));
-  const strength = pow(c2, U.uNebContrast).mul(2);
-  const baseRamp = mix(mix(U.uNebColA, U.uNebColB, c3), mix(U.uNebColC, U.uNebColD, c3), c1);
-  const jitter = vNJitter.sub(0.5).mul(0.12);
-  const nmsColor = nmsRamp(clamp(c3.mul(0.55).add(c1.mul(0.45)).add(jitter), float(0), float(1)));
-  const warpGate = smoothstep(float(0), float(1), U.uNebWarp);
-  const nmsMix = warpGate.mul(U.uNmsNebs);
-  const ramp = mix(baseRamp, nmsColor, nmsMix).toVar();
-  const luminance = dot(ramp, vec3(0.2126, 0.7152, 0.0722));
-  ramp.assign(mix(vec3(luminance), ramp, mix(float(1), U.uNebWarpSaturation, warpGate)));
-  const boostedStrength = strength.mul(mix(float(1), U.uNebWarpBright, warpGate));
   const coverage = clamp(edge.mul(edge).mul(cardGuard).mul(vNAlpha), float(0), float(1));
-  return vec4(ramp.mul(boostedStrength).mul(coverage), coverage);
+  If(coverage.lessThan(float(0.0005)), () => { Discard(); });
+  const warpGate = smoothstep(float(0), float(1), U.uNebWarp);
+  const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4));
+  const strength = pow(c2, K.nebContrast).mul(2).mul(mix(float(1), K.nebWarpBright, warpGate));
+  /* Screen blend ignores alpha: even after the JUMP saturation boost this stays under half an 8-bit step */
+  If(strength.mul(coverage).lessThan(float(0.001)), () => { Discard(); });
+  const c3 = nebulaCloudNoise(pN, K.nebResMix, seed.add(661.384));
+  const ramp = mix(mix(K.nebColA, K.nebColB, c3), mix(K.nebColC, K.nebColD, c3), c1).toVar();
+  If(U.uNebWarp.greaterThan(float(0.0005)), () => {
+    const jitter = vNJitter.sub(0.5).mul(0.12);
+    const nmsColor = nmsRamp(clamp(c3.mul(0.55).add(c1.mul(0.45)).add(jitter), float(0), float(1)));
+    const mixed = mix(ramp, nmsColor, warpGate.mul(K.nmsNebs));
+    const luminance = dot(mixed, vec3(0.2126, 0.7152, 0.0722));
+    ramp.assign(mix(vec3(luminance), mixed, mix(float(1), K.nebWarpSaturation, warpGate)));
+  });
+  return vec4(ramp.mul(strength).mul(coverage), coverage);
 });
 
 const nebulaDarkFrag = Fn(() => {
-  const p = uv().sub(vec2(0.5)).mul(2);
-  const cardRadius = max(abs(p.x), abs(p.y));
-  const cardGuard = float(1).sub(smoothstep(float(0.78), float(0.98), cardRadius));
-  If(cardGuard.lessThan(float(0.005)), () => { Discard(); });
-  const cs = vNCosSin.x, sn = vNCosSin.y;
-  const baseRp = vec2(p.x.mul(cs).sub(p.y.mul(sn)), p.x.mul(sn).add(p.y.mul(cs)));
-  const rp = warpNebulaUv(baseRp, vNTubePos);
-  const clouds = nebulaSampleDark(rp, vNPhase);
-  const c1 = clouds.x, c2 = clouds.y;
+  const pro = nebulaPrologue();
+  const rp = pro.xy, cardGuard = pro.z;
+  const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
+  const seed = vec3(vNPhase);
+  const c1 = nebulaCloudNoise(pN, K.nebRes1, seed);
   const warpedDist = length(rp).add(c1.sub(0.5).mul(0.32));
   const edge = float(1).sub(smoothstep(float(0.52), float(1.08), warpedDist));
-  const absorption = clamp(edge.mul(edge).mul(cardGuard).mul(pow(c2, U.uNebContrast)).mul(vNAlpha).mul(2.1), float(0), float(0.72));
-  const nmsMix = smoothstep(float(0), float(1), U.uNebWarp).mul(U.uNmsNebs);
+  const reach = edge.mul(edge).mul(cardGuard).mul(vNAlpha).mul(2.1);
+  /* Multiply blend: a tint this close to white is a no-op, so skip the density stack */
+  If(reach.lessThan(float(0.002)), () => { Discard(); });
+  const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4));
+  const absorption = clamp(reach.mul(pow(c2, K.nebContrast)), float(0), float(0.72));
+  const nmsMix = smoothstep(float(0), float(1), U.uNebWarp).mul(K.nmsNebs);
   const darkColor = mix(vec3(0.035, 0.025, 0.085), vec3(0.0235, 0.0275, 0.0745), nmsMix);
-  const tint = mix(vec3(1), darkColor, absorption);
-  return vec4(tint, 1);
+  return vec4(mix(vec3(1), darkColor, absorption), 1);
 });
 
 const coreVert = Fn(() => vec3(positionLocal.x.mul(U.uGlowDiam), positionLocal.y.mul(U.uGlowDiam), float(0)));
 const coreFrag = Fn(() => {
   const d = length(uv().sub(vec2(0.5, 0.5))).mul(2);
   const fall = float(1).sub(smoothstep(float(0), float(1), d));
-  const inten = U.uCoreGlow.mul(float(0.5).add(U.uWarp.mul(0.5)));
+  const inten = K.coreGlow.mul(float(0.5).add(U.uWarp.mul(0.5)));
   const s = clamp(fall.mul(fall).mul(inten), float(0), float(1));
   const color = vec3(0.46, 0.5, 0.78);
   /* kind 0 = alpha blends (add/normal), 1 = premultiplied rgb (screen/subtract), 2 = multiply (white = no-op) */
   const out = vec4(color, s).toVar();
-  If(U.uCoreBlendKind.equal(float(1)), () => { out.assign(vec4(color.mul(s), 1)); });
-  If(U.uCoreBlendKind.equal(float(2)), () => { out.assign(vec4(mix(vec3(1, 1, 1), color, s), 1)); });
+  If(K.coreBlendKind.equal(float(1)), () => { out.assign(vec4(color.mul(s), 1)); });
+  If(K.coreBlendKind.equal(float(2)), () => { out.assign(vec4(mix(vec3(1, 1, 1), color, s), 1)); });
   return out;
 });
 
@@ -370,7 +376,6 @@ function additiveQuadMaterial(posNode, fragNode) {
   m.blending = THREE.AdditiveBlending;
   m.depthTest = false;
   m.depthWrite = false;
-  m.side = THREE.DoubleSide;
   return m;
 }
 
@@ -385,7 +390,6 @@ function screenQuadMaterial(posNode, fragNode) {
   m.blendDst = THREE.OneMinusSrcColorFactor;
   m.depthTest = false;
   m.depthWrite = false;
-  m.side = THREE.DoubleSide;
   return m;
 }
 
@@ -398,7 +402,6 @@ function multiplyQuadMaterial(posNode, fragNode) {
   m.premultipliedAlpha = true;
   m.depthTest = false;
   m.depthWrite = false;
-  m.side = THREE.DoubleSide;
   return m;
 }
 
@@ -408,13 +411,12 @@ function makeInstanced(count, attrs) {
   geo.index = base.index;
   geo.setAttribute('position', base.getAttribute('position'));
   geo.setAttribute('uv', base.getAttribute('uv'));
-  geo.setAttribute('normal', base.getAttribute('normal'));
   for (const [name, size, arr] of attrs) geo.setAttribute(name, new THREE.InstancedBufferAttribute(arr, size));
   geo.instanceCount = count;
   return geo;
 }
 
-/* Galacticity scales star density: 25% of the tuned field at slider 1, full field at 100 */
+/* Galacticity scales star density: a quarter of the tuned field at the bottom of the slider, all of it at 100 */
 function effectiveStarCount() {
   return Math.round(C.starCount * (0.25 + 0.75 * galacticity / 100));
 }
@@ -452,8 +454,8 @@ function buildGalaxyGeometry() {
       const radius = Math.pow(t, 0.85) * 0.95 + rng() * 0.05;
       const core = smoothJS(0.32, 0, t);
       A0[idx * 4] = dx; A0[idx * 4 + 1] = dy; A0[idx * 4 + 2] = gz0; A0[idx * 4 + 3] = gIn;
-      A1[idx * 4] = gRo; A1[idx * 4 + 1] = gSp; A1[idx * 4 + 2] = gPh; A1[idx * 4 + 3] = (0.45 + rng() * 0.55) * (0.6 + core * 0.8);
-      A2[idx * 4] = angle; A2[idx * 4 + 1] = radius; A2[idx * 4 + 2] = crJS; A2[idx * 4 + 3] = srJS;
+      A1[idx * 4] = radius; A1[idx * 4 + 1] = gSp; A1[idx * 4 + 2] = gPh; A1[idx * 4 + 3] = (0.45 + rng() * 0.55) * (0.6 + core * 0.8);
+      A2[idx * 4] = Math.cos(angle) * radius; A2[idx * 4 + 1] = Math.sin(angle) * radius; A2[idx * 4 + 2] = crJS; A2[idx * 4 + 3] = srJS;
       col[idx * 3] = lerp(tint[0], 255, core) / 255; col[idx * 3 + 1] = lerp(tint[1], 255, core) / 255; col[idx * 3 + 2] = lerp(tint[2], 255, core) / 255;
       idx++;
     }
@@ -484,8 +486,10 @@ let initState = 'idle'; // idle | starting | ready | failed
 let running = false;
 let galacticity = GALACTICITY_DEFAULT;
 
-const slider = document.getElementById('galacticity-slider');
-const jumpBtn = document.getElementById('jump-btn');
+/* Looked up live: the header can be re-rendered under navigation.instant, and extra.js
+   moves both controls into a popover on phones */
+const getSlider = () => document.getElementById('galacticity-slider');
+const getJumpBtn = () => document.getElementById('jump-btn');
 
 function getGalacticity() {
   try {
@@ -528,20 +532,23 @@ function startJump() {
   if (jump.active || initState !== 'ready') return;
   jump.active = true;
   jump.t0 = performance.now();
+  const slider = getSlider(), jumpBtn = getJumpBtn();
   if (slider) slider.disabled = true;
   if (jumpBtn) jumpBtn.disabled = true;
 }
 function endJumpUi() {
+  const slider = getSlider();
   if (slider) slider.disabled = false;
-  if (jumpBtn) jumpBtn.disabled = false;
+  armJump();
 }
 
+/* Startup-only: K.coreBlendKind is baked into the shader, so switching C.coreBlend later
+   would change the GPU blend state but not coreFrag's output packing */
 function applyCoreBlend() {
   const b = CORE_BLENDS[C.coreBlend] || CORE_BLENDS.add;
   /* r184 WebGPU refuses Subtractive/MultiplyBlending unless premultipliedAlpha is set */
   coreMat.premultipliedAlpha = b.pma;
   b.apply(coreMat);
-  U.uCoreBlendKind.value = b.kind;
   coreMat.needsUpdate = true;
 }
 
@@ -555,10 +562,21 @@ function onResize() {
   maxR = Math.hypot(W, H) * 0.55;
   U.uMaxR.value = maxR;
   U.uGlowDiam.value = maxR * 2.4;
+  renderStill();
 }
 
-function loop() {
-  const now = performance.now();
+/* 120 Hz cap: a decorative background gains nothing from 144–240 Hz panels, and every
+   skipped frame is a full fill-bound pass saved. Animation is dt-based, so pacing is free */
+const FRAME_MS = 1000 / 120;
+let lastRender = 0;
+
+function loop(time) {
+  const now = time ?? performance.now();
+  const sinceRender = now - lastRender;
+  if (sinceRender < FRAME_MS - 0.5) return;
+  /* Carry the overshoot so 144 Hz paces to ~120 instead of halving; the slack frames the
+     0.5 ms tolerance lets through must not carry, or the next frame renders again */
+  lastRender = now - (sinceRender >= FRAME_MS ? sinceRender % FRAME_MS : 0);
   const dt = clampJS((now - prev) / 1000, 0, 0.05);
   prev = now;
 
@@ -587,7 +605,8 @@ async function initRenderer() {
     canvas.id = 'warp-bg';
     document.body.prepend(canvas);
 
-    renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+    /* Every edge here is analytic soft alpha, so MSAA buys nothing; no material touches depth */
+    renderer = new THREE.WebGPURenderer({ canvas, antialias: false, depth: false, alpha: false });
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     renderer.setClearColor(0x000000, 1);
     await renderer.init();
@@ -627,12 +646,13 @@ function applyGalacticity(val, rebuild) {
   if (!canvas) return;
   canvas.style.opacity = (val / 100).toFixed(2);
   canvas.style.display = val === 0 ? 'none' : '';
-  if (jumpBtn) jumpBtn.hidden = REDUCED_MOTION || val < 100;
+  armJump();
   if (rebuild && starMesh) {
     clearTimeout(rebuildTimer);
     rebuildTimer = setTimeout(() => {
       starMesh.geometry.dispose();
       starMesh.geometry = buildStarGeometry();
+      renderStill();
     }, 250);
   }
   syncActive();
@@ -645,20 +665,27 @@ function syncActive() {
   if (initState !== 'ready') return;
   /* navigation.instant morphs the whole body and drops JS-created nodes — re-attach.
      The element (and its WebGPU context) survives in JS; only the DOM link is lost. */
-  if (!canvas.isConnected) document.body.prepend(canvas);
+  if (!canvas.isConnected) { document.body.prepend(canvas); renderStill(); }
   const visible = galacticity > 0 && canvas.checkVisibility();
   if (visible && !running) {
     running = true;
-    prev = performance.now();
+    if (REDUCED_MOTION) { renderStill(); return; }
+    prev = lastRender = performance.now();
     renderer.setAnimationLoop(loop);
   } else if (!visible && running) {
     running = false;
-    renderer.setAnimationLoop(null);
+    if (!REDUCED_MOTION) renderer.setAnimationLoop(null);
   }
 }
 
+/* Reduced motion zeroes every motion source, so the frame never changes: draw it once
+   and again only when something static (size, star density, page swap) moves */
+function renderStill() {
+  if (REDUCED_MOTION && running && initState === 'ready') renderer.render(scene, camera);
+}
+
 function wantsBackground() {
-  if (galacticity === 0) return false;
+  if (UNSUPPORTED || galacticity === 0) return false;
   const scheme = document.body.getAttribute('data-md-color-scheme')
     || document.documentElement.getAttribute('data-md-color-scheme');
   if (scheme !== 'slate') return false;
@@ -668,21 +695,27 @@ function wantsBackground() {
 
 /* Wiring */
 galacticity = getGalacticity();
-if (slider) {
-  slider.value = galacticity;
-  slider.addEventListener('input', () => {
-    const val = parseInt(slider.value);
-    setGalacticity(val);
-    applyGalacticity(val, true);
-  });
+/* JUMP? (greyed) until the slider hits 100, then JUMP!; reduced motion hides it via CSS */
+function armJump() {
+  const jumpBtn = getJumpBtn();
+  if (!jumpBtn) return;
+  const armed = galacticity >= 100 && !jump.active;
+  jumpBtn.disabled = !armed;
+  jumpBtn.classList.toggle('galacticity-control__jump--armed', galacticity >= 100);
 }
-if (jumpBtn) {
-  jumpBtn.hidden = REDUCED_MOTION || galacticity < 100;
-  jumpBtn.addEventListener('click', startJump);
+function syncControls() {
+  const slider = getSlider();
+  if (slider) { slider.value = galacticity; slider.disabled = UNSUPPORTED; }
+  armJump();
 }
-
-/* Crossing the slider-hiding breakpoint hides/shows the canvas via CSS — re-check the loop */
-matchMedia('(max-width: 29.984375em)').addEventListener('change', syncActive);
+syncControls();
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'galacticity-slider') return;
+  const val = parseInt(e.target.value);
+  setGalacticity(val);
+  applyGalacticity(val, true);
+});
+document.addEventListener('click', (e) => { if (e.target.closest('#jump-btn')) startJump(); });
 
 new MutationObserver(syncActive).observe(document.documentElement, {
   attributes: true, attributeFilter: ['data-md-color-scheme'],
@@ -694,7 +727,7 @@ new MutationObserver(syncActive).observe(document.body, {
 /* navigation.instant swaps content without reloading this module — re-check visibility
    per page. document$ arrives with Material's bundle, which loads after this module. */
 (function bindDocumentStream() {
-  if (window.document$) window.document$.subscribe(() => syncActive());
+  if (window.document$) window.document$.subscribe(() => { syncControls(); syncActive(); });
   else setTimeout(bindDocumentStream, 250);
 })();
 
