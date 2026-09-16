@@ -9,11 +9,11 @@
 
 ***A mildly friendlier, more robust, and ever-so-slightly less deadly homebrew ruleset for the Mothership Sci-Fi Horror RPG. Lots of things have been rebalanced and reconfigured, but for those familiar, it's easy to jump in!***
 
-**Read the full rules at [mommyship.mom](https://mommyship.mom/)**! (That's dot-MOM not dot-COM. Important distinction.)
+**Read the full rules at [Mommyship.mom](https://mommyship.mom/)**! (That's dot-MOM not dot-COM. Important distinction.)
 
 ---
 
-Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of the excellent [Mothership RPG](https://www.tuesdayknightgames.com/pages/mothership-rpg) by Tuesday Knight Games. It patches some gaps we kept hitting at our own table: MANY more character options, an actual social stat, broadened gear variety, deeper and more customizable ship rules, a modular mech-droid companion system, a brand-new character sheet, and a whole original galaxy to actually fly around in (and play in, if you want to use it!) The time-tested frame of Mothership is still doing all the heavy lifting, we just bolted some extra modules onto the hull and polished the hell out of it.
+Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of the excellent [Mothership® RPG](https://www.tuesdayknightgames.com/pages/mothership-rpg) by Tuesday Knight Games. It patches some gaps we kept hitting at our own table: MANY more character options, an actual social stat, broadened gear variety, deeper and more customizable ship rules, a modular mech-droid companion system, a brand-new character sheet, and a whole original galaxy to actually fly around in (and play in, if you want to use it!) The time-tested frame of Mothership is still doing all the heavy lifting, we just bolted some extra modules onto the hull and polished the hell out of it.
 
 <p align="center">What could <i>possibly</i> go wrong?</p>
 
@@ -46,10 +46,10 @@ The site is built with [Zensical](https://zensical.org/) and hosted on GitHub Pa
 ## The Corpo Stuff
 
 > [!IMPORTANT]
-> Mommyship is an independent, non-commercial homebrew project and is not affiliated with or endorsed by Tuesday Knight Games. [MOTHERSHIP™](https://www.tuesdayknightgames.com/pages/mothership-rpg) is a registered trademark of [Tuesday Knight Games](https://www.tuesdayknightgames.com/). All rights reserved.
+> Mommyship is an independent, non-commercial homebrew project and is not affiliated with or endorsed by Tuesday Knight Games. [MOTHERSHIP®](https://www.tuesdayknightgames.com/pages/mothership-rpg) is a registered trademark of [Tuesday Knight Games](https://www.tuesdayknightgames.com/). All rights reserved.
 >
 > Original Mommyship content (rules text, custom CSS/JS, site design, character sheets) is licensed under [CC BY-NC-SA 4.0](LICENSE). That license does **not** extend to anything derived from or reproduced from Mothership RPG, which remains the property of Tuesday Knight Games.
 >
 > Site theme based on [Zensical](https://zensical.org/) by Martin Donath (MIT License). Fonts used under the SIL Open Font License.
 >
-> Mommyship is a horror game for mature audiences. It contains violence, foul language, body horror, some sexual content, drug use, and depictions of mental illness, trauma, stress, panic, and capitalistic abuse which may not be suitable for all audiences. Please be advised.
+> ***CONTENT ADVISORY:** Mommyship is a horror game for mature audiences. It contains violence, foul language, body horror, some sexual content, drug use, and depictions of mental illness, trauma, stress, panic, and capitalistic abuse which may not be suitable for all audiences. Please enjoy responsibly.*
