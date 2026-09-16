@@ -42,7 +42,7 @@ const GALAXY_TINTS = [[150, 180, 255], [255, 225, 170], [255, 180, 220], [200, 2
 const LAYER_PAR = [0.7, 1.0, 1.6];
 const LAYER_SIZE = [1.0, 1.5, 2.3];
 
-/* Frozen to SamDefaults.txt from the warp lab — the lab remains the tuning surface */
+/* Hand-tuned tastiness fresh from the Warp Lab */
 const C = {
   seed: 6942069,
   starCount: 2500, flySpeed: 0.005, depthExp: 1, starSize: 2, brightness: 1.3,

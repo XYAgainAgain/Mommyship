@@ -461,10 +461,45 @@ body:has(.homepage-hero) .md-footer {
   display: none;
 }
 
+/* Below the desktop breakpoint the square card can't hold its copy; release the lock and let it grow */
+@media (width < 76.25em) {
+  body:has(.homepage-hero) {
+    height: auto;
+    overflow: visible;
+    display: block;
+  }
+
+  body:has(.homepage-hero) .md-container,
+  body:has(.homepage-hero) .md-main {
+    overflow: visible;
+  }
+
+  body:has(.homepage-hero) .md-main {
+    display: block;
+    container-type: normal;
+    padding-block: 1rem;
+  }
+
+  .homepage-hero {
+    width: min(92vw, 40rem);
+    aspect-ratio: auto;
+    margin-inline: auto;
+    padding-block: 1rem;
+  }
+}
+
 /* Lock section landing pages to exactly one viewport */
 body:has(.section-landing) {
   height: 100dvh;
   overflow: hidden;
+}
+
+/* Below the desktop breakpoint the landing content outgrows the viewport; the lock made it unscrollable */
+@media (width < 76.25em) {
+  body:has(.section-landing) {
+    height: auto;
+    overflow: visible;
+  }
 }
 
 /* Radar-sweep glow tracing the card edge */

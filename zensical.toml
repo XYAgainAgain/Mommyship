@@ -29,7 +29,7 @@ nav = [
 
 # variant "classic" keeps the Material for MkDocs look; "modern" is a separate deferred task.
 [project.theme]
-variant = "classic"
+variant = "modern"
 custom_dir = "overrides"
 favicon = "assets/favicon.png"
 features = [
@@ -85,3 +85,11 @@ title = "Table of Contents"
 
 [project.markdown_extensions.zensical.extensions.glightbox]
 skip_classes = ["off-glb"]
+
+# Hover previews for links into the full rules sections (experimental in Zensical).
+[[project.markdown_extensions.zensical.extensions.preview.configurations]]
+targets.include = [
+  "players-survival-guide/*",
+  "shipbreakers-toolkit/*",
+  "dave-pilot-manual.md",
+]
