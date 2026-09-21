@@ -22,17 +22,17 @@ The rules are simple, but the game is challenging:
 - Stat Checks are made when you want to do something and the price for failure is high. You want to roll low, not high.
 - Saves are reactions, rolled to avoid different mental, emotional, and physical dangers.
 
-When you fail a Stat Check or a Save your character gains 1 or more Stress. Stress can be bad, as it makes characters more likely to Panic, but is also needed to improve Saves.
+When you fail a Stat Check or a Save your character gains 1 or more Stress. Stress can be bad, as it makes characters more likely to Panic, but is also needed to improve yourself.
 
 Panic Checks are rolled when the worst has happened and your character snaps. A bad result can lead to a long-term Condition that needs treatment, but a good result can provide focus when it is needed the most.
 
 When characters get hurt, they lose Health. If they lose enough Health, they suffer a Wound. If they gain Wounds equal to their maximum, they make a Death Save. If they fail the Death Save, they die. If they don't, they might wish they had.
 
-With these basics in mind, you're ready to handle 90% of the situations that come up in a game. For everything else, you, the Warden, and the other players will discuss the situation and come up with a House Rule to suit the table's specific needs.
+With these basics in mind, you're ready to handle 90% of the situations that come up in a game. For everything else, you, the Warden, and the other players will discuss the situation and come up with a temporary ruling or more permanent House Rule to suit the table's specific needs.
 
 ### *2.1.1 DICE NOTATION*
 
-There are three ways we notate dice:
+There are several ways we notate dice:
 
 - 1d100 means to roll a pair of ten-sided dice, where one die represents the tens digit and the other represents the ones digit. For example: if you roll a 90 and a 9, that equals 99. If you roll a 00 and a 0, that equals a zero.
 - *x*d10 means to roll a number of ten-sided dice (e.g., 1d10, 2d10…) and add them together.
@@ -45,10 +45,10 @@ There are three ways we notate dice:
 
 Once you've collected all of these items and built your character, you're ready to play!
 
-- The Mommyship Player's Survival Guide
-- Your Character Sheet
-- 1d100 "percentile dice" (a d10 with single digits and another with double digits, rolled together)
-- 1d20 "panic die"
+- The Mommyship Player's Survival Guide (you're reading it right now)
+- Your Spacer Sheet (Character Sheet)
+- 1d100 "percentile dice" (one d10 with single digits and another with double digits, rolled together)
+- 1d20 "Panic Die"
 - Something to take notes with
 - Your imagination and attention
 
@@ -60,16 +60,16 @@ Whenever you want to do something and the price for failure is high, roll 1d100 
 
 A roll of 90–99 is always a failure, and a roll of 00 is always a Critical Success.
 
-You have four main Stats which represent your abilities when acting under pressure:
+You have four Stats which represent your abilities when acting under pressure:
 
 - **Strength:** Holding airlocks closed, carrying fallen comrades, climbing, pushing, jumping, using most melee weapons.
-- **Speed:** Getting out of the cargo bay before the blast doors close, acting before someone (or something) else, running away, using most Ranged weapons.
-- **Smarts:** Recalling your training and experience under duress, thinking through difficult problems, inventing or fixing things.
-- **Savvy:** Swaying people to your cause, judging an uncertain situation, haggling and talking your way out of trouble.
+- **Speed:** Getting out of the cargo bay before the blast doors close, acting before someone (or something) else, running away, using most ranged weapons.
+- **Smarts:** Recalling your training and experience under duress, thinking through difficult problems, inventing or fixing things, using technology.
+- **Savvy:** Swaying people to your cause, judging an uncertain situation, haggling and talking your way out of trouble, flirting with hot aliens.
 
 ### *2.2.2 SAVES*
 
-In order to avoid certain dangers or trauma, you sometimes need to roll 1d100, aiming for lower than your number in the associated Save. This is called a Save. If you roll less than your Save number, you succeed. Otherwise, you fail and gain 1 Stress. A roll of 90–99 is always a failure.
+In order to avoid certain dangers or trauma, you sometimes need to roll 1d100, aiming for lower than your number in the associated Save. This is called a Save. If you roll less than your Save number, you succeed. Otherwise, you fail and gain 1 Stress. As above, a roll of 90–99 is always a failure.
 
 You have three Saves which represent your ability to withstand different kinds of trauma:
 
@@ -81,13 +81,13 @@ You have three Saves which represent your ability to withstand different kinds o
 
 There are three things that can modify the outcome of a Stat Check or Save: Advantage & Disadvantage, Critical Successes & Failures, and Skills.
 
-**Advantage & Disadvantage:** Whenever you are making a roll of any kind (Stat Check, Save, Panic Check, Damage, etc.) and the character has a situational advantage (like assistance from someone else), roll twice and take the best result. When at a situational disadvantage (like poor weather or bad visibility), roll twice and take the worst result.
+**Advantage & Disadvantage:** Whenever you are making a roll of any kind (Stat Check, Save, Panic Check, Damage, etc.) and the character has a situational Advantage (like assistance from someone else), roll twice and take the best result. When at a situational Disadvantage (like poor weather or bad visibility), roll twice and take the worst result.
 
 **[+]/[-] Shorthand:** Advantage is notated with [+], Disadvantage with [-] (e.g., Body Save [+] means make a Body Save with Advantage). If a character has both Advantage and Disadvantage, they cancel each other out.
 
-**Critical Successes & Failures:** Whenever you roll doubles (e.g., 00, 66) on a Stat Check or Save, you have rolled a Critical. If the roll is a success, it is now a Critical Success and something very good happens. If it is a failure, it is now a Critical Failure and something very bad happens, and furthermore, you must make a Panic Check. A Stat Check or Save roll of 00 is always a Critical Success and a 99 is always a Critical Failure.
+**Critical Successes & Failures:** Whenever you roll doubles (e.g., 00, 22, 66) on a Stat Check or Save, you have rolled a Critical. If the roll is a success, it is now a Critical Success and something very good happens. If it is a failure, it is now a Critical Failure and something very bad happens, and furthermore, you must make a Panic Check. A Stat Check or Save roll of 00 is always a Critical Success and a 99 is always a Critical Failure.
 
-**Skills:** If a character has a Skill that is relevant to the task at hand, you can add the Skill's bonus to the Stat before making your roll (giving you a higher number to roll under and thus a greater chance of success).
+**Skills:** If a character has a Skill that is relevant to the task at hand, you can add the Skill's Bonus to the Stat before making your roll (giving you a higher number to roll under and thus a greater chance of success).
 
 ## 2.3 STRESS
 
@@ -99,9 +99,9 @@ You gain 1 Stress every time you fail a Stat Check or Save. Occasionally, certai
 
 ### *2.3.2 HOW DO I RELIEVE STRESS?*
 
-You can relieve Stress by resting in a relatively safe place. To do this, make a Rest Save using your worst Save. If you succeed, reduce your Stress by the ones digit rolled, with a 0 counting as a 10 as usual (e.g., if you rolled 24 under your worst Save of 30, reduce your Stress by 4). If you fail, you gain 1 Stress instead.
+You can relieve Stress by resting in a relatively safe place. To do this, make a **Rest Save** using your worst Save. If you succeed, reduce your Stress by the ones digit rolled, with a 0 counting as a 10 as usual (e.g., if you rolled 24 under your worst Save of 30, reduce your Stress by 4). If you fail, you gain 1 Stress instead.
 
-Players can gain Advantage on their Rest Save by participating in consensual sex, recreational drug use, a night of heavy drinking, prayer, or any other suitable leisure activity. Unsafe locations may impose Disadvantage on Rest Saves at the Warden's discretion. Stress is typically not relieved during cryosleep. Finally, if you have more time, you can take Shore Leave and convert your Stress into improved Saves and Stats.
+Players can gain Advantage on their Rest Save by participating in consensual sex, recreational drug use, a night of heavy drinking, prayer, or any other suitable leisure activity. Unsafe locations may impose Disadvantage on Rest Saves at the Warden's discretion. Stress is typically not relieved during cryosleep. Finally, if you have more time, you can take Shore Leave and convert your Stress into improved Stats and Saves.
 
 ## 2.4 PANIC
 
@@ -135,7 +135,7 @@ Some results of the Panic Table are so severe that they leave a lasting impressi
 | 05 | **COWARD.** Gain a new Condition: You must make a Fear Save to engage in violence, otherwise you flee. |
 | 06 | **FRIGHTENED.** Gain a new Condition: When encountering what frightened you, make a Fear Save [-] or gain 1d5 Stress. |
 | 07 | **NIGHTMARES.** Gain a new Condition: Sleep is difficult, [-] on Rest Saves. |
-| 08 | **LOSS OF CONFIDENCE.** Gain a new Condition: Choose one Skill and lose its bonus. |
+| 08 | **LOSS OF CONFIDENCE.** Gain a new Condition: Choose one Skill and lose its Bonus. |
 | 09 | **DEFLATED.** Gain a new Condition: Whenever a Close Crewmember fails a Save, gain 1 Stress. |
 | 10 | **DOOMED.** Gain a new Condition: You feel cursed and unlucky. All Critical Successes are instead Critical Failures. |
 | 11 | **SUSPICIOUS.** For the next week, whenever someone joins the crew (even temporarily), make a Fear Save or gain 1 Stress. |
@@ -153,9 +153,9 @@ Some results of the Panic Table are so severe that they leave a lasting impressi
 
 Skills represent the accumulated knowledge, craft, techniques, and training a character possesses in a certain field. Whenever you make a Stat Check and you have a relevant Skill, you add your Skill Bonus to your Stat, giving you a higher number to roll under.
 
-Each class starts with a few Skills, and characters can acquire more through long-term study, rigorous Skill Training, and expensive enhancement implants, while some Patches grant additional Skill bonuses but not the Skill itself.
+Each class starts with a few Skills, and characters can acquire more through long-term study, rigorous Skill Training, and expensive enhancement implants, while some Patches grant additional Skill Bonuses but not the Skill itself.
 
-Just because you don't have a Skill doesn't mean you don't know anything about the subject, and it usually doesn't mean you can't at least make an attempt. What it means is that you don't have significant enough experience or expertise in the matter to act decisively in high pressure situations. Therefore, you get no bonus, and depending on how complex the task is, you might roll with Disadvantage (or not be able to attempt it at all).
+Just because you don't have a Skill doesn't mean you don't know anything about the subject, and it usually doesn't mean you can't at least make an attempt. What it means is that you don't have significant enough experience or expertise in the matter to act decisively in high pressure situations. Therefore, you get no Bonus, and depending on how complex the task is, you might roll with Disadvantage (or not be able to attempt it at all).
 
 ### *2.5.1 TRAINED SKILLS (+10)*
 
@@ -322,7 +322,7 @@ Additionally, if you decide to do nothing other than run, you can move somewhere
 
 ### *2.6.3 HOW DO I ATTACK?*
 
-How you attack most often depends on what you are using to attack. For most Ranged weapons, make a Speed Check. For most melee weapons, make a Strength Check. If successful, roll the weapon's Damage and subtract it from the enemy's Health. If you fail, the situation gets worse and you gain 1 Stress.
+How you attack most often depends on what you are using to attack. For most ranged weapons, make a Speed Check. For most melee weapons, make a Strength Check. If successful, roll the weapon's Damage and subtract it from the enemy's Health. If you fail, the situation gets worse and you gain 1 Stress.
 
 All weapons have Traits assigned to them, specifying which Stat is used in combat. There are four weapon Traits:
 
@@ -345,7 +345,7 @@ Anti-Armor (AA) weapons/attacks ignore Armor's Damage reduction and reduce any w
 
 ### *2.6.6 COVER*
 
-The environment can provide protection called Cover. It can be destroyed, just like Armor, whenever it is dealt Damage greater than or equal to its AP. Cover typically only protects against Ranged attacks, but in some situations may help block a hand-to-hand attack. If you shoot while in Cover, you are considered out of Cover until your next turn. Cover functions similarly to Armor, except it cannot be repaired during the course of usual combat.
+The environment can provide protection called Cover. It can be destroyed, just like Armor, whenever it is dealt Damage greater than or equal to its AP. Cover typically only protects against ranged attacks, but in some situations may help block a hand-to-hand attack. If you shoot while in Cover, you are considered out of Cover until your next turn. Cover functions similarly to Armor, except it cannot be repaired during the course of usual combat.
 
 - **Insignificant Cover:** Wood furniture & doors, body shields, etc. — 5 AP.
 - **Light Cover:** Trees, bulkhead walls, metal furniture, etc. — 10 AP.

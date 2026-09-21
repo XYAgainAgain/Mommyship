@@ -22,7 +22,7 @@ The provided character sheet has all the instructions for how to create your cha
 
 Characters have four Stats: **Strength, Speed, Smarts,** and **Savvy,** representing how well they act under pressure.
 
-Roll 2 ten-sided dice (2d10), add them together, then add 25. Repeat this three more times to come up with 4 Stat numbers, which you may then assign freely to **Strength, Speed, Smarts,** and **Savvy.**
+Roll 2 ten-sided dice (2d10), add them together, then add 25. Repeat this three more times to come up with 4 Stat numbers, which you may then assign freely to **Strength, Speed, Smarts,** and **Savvy**.
 
 A Stat of 36 is average, but don't get too hung up on the numbers right now.
 
@@ -30,13 +30,13 @@ A Stat of 36 is average, but don't get too hung up on the numbers right now.
 
 Characters have three Saves: **Sanity, Fear,** and **Body,** representing how resistant and reactive they are to different kinds of trauma and danger.
 
-Roll 2 ten-sided dice (2d10), add them together, then add 10. Repeat this two more times to generate three totals, which you may then assign freely to **Sanity, Fear,** and **Body.**
+Roll 2 ten-sided dice (2d10), add them together, then add 10. Repeat this two more times to generate three totals, which you may then assign freely to **Sanity, Fear,** and **Body**.
 
 ## 1.3 ROLL HEALTH
 
 Characters can suffer a maximum number of **Wounds** before they must make Death Saves. Everyone except Mechs starts with a maximum of 2 Wounds. Characters gain a Wound when their **Health** (**HP**) reaches zero.
 
-Roll 1d10, then add 10. Record the result as your **Maximum Health.**
+Roll 1d10, then add 10. Record the result as your **Maximum Health**.
 
 ## 1.4 GAIN STRESS
 
@@ -79,7 +79,7 @@ There are three Species options, as detailed here:
 
 Classes broadly define your characters' backgrounds and assign **Skills** your character has experience with.
 
-Mark your class, and select your Skills accordingly. Each class comes preloaded with relevant Skills, which help characters perform better at different challenges. Additionally, each class has a number of bonus Skills to select.
+Mark your class, and select your Skills accordingly. Each class comes preloaded with relevant Skills, which help characters perform better at different challenges. Additionally, each class has a number of Bonus Skills to select.
 
 To choose a Skill, you must have at least one prerequisite Skill (a Skill that has an arrow pointing from it on the Spacer Sheet) first.
 

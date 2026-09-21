@@ -50,7 +50,7 @@ Oftentimes the difference between life and death is having the right tools for t
 | Rocket Launcher | 4kcr | Ranged | Heavy | Long. 4d10 DMG, Anti-Armor. 1 shot. Fire & Explosives. Can only be fired at Long Range targets. Damages all Adjacent to target. | Heavy Shells |
 | Smart Rifle | 5kcr | Ranged | Tech | Extreme. 3d10 DMG. 3 shots. Gunshot [+]. [-] when firing at Close Range. Damages all Adjacent to target. | Energy Cells |
 | SMG | 1kcr | Ranged | Light | Close. 2d10 DMG. 5 shots. Gunshot. Can be fired one-handed. | Light Rounds |
-| Smoke Grenade | 200cr | Ranged | Light | Close. No DMG. 3 rounds Cover. All Ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision. | Single Use |
+| Smoke Grenade | 200cr | Ranged | Light | Close. No DMG. 3 rounds Cover. All ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision. | Single Use |
 | Sniper Rifle | 4kcr | Ranged | Light | Extreme. 3d10 DMG, Anti-Armor. Gunshot. Critical: Deals 3 Wounds instead of DMG. | Light Rounds |
 | Spray & Lighter | 25cr | Ranged | Light | Close. 1d5 DMG (+1d5 on fire). Fire & Explosives [-]. | Single Use |
 | Stun Baton | 200cr | Melee | Tech | Adjacent. 1d5 DMG. Blunt Force. Body Save or be Stunned for 1 round. | N/A |
@@ -92,7 +92,7 @@ Oftentimes the difference between life and death is having the right tools for t
 | Hardineram | 800cr | [+] Body Saves for 1d10 minutes. |
 | Immunisol | 800cr | [+] Fear Saves for 1d10 minutes. |
 | Lubrenisone | 800cr | [+] Sanity Saves for 1d10 minutes. |
-| Zenzetrine | 1kcr | Add a +5 bonus to the next Panic Check you make. |
+| Zenzetrine | 1kcr | Add a +5 Bonus to the next Panic Check you make. |
 | Stimpack | 1.5kcr | Cures Cryosickness, reduces Stress by 1, restores 1d10 Health. Grants [+] on all rolls for 1d10 minutes. |
 | Quickoag | 2kcr | Ignore Bleeding for 1 hour, or until Bleeding reaches your Max HP. |
 
@@ -143,7 +143,7 @@ Oftentimes the difference between life and death is having the right tools for t
 | Sewing Kit | 100cr | Equipment | Includes light and heavy-duty thread, assorted needles, stitch ripper, measuring tape, and small cloth patches. Repairs cloth garments and textile Armor, but not rigid Armor. |
 | Short-Range Comms | 100cr | Equipment | Allows communication from ship-to-ship within a reasonable distance, as well as surface-to-surface within 10km. Blocked by Jammers. |
 | Short-Range Comms Jammer | 4kcr | Equipment | Rucksack-sized device which, when activated, renders all radio signals within Extreme Range incomprehensible. |
-| Smart-Link Add-On | 10kcr | Equipment | Grants remote viewing, recording, and operation of a Ranged weapon as well as +5 DMG to the weapon. |
+| Smart-Link Add-On | 10kcr | Equipment | Grants remote viewing, recording, and operation of a ranged weapon as well as +5 DMG to the weapon. |
 | Standard Clothing | 100cr | Supplies | 0 AP. Looks okay, at least. |
 | Water Filtration Device | 50cr | Equipment | Can pump 4 liters of filtered water per hour from even the most brackish swamps. |
 
@@ -151,7 +151,7 @@ Oftentimes the difference between life and death is having the right tools for t
 
 In addition to the Starting Patches that player characters receive at character creation, Patches may be procured as loot from fallen enemies or acquired through trade. Patch vendors should be used sparingly to maintain game balance and cool Patch scarcity. Patches are tiered (C–S) and priced with this in mind. Wardens are encouraged to scatter Patches throughout your adventures as loot, and they can be traded, bought/sold, gifted, inherited, and passed along just like any other item. The listed prices are a suggestion.
 
-Note that while Patches add small cumulative bonuses, having one doesn't grant you the associated Skill and cannot satisfy Skill prerequisites. Patches that grant AP increase both your maximum and current AP when attached to Armor/clothing, but fall off and can be picked up and reused if the garment is destroyed.
+Note that while Patches add small cumulative Bonuses, having one doesn't grant you the associated Skill and cannot satisfy Skill prerequisites. Patches that grant AP increase both your maximum and current AP when attached to Armor/clothing, but fall off and can be picked up and reused if the garment is destroyed.
 
 | D100 | STARTING PATCHES | TIER | PRICE | ADVANCED PATCHES | TIER | PRICE |
 | :---: | ----- | :---: | :---: | ----- | :---: | :---: |
@@ -261,3 +261,7 @@ Unique Patches also exist, listed as X-Tier, and can provide just about any bene
 - **Grim Reaper (X-Tier):** When you die, select 1 Adjacent creature missing some HP and take them to the grave with you.
 - **F.A.F.O. (X-Tier):** When you roll a Critical Failure, after you incur any consequences or penalties, you may ask the Warden one question about the situation you're in, which they must answer honestly.
 - **Red Shirt Logo (X-Tier):** Upon making a Death Save, you may destroy this Patch to take a Death Save result 1 tier better than what you rolled.
+
+## 4.6 CYBERWARE & IMPLANTS
+
+*Coming soon to a PSG near you!* 👀

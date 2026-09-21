@@ -195,7 +195,7 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Adaptive Armor** | 9mcr | 1 month | Grants +2 Maximum Hull. |
 | **Corona Generator** | 10mcr | 2 weeks | Grants +5 to Battle. During the Movement Phase of combat, if you maintain course, regain 1 Hull. |
 | **Electronic Countermeasures** | 2mcr | 2 weeks | Grants +5 to Battle. Confers [-] to enemy ship's MDMG rolls. |
-| **Laser Defense System** | 2mcr | 2 weeks | Grants +5 to Battle. Ignore enemy's MDMG bonus from missile launchers. |
+| **Laser Defense System** | 2mcr | 2 weeks | Grants +5 to Battle. Ignore enemy's MDMG Bonus from missile launchers. |
 | **Reinforced Plating** | 4.5mcr | 1 month | Grants +1 Maximum Hull. |
 | **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check. If you roll a Critical Success on your Battle Check, the target Critically Fails their next Thrusters Check. |
 | **WEAPON HARDPOINTS** | ———— | ———— | ———— |
