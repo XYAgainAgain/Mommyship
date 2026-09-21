@@ -19,17 +19,17 @@ Your ship has three main Stats which represent its capabilities when acting unde
 In addition to these Ship Stats, vessels also typically have a number of other parts and functions you'll need to be aware of:
 
 - **Transponder:** Your Transponder is an automated radio system that broadcasts important information about your ship. In most star systems, it is illegal (or highly suspect) to turn this off.
-- **Hull:** Your ship's Armor — this functions the same as a character's Armor Points, and represents how much damage your ship can withstand before things start to go wrong. Your ship will have a Maximum Hull value, and you will need to track the current amount of Hull as you take attacks and sustain damage. No ship can have more than 9 Maximum Hull.
+- **Hull:** Your ship's Armor — this functions the same as a character's Armor Points, and represents how much Damage your ship can withstand before things start to go wrong. Your ship will have a Maximum Hull value, and you will need to track the current amount of Hull as you take attacks and sustain Damage. No ship can have more than 9 Maximum Hull.
 - **Fuel:** Your ship spends 1 unit of Fuel each month it travels, and 1 Warp Core each time it jumps through Hyperspace. Your ship will have a Maximum Fuel amount it can store in its tanks, and you will need to track the current amount of Fuel available as it is expended.
 - **Crew:** Your ship's life support systems can only support a certain number of biological crew, and its power systems can only support charging a certain number of mechanical crew, so it will have a maximum crew capacity which represents the combined limit of both these systems.
-- **Cryopods:** The number of available cryopods, used to store & protect biological crew on long journeys or while awaiting aid in the void of space.
+- **Cryopods:** The number of available Cryopods, used to store & protect biological crew on long journeys or while awaiting aid in the void of space.
 - **Escape Pods:** The number of available escape pods, in case the ship experiences a catastrophic failure.
 - **Cargo:** How much stuff your ship can hold. One unit of cargo is equivalent to a 6×6×6m (20×20×20ft.) cube.
 - **Passengers:** If you need to take on people beyond the maximum Crew, some ships have auxiliary systems that allow you to take on Passengers.
 - **Upgrades:** Depending on its size and type, ships will have a number of open slots for upgrade modules to be installed. For more information, see [Upgrades [1.3]](#1.3.1-upgrades)
 - **Hardpoints:** Depending on its size and type, ships will have a number of available Hardpoints where Weapons can be installed.
-- **Weapons:** Big guns, installed on Hard Points to improve your ship's Battle.
-- **Megadamage (MDMG):** Ships deal a special type of damage called Megadamage, which is damage and wounds rolled into one. This is determined by your ship's class and modified by Weapons.
+- **Weapons:** Big guns, installed on Hardpoints to improve your ship's Battle.
+- **Megadamage (MDMG):** Ships deal a special type of Damage called Megadamage, which is Damage and wounds rolled into one. This is determined by your ship's class and modified by Weapons.
 
 #### *SHIP DECKPLAN ICONS*
 
@@ -54,14 +54,14 @@ Ships don't fly themselves (at least, not always). Crewing a ship requires at le
 | **CUSTODIAN** | Jury-Rigging or Rimwise | [+] on all Maintenance Checks. |
 | **COOK** | Botany, Chemistry, or Zoology | Can give the crew [+] on a Rest Save when they have prepared a home-cooked meal during that rest period. |
 | **ACCOUNTANT** | Mathematics, Computers, or Rimwise | [+] on all Bankruptcy and Debt Checks. |
-| **COUNSELOR** | Art, Theology, or Psychology | [+] on Panic Checks when Crewmembers and Counselor are both onboard. |
-| **GARDENER** | Botany, Ecology, Exobiology, or Planetology | [+] on Sanity Saves when Crewmembers and Gardener are both onboard. |
+| **COUNSELOR** | Art, Theology, or Psychology | [+] on Panic Checks when Crewmembers and the Counselor are both onboard. |
+| **GARDENER** | Botany, Ecology, Exobiology, or Planetology | [+] on Sanity Saves when Crewmembers and the Gardener are both onboard. |
 
 Both player characters and Contractors can be assigned a Role, as long as they have the Prerequisite Skills. Assigning a Contractor to a **Liaison**, **Custodian**, **Cook**, or **Accountant** Role increases their Salary by 500cr and adds +1 to their Loyalty. Contractors assigned to any other Role increase their Salary by 1kcr and add +2 to their Loyalty.
 
 #### *1.1.2.1 YOUR SALARY*
 
-Player character Crewmember Salaries are calculated from their Stats, Skills, Wounds, and assigned Ship Role. Only actual learned Skills count toward Salary calculations; bonuses from Patches or similar equipment do not. The Captain or X.O. may dole out bonuses as they see fit (such as hazard pay). To determine a character's standard monthly Salary:
+Player character Crewmember Salaries are calculated from their Stats, Skills, Wounds, and assigned Ship Role. Only actual learned Skills count toward Salary calculations; bonuses from Patches or similar equipment do not. The Captain or X.O. may dole out bonuses as they see fit (such as Hazard Pay). To determine a character's standard monthly Salary:
 
 1. **Physical Ability:** Take the higher of **Speed or Strength** and multiply it by **20**.
 2. **Technical/Social Ability:** Take the higher of **Smarts or Savvy** and multiply it by **30**.
@@ -83,7 +83,7 @@ Much like a character sheet, the Ship's Manifest helps you keep track of your sh
 
 ## 1.2 SHIP CLASSIFICATIONS
 
-Ships come in all shapes and sizes, and are built and modified to all sorts of purposes. The primary designations used to refer to ships are its **Jump Rating** and its **Class.**
+Ships come in all shapes and sizes, and are built and modified to all sorts of purposes. The primary designations used to refer to a ship are its **Jump Rating** and its **Class.**
 
 The Jump Rating determines how many systems a ship can travel with the use of a single Warp Core. Most ships in the galaxy are either Jump 0 (J0), interplanetary travel only, or Jump-1 (J1). Some heavy commercial vessels will be equipped with J2 or J3 drives, and specialized military carriers may have up to Jump-9 capability, but this is prohibitively expensive technology.
 
@@ -93,7 +93,7 @@ Ship class is often abbreviated and combined with its Jump Rating. For example: 
 
 | FEATURE | C-0 | C-I | C-II | C-III | C-IV | C-V |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **DESCRIPTION** | Shuttlecraft and small-crew. | Light commercial. | Medium commercial. | Heavy commercial. | Light military. | Heavy military. |
+| **DESCRIPTION** | Shuttlecraft & fighters. | Light commercial. | Medium commercial. | Heavy commercial. | Light military. | Heavy military. |
 | **STARTING PRICE** | 20mcr | 50mcr | 150mcr | 300mcr | 700mcr | 1bcr |
 | **BASE HULL** | 0 | 1 | 2 | 3 | 4 | 5 |
 | **BASE MDMG** | 1 | 1d5 | 1d5 | 1d5 | 1d10 | 1d10 |
@@ -129,7 +129,7 @@ Ships come equipped with basic systems, navigation, and life support. Any additi
 
 ### *1.3.1 UPGRADES* {#1.3.1-upgrades}
 
-Every ship can be fitted with a certain number of Upgrades. Upgrades can be installed at an X, B, A-Class port (Illegal Upgrades can only be installed at X-Class ports).
+Every ship can be fitted with a certain number of Upgrades. Upgrades can be installed at X-, B-, or A-Class ports (Illegal Upgrades can only be installed at X-Class ports).
 
 Average installation times (given availability, labor, etc.) are listed below. If your vessel is being serviced, the time cost is parallel and simultaneous, not cumulative and sequential (e.g., if installing multiple Upgrades that all take 1 month or less to complete, it will only take 1 month to get all the work done), though you may have to pay a premium on labor to the station providing the install services.
 
@@ -142,16 +142,16 @@ Average installation times (given availability, labor, etc.) are listed below. I
 | **Biplanar Gravity Generator** | 3mcr | 3 weeks | Produces artificial gravity aboard the ship. |
 | **Cosmetic Remodel** | 500kcr | 1 month × Ship Class | Upgrade in appearance to the ship's interior including paint, furnishings, and other decorations. Does not consume an Upgrade slot. |
 | **Habitat Module** | 4mcr | 1 month | Increases maximum crew capacity by up to 24 per Ship Class (e.g., Class-IV could have up to 96). |
-| **Hangar/ Dronebay** | 600kcr | 1 month | Allows for the storage and maintenance of 4 Class-0 Vessels. |
+| **Hangar/Dronebay** | 600kcr | 1 month | Allows for the storage and maintenance of 4 Class-0 Vessels. |
 | **Machine Shop** | 5mcr | 3 weeks | Allows crew to repair up to 3 MDMG and 3 Hull without returning to port. Resupply for 1mcr. |
 | **Medbay** | 2mcr | 3 weeks | [+] Body Saves to regain Health while aboard the ship. Offers other medical treatments available at Warden's discretion. |
 | **Recreation Module** | 800kcr | 1 month | Entertainment hub, basic streaming plan, Zero-G pool table, minifridge. |
 | **Science Lab** | 500kcr | 3 weeks | Allows for detailed research, study, testing, and experimentation of samples. |
 | **MINOR UPGRADES** | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
-| **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded cryopods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
-| **Cargo Container** | 100kcr | 1 day | Cube-shaped metallic container that slots into the Cargo Bay (4× ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
-| **Cryochamber** | 5mcr | 2 weeks | Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
+| **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded Cryopods which cut Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years, then only every other year after that. |
+| **Cargo Container** | 100kcr | 1 day | Cube-shaped metallic container that slots into the Cargo Bay (4 × ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
+| **Cryochamber** | 5mcr | 2 weeks | Increase the number of Cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
 | **Dedicated Reactor** | 1mcr | 1 month | Grants +5 Systems. |
 | **Deep Space Scanners** | 1mcr | 2 weeks | Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at Firing Range, etc.). |
 | **Emergency Systems** | 1mcr | 1 month | Grants 1 month of emergency power and Life Support. Must be replaced after use. |
@@ -197,7 +197,7 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Electronic Countermeasures** | 2mcr | 2 weeks | Grants +5 to Battle. Confers [-] to enemy ship's MDMG rolls. |
 | **Laser Defense System** | 2mcr | 2 weeks | Grants +5 to Battle. Ignore enemy's MDMG bonus from missile launchers. |
 | **Reinforced Plating** | 4.5mcr | 1 month | Grants +1 Maximum Hull. |
-| **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check. If you roll a Critical Success on your Battle Check, the target Critical Fails their next Thrusters Check. |
+| **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check. If you roll a Critical Success on your Battle Check, the target Critically Fails their next Thrusters Check. |
 | **WEAPON HARDPOINTS** | ———— | ———— | ———— |
 | **Autocannon** | 4mcr | 2 weeks | Grants +10 to Battle. Kinetic ballistic weaponry. |
 | **Extra Hardpoint** | 3mcr | 2 weeks | Exterior module. Grants +1 Hardpoint without consuming a slot. Each additional Hardpoint costs 2× the previous. |
@@ -219,7 +219,7 @@ Jump Drives don't require an Upgrade slot to install, but you may only have one 
 | :---: | :---: | :---: | :---: |
 | **JUMP-1** | 10mcr | 1 month | Standard commercial Jump Drive. Allows for single-system jumps. |
 | **JUMP-2** | 50mcr | 2 months | Standard military Jump Drive. Allows for 2-system jumps. |
-| **JUMP-3** | 100mcr | 3 months | Long-range, cutting edge Jump Drive. Allows for 3-system jumps. |
+| **JUMP-3** | 100mcr | 3 months | Long-range, cutting-edge Jump Drive. Allows for 3-system jumps. |
 
 ## 1.5 USED AND SALVAGED UPGRADES
 

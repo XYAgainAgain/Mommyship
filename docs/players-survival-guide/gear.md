@@ -10,52 +10,52 @@ Oftentimes the difference between life and death is having the right tools for t
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | Assault Rifle | 1.2kcr | Ranged | Light | Long. 2d10+2 DMG. 10 shots. Gunshot. | Heavy Shells |
 | Basic Blade | 50cr | Melee | Light | (Scalpel, utility knife, switchblade.) Adjacent. 1d5 DMG. Bleeding [-]. | N/A |
-| Basic Bludgeon | 50cr | Melee | Heavy | (Wrenches, hammers, batons, stick.) Adjacent. 1d5 DMG. Blunt Force [-]. | N/A |
+| Basic Bludgeon | 50cr | Melee | Heavy | (Wrench, hammer, baton, stick.) Adjacent. 1d5 DMG. Blunt Force [-]. | N/A |
 | Boarding Axe | 150cr | Melee | Heavy | Adjacent. 2d10 DMG. Gore [+]. [+] on STR Checks vs inanimate objects. | N/A |
-| Chem-Caster | 900cr | Ranged | Tech | Close. 1 DMG. Organic Trauma. If DMG dealt: administers a chem of choice that shooter has on hand to target. | Special |
+| Chem-Caster | 900cr | Ranged | Tech | Close. 1 DMG. Organic Trauma. If DMG dealt: administers one Chem the shooter has on hand to the target. | Special |
 | Combat Knife | 75cr | Melee | Light | Adjacent. 1d5+SPD/10 DMG. Bleeding. Can be thrown at Close Range. | N/A |
-| Combat Shotgun | 1.4kcr | Ranged | Light | Close. 3d10+3 DMG. 6 shots. Gunshot. 1d10+3 DMG @ Long Range or Longer. | Heavy Shells |
+| Combat Shotgun | 1.4kcr | Ranged | Light | Close. 3d10+3 DMG. 6 shots. Gunshot. 1d10+3 DMG at Long Range or Longer. | Heavy Shells |
 | Crowbar | 25cr | Melee | Heavy | Adjacent. 1d5 DMG. Blunt Force [+]. Grants [+] on STR Checks to open jammed airlocks, lift heavy objects, etc. | N/A |
-| Double-Barrel Shotgun | 900cr | Ranged | Light | Close. 3d10 DMG. 2 shots. Gunshot. 1d10 DMG @ Long Range or Longer. At Close Range, can fire both barrels at once for 6d10. | Heavy Shells |
-| EMP Rifle | 1.8kcr | Ranged | Tech | Long. 1d10 DMG. Fire & Explosives [+]. If target is Mech, Body Save [-] shuts down until repairs & hard reboot. | Energy Cell |
-| Flamethrower | 4kcr | Ranged | Light | Close. 2d10 DMG. 4 shots. Fire/Explosives [+]. Body Save [-] or be set on fire (2d10 DMG/round). | Energy Cells |
-| Flare Gun | 25cr | Ranged | Light | Long. 1d5 DMG. 2 shots. Fire/Explosives [-]. High intensity flare visible day and night from Long Range. | Energy Cells |
+| Double-Barrel Shotgun | 900cr | Ranged | Light | Close. 3d10 DMG. 2 shots. Gunshot. 1d10 DMG at Long Range or Longer. At Close Range, can fire both barrels at once for 6d10. | Heavy Shells |
+| EMP Rifle | 1.8kcr | Ranged | Tech | Long. 1d10 DMG. Fire & Explosives [+]. If target is a Mech, Body Save [-] or shut down until repaired and hard-rebooted. | Energy Cells |
+| Flamethrower | 4kcr | Ranged | Light | Close. 2d10 DMG. 4 shots. Fire & Explosives [+]. Body Save [-] or be set on fire (2d10 DMG/round). | Energy Cells |
+| Flare Gun | 25cr | Ranged | Light | Long. 1d5 DMG. 2 shots. Fire & Explosives [-]. High-intensity flare visible day and night from Long Range. | Energy Cells |
 | Foam Gun | 500cr | Ranged | Light | Close. 1 DMG. 2 shots. Blunt Force. Body Save or become stuck. STR Check [-] to escape. | Energy Cells |
-| Frag Grenade | 400cr | Ranged | Light | Close. 3d10 DMG. Fire/Explosives. All Adjacent to target must Body Save or take equal DMG. | Single Use |
-| Gas Grenade | 200cr | Ranged | Light | Close. Body Save or [-] to Speed & Strength for 1d5 rounds. Affects target & all Adjacent unless they have O2, etc. | Single Use |
+| Frag Grenade | 400cr | Ranged | Light | Close. 3d10 DMG. Fire & Explosives. All Adjacent to target must make a Body Save or take equal DMG. | Single Use |
+| Gas Grenade | 200cr | Ranged | Light | Close. Body Save or [-] to Speed & Strength for 1d5 rounds. Affects target & all Adjacent unless they have O2 or an air filter. | Single Use |
 | General-Purpose Machine Gun | 8kcr | Ranged | Heavy | Long. 4d10 DMG. 5 shots. Gunshot [+]. Two-handed. Barrel can be maneuvered to fire around corners. | Heavy Shells |
-| Grenade Launcher | 2kcr | Ranged | Heavy | Long. Damage as per grenade. 1 round. Uses grenades as ammo (except Petrol Bomb). | Special |
-| Hacking Dart | 2.5kcr | Ranged | Tech | Close. 1 DMG. If target is Mech, Sanity Save or is under control of shooter for 1d5 rounds. | Light Rounds |
+| Grenade Launcher | 2kcr | Ranged | Heavy | Long. Damage as per grenade. 1 round. Uses grenades as ammo. | Special |
+| Hacking Dart | 2.5kcr | Ranged | Tech | Close. 1 DMG. If target is a Mech, Sanity Save or they are under control of the shooter for 1d5 rounds. Works on most computer systems. | Light Rounds |
 | Hand Welder | 250cr | Melee | Heavy | Adjacent. 1d10 DMG. Bleeding. Can cut through Airlock doors. Requires Powercell (burns out on a Critical Failure). | Powercells |
-| Hardlight Holoblade | 400cr | Melee | Light | Adjacent. 1d10+2 DMG. Bleeding [-]. Does not damage Mechs. Requires Powercell (burns out on a Critical Failure). | Powercells |
-| Holdout Pistol | 200cr | Ranged | Light | Close. 1d5+1 DMG. 8 Shots. Gunshot [+]. Makes very little noise. Can easily be hidden. | Light Rounds |
-| Large Blade | 100cr | Melee | Heavy | (sword, kitchen knife, axe). Adjacent. 1d10 DMG. Bleeding. | N/A |
-| Large Bludgeon | 100cr | Melee | Heavy | (shovel, fire extinguisher, standing lamp, pipe) Adjacent. 1d10 DMG. Blunt Force. | N/A |
-| Laser Cutter | 1.5kcr | Ranged | Heavy | Long. 1d100 DMG. 6 shots. Bleeding [+] or Gore [+]. Two-handed. 1 round recharge between shots. Beam penetrates just about anything. | Powercells |
+| Hardlight Holoblade | 400cr | Melee | Light | Adjacent. 1d10+2 DMG. Bleeding [-]. Does not Damage Mechs. Requires Powercell (burns out on a Critical Failure). | Powercells |
+| Holdout Pistol | 200cr | Ranged | Light | Close. 1d5+1 DMG. 8 shots. Gunshot [+]. Makes very little noise. Can easily be hidden. | Light Rounds |
+| Large Blade | 100cr | Melee | Heavy | (Sword, kitchen knife, axe). Adjacent. 1d10 DMG. Bleeding. | N/A |
+| Large Bludgeon | 100cr | Melee | Heavy | (Shovel, fire extinguisher, standing lamp, pipe) Adjacent. 1d10 DMG. Blunt Force. | N/A |
+| Laser Cutter | 1.5kcr | Ranged | Heavy | Long. 1d100 DMG. 6 shots. Bleeding [+] or Gore [+]. Two-handed. 1-round recharge between shots. Beam penetrates just about anything. | Powercells |
 | Laser Pistol | 550cr | Ranged | Light | Close. 1d10+4 DMG. 6 shots. Fire & Explosives. | Energy Cells |
-| Martial Blade | 250cr | Melee | Heavy | (lance, odachi, katana) Adjacent. 1d10+STR/10 DMG. Bleeding [+]. | N/A |
-| Martial Bludgeon | 250cr | Melee | Heavy | (staff, hammer, maul) Adjacent. 1d10+STR/10 DMG. Blunt Force [+]. | N/A |
-| Mind Melter | 1.5kcr | Ranged | Psychic | Close. 1d10 DMG. Organic Trauma. If DMG dealt: enemy must Sanity Save or go catatonic for 1d10 rounds. Does not work on Mechs. Requires Powercell (burns out on a Critical Failure). | N/A |
+| Martial Blade | 250cr | Melee | Heavy | (Lance, odachi, katana) Adjacent. 1d10+STR/10 DMG. Bleeding [+]. | N/A |
+| Martial Bludgeon | 250cr | Melee | Heavy | (Staff, hammer, maul) Adjacent. 1d10+STR/10 DMG. Blunt Force [+]. | N/A |
+| Mind Melter | 1.5kcr | Ranged | Psychic | Close. 1d10 DMG. Organic Trauma. If DMG dealt: enemy must Sanity Save or go catatonic for 1d10 rounds. Does not work on Mechs. Requires Powercell (burns out on a Critical Failure). | Powercells |
 | Nail Gun | 150cr | Ranged | Heavy | Close. 1d5+3 DMG. 32 shots. Bleeding. Ignores 2 AP. | Light Rounds |
 | Poison Injector | 400cr | Melee | Light | Adjacent. 1d10 DMG. 1 shot. Bleeding [-]. Body Save [-] or additional 1d10 DMG/round for 1d10 rounds. | Single Use |
 | Power Saw | 500cr | Melee | Heavy | Adjacent. 3d10 DMG. Gore [+]. Must cool down for 1 round after each attack. Requires Powercell (burns out on a Critical Failure). | Powercells |
 | Prism Whip | 800cr | Melee | Light | Adjacent. 2d10 DMG. Fire & Explosives [-]. Requires Powercell (burns out on a Critical Failure). | Powercells |
-| Psypulse Launcher | 2kcr | Ranged | Psychic | Close. Body Save [-] or thrown 1d10×10 feet away from shooter and takes 1d5 DMG for every 10 feet it is pushed. Blunt Force. | Energy Cells |
+| Psypulse Launcher | 2kcr | Ranged | Psychic | Close. Body Save [-] or be thrown 1d10×10 feet away from the shooter and take 1d5 DMG for every 10 feet pushed. Blunt Force. | Energy Cells |
 | Pulse Rifle | 2.4kcr | Ranged | Light | Long. 3d10 DMG. 5 shots. Gunshot. | Heavy Shells |
-| Pump Shotgun | 1kcr | Ranged | Light | Close. 3d10+1 DMG. 4 shots. Gunshot. 1d10+1 DMG @ Long Range or Longer. | Heavy Shells |
-| Raygun | 3kcr | Ranged | Tech | Long. Fires a continuous beam hitting all creatures it crosses. 2 shots. Body Save ([-] at Adjacent, [+] at Long Range) or 3d10 DMG. Fire/Explosives [+]. | Energy Cells |
+| Pump Shotgun | 1kcr | Ranged | Light | Close. 3d10+1 DMG. 4 shots. Gunshot. 1d10+1 DMG at Long Range or Longer. | Heavy Shells |
+| Raygun | 3kcr | Ranged | Tech | Long. Fires a continuous beam hitting all creatures it crosses. 2 shots. Body Save ([-] at Adjacent, [+] at Long Range) or 3d10 DMG. Fire & Explosives [+]. | Energy Cells |
 | Revolver | 750cr | Ranged | Light | Close. 1d10+3 DMG. 6 shots. Gunshot. | Light Rounds |
 | Rigging Gun | 350cr | Ranged | Heavy | Close. 1d10 DMG+1d10 DMG when removed. 1 shot. Bleeding [+]. 100m micro-filament. Body Save or become entangled. | Heavy Shells |
 | Rivet Gun | 250cr | Melee | Heavy | Close. 3 DMG. Body Save or be impaled (instant +1d10 DMG). Gore. | Heavy Shells |
 | Rocket Launcher | 4kcr | Ranged | Heavy | Long. 4d10 DMG, Anti-Armor. 1 shot. Fire & Explosives. Can only be fired at Long Range targets. Damages all Adjacent to target. | Heavy Shells |
 | Smart Rifle | 5kcr | Ranged | Tech | Extreme. 3d10 DMG. 3 shots. Gunshot [+]. [-] when firing at Close Range. Damages all Adjacent to target. | Energy Cells |
 | SMG | 1kcr | Ranged | Light | Close. 2d10 DMG. 5 shots. Gunshot. Can be fired one-handed. | Light Rounds |
-| Smoke Grenade | 200cr | Ranged | Light | Close. No DMG. 3 rounds cover. All Ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision. | Single Use |
-| Sniper Rifle | 4kcr | Ranged | Light | Extreme. 3d10 DMG, Anti-Armor. Gunshot. Critical: Deals 3 WOUNDS instead of DMG roll. | Light Rounds |
+| Smoke Grenade | 200cr | Ranged | Light | Close. No DMG. 3 rounds Cover. All Ranged attacks passing through the smoke screen [-] unless attacker has thermal/infrared vision. | Single Use |
+| Sniper Rifle | 4kcr | Ranged | Light | Extreme. 3d10 DMG, Anti-Armor. Gunshot. Critical: Deals 3 Wounds instead of DMG. | Light Rounds |
 | Spray & Lighter | 25cr | Ranged | Light | Close. 1d5 DMG (+1d5 on fire). Fire & Explosives [-]. | Single Use |
 | Stun Baton | 200cr | Melee | Tech | Adjacent. 1d5 DMG. Blunt Force. Body Save or be Stunned for 1 round. | N/A |
 | Stun Grenade | 200cr | Ranged | Light | Close. Body Save or Stunned for 1d5 rounds. Affects the target and all Adjacent unless they have protected vision from Armor. | Single Use |
-| Throwing Blades | 500cr | Melee | Light | Close. 1d5 DMG. Bleeding. Can target up to 3 adjacent creatures/objects. On Crit (failure or success), blade is destroyed. | N/A |
+| Throwing Blades | 500cr | Melee | Light | Close. 1d5 DMG. Bleeding. Can target up to 3 Adjacent creatures/objects. On Crit (failure or success), blade is destroyed. | N/A |
 | Tranq Pistol | 500cr | Ranged | Light | Close. 1d5 DMG. 6 shots. Blunt Force. If DMG dealt: enemy must Body Save or be unconscious for 1d10 rounds. Does not work on Mechs or very large targets. | Light Rounds |
 | Unarmed | 0cr | Melee | Heavy | Adjacent. STR/10 DMG. Blunt Force. | N/A |
 | Varmint Rifle | 550cr | Ranged | Light | Long. 1d5+SPD/10 DMG. 5 shots. Gunshot [+]. | Light Rounds |
@@ -68,32 +68,32 @@ Oftentimes the difference between life and death is having the right tools for t
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | Reinforced Clothing | 500cr | 1 | No | 3 hours, Sewing Kit, no Check. | AP does not stack with any other Armor, but can be worn underneath them. |
 | Commissioned Attire | 625cr | 2 | No | 3 hours, Sewing Kit, no Check. | N/A |
-| Civilian Vaccsuit | 1kcr | 3 | 12 hrs | 3 hours, Patch Kit. 0-G [+], JR [+], MR [+]. | Includes SR Comms, headlamp, radiation shielding. Decompression once AP is 0. |
+| Civilian Vaccsuit | 1kcr | 3 | 12 hrs | 3 hours, Patch Kit. 0-G [+], JR [+], MR [+]. | Includes SR Comms, Flashlight, radiation shielding. Decompression once AP is 0. |
 | Armor Vest | 1.5kcr | 4 | No | 4 hours, Assorted Tools, MR [+]. | Can be hidden underneath standard clothing. |
-| Hazard Suit | 2.1kcr | 2 | 2 hrs | 4 hours, Assorted Tools, JR [+], IE [+], MR [+]. | Includes air filter, extreme heat/cold protection, hydration reclamation system, SR Comms, headlamp, radiation shielding. |
+| Hazard Suit | 2.1kcr | 2 | 2 hrs | 4 hours, Assorted Tools, JR [+], IE [+], MR [+]. | Includes air filter, extreme heat/cold protection, hydration reclamation system, SR Comms, Flashlight, radiation shielding. |
 | Longhaul Jumpsuit | 3kcr | 5 | No | 4 hours, Sewing Kit, RW [+] or JR [+]. | Includes hydration reclamation system, radiation shielding. |
-| Battle Vaccsuit | 5kcr | 6 | 12 hrs | 5 hours, Patch Kit, 0-G, JR, MR. | Includes SR Comms, headlamp, ×1 Patch Kit. Speed [-] when worn. Radiation shielding. Decompression once AP is 0. |
-| Standard Infantry Armor | 7kcr | 7 | No | 6 hours, Assorted Tools, MR [+]. | Includes SR Comms, headlamp, bodycam. |
+| Battle Vaccsuit | 5kcr | 6 | 12 hrs | 5 hours, Patch Kit, 0-G, JR, MR. | Includes SR Comms, Flashlight, Patch Kit. Speed [-] when worn. Radiation shielding. Decompression once AP is 0. |
+| Standard Infantry Armor | 7kcr | 7 | No | 6 hours, Assorted Tools, MR [+]. | Includes SR Comms, Flashlight, bodycam. |
 | Cybersuit | 11kcr | 8 | No | 6 hours, Assorted Tools, MR or CN [+]. | Includes SR Comms, HUD, built-in Computer Terminal. |
-| Assault Infantry Armor | 16kcr | 9 | 1 hr | 6 hours, Assorted Tools, MR. | Includes SR Comms, headlamp, body cam, air filter (separate from O2 supply). Reduces chemical and fire DMG by half (rounded down) while intact. |
-| Black Ops Armor | 25kcr | 10 | 6 hrs | 12 hours, Assorted Tools, MR or Inf. | Includes SR Comms Jammer, stimpack auto-injector (stimpacks sold separately), radiation shielding. Decompression once AP is 0. |
-| Powered Infantry Armor | 35kcr | 12 | 2 hrs | 12 hours, Machine Shop, MR. | Includes SR Comms, headlamp, body cam, air filter (separate from O2 supply), exoskeleton. Completely immune to radiation, chemical, and fire damage while intact. Speed [-], Strength [+] when worn. Decompression at 0 AP. |
+| Assault Infantry Armor | 16kcr | 9 | 1 hr | 6 hours, Assorted Tools, MR. | Includes SR Comms, Flashlight, bodycam, air filter (separate from O2 supply). Reduces chemical and fire DMG by half (rounded down) while intact. |
+| Black Ops Armor | 25kcr | 10 | 6 hrs | 12 hours, Assorted Tools, MR or Inf. | Includes SR Comms Jammer, Stimpack auto-injector (Stimpacks sold separately), radiation shielding. Decompression once AP is 0. |
+| Powered Infantry Armor | 35kcr | 12 | 2 hrs | 12 hours, Machine Shop, MR. | Includes SR Comms, Flashlight, bodycam, air filter (separate from O2 supply), exoskeleton. Completely immune to radiation, chemical, and fire DMG while intact. Speed [-], Strength [+] when worn. Decompression at 0 AP. |
 
 ## 4.3 CHEMS
 
 | CHEM | PRICE | DESCRIPTION |
 | :---: | :---: | :---: |
 | Antirad | 40cr | Take 1d5 DMG and reduce your Radiation Level by 1 for 2d10 minutes. |
-| Automed | 300cr | Nanotech injections that assist your body in repairing structural damage. +1d5 HP used in field; [+] on Rest Saves and Body Saves while resting. |
-| Ambidextrin | 500cr | Reduces effects of cryosickness from 1 week to 1d10 hours. [+] Speed for 1d10 min. |
-| Metallysis | 500cr | [+] Strength for 1d10 minutes. |
-| Focusitol | 600cr | [+] Smarts for 1d10 minutes. |
-| Soci-stim | 600cr | [+] Savvy for 1d10 minutes. |
+| Automed | 300cr | Nanotech injections that assist your body in repairing itself. +1d5 HP when used in the field; [+] on Rest Saves and Body Saves while resting. |
+| Ambidextrin | 500cr | Reduces the effects of Cryosickness from 1 week to 1d10 hours. [+] Speed Checks for 1d10 minutes. |
+| Metallysis | 500cr | [+] Strength Checks for 1d10 minutes. |
+| Focusitol | 600cr | [+] Smarts Checks for 1d10 minutes. |
+| Soci-stim | 600cr | [+] Savvy Checks for 1d10 minutes. |
 | Hardineram | 800cr | [+] Body Saves for 1d10 minutes. |
 | Immunisol | 800cr | [+] Fear Saves for 1d10 minutes. |
 | Lubrenisone | 800cr | [+] Sanity Saves for 1d10 minutes. |
-| Zenzetrine | 1kcr | Add a +5 Bonus to the next Panic Check you make. |
-| Stimpack | 1.5kcr | Cures cryosickness, reduces Stress by 1, restores 1d10 Health. Grants [+] to all rolls for 1d10 min. |
+| Zenzetrine | 1kcr | Add a +5 bonus to the next Panic Check you make. |
+| Stimpack | 1.5kcr | Cures Cryosickness, reduces Stress by 1, restores 1d10 Health. Grants [+] on all rolls for 1d10 minutes. |
 | Quickoag | 2kcr | Ignore Bleeding for 1 hour, or until Bleeding reaches your Max HP. |
 
 ## 4.4 EQUIPMENT & SUPPLIES
@@ -102,21 +102,21 @@ Oftentimes the difference between life and death is having the right tools for t
 | :---: | :---: | :---: | :---: |
 | Assorted Tools | 20cr | Equipment | Wrenches, spanners, screwdrivers, etc. Can be used as weapons in a pinch (Adjacent, 1d5 DMG). Used to repair Armor. |
 | Binoculars | 150cr | Equipment | 20× magnification. Add night vision +300cr, or thermal vision +1000cr. |
-| Chemlight | 5cr | Supplies | Pack of 5. Small disposable glow-orbs capable of dim illumination in 1m radius for 12 hours. |
-| Cybernetic Diagnostic Scanner | 2kcr | Equipment | Allows a user to scan mechs and other organisms in order to diagnose any physical or mental issue they may be having. Often distrusted by mechs. |
+| Chemlight | 5cr | Supplies | Pack of 5. Small disposable glow-orbs capable of dim illumination in a 1m radius for 12 hours. |
+| Cybernetic Diagnostic Scanner | 2kcr | Equipment | Allows a user to scan Mechs and other organisms in order to diagnose any physical/mental issues or check on cybernetic implants. Often distrusted by Mechs. |
 | Electronic Tool Set | 100cr | Equipment | A full set of tools for doing detailed repair or construction work on electronics. |
-| Emergency Beacon | 2kcr | Equipment | A small device that sends up a flare and then emits a loud beep every few seconds. Additionally, sends out a call on all radio channels to ships or vehicles in the area, but can be blocked by a jammer. |
+| Emergency Beacon | 2kcr | Equipment | A small device that sends up a flare and then emits a loud beep every few seconds. Additionally, it sends out a call on all radio channels to ships or vehicles in the area, but can be blocked by a Jammer. |
 | Energy Cells | 800cr | Ammo | Per magazine/container. |
-| Exoloader | 100kcr | Equipment | Open-air mechanical exoskeleton used for heavy lifting (up to 5000kg). Loader claws deal 1 Wound. Users can only wear Reinforced Clothing, Civilian Vaccsuit, or Longhaul Vaccsuit while operating. Powercell operated (48 hours of use). |
-| Explosives & Detonator | 500cr | Equipment | Explosive charge powerful enough to blow open an airlock. All organisms in Close Range must make a Body Save or take a Wound (Explosive). Detonator works at Long Range, but can be blocked by a jammer. |
+| Exoloader | 100kcr | Equipment | Open-air mechanical exoskeleton used for heavy lifting (up to 5,000kg). Loader claws deal 1 Wound. Users can only wear Reinforced Clothing, Civilian Vaccsuit, or Longhaul Vaccsuit while operating. Requires Powercell (48 hours of use). |
+| Explosives & Detonator | 500cr | Equipment | Explosive charge powerful enough to blow open an airlock. All organisms in Close Range must make a Body Save or take a Wound (Fire & Explosives). Detonator works at Long Range, but can be blocked by a Jammer. |
 | First Aid Kit | 75cr | Supplies | An assortment of dressings and treatments to help stop Bleeding, bandage cuts, and treat other minor injuries. |
-| Flashlight | 30cr | Equipment | Handheld or shoulder mounted. Illuminates 10m ahead of the user. |
+| Flashlight | 30cr | Equipment | Handheld, helmet- or shoulder-mounted. Illuminates 10m ahead of the user. |
 | Foldable Stretcher | 150cr | Equipment | Portable stretcher that can fit within a rucksack. Allows the user to safely strap down the patient and carry them to a location where their wounds can be better treated. Unfolds to roughly 2m. |
 | Geiger Counter | 20cr | Equipment | Detects radiation and displays radiation levels. |
-| Heads-Up Display (HUD) | 500cr | Equipment | Often worn by marines, the HUD allows the wearer to see through the body cams of others in their unit, and connect to any SmartLinked weaponry. |
+| Heads-Up Display (HUD) | 500cr | Equipment | Often worn by marines, the HUD allows the wearer to see through the bodycams of others in their unit, and connect to any Smart-Linked weaponry. |
 | Heavy Shells | 400cr | Ammo | Per magazine/container. |
 | Infrared Goggles | 1.5kcr | Equipment | Allows the wearer to see heat signatures within Long Range, sometimes up to several hours old. |
-| Jetpack | 75kcr | Equipment | Allows wearer to fly up to 100m high and up to a speed of 100km/hr for 2 hours on one tank of propellant. Deals 1d100[+] DMG if destroyed. The tank can be refilled for 200cr. |
+| Jetpack | 75kcr | Equipment | Allows the wearer to fly up to 100m high at speeds up to 100km/hr for 2 hours on one tank of propellant. Deals 1d100[+] DMG if destroyed. The tank can be refilled for 200cr. |
 | Light Rounds | 200cr | Ammo | Per magazine/container. |
 | Lockpick Set | 40cr | Equipment | A highly advanced set of tools meant for hacking basic airlock and electronic door systems. |
 | Long-Range Comms | 1kcr | Equipment | Rucksack-sized communication device for use in surface-to-ship communication. |
@@ -125,23 +125,23 @@ Oftentimes the difference between life and death is having the right tools for t
 | MoHab Unit | 1kcr | Equipment | Tent, canteen, stove, rucksack, compass, and sleeping bag. |
 | MRE | 70cr | Supplies | Pack of 7. Self-contained, individual field rations in lightweight packaging. Each has sufficient sustenance for a single person for one day (does not include water). |
 | Mylar Blanket | 10cr | Equipment | Lightweight blanket made of heat-reflective material. Often used for thermal regulation of patients suffering from extreme cold or other trauma. |
-| Oxygen Tank | 50cr | Equipment | When attached to a vaccsuit provides up to 12 hours of oxygen under normal circumstances, 4 hours under stressful circumstances. Explosive. |
-| Pamphlet (Trained) | 10kcr | Supplies | Expendable info-pack that grants the user [+] on the next Skill Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
-| Pamphlet (Expert) | 25kcr | Supplies | Expendable info-pack that grants the user [+] on the next Skill Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
-| Pamphlet (Master) | 50kcr | Supplies | Expendable info-pack that grants the user [+] on the next Skill Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
-| Paracord | 10cr | Supplies | 50m. General purpose lightweight nylon rope. |
+| Oxygen Tank | 50cr | Equipment | When attached to a vaccsuit, provides up to 12 hours of oxygen under normal circumstances, 4 hours under stressful circumstances. Explosive. |
+| Pamphlet (Trained) | 10kcr | Supplies | Expendable info-pack that grants the user [+] on the next Stat Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
+| Pamphlet (Expert) | 25kcr | Supplies | Expendable info-pack that grants the user [+] on the next Stat Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
+| Pamphlet (Master) | 50kcr | Supplies | Expendable info-pack that grants the user [+] on the next Stat Check that matches the Skill explained in the Pamphlet. Pamphlet is destroyed after use. |
+| Paracord | 10cr | Supplies | 50m spool. General-purpose lightweight synthetic rope. Quite strong and versatile. |
 | Patch Kit | 200cr | Supplies | Pack of 3, 1 use each. Repairs punctured/torn vaccsuits, restoring their space readiness. |
 | Personal Locator | 200cr | Equipment | Allows Crewmembers at a control center (or on the bridge of a ship) to track the location of the wearer. |
 | Pet (Organic) | 200kcr | Equipment | Small to medium-sized organic pet animal. Larger or rare pets cost 2d10 × base pet cost. |
 | Pet (Synthetic) | 15kcr | Equipment | Small to medium-sized synthetic pet animal. Larger or rare pets cost 2d10 × base pet cost. |
 | Portable Computer Terminal | 1.5kcr | Equipment | Flat computer monitor, keyboard, and interface which allows the user to hack into preexisting computers and networks, as well as perform standard computer tasks. |
-| Powercell | 1kcr | Supplies | Heavy duty battery used for powering Laser Cutters, Salvage Drones, and other industrial items. Can be recharged in 1 hour if connected to power or 6 hours with built-in solar panel. Add waterproofing for +500. |
+| Powercell | 1kcr | Supplies | Heavy-duty battery used for powering Laser Cutters, Salvage Drones, and other industrial items. Can be recharged in 1 hour if connected to power or 6 hours with built-in solar panel. Add waterproofing for +500cr. |
 | Rebreather | 500cr | Equipment | When worn, filters toxic air and/or allows for underwater breathing for up to 20 minutes at a time without resurfacing. Can be connected to an oxygen tank. |
-| Salvage Drone | 10kcr | Equipment | Battery operated remote controlled drone. Requires two hands to operate receiver. Can fly up to 450m high, to a distance of 3km from operator. Can run for 2 hours. Can record and transmit footage to receiver. If purchased separately, can be equipped with up to two of the following: binoculars, SR Comms Jammer, Geiger counter, Laser Cutter, Medscanner, Personal Locator, Infrared Goggles, Emergency Beacon, Cybernetic Diagnostic Scanner, Bioscanner. Can carry up to 20–30kg. |
+| Salvage Drone | 10kcr | Equipment | Powercell-operated, remote-controlled drone. Requires two hands to operate the receiver. Can fly up to 450m high, to a distance of 3km from operator. Can run for 2 hours. Can record and transmit footage to receiver. Can carry up to 30kg. If purchased separately, can be equipped with up to two of the following: Binoculars, SR Comms Jammer, Geiger Counter, Laser Cutter, Medscanner, Personal Locator, Infrared Goggles, Emergency Beacon, Cybernetic Diagnostic Scanner, Bioscanner. |
 | Sample Collection Kit | 50cr | Equipment | Used to research xenoflora and xenofauna in the field. Can take vital signs, DNA samples, and collect other data on foreign material. Results may not be instantaneous and may require a lab for complete analysis. |
 | Scanner Jammer | 4kcr | Equipment | Broadcasts interference to scramble scans performed on the user. No Range limit. |
 | Sewing Kit | 100cr | Equipment | Includes light and heavy-duty thread, assorted needles, stitch ripper, measuring tape, and small cloth patches. Repairs cloth garments and textile Armor, but not rigid Armor. |
-| Short-Range Comms | 100cr | Equipment | Allows communication from ship-to-ship within a reasonable distance, as well as surface-to-surface within a dozen kilometers. Blocked by jammers. |
+| Short-Range Comms | 100cr | Equipment | Allows communication from ship-to-ship within a reasonable distance, as well as surface-to-surface within 10km. Blocked by Jammers. |
 | Short-Range Comms Jammer | 4kcr | Equipment | Rucksack-sized device which, when activated, renders all radio signals within Extreme Range incomprehensible. |
 | Smart-Link Add-On | 10kcr | Equipment | Grants remote viewing, recording, and operation of a Ranged weapon as well as +5 DMG to the weapon. |
 | Standard Clothing | 100cr | Supplies | 0 AP. Looks okay, at least. |
@@ -223,7 +223,7 @@ Note that while Patches add small cumulative bonuses, having one doesn't grant y
 | 65 | "Plays Well With Others" [+2 Influence] | C | 250kcr | "Fix Me First" Caduceus [+5 First Aid] | A | 1mcr |
 | 66 | "Good" (Brain) [+2 Smarts] | B | 500kcr | "2.5 Mohs" [+5 Geology] | A | 1mcr |
 | 67 | (2 rubber bands, a stick of gum, and a paperclip) [+2 Jury-Rigging] | C | 250kcr | "I'm in." [+5 Hacking] | A | 1mcr |
-| 68 | "Ask Me About Tongues" [+2 Linguistics] | C | 250kcr | (brass knuckles) [+5 Hand-to-hand Combat] | A | 1mcr |
+| 68 | "Ask Me About Tongues" [+2 Linguistics] | C | 250kcr | (brass knuckles) [+5 Hand-to-Hand Combat] | A | 1mcr |
 | 69 | (incorrect equation) [+2 Mathematics] | C | 250kcr | Ancient Greco-Roman Pottery Pornography [+5 History] | A | 1mcr |
 | 70 | Pin-Up Model (Mechanic) [+2 Mechanical Repair] | C | 250kcr | "Beam Me Up!" [+5 Hyperspace] | S | 5mcr |
 | 71 | "Dishonorably Discharged" [+2 Military Training] | C | 250kcr | "I Like My Tools Clean/And My Lovers Dirty" [+5 Industrial Equipment] | A | 1mcr |

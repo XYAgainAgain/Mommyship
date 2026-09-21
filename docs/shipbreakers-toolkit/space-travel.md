@@ -62,16 +62,16 @@ You don't need to own a ship to get across the galaxy, but you need to pay your 
 | Private Shuttle | 5kcr | Interstellar, C-I | 250kcr |
 | Coffin Lander (orbit-to-ground only) | 50cr | Interstellar, C-II | 500kcr |
 | **PASSENGER LINER (INTERPLANETARY)** | **COST** | **PASSENGER LINER (INTERSTELLAR)** | **COST** |
-| Steerage Deck (cryopod only) | 1kcr | Steerage Deck (cryopod only) | 2kcr |
-| Second Class (4 bunks/cabin, cryopod) | 2.5kcr | Second Class (4 bunks/cabin, cryopod) | 5kcr |
-| First Class (private cabin, cryopod) | 10kcr | First Class (private cabin, cryopod) | 20kcr |
+| Steerage Deck (Cryopod only) | 1kcr | Steerage Deck (Cryopod only) | 2kcr |
+| Second Class (4 bunks/cabin, Cryopod) | 2.5kcr | Second Class (4 bunks/cabin, Cryopod) | 5kcr |
+| First Class (private cabin, Cryopod) | 10kcr | First Class (private cabin, Cryopod) | 20kcr |
 | Cargo Space | 5kcr | Cargo Space | 20kcr |
 | Hangar Space | 25kcr | Hangar Space | 500kcr |
 | To a distant planet | ×2 | Jump-2 Ticket | +10kcr |
 | To edge of the system | ×3 | Jump-3 Ticket | +30kcr |
 | **EXECUTIVE TRANSPORT (INTERPLANETARY)** | **COST** | **EXECUTIVE TRANSPORT (INTERSTELLAR)** | **COST** |
-| Director Class (private suite, cryopod) | 20kcr | Director Class (private suite, cryopod) | 40kcr |
-| Assistant Class (private cabin, cryopod) | 12kcr | Assistant Class (private cabin, cryopod) | 25kcr |
+| Director Class (private suite, Cryopod) | 20kcr | Director Class (private suite, Cryopod) | 40kcr |
+| Assistant Class (private cabin, Cryopod) | 12kcr | Assistant Class (private cabin, Cryopod) | 25kcr |
 | Chartered Vessel | 1mcr | Chartered Vessel | 2mcr |
 
 ## 2.6 SHIP-TO-SHIP CONTACT
@@ -90,15 +90,15 @@ Communication across the vast reaches of space is difficult and time consuming. 
 
 | RANGE | INFORMATION REVEALED | HAILING LATENCY |
 | :---: | ----- | ----- |
-| Detection | Presence, trajectory, rough size, any transponder info broadcasting. | Minutes to hours. |
+| Detection | Presence, trajectory, rough size, any unencrypted transponder broadcasts. | Minutes to hours. |
 | Firing | All above, and ship class & type. | Seconds. |
 | Contact | All above, and presence of lifeforms, ship's status. | None. |
 
-Your **Transponder** constantly broadcasts important information about your ship, including among other things its **Callsign**, the name of its Captain, as well as the type of ship, its Class, home port, destination, and more. Transponder information is subject to the Latency as shown on the Hailing table above.
+Your **Transponder** constantly broadcasts important information about your ship including, among other things, its **Callsign**, the name of its Captain, as well as the type of ship, its Class, home port, destination, and more. Transponder information is subject to the Latency as shown on the Hailing table above.
 
 ### *2.6.2 DISTRESS SIGNALS* {#2.6.2-distress-signals}
 
-Occasionally, you may need to put your ship on emergency power, seal yourself in cryopods, send out a Distress Signal, and wait for help. It's a long shot, but sometimes it's the only shot you've got. When this happens, roll on the **Distress Signals Table** below.
+Occasionally, you may need to put your ship on emergency power, seal yourself in Cryopods, send out a Distress Signal, and wait for help. It's a long shot, but sometimes it's the only shot you've got. When this happens, roll on the **Distress Signals Table** below.
 
 The result of this roll is how long it takes for help to pick up your Distress Signal and arrive to provide aid and/or finish you off.
 
@@ -113,7 +113,7 @@ The result of this roll is how long it takes for help to pick up your Distress S
 
 ## 2.7 SHIP-TO-SHIP COMBAT {#2.7-ship-to-ship-combat}
 
-Combat between two spaceships may look slow and serene, but for the crews it's like a natural disaster. Each ship moves at impossible speeds, firing computer-aimed weaponry hours or even days away from their targets. The slightest bit of damage can disable or destroy an entire ship, its crew dying from flames, radiation, suffocation, or worse.
+Combat between two spaceships may look slow and serene, but for the crews it's like a natural disaster. Each ship moves at impossible speeds, firing computer-aimed weaponry hours or even days away from their targets. The slightest bit of Damage can disable or destroy an entire ship, its crew dying from flames, radiation, suffocation, or worse.
 
 ### *2.7.1 SHIP ROUNDS*
 
@@ -125,7 +125,7 @@ Most ship combats are over in 1 round. Almost none go longer than 3.
 
 ### *2.7.2 WHAT CAN I DO?*
 
-Ship-to-ship combat assumes each ship and its crew are doing everything they can to win the confrontation. It assumes that each ship and its crew are taking evasive maneuvers, firing at their best targets, and generally making sound tactical decisions.
+Ship-to-ship combat assumes each ship and its crew are doing everything they can to win the confrontation. It assumes that each ship and its crew are making evasive maneuvers, firing at their best targets, and generally making sound tactical decisions.
 
 Your job is to discuss with the rest of the crew and decide when to fight, when to flee, and when to negotiate or surrender.
 
@@ -179,7 +179,7 @@ If a ship has no weapons, or their weapons are offline, they automatically fail 
 | 03 | **HULL BREACH.** All aboard make a Body Save or take 1 Wound (Explosion). On a Critical Failure, get violently sucked into Space. |
 | 04 | **RADIATION LEAK.** Radiation Level increases every hour. |
 | 05 | **WEAPONS OFFLINE.** Automatically fail Battle Checks. 10% chance a Hardpoint is destroyed. |
-| 06 | **NAVIGATION OFFLINE.** Automatically fail Thrusters Checks. 10% all navigation data wiped. |
+| 06 | **NAVIGATION OFFLINE.** Automatically fail Thrusters Checks. 10% chance all navigation data is wiped. |
 | 07 | **LIFE SUPPORT OFFLINE.** Oxygen limited to 1d10 × maximum crew capacity. |
 | 08 | **DEAD IN THE WATER.** All systems offline, emergency power only. |
 | 09 | **ABANDON SHIP!** Ship is destroyed in 1d10 minutes. |
@@ -192,7 +192,7 @@ You have [+] on all Battle Checks and MDMG rolls against ships 1 Class lower tha
 
 ### *2.7.5 THE MORALE PHASE*
 
-After any Ship Round where an enemy takes MDMG, they must make a Morale Check. To make a Morale Check, roll 1d10. If they roll under their current MDMG, they may send a hail offering a ceasefire to make negotiations.
+After any Ship Round where an enemy takes MDMG, they must make a Morale Check. To make a Morale Check, roll 1d10. If they roll under their current MDMG, they may send a hail offering a ceasefire to begin negotiations.
 
 ### *2.7.6 AFTER BATTLE REPORT*
 
@@ -204,7 +204,7 @@ Eventually, your ship will need a tune-up, or sometimes a complete overhaul. Whe
 
 ### *2.8.1 STARTING CONDITION*
 
-Every ship starts with a little wear-and-tear. Whenever you acquire a ship, roll 1d5 + 1 Repairs from the [**Maintenance Issues table**](#2.8.5-maintenance-issues-table).
+Every ship starts with a little wear-and-tear. Whenever you acquire a ship, roll 1d5+1 times on the [**Maintenance Issues table**](#2.8.5-maintenance-issues-table).
 
 ### *2.8.2 ROUTINE MAINTENANCE*  {#2.8.2-routine-maintenance}
 
@@ -217,15 +217,15 @@ Once a month (or more), your ship needs to perform a **Maintenance Check**. To d
 
 ### *2.8.3 MINOR REPAIRS*
 
-**Minor Repairs** cover cosmetic damage, clean-up, and other handyman-type work that can be handled by the crew while the ship is in flight. Minor Repairs take roughly 2d10 days to perform and require no roll.
+**Minor Repairs** cover cosmetic issues, clean-up, and other handyman-type work that can be handled by the crew while the ship is in flight. Minor Repairs take roughly 2d10 days to perform and require no roll.
 
 If you have Refurbished or Used Upgrades/Hardpoints installed on your ship and an Engineer onboard, you can take an additional 2d10 days per Upgrade/Hardpoint to improve their degradation level by 1 (Used → Refurbished → Pristine). Risky Upgrades or Hardpoints cannot benefit from Minor Repairs.
 
 ### *2.8.4 MAJOR REPAIRS*
 
-**Major Repairs** cover large scale structural or system damage, including repairing MDMG and Hull. **Major Repairs can only be performed in port and cost 1mcr multiplied by the Ship's Class (or halved for C-0)** unless you have a Machine Shop on board. Every point of Hull or Megadamage counts as a separate Major Repair for cost purposes.
+**Major Repairs** cover large-scale structural or system Damage, including repairing MDMG and Hull. **Major Repairs can only be performed in port and cost 1mcr multiplied by the Ship's Class (or halved for C-0)** unless you have a Machine Shop on board. Every point of Hull or Megadamage counts as a separate Major Repair for cost purposes.
 
-Major Repairs can take anywhere from a few months to up to a year depending on the severity of the damage, and availability of parts and labor. They will not change the condition of Upgrades or Hardpoints.
+Major Repairs can take anywhere from a few months to up to a year depending on the severity of the Damage, and availability of parts and labor. They will not change the condition of Upgrades or Hardpoints.
 
 ### *2.8.5 MAINTENANCE ISSUES TABLE* {#2.8.5-maintenance-issues-table}
 
@@ -239,7 +239,7 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 | 02 | Staticky comms. | 36 | Corroded pipes. | 68 | Overloaded power storage. |
 | 03 | Faulty electrical system. | 37 | Inaccurate orbital transfer information. | 69 | Sensor arrays only display porn. |
 | 04 | Loose couplings. | 38 | Worn out Fuel injector nozzles. | 70 | Failed water recovery systems. |
-| 05 | Hidden (highly illegal) contraband. | 39 | Inoperative exterior lighting. | 71 | Micro-meteroid hull damage. |
+| 05 | Hidden (highly illegal) contraband. | 39 | Inoperative exterior lighting. | 71 | Micrometeoroid Hull Damage. |
 | 06 | Autopilot systems down. | 40 | Defective intercomms. | 72 | Carbon dioxide alarm won't stop. |
 | 07 | Leaking hydraulics. | 41 | Inadequate waste recycling. | 73 | Solar panel degradation. |
 | 08 | Creaking hull. | 42 | Faulty altitude control thrusters. | 74 | Computer failure from cosmic radiation. |
@@ -247,7 +247,7 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 | 10 | Misaligned docking clamps. | 44 | Delayed communications relay. | 76 | Malfunctioning plasma thruster. |
 | 11 | Viewports blocked. | 45 | Damaged Fuel lines. | 77 | Dehumidifier failure. |
 | 12 | Jammed exterior airlocks. | 46 | Corroded exhaust manifolds. | 78 | Intermittent electrical outages. |
-| 13 | Dysfunctional gravity plating. | 47 | Terminal displays burnt-out. | 79 | Fire suppression out of code. |
+| 13 | Dysfunctional gravity plating. | 47 | Terminal displays burnt out. | 79 | Fire suppression out of code. |
 | 14 | Out of code compliance. | 48 | Check engine light. | 80 | Damaged floor panelling. |
 | 15 | Controls sticking. | 49 | Failed data backup systems. | 81 | Broken light fixture in remote corridor. |
 | 16 | Coolant leak. | 50 | Faulty door locks. | 82 | Damaged coolant pump. |
@@ -261,11 +261,11 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 | 23 | **Oxygen Leak.** If the ship is low on O2, lose 1d5 extra per day. | 57 | **Fuel Leak.** Burn +1 Fuel every time you spend Fuel. | 89 | **Clogged Air Filtration.** Max crew capacity is halved. (Mechs don't count). |
 | 24 | **Throttled Afterburners.** -2d10 Thrusters. | 58 | **Jump Bug.** 10% chance Jump takes 2d10 months, not 2d10 days. | 90 | **Broken Backup Generator.** No emergency power. |
 | 25 | **Lemon.** Maintenance Checks at [-]. | 59 | **Fragile.** Always take +1 MDMG. | 91 | **Weakened Frame.** -1 Maximum Hull. |
-| 26 | **Slow Acceleration.** +1 Week to travel. | 60 | **Cracked Heat Shields**. Ship becomes Extremely Hot or Cold. | 92 | **Chemical Spill.** Body Saves [-] While on board. |
+| 26 | **Slow Acceleration.** +1 week to travel. | 60 | **Cracked Heat Shields.** Ship becomes Extremely Hot or Cold. | 92 | **Chemical Spill.** Body Saves [-] while onboard. |
 | 27 | **Inaccurate Navigation.** 50% chance pathfinding is faulty. | 61 | **Outdated Software.** -1d10 Systems. | 93 | **Scanner Reduction.** Ship has to be one Range closer to broadcast/receive. |
 | 28 | **Miscalibrated Targeting Sensors.** -1d10 Battle. | 62 | **Contaminated Water Purification.** Parasites in the water supply. | 94 | **Transponder Slagged.** Cannot turn Transponder On. |
-| 29 | **Faulty Cryopods**. Nightmares, cryosickness lasts +1 Week. | 63 | **Malfunctioning Waste Management.** One Amenity becomes non-functional. | 95 | **Corrupted A.I.** [-] on Systems Checks. |
-| 30 | **Malfunctioning Escape Pods.** 50% chance will not eject from ship. | 64 | **Fusion Reactor Overheating.** -1d10 Thrusters. | 96 | **Drive Jamming.** 10% chance warp core consumed and Jump fails. |
-| 31 | **Cycling Transponder**. Unable to send Distress Signals. | 65 | **Failed Radiation Shielding.** +1 Radiation Level. | 97 | **Rust Bucket.** +1 Minimum Stress to all crew. |
+| 29 | **Faulty Cryopods.** Nightmares. Cryosickness lasts +1 week. | 63 | **Malfunctioning Waste Management.** One Amenity becomes non-functional. | 95 | **Corrupted A.I.** [-] on Systems Checks. |
+| 30 | **Malfunctioning Escape Pods.** 50% chance will not eject from ship. | 64 | **Fusion Reactor Overheating.** -1d10 Thrusters. | 96 | **Drive Jamming.** 10% chance a Warp Core is consumed and the Jump fails. |
+| 31 | **Cycling Transponder.** Unable to send Distress Signals. | 65 | **Failed Radiation Shielding.** +1 Radiation Level. | 97 | **Rust Bucket.** +1 Minimum Stress to all crew. |
 | 32 | **Sabotaged Coolant System.** [-] Body Saves while onboard. | 66 | **Structural Damage.** One Upgrade becomes non-functional. | 98 | **Security Malfunction.** 1d5 bulkheads seal and will not open. |
 | 33 | **Death Trap.** [-] on all Ship Checks. |  |  | 99 | **Slagged.** One Hardpoint becomes inoperable. |

@@ -26,7 +26,7 @@ When you fail a Stat Check or a Save your character gains 1 or more Stress. Stre
 
 Panic Checks are rolled when the worst has happened and your character snaps. A bad result can lead to a long-term Condition that needs treatment, but a good result can provide focus when it is needed the most.
 
-When characters get hurt they lose Health. If they lose enough Health they suffer a Wound. If they gain Wounds equal to their maximum they die.
+When characters get hurt, they lose Health. If they lose enough Health, they suffer a Wound. If they gain Wounds equal to their maximum, they make a Death Save. If they fail the Death Save, they die. If they don't, they might wish they had.
 
 With these basics in mind, you're ready to handle 90% of the situations that come up in a game. For everything else, you, the Warden, and the other players will discuss the situation and come up with a House Rule to suit the table's specific needs.
 
@@ -58,14 +58,14 @@ Once you've collected all of these items and built your character, you're ready 
 
 Whenever you want to do something and the price for failure is high, roll 1d100 and attempt to roll lower than your most relevant Stat. This is called a Stat Check. If you roll less than your Stat, you succeed. Otherwise, you fail and gain 1 Stress.
 
-A roll of 90–99 is always a failure, and a roll of 00 is always a critical success.
+A roll of 90–99 is always a failure, and a roll of 00 is always a Critical Success.
 
 You have four main Stats which represent your abilities when acting under pressure:
 
 - **Strength:** Holding airlocks closed, carrying fallen comrades, climbing, pushing, jumping, using most melee weapons.
 - **Speed:** Getting out of the cargo bay before the blast doors close, acting before someone (or something) else, running away, using most Ranged weapons.
-- **Smarts**: Recalling your training and experience under duress, thinking through difficult problems, inventing or fixing things.
-- **Savvy**: Swaying people to your cause, judging an uncertain situation, haggling and talking your way out of trouble.
+- **Smarts:** Recalling your training and experience under duress, thinking through difficult problems, inventing or fixing things.
+- **Savvy:** Swaying people to your cause, judging an uncertain situation, haggling and talking your way out of trouble.
 
 ### *2.2.2 SAVES*
 
@@ -87,7 +87,7 @@ There are three things that can modify the outcome of a Stat Check or Save: Adva
 
 **Critical Successes & Failures:** Whenever you roll doubles (e.g., 00, 66) on a Stat Check or Save, you have rolled a Critical. If the roll is a success, it is now a Critical Success and something very good happens. If it is a failure, it is now a Critical Failure and something very bad happens, and furthermore, you must make a Panic Check. A Stat Check or Save roll of 00 is always a Critical Success and a 99 is always a Critical Failure.
 
-**Skills:** If a character has a Skill that is relevant to the task at hand, you can add the Skill's bonus to the Stat or Save before making your roll (giving you a higher number to roll under and thus a greater chance of success).
+**Skills:** If a character has a Skill that is relevant to the task at hand, you can add the Skill's bonus to the Stat before making your roll (giving you a higher number to roll under and thus a greater chance of success).
 
 ## 2.3 STRESS
 
@@ -109,7 +109,7 @@ Stress, Damage, and emotional wear and tear eventually bring characters to their
 
 ### *2.4.1 WHAT IS A PANIC CHECK?*
 
-A Panic Check determines whether the character can keep their cool under extreme pressure. To make a Panic Check, roll the Panic Die (1d20) and attempt to roll greater than your current Stress. If you roll less than or equal to your current Stress you fail, and you look up your result on the Panic Table below.
+A Panic Check determines whether the character can keep their cool under extreme pressure. To make a Panic Check, roll the Panic Die (1d20) and attempt to roll greater than your current Stress. If you roll less than or equal to your current Stress, you fail, and you look up your result on the Panic Table below.
 
 ### *2.4.2 WHEN TO MAKE PANIC CHECKS*
 
@@ -133,7 +133,7 @@ Some results of the Panic Table are so severe that they leave a lasting impressi
 | 03 | **JUMPY.** Gain 1 Stress. All Close Crewmembers gain 2 Stress. |
 | 04 | **OVERWHELMED.** [-] on all rolls for the next 1d10 minutes. Increase Minimum Stress by 1. |
 | 05 | **COWARD.** Gain a new Condition: You must make a Fear Save to engage in violence, otherwise you flee. |
-| 06 | **FRIGHTENED.** Gain a new Condition: When Encountering what frightened you, make Fear Save [-] or gain 1d5 Stress. |
+| 06 | **FRIGHTENED.** Gain a new Condition: When encountering what frightened you, make a Fear Save [-] or gain 1d5 Stress. |
 | 07 | **NIGHTMARES.** Gain a new Condition: Sleep is difficult, [-] on Rest Saves. |
 | 08 | **LOSS OF CONFIDENCE.** Gain a new Condition: Choose one Skill and lose its bonus. |
 | 09 | **DEFLATED.** Gain a new Condition: Whenever a Close Crewmember fails a Save, gain 1 Stress. |
@@ -153,13 +153,13 @@ Some results of the Panic Table are so severe that they leave a lasting impressi
 
 Skills represent the accumulated knowledge, craft, techniques, and training a character possesses in a certain field. Whenever you make a Stat Check and you have a relevant Skill, you add your Skill Bonus to your Stat, giving you a higher number to roll under.
 
-Each class starts with a few Skills, and characters can acquire more through long-term study, rigorous Skill Training, expensive enhancement implants, and from some Patches.
+Each class starts with a few Skills, and characters can acquire more through long-term study, rigorous Skill Training, and expensive enhancement implants, while some Patches grant additional Skill bonuses but not the Skill itself.
 
 Just because you don't have a Skill doesn't mean you don't know anything about the subject, and it usually doesn't mean you can't at least make an attempt. What it means is that you don't have significant enough experience or expertise in the matter to act decisively in high pressure situations. Therefore, you get no bonus, and depending on how complex the task is, you might roll with Disadvantage (or not be able to attempt it at all).
 
 ### *2.5.1 TRAINED SKILLS (+10)*
 
-You've received standard training in this area equivalent to a bachelor's degree or on-the-job training for a couple years.
+You've received standard training in this area equivalent to a bachelor's degree or on-the-job training for a couple of years.
 
 - **Art:** The expression or application of a species' creative ability and imagination.
 - **Athletics:** Physical fitness, sports, and games.
@@ -171,7 +171,7 @@ You've received standard training in this area equivalent to a bachelor's degree
 - **History:** The study of past events, commerce, political entities, and military operations.
 - **Industrial Equipment:** The safe and proper use of heavy machinery and tools (exosuits, forklifts, drills, breakers, laser cutters, etc.).
 - **Influence:** Interpersonal sway, ability to read social cues and respond accordingly.
-- **Jury-rigging:** Makeshift repair or engineering, using only the tools and materials at hand.
+- **Jury-Rigging:** Makeshift repair or engineering, using only the tools and materials at hand.
 - **Linguistics:** The study of languages (alive, dead, and undiscovered).
 - **Mathematics:** The study of numbers, quantity, and space.
 - **Military Training:** Basic training provided to all military personnel.
@@ -191,7 +191,7 @@ You've received the equivalent of a doctorate or have many years of experience i
     - **Requires:** Geology or Industrial Equipment
 - **Ecology:** The study of organisms and how they relate to their environment.
     - **Requires:** Botany or Geology
-- **Explosives:** Design and effective use of explosive devices (bombs, grenades, shells, land mines, etc.)
+- **Explosives:** Design and effective use of explosive devices (bombs, grenades, shells, land mines, etc.).
     - **Requires:** Jury-Rigging, Chemistry, or Military Training
 - **Extortion:** Application of sensitive financial, emotional, or legal information to assert pressure on a person/entity to solicit their cooperation or a specific course of action.
     - **Requires:** Influence
@@ -199,9 +199,9 @@ You've received the equivalent of a doctorate or have many years of experience i
     - **Requires:** First Aid or Zoology
 - **Firearms:** Safe and effective use of guns.
     - **Requires:** Military Training or Rimwise
-- **Hacking:** Unauthorized access to computer systems and networks.
+- **Hacking:** Unauthorized access to computer systems, devices, and networks.
     - **Requires:** Computers or Military Training
-- **Hand-to-Hand Combat:** Melee fighting with weaponry, brawling, martial arts, etc.
+- **Hand-to-Hand Combat (H2H):** Melee fighting with weaponry, brawling, martial arts, etc.
     - **Requires:** Rimwise or Athletics
 - **Mechanical Repair:** Fixing broken machines.
     - **Requires:** Industrial Equipment or Jury-Rigging
@@ -228,7 +228,7 @@ You've received the equivalent of a doctorate or have many years of experience i
 
 You are advanced in your field and are aware of cutting edge techniques or highly specialized and niche information. Due to their focus, Master Skills apply very narrowly compared to Trained Skills.
 
-- **Artificial Intelligence:** The study of intelligence as demonstrated by machines.
+- **Artificial Intelligence (AI):** The study of intelligence as demonstrated by machines.
     - **Requires:** Hacking
 - **Artillery:** The effective use of vehicle hardpoint weapons or other heavy-duty military hardware.
     - **Requires:** Firearms or Explosives
@@ -307,7 +307,7 @@ Characters can generally move somewhere within Close Range and then do one thing
 Here's a non-exhaustive list of the kinds of things you could attempt in a round:
 
 - Attack something or someone.
-- Bandage a wound to try and stop the Bleeding.
+- Bandage an injury to try and stop the Bleeding.
 - Check vital signs with a Medscanner.
 - Move again.
 - Fire a vehicle's weapon.
@@ -326,30 +326,30 @@ How you attack most often depends on what you are using to attack. For most Rang
 
 All weapons have Traits assigned to them, specifying which Stat is used in combat. There are four weapon Traits:
 
-- **Light:** These weapons use your Speed stat.
-- **Heavy:** These weapons use your Strength stat.
-- **Tech:** These weapons use your Smarts stat.
-- **Psychic:** These weapons use your Savvy stat.
+- **Light:** These weapons use your Speed Stat.
+- **Heavy:** These weapons use your Strength Stat.
+- **Tech:** These weapons use your Smarts Stat.
+- **Psychic:** These weapons use your Savvy Stat.
 
 ### *2.6.4 DAMAGE*
 
-When taking Damage (DMG), subtract it from your Health. If your Health reaches zero, gain a Wound and roll on the Wounds Table. Then, reset the character's Health to its Maximum and subtract any carryover damage. Repeat as necessary until all damage is accounted for. Once your character suffers their Maximum Wounds, make a Death Save.
+When taking Damage (DMG), subtract it from your Health. If your Health reaches zero, gain a Wound and roll on the Wounds Table. Then, reset the character's Health to its Maximum and subtract any carryover Damage. Repeat as necessary until all Damage is accounted for. Once your character suffers their Maximum Wounds, make a Death Save.
 
 ### *2.6.5 ARMOR*
 
-While wearing Armor, you are shielded from damage under your current Armor Points (AP). Any hits you suffer that deal damage less than your AP instead deal no damage to you.
+While wearing Armor, you are shielded from Damage under your current Armor Points (AP). Any hits you suffer that deal Damage less than your AP instead deal no Damage to you.
 
-When you suffer damage equal to or higher than your current AP value (per hit), subtract your AP from the damage, and your Armor gets -1 to its AP until you can repair it. This penalty can stack, and Armor breaks completely at 0 AP. Different Armor requires different resources and tools for repair.
+When you suffer Damage equal to or higher than your current AP value (per hit), subtract your AP from the Damage, and your Armor gets -1 to its AP until you can repair it. This penalty can stack, and Armor breaks completely at 0 AP. Different Armor requires different resources and tools for repair.
 
-Anti-Armor (AA) weapons/attacks ignore Armor's damage reduction and reduce any worn Armor's AP by 1, and break the Armor as normal when it reaches 0 AP.
+Anti-Armor (AA) weapons/attacks ignore Armor's Damage reduction and reduce any worn Armor's AP by 1, and break the Armor as normal when it reaches 0 AP.
 
 ### *2.6.6 COVER*
 
 The environment can provide protection called Cover. It can be destroyed, just like Armor, whenever it is dealt Damage greater than or equal to its AP. Cover typically only protects against Ranged attacks, but in some situations may help block a hand-to-hand attack. If you shoot while in Cover, you are considered out of Cover until your next turn. Cover functions similarly to Armor, except it cannot be repaired during the course of usual combat.
 
-- **Insignificant Cover:** Wood furniture & door, body shields, etc…AP 5.
-- **Light Cover:** Trees, bulkhead walls, metal furniture, etc…AP 10.
-- **Heavy Cover:** Airlock doors, cement beams, ships, etc…AP 20.
+- **Insignificant Cover:** Wood furniture & doors, body shields, etc. — 5 AP.
+- **Light Cover:** Trees, bulkhead walls, metal furniture, etc. — 10 AP.
+- **Heavy Cover:** Airlock doors, cement beams, ships, etc. — 20 AP.
 
 Armor and Cover stack, and Cover is always destroyed first. For example, if you have 8 Armor and 5 Cover and are shot for 5 DMG, the Cover is reduced to 4 and you are unscathed because 5 < 8.
 
@@ -376,10 +376,10 @@ If you prefer, you can ask the Warden to roll your Death Save for you so that yo
 
 | D10 | RESULT |
 | :---: | ----- |
-| 00 | **You are unconscious.** You wake up in 2d10 minutes. Reduce your Maximum Health by 1d5. |
-| 01–02 | **You are unconscious and dying.** You die in 1d5 rounds without intervention. |
-| 03–04 | **You are comatose.** Only extraordinary measures can return you to the waking world. |
-| 05–09 | **You have died.** Roll up a new character. |
+| 0 | **You are unconscious.** You wake up in 2d10 minutes. Reduce your Maximum Health by 1d5. |
+| 1–2 | **You are unconscious and dying.** You die in 1d5 rounds without intervention. |
+| 3–4 | **You are comatose.** Only extraordinary measures can return you to the waking world. |
+| 5–9 | **You have died.** Roll up a new character. |
 
 ### *2.6.8 WOUND EFFECTS (D10)*
 
@@ -390,22 +390,22 @@ When you take a Wound and roll on the Wound Effects Table, the weapon that dealt
 
 | D10 | SEVERITY | BLUNT FORCE | BLEEDING | GUNSHOT | FIRE & EXPLOSIVES | GORE & MASSIVE | ORGANIC TRAUMA |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 00 | Flesh Wound | Winded. [-] until you catch your breath. | Drop held item. | Grazed, knocked down. | Hair burnt. Gain 1d5 Stress. | Vomit [-] on next action. | Adverse reaction. Hives & sweating. |
-| 01 | Minor Injury | Black Eye. [-] on Savvy Checks. | Loss of blood. Those Close gain 1 Stress. | Bleeding +1 | Awesome Scar. +1 Min. Stress. | Awesome Scar. +1 Min. Stress. | Muscular dystrophy. -1d5 Strength. |
-| 02 |  | Bell rung. [-] on Smarts Checks. | Blood in eyes. [-] until wiped clean. | Fractured extremity. [-] on next Speed Check. | Singed. [-] on next action. | Digit mangled. | -1d5 Speed. |
-| 03 |  | Leg or foot broken. [-] on Speed Checks. | Laceration. Bleeding +1. | Broken rib. If relying on limited O2 supply, depletes at 2× rate. | Shrapnel/large burn. [-] on next 1d5 actions. | Eye gouged out. | Tonic-clonic seizure. -1d10 Smarts. |
-| 04 |  | Snapped collarbone. [-] on Strength Checks. | Major cut. Bleeding +2. | Fractured extremity. -1 AP. | Extensive burns. -1d10 Strength. | Ripped off flesh. -1d10 Strength. | Projectile vomit. [-] on next 3 Savvy Checks. |
-| 05 | Major Injury | Concussion. Lose use of all Skills. | Fingers/toes severed. Bleeding +3. | Lodged bullet. Surgery required. | Major Burn. -2d10 Body Save | Paralyzed from the waist down. | Partial organ failure. [-] on Body Saves. |
-| 06 |  | Rupture. -1d5 AP. | Hand/foot severed. Bleeding +4. | Gunshot to the neck. Bleeding +3. | Traumatic Burn. -2d10 Fear Save | Limb severed. Bleeding +5. | Major organ failure. Incapacitated for 1d10 rounds. |
-| 07 | Lethal Injury (Death Save in 1d10 rounds) | Back broken. [-] on all Checks. | Limb severed. Bleeding +5. | Major blood loss. Bleeding +4. | Limb on fire. 2d10 DMG per round | Impaled. Bleeding +6. | Dangerous dosage. Make a Chem Check. |
-| 08 |  | Skull fracture. [-] on all Saves. | Major artery cut. Bleeding +6. | Sucking chest wound. Bleeding +5. | Body on fire. 3d10 DMG per round | Guts spooled on floor. Bleeding +7. | Lethal dosage. Make a Chem Check [-]. |
-| 09 | Fatal Injury (Death Save now) | Spine or neck broken. Death Save. | Throat slit or heart pierced. Death Save. | Headshot. Death Save. | Engulfed in a fiery explosion. Death Save. | Head explodes. No Death Save. You die spectacularly. | Total nervous system collapse. You die swiftly & painfully. |
+| 0 | Flesh Wound | Winded. [-] until you catch your breath. | Drop held item. | Grazed, knocked down. | Hair burnt. Gain 1d5 Stress. | Vomit. [-] on next action. | Adverse reaction. Hives & sweating. |
+| 1 | Minor Injury | Black Eye. [-] on Savvy Checks. | Loss of blood. Close allies gain 1 Stress. | Bleeding +1. | Awesome Scar. +1 Min. Stress. | Awesome Scar. +1 Min. Stress. | Muscular dystrophy. -1d5 Strength. |
+| 2 |  | Bell rung. [-] on Smarts Checks. | Blood in eyes. [-] until wiped clean. | Fractured extremity. [-] on next Speed Check. | Singed. [-] on next action. | Digit mangled. | -1d5 Speed. |
+| 3 |  | Leg or foot broken. [-] on Speed Checks. | Laceration. Bleeding +1. | Broken rib. If relying on limited O2 supply, depletes at 2× rate. | Shrapnel/large burn. [-] on next 1d5 actions. | Eye gouged out. | Tonic-clonic seizure. -1d10 Smarts. |
+| 4 |  | Snapped collarbone. [-] on Strength Checks. | Major cut. Bleeding +2. | Fractured extremity. -1 AP. | Extensive burns. -1d10 Strength. | Ripped off flesh. -1d10 Strength. | Projectile vomit. [-] on next 3 Savvy Checks. |
+| 5 | Major Injury | Concussion. Lose use of all Skills. | Fingers/toes severed. Bleeding +3. | Lodged bullet. Surgery required. | Major Burn. -2d10 Body Save. | Paralyzed from the waist down. | Partial organ failure. [-] on Body Saves. |
+| 6 |  | Rupture. -1d5 AP. | Hand/foot severed. Bleeding +4. | Gunshot to the neck. Bleeding +3. | Traumatic Burn. -2d10 Fear Save. | Limb severed. Bleeding +5. | Major organ failure. Incapacitated for 1d10 rounds. |
+| 7 | Lethal Injury (Death Save in 1d10 rounds) | Back broken. [-] on all Checks. | Limb severed. Bleeding +5. | Major blood loss. Bleeding +4. | Limb on fire. 2d10 DMG per round. | Impaled. Bleeding +6. | Dangerous dosage. Make a Chem Check. |
+| 8 |  | Skull fracture. [-] on all Saves. | Major artery cut. Bleeding +6. | Sucking chest wound. Bleeding +5. | Body on fire. 3d10 DMG per round. | Guts spooled on floor. Bleeding +7. | Lethal dosage. Make a Chem Check [-]. |
+| 9 | Fatal Injury (Death Save now) | Spine or neck broken. Death Save. | Throat slit or heart pierced. Death Save. | Headshot. Death Save. | Engulfed in a fiery explosion. Death Save. | Head explodes. No Death Save. You die spectacularly. | Total nervous system collapse. You die swiftly & painfully. |
 
 ### *2.6.9 RANGE & DISTANCE*
 
 Range, distance, and movement are tracked abstractly in Range Bands. These are:
 
-- **Adjacent:** Less than 1m/3ft. You're basically touching. This covers fist fights, close-quarters combat, and trying to get out of the grips of a hideous terror's claws. More than that, it covers things like using a computer terminal or administering first aid to someone. You can talk comfortably, whisper, and even smell someone at this Range.
+- **Adjacent:** Less than 1m/3ft. You're basically touching. This covers fist fights, close-quarters combat, and trying to get out of the grip of a hideous terror's claws. More than that, it covers things like using a computer terminal or administering first aid to someone. You can talk comfortably, whisper, and even smell someone at this Range.
 - **Close Range:** Roughly 5–10m/15–30ft. Someone Close can be reached by running over to them in a few seconds. They're near enough that you could likely throw something at them and hit them. You'd have to speak loud enough that someone on the other side of the room could hear you. Powerful stenches can be smelled if they're Close. Firearms like shotguns are most effective at this Range or Adjacent.
 - **Long Range:** Roughly 20–100m/50–300ft. Things in this band are far enough away that they take an entire round or longer to get to. Rifles are effective at this Range, but handguns and shotguns less so. You'd have to yell at someone to get their attention, and you probably won't smell anyone at Long Range, no matter how bad they stink.
 - **Extreme Range:** More than 100m/300ft. Only the longest Range weapons, like smart rifles, can hit something accurately in this band. It takes more than one turn to get to something here, and even if you hear a scream you might not know which direction it's coming from.
@@ -418,7 +418,7 @@ Below are some of the most common afflictions characters may encounter while exp
 
 ### *2.7.1 ATMOSPHERES*
 
-Planets with Toxic or Corrosive atmospheres require special gear to explore, otherwise there is the risk of harm or even death.
+Planets with Toxic or Corrosive atmospheres require special gear to explore. Otherwise, there is a risk of harm or death.
 
 **Toxic Atmosphere:** The planet's atmosphere is not fit to breathe, but is otherwise safe. A rebreather or Armor with its own oxygen supply is required. Without these, characters take 1d10 DMG per round, Body Save for half.
 
@@ -426,33 +426,33 @@ Planets with Toxic or Corrosive atmospheres require special gear to explore, oth
 
 ### *2.7.2 BLEEDING*
 
-Some weapons or Wounds cause characters to Bleed. This means they take 1 Damage every round until the Bleeding is stopped with a dose of Quickoag or a First Aid Kit (requiring a successful First Aid, Field Medicine, or Surgery Check). This is cumulative. If a character is Bleeding 1 Damage per round and gains Bleeding +1, they now take 2 Damage per round. Bleeding damage ignores Armor and damage reduction.
+Some weapons or Wounds cause characters to Bleed. This means they take 1 Damage every round until the Bleeding is stopped with a dose of Quickoag or a First Aid Kit (requiring a successful First Aid, Field Medicine, or Surgery Check). This is cumulative. If a character is Bleeding 1 Damage per round and gains Bleeding +1, they now take 2 Damage per round. Bleeding Damage ignores Armor and Damage reduction.
 
 ### *2.7.3 CRYOSICKNESS*
 
-To endure long space journeys or hyperspace jumps, crews use cryopods, which are coffin-like capsules that freeze them in a suspended animation called cryosleep. While in cryosleep, vitals are preserved and aging slows down. However, upon awakening, you experience a hangover-like feeling called cryosickness, which causes sluggishness and slow reflexes. While cryosick, you suffer [-] on all rolls for 1 week. Upgraded cryochambers can help mitigate these effects, and a stimpack can cure them instantly.
+To endure long space journeys or hyperspace jumps, crews use Cryopods, which are coffin-like capsules that freeze them in a suspended animation called cryosleep. While in cryosleep, vitals are preserved and aging slows down. However, upon awakening, you experience a hangover-like feeling called Cryosickness, which causes sluggishness and slow reflexes. While cryosick, you suffer [-] on all rolls for 1 week. Upgraded Cryopods can help mitigate these effects, and a Stimpack can cure them instantly.
 
 ### *2.7.4 EXHAUSTION*
 
-Long grueling treks on undiscovered planets can easily grind you down. If it becomes relevant, track exhaustion by making a Body Save every hour after 12 hours of activity. Upon failure, gain 1 Stress and take 1 Damage.
+Long, grueling treks on undiscovered planets can easily grind you down. If it becomes relevant, track Exhaustion by making a Body Save every hour after 12 hours of activity. Upon failure, gain 1 Stress and take 1 Damage.
 
-After 24 hours of exhaustion, you suffer [-] on all rolls until the character can rest for 8 hours.
+After 24 hours of Exhaustion, you suffer [-] on all rolls until you can rest for 8 hours.
 
 ### *2.7.5 FOOD & WATER*
 
-Humans can survive roughly 3 weeks without food. After 24 hours without food, roll at Disadvantage to all rolls. For the bare minimum of survival you need 1 liter of water a day. However, at this level, any strenuous activity (e.g., running, combat, making mechanical repairs) forces you to make a Body Save or pass out. When water is scarce and you're tracking it this closely, you're at Disadvantage on all rolls.
+Humans can survive roughly 3 weeks without food. After 24 hours without food, you have [-] on all rolls. For the bare minimum of survival, you need 1 liter of water a day. However, at this level, any strenuous activity (e.g., running, combat, performing rapid repairs) forces you to make a Body Save or pass out. When water is scarce and you're tracking it this closely, you have [-] on all rolls. Aliens may not suffer the exact same penalties, depending on their physiology, but Mechs still need to charge every once in a while.
 
 ### *2.7.6 OXYGEN*
 
 In space, you can last 15 seconds without oxygen before falling unconscious. After passing out, you can survive for 1d5 minutes before dying.
 
-If all of a ship's Life Support System goes offline, roll 1d10 and multiply it by the maximum crew capacity. This is the remaining oxygen supply.
+If a ship's Life Support System goes offline entirely, roll 1d10 and multiply it by the maximum crew capacity. This is the remaining oxygen supply in hours.
 
 Every 24 hours, subtract the total number of breathing occupants from the remaining oxygen supply. Anyone aboard engaging in strenuous activity (e.g., running, combat, mechanical repairs, etc.) further reduces the oxygen supply by 2 each.
 
-Whenever the oxygen supply is less than twice the amount of breathing occupants, all rolls are at Disadvantage as the crew suffers headaches, fatigue, anxiety, and general clumsiness.
+Whenever the oxygen supply is less than twice the number of breathing occupants, all rolls are at Disadvantage as the crew suffers headaches, fatigue, anxiety, and general clumsiness.
 
-Whenever the oxygen supply is less than the total amount of breathing occupants, every breathing occupant must make a Body Save or else make a Death Save as they suffer panting, dizziness, severe headaches, impaired vision, and tinnitus.
+Whenever the oxygen supply is less than the total number of breathing occupants, every breathing occupant must make a Body Save or else make a Death Save as they suffer panting, dizziness, severe headaches, impaired vision, and tinnitus.
 
 Once the oxygen supply runs out, you can survive for 15 seconds before you fall unconscious. After falling unconscious, you can survive for 1d5 minutes without oxygen before dying.
 
@@ -472,15 +472,15 @@ Armor with Radiation Shielding (such as the Hazard Suit) blocks all three levels
 
 ### *2.7.8 CHEM OVERDOSE*
 
-Excessive use of stimpacks and other dangerous drugs (Chems) carries a risk of overdose. Whenever a character takes more than one Chem in a day, make a Chem Check by rolling 1d10. If you roll under the amount of doses taken in the past 24 hours, make a Death Save.
+Excessive use of Stimpacks and other dangerous drugs (Chems) carries a risk of overdose. Whenever a character takes more than one Chem in a day, make a Chem Check by rolling 1d10. If you roll under the number of doses taken in the past 24 hours, make a Death Save.
 
 ### *2.7.9 TEMPERATURE*
 
-In most cases, a hot climate or a cold climate has no notable effects. However, in places of extreme cold or heat, you should make Body Saves every hour or succumb to the Extreme Cold/Heat.
+In most cases, a hot climate or a cold climate has no notable effects. However, in places of extreme cold or heat, you must make a Body Save every hour or succumb to Extreme Cold/Heat.
 
-**Extreme Cold:** In sub-zero temperatures hypothermia and frostbite can set in within 10–30 minutes for those not dressed appropriately. To survive you must bring your body up to its normal temperature. Hypothermia can kill within 30 minutes to 6 hours. Your Warden may make you roll on the Organic Trauma Wounds Table.
+**Extreme Cold:** In sub-zero temperatures, hypothermia and frostbite can set in within 10–30 minutes for those not dressed appropriately. To survive you must bring your body up to its normal temperature. Hypothermia can kill within 30 minutes to 6 hours. Your Warden may make you roll on the Organic Trauma Wounds Table.
 
-**Extreme Heat:** Extreme heat over 100ºF/40ºC can cause heat stroke and kill within hours. Victims must move to a cooler location immediately to get their temperature down. Your Warden may make you roll on the Fire & Explosives Wounds Table.
+**Extreme Heat:** Extreme heat over 100°F/40°C can cause heat stroke and kill within hours. Victims must move to a cooler location immediately to get their temperature down. Your Warden may make you roll on the Fire & Explosives Wounds Table.
 
 ## 2.8 MEDICAL CARE
 
@@ -501,7 +501,7 @@ Recovering Wounds, Conditions, or losses to Stats and Saves takes a longer time.
 | Artificial Wellness Counselor | 150cr | 1-hour session (max 1 per week) restores 1 Sanity Save. 1% chance you gain a random Condition. |
 | Cognitive Defragmentation | 100kcr | 24-hour surgical treatment removes 1 Condition. 1% chance of total amnesia. [-] on Smarts Checks, Sanity Saves, and Fear Saves for 4 weeks. |
 | Deep Tissue Nanogel Massage | 24kcr | 1-hour session (max 1 per week) reduces Minimum Stress by 1 (minimum 1). [-] on all actions for 24 hours. |
-| Immersive Slicksim Therapy | 1kcr | 4-hour virtual treatment restores either 1d10 Sanity or 1d10 Fear Save. 1% chance the character is stuck in the immersion for 1d10 days and loses 1d5 Body Save. |
+| Immersive Slicksim Therapy | 1kcr | 4-hour virtual treatment restores either 1d10 Sanity or Fear Save. 1% chance the character is stuck in the immersion for 1d10 days and loses 1d5 Body Save. |
 | Medpod Isolation | 6kcr | Week-long treatment (spent in the pod) restores 1 Wound. Does not restore lost limbs/digits. |
-| Pseudoflesh Injection | 18kcr | 8-hour surgical treatment. Restores either 2d10 Speed, 2d10 Strength, 2d10 Body Save, or all Wounds. At [-] on all rolls for 2 weeks, plus an additional 4 weeks of convalescent recovery required. |
-| Psychosurgery | 28kcr | 8-hour surgical treatment restores either Smarts, Sanity Save, or Fear Save to their maximum, or reduces Minimum Stress to 2. At [-] on all rolls for 4 weeks. |
+| Pseudoflesh Injection | 18kcr | 8-hour surgical treatment. Restores either 2d10 Speed, 2d10 Strength, 2d10 Body Save, or all Wounds. [-] on all rolls for 2 weeks, plus an additional 4 weeks of convalescent recovery required. |
+| Psychosurgery | 28kcr | 8-hour surgical treatment restores either Smarts, Sanity Save, or Fear Save to their maximum, or reduces Minimum Stress to 2. [-] on all rolls for 4 weeks. |

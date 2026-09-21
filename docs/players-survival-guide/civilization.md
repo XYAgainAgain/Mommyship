@@ -6,15 +6,15 @@ The Known Galaxy is expansive and expensive. Between adventures, contracts, and 
 
 ## 3.1 PORTS
 
-When characters are in need of a place to repair, refuel, and catch a little R&R, they need to dock at the nearest port. While in port, you can buy and sell equipment, look for work, buy a ticket or charter a vehicle, or take some much needed Shore Leave.
+When characters are in need of a place to repair, refuel, and catch a little R&R, they need to dock at the nearest port. While in port, you can buy and sell equipment, look for work, buy a ticket or charter a vehicle, or take some much-needed Shore Leave.
 
 There are five basic classes of Port based on their reputation, safety, importance, and affluence:
 
 1. **X-Class Ports:** Notorious criminal settlements and pirate bases, or possibly just unsanctioned or unlicensed. X-Class Ports are beyond the reach of most Companies, making them much more free and much more dangerous.
 2. **C-Class Ports:** Rundown, out-of-the-way outposts, refueling stations, and forward military posts. You can find C-Class Ports on any frontier settlement or Rimspace backworld, minimally staffed and minimally supplied.
-3. **B-Class Ports**: Blue-collar industrial stations and large-scale military installations. B-Class Ports build ships, garrison troops, mine ore, and take care of all the heavy industry required to keep the galaxy spinning.
-4. **A-Class Ports**: Overpopulated metropolises, trading centers, and power brokers. A-Class Ports house millions and contain everything you'd expect to find in a planetside city, and more if you know where to look.
-5. **S-Class Ports**: Luxurious pleasure spas and restricted-access palatial estates of the uber-wealthy. S-Class Ports are the rare gems of the void. Heavily guarded, invite only.
+3. **B-Class Ports:** Blue-collar industrial stations and large-scale military installations. B-Class Ports build ships, garrison troops, mine ore, and take care of all the heavy industry required to keep the galaxy spinning.
+4. **A-Class Ports:** Overpopulated metropolises, trading centers, and power brokers. A-Class Ports house millions and contain everything you'd expect to find in a planetside city, and more if you know where to look.
+5. **S-Class Ports:** Luxurious pleasure spas and restricted-access palatial estates of the uber-wealthy. S-Class Ports are the rare gems of the void. Heavily guarded, invite-only.
 
 While Ports are generally locations capable of docking a ship, these classes can be used to designate planetside cities (or even districts or neighborhoods) for the purposes of Shore Leave.
 
@@ -53,16 +53,16 @@ While the Warden is in charge of creating them and assigning their stats, Contra
 
 Contractors are much simpler characters than the ones you play, and only have three Stats and one Save, scaling from 1–10. When making Checks, they roll 1d10 instead of 1d100.
 
-- **Combat**: This is a catch-all Stat for all physical, manual, and combat Checks, showing how good they are in a fight. Contractors will have a Combat of between 1–7.
-- **Instinct**: This is a catch-all Stat for Fear, Sanity, Body, Speed, Smarts, Savvy, and everything else. Contractors will have an Instinct of between 1–5.
-- **Max Wounds**: Contractors don't track their Health per Wound. Instead, any Damage equal to or more than their current Loyalty they take counts as a Wound. If they take Wounds equal to their Maximum Wounds, they must make a Death Save. Contractors usually have around the same number of Maximum Wounds as player characters (2–3).
+- **Combat**: This is a catch-all Stat for all combat-based Checks, showing how good they are in a fight. Contractors will have a Combat of between 1–7.
+- **Instinct**: This is a catch-all Stat used for Fear, Sanity, and Body Saves, as well as non-combat Strength, Speed, Smarts, and Savvy Checks. Contractors will have an Instinct of between 1–5.
+- **Max Wounds**: Contractors don't track their Health per Wound. Instead, any Damage equal to or greater than their current Loyalty they take counts as a Wound. If they take Wounds equal to their Maximum Wounds, they must make a Death Save. Contractors usually have around the same number of Maximum Wounds as player characters (2–3).
 - **Loyalty**: Loyalty is a Save, and is rolled whenever the Contractor needs to make a decision between what's best for them and what's best for you. On a success, they help you out, but on a failure, they help themselves. Each Contractor starts with a Loyalty of 2+1d5, rolled after they are hired.
 
 These simplified Stats make Contractors easier to track. Contractors are generally weaker than your characters, and aren't expected to last long, so be sure to protect them. Some Contractors may also have Skill Bonuses, as determined by the Warden.
 
 ### *3.3.1 CONTRACTOR COST*
 
-Contractors are paid a monthly Salary at the beginning of every month. Additionally, they usually demand hazard pay (1d5 months of extra pay) any time they engage in any life-threatening danger as a result of the job. Contractor salaries are calculated using the following prices, under normal circumstances:
+Contractors are paid a monthly Salary at the beginning of every month. Additionally, they usually demand Hazard Pay (1d5 months of extra pay) any time they engage in any life-threatening danger as a result of the job. Contractor salaries are calculated using the following prices, under normal circumstances:
 
 | ATTRIBUTE | PRICE | DESCRIPTION |
 | :---: | :---: | :---: |
@@ -81,7 +81,7 @@ Contractors generally have the basic tools, weapons, and Armor required to do th
 
 Contractors who survive a job and are paid in full increase their Loyalty by 1 (maximum 10). Increases of 1d5 or 1d10 should be reserved for extreme circumstances (like saving the Contractor's life or splitting large paydays with them).
 
-Not all Contractors need a motivation, but those who do always fail Loyalty Saves when the two come in conflict. A Contractor's motivation always supersedes any sense of loyalty to the crew they may have. You don't need to roll up a motivation for every Contractor, just notable ones.
+Not all Contractors need a motivation, but those who do always fail Loyalty Saves when the two come in conflict. A Contractor's motivation always supersedes any sense of loyalty to the crew they may have. You don't need to roll up a motivation for every Contractor; just notable ones.
 
 ### *3.3.3 CONTRACTOR MOTIVATION (D20)*
 
@@ -97,9 +97,9 @@ Not all Contractors need a motivation, but those who do always fail Loyalty Save
 | 08 | Secretly a con artist with no other expertise. |
 | 09 | Paying a loved one's medical bills. |
 | 10 | Secretly a spy for a rival corporation. |
-| 11 | Need to pay off a jumped bail or a court fine. |
+| 11 | Needs to pay off a jumped bail or a court fine. |
 | 12 | Undercover secret police investigating your crew. |
-| 13 | In huge debt to a powerful crime syndicate. |
+| 13 | In huge Debt to a powerful crime syndicate. |
 | 14 | Took the money and ran out on their last job. |
 | 15 | Family member held hostage, needs ransom. |
 | 16 | Secretly a bounty hunter looking for your crew. |
