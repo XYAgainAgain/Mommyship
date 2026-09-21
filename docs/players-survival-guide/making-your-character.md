@@ -30,17 +30,17 @@ A stat of 36 is average, but don't get too hung up on the numbers right now.
 
 Characters have three Saves: **Sanity, Fear,** and **Body,** representing how resistant and reactive they are to different kinds of trauma and danger.
 
-Roll 2 ten-sided dice (2d10), add them together, then add 10. Repeat this two more times to come up with 3 stat numbers, which you may then assign freely to **Sanity, Fear,** and **Body.**
+Roll 2 ten-sided dice (2d10), add them together, then add 10. Repeat this two more times to generate three totals, which you may then assign freely to **Sanity, Fear,** and **Body.**
 
 ## 1.3 ROLL HEALTH
 
-Characters can suffer a maximum number of **Wounds** before they die. Characters gain a Wound when their **Health** reaches zero.
+Characters can suffer a maximum number of **Wounds** before they must make Death Saves. Everyone except Mechs start with a maximum of 2 Wounds. Characters gain a Wound when their **Health** (**HP**) reaches zero.
 
 Roll 1d10, then add 10. Record the result as your **Maximum Health.**
 
 ## 1.4 GAIN STRESS
 
-Characters' current **Stress** and **Minimum Stress** both start at 2.
+Characters' current **Stress** and **Minimum Stress** both start at 2. If your character is prone to anxiety, ask your Warden if your Minimum Stress can start at 3 instead.
 
 ## 1.5 SELECT YOUR SPECIES
 
@@ -64,7 +64,7 @@ There are three Species options, as detailed here:
     - +10 to all Saves
     - +1d5 Max Health
     - **Trauma Response:** Whenever you Panic, all Close friendly players must make a Fear Save.
-    - **Reliable:** Once per in-game day when you fail a Stat Check or Save, you can choose to succeed instead.
+    - **Reliable:** Once per in-game day when you fail a Stat Check or Save, critically or otherwise, you can choose to succeed normally instead.
 
 **Mech**
 :   Superior by design (and also subservient).
@@ -79,11 +79,9 @@ There are three Species options, as detailed here:
 
 Classes broadly define your characters' backgrounds and assign **Skills** your character has experience with.
 
-Mark your class, and select your Skills accordingly. Each class comes preloaded with relevant Skills, which help
+Mark your class, and select your Skills accordingly. Each class comes preloaded with relevant Skills, which help characters perform better at different challenges. Additionally, each class has a number of bonus Skills to select.
 
-characters perform better at different challenges. Additionally, each class has a number of bonus Skills to select.
-
-To choose a Skill, you must have at least one prerequisite Skill (a Skill that has an arrow pointing from it) first.
+To choose a Skill, you must have at least one prerequisite Skill (a Skill that has an arrow pointing from it on the Spacer Sheet) first.
 
 There are eight class options, as detailed here:
 
@@ -95,7 +93,7 @@ There are eight class options, as detailed here:
     - **Bonus:** 1 Expert Skill with prerequisite or 2 Trained Skills
 4. **Psion**: Psychokinesis with prerequisites
     - **Bonus:** 1 Trained Skill
-5. **Scientist**: Any Master Skill with prerequisites, except: Command, Psychokinesis, Infiltration
+5. **Scientist**: Any Master Skill with prerequisites, except: Command, Psychokinesis, or Infiltration
     - **Bonus:** 1 Trained Skill
 6. **Scum**: Rimwise, Hand-to-Hand Combat or Firearms
     - **Bonus:** 3 Trained Skills
@@ -110,23 +108,23 @@ Roll for a **Loadout** based on your character's class. If your Warden is nice, 
 
 | D10 | ADHERENT | AGENT | MARINE | PSION |
 | :---: | ----- | ----- | ----- | ----- |
-| 0 | Preacher's Attire (1 AP, as Reinforced Clothing), Foam Gun (2 canisters), Medscanner, Mohab Unit | Armor Vest (4 AP), Sniper Rifle (3 rounds), Paracord, Chemlight (×5) | Tank Top & Camo Pants (1 AP, as Reinforced Clothes), Combat Knife, Stimpack ×5 | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Psypulse Launcher, Rebreather |
-| 1 | Preacher's Attire (1 AP, as Reinforced Clothing), Flare Gun (3 flares), Water Filtration Device, Pet (Synthetic) | Civilian Clothes (1 AP, as Reinforced Clothes), Fountain Pen (As Poison Injector), Briefcase, Pamphlets | Fatigues (2 AP, as Commissioned Attire), Large Stick (As Martial Bludgeon), Dog (pet), Leash, Tennis Ball | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Hardlight Holoblade, Chemlight, Medscanner |
+| 0 | Preacher's Attire (1 AP, as Reinforced Clothing), Foam Gun (1 Energy Cell), Medscanner, MoHab Unit | Armor Vest (4 AP), Sniper Rifle (3 rounds), Paracord, Chemlight (5 uses) | Tank Top & Camo Pants (1 AP, as Reinforced Clothes), Combat Knife, Stimpack ×5 | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Psypulse Launcher, Rebreather |
+| 1 | Preacher's Attire (1 AP, as Reinforced Clothing), Flare Gun (1 Energy Cell), Water Filtration Device, Pet (Synthetic) | Civilian Clothes (1 AP, as Reinforced Clothes), Fountain Pen (As Poison Injector), Briefcase, Pamphlets | Fatigues (2 AP, as Commissioned Attire), Large Stick (As Martial Bludgeon), Dog (pet), Leash, Tennis Ball | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Hardlight Holoblade, Chemlight (5 uses), Medscanner |
 | 2 | Commissioned Attire (2 AP), Scythe (As Basic Blade), Salvage Drone, Pet (Organic) | Corporate Attire (2 AP, as Commissioned Attire), Stun Baton, VIP Corporate Keycard, Soci-stim (×3) | Assault Infantry Armor (7 AP), Combat Shotgun (4 rounds), MoHab Unit, Rucksack | Containment Suit (2 AP, as Hazard Suit), Energy Whip, Powercell (×3), First Aid Kit |
-| 3 | Commissioned Attire (2 AP), Varmint Rifle (4 rounds), Patch Kit (×3), Ambidextrin (×3) | Cybersuit (8 AP), Cane with Hidden Sword (As Martial Blade), VIP Corporate Keycard | Assault Infantry Armor (7 AP), Pulse Rifle (3 mags), Infrared Goggles | Containment Suit (2 AP, as Hazard Suit), Mind Melter, Geiger Counter, Emergency Beacon |
+| 3 | Commissioned Attire (2 AP), Varmint Rifle (4 rounds), Patch Kit, Ambidextrin (×3) | Cybersuit (8 AP), Cane with Hidden Sword (As Martial Blade), VIP Corporate Keycard | Assault Infantry Armor (7 AP), Pulse Rifle (3 mags), Infrared Goggles | Containment Suit (2 AP, as Hazard Suit), Mind Melter, Geiger Counter, Emergency Beacon |
 | 4 | Civilian Vaccsuit (3 AP), Walking Stick (As Basic Bludgeon), Radiation Pills (×5) | Civilian Clothes (1 AP, as Reinforced Clothes), Holdout Pistol (6 rounds), Long-Range Comms, Lockpick Set | Assault Infantry Armor (7 AP), Smart Rifle (3 mags), Binoculars, Personal Locator | Containment Suit (2 AP, as Hazard Suit), Chem-caster, Focusitol (×3) |
-| 5 | Civilian Vaccsuit (3 AP), Stun Baton, Rebreather, Immunisol (×2) | Armor Vest (4 AP), Foam Gun (1 canister), Patch Kit (×3), Focusitol | Assault Infantry Armor (7 AP), SMG (3 mags), MRE (×7), Water Filtration Device | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Improvised Scrap Sword (As Large Blade), Binoculars, Lubrenisone (×2) |
-| 6 | Hazard Suit (2 AP), Flare Gun (2 flares), Short-Range Comms, Quickoag | Battle Vaccsuit (6 AP), Hacking Dart, Personal Locator, Automed (×5) | Assault Infantry Armor (7 AP), Flamethrower (4 shots), Boarding Axe, Emergency Beacon | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Rebar (As Large Bludgeon), Personal Locator, MoHab Unit |
-| 7 | Hazard Suit (2 AP), Foam Gun (3 canisters), Stimpack | Cybersuit (8 AP), Smart Rifle (1 mag), SR Comms Jammer, Lubrenisone (×2) | Fatigues (2 AP, as Commissioned Attire), Revolver (12 rounds), Frag Grenade | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Psypulse Launcher, Automed (×5) |
-| 8 | Missionary Vestments (5 AP, As Longhaul Jumpsuit), Pump Shotgun (4 rounds), Water Filtration Device, Zenzetrine | Standard Crew Attire (1 AP, as Reinforced Clothes), Wrist Knife (As Basic Blade), Jump-9 Ticket (destination blank) | Dress Uniform (1 AP, as Reinforced Clothes), Holdout Pistol, Extraordinary Service Medal | Super-soldier Suit (7 AP, as Standard Infantry Armor), Energy Whip, Hardineram (×2) |
-| 9 | Missionary Vestments (5 AP, As Longhaul Jumpsuit), MoHab Unit, Automed (×5) | Corporate Spywear (10 AP, as Black Ops Armor), Mindmelter, Mag-boots | Powered Infantry Armor (12 AP), General-Purpose Machine Gun (1 Can of ammo), Smart Link Add-On | Cybersuit (8 AP), Poison Injector, Long-Range Comms, Soci-stim (×3) |
+| 5 | Civilian Vaccsuit (3 AP), Stun Baton, Rebreather, Immunisol (×2) | Armor Vest (4 AP), Foam Gun (1 Energy Cell), Patch Kit, Focusitol | Assault Infantry Armor (7 AP), SMG (3 mags), MRE (7 uses), Water Filtration Device | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Improvised Scrap Sword (As Large Blade), Binoculars, Lubrenisone (×2) |
+| 6 | Hazard Suit (2 AP), Flare Gun (1 Energy Cell), Short-Range Comms, Quickoag | Battle Vaccsuit (6 AP), Hacking Dart, Personal Locator, Automed (×5) | Assault Infantry Armor (7 AP), Flamethrower (4 shots), Boarding Axe, Emergency Beacon | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Rebar (As Large Bludgeon), Personal Locator, MoHab Unit |
+| 7 | Hazard Suit (2 AP), Foam Gun (3 Energy Cells), Stimpack | Cybersuit (8 AP), Smart Rifle (1 mag), SR Comms Jammer, Lubrenisone (×2) | Fatigues (2 AP, as Commissioned Attire), Revolver (12 rounds), Frag Grenade | Cryo-pod PJ's (3 AP, as Civilian Vaccsuit), Psypulse Launcher, Automed (×5) |
+| 8 | Missionary Vestments (5 AP, As Longhaul Jumpsuit), Pump Shotgun (4 rounds), Water Filtration Device, Zenzetrine | Standard Crew Attire (1 AP, as Reinforced Clothes), Wrist Knife (as Basic Blade), Jump-9 Ticket (destination blank) | Dress Uniform (1 AP, as Reinforced Clothes), Holdout Pistol, Extraordinary Service Medal | Super-soldier Suit (7 AP, as Standard Infantry Armor), Energy Whip, Hardineram (×2) |
+| 9 | Missionary Vestments (5 AP, As Longhaul Jumpsuit), MoHab Unit, Automed (×5) | Corporate Spywear (10 AP, as Black Ops Armor), Mind Melter, Mag-boots | Powered Infantry Armor (12 AP), General-Purpose Machine Gun (1 Can of ammo), Smart-Link Add-On | Cybersuit (8 AP), Poison Injector, Long-Range Comms, Soci-stim (×3) |
 | — | **SCIENTIST** | **SCUM** | **TEAMSTER** | **VIRTUOSO** |
-| 0 | Lab Coat (1 AP, as Reinforced Clothes), Tranq Pistol (3 shots), Bioscanner, Sample Collection Kit | Ratty Clothing (0 AP, as Standard Clothing), Throwing Blades, Lockpick Set, MRE ×7 | Ship's Uniform (3 AP, as Civilian Vaccsuit), Rivet Gun, Crowbar, Flashlight | Haute Couture (2 AP, as Commissioned Attire), Stun Baton, Holotunes |
-| 1 | Civilian Clothes (1 AP, as Reinforced Clothes), Fountain Pen (As Poison Injector), Prescription Pad, Briefcase | Repurposed Jumpsuit (1 AP, as Reinforced Clothing), Nail Gun (3 mags), Electronic Tool Set, Mylar Blanket | Ship's Uniform (3 AP, as Civilian Vaccsuit), Laser Cutter (1 extra battery), Patch Kit (×3), Toolbelt with Assorted Tools | Holofit (1 AP, as Reinforced Clothing), Spray & Lighter, Art Supplies (as Assorted Tools), Quickoag (×2) |
-| 2 | Labsuit (3 AP, as Civilian Vaccsuit), Rigging Gun, Flashlight, Sample Collection Kit, Lab Rat (pet) | Repurposed Jumpsuit (1 AP, as Reinforced Clothing), Revolver, Explosives & Detonator, Metallysis (×3) | Standard Crew Attire (1 AP, as Reinforced Clothes), Flare Gun (2 rounds), Water Filtration Device, Personal Locator | Haute Couture (2 AP, as Commissioned Attire), Tranq Pistol, Sewing Kit, Metallysis (×3) |
-| 3 | Labsuit (3 AP, as Civilian Vaccsuit), Foam Gun (2 charges), Foldable Stretcher, First Aid Kit | Battle Vaccsuit (6 AP), Crowbar, Short-Range Comms, Soci-stim (×3) | Ship's Uniform (3 AP, as Civilian Vaccsuit), Rigging Gun (1 shot), Shovel, Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Smoke Grenade, Rebreather, Focusitol (×3) |
+| 0 | Lab Coat (1 AP, as Reinforced Clothes), Tranq Pistol (3 shots), Bioscanner, Sample Collection Kit | Ratty Clothing (0 AP, as Standard Clothing), Throwing Blades, Lockpick Set, MRE (7 uses) | Ship's Uniform (3 AP, as Civilian Vaccsuit), Rivet Gun, Crowbar, Flashlight | Haute Couture (2 AP, as Commissioned Attire), Stun Baton, Holotunes |
+| 1 | Civilian Clothes (1 AP, as Reinforced Clothes), Fountain Pen (As Poison Injector), Prescription Pad, Briefcase | Repurposed Jumpsuit (1 AP, as Reinforced Clothing), Nail Gun (3 mags), Electronic Tool Set, Mylar Blanket | Ship's Uniform (3 AP, as Civilian Vaccsuit), Laser Cutter (1 extra battery), Patch Kit, Toolbelt with Assorted Tools | Holofit (1 AP, as Reinforced Clothing), Spray & Lighter, Art Supplies (as Assorted Tools), Quickoag (×2) |
+| 2 | Labsuit (3 AP, as Civilian Vaccsuit), Rigging Gun, Flashlight, Sample Collection Kit, Lab Rat (pet) | Repurposed Jumpsuit (1 AP, as Reinforced Clothing), Revolver, Explosives & Detonator, Metallysis (×3) | Standard Crew Attire (1 AP, as Reinforced Clothes), Flare Gun (1 Energy Cell), Water Filtration Device, Personal Locator | Haute Couture (2 AP, as Commissioned Attire), Tranq Pistol, Sewing Kit, Metallysis (×3) |
+| 3 | Labsuit (3 AP, as Civilian Vaccsuit), Foam Gun (1 Energy Cell), Foldable Stretcher, First Aid Kit | Battle Vaccsuit (6 AP), Crowbar, Short-Range Comms, Soci-stim (×3) | Ship's Uniform (3 AP, as Civilian Vaccsuit), Rigging Gun (1 shot), Shovel, Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Smoke Grenade, Rebreather, Focusitol (×3) |
 | 4 | Lab Coat (1 AP, as Reinforced Clothes), Screwdriver (as Assorted Tools), Medscanner, Vaccine (1 dose) | Faction Bomber Jacket (2 AP, as Commissioned Attire), Vibechete, Jetpack, Metallysis (×3) | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Explosives & Detonator, Cigarettes | Haute Couture (2 AP, as Commissioned Attire), Holdout Pistol, Electronic Tool Set, Soci-stim (×3) |
-| 5 | Lab Coat (1 AP, as Reinforced Clothes), Portable Computer Terminal, Cybernetic Diagnostic Scanner | Faction Bomber Jacket (2 AP, as Commissioned Attire), Grenade Launcher, Frag Grenade ×2, Smoke Grenade ×2 | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Hand Welder, Paracord (100m), Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Holdout Pistol, Portable Computer Terminal, MRE ×7 |
+| 5 | Lab Coat (1 AP, as Reinforced Clothes), Portable Computer Terminal, Cybernetic Diagnostic Scanner | Faction Bomber Jacket (2 AP, as Commissioned Attire), Grenade Launcher, Frag Grenade ×2, Smoke Grenade ×2 | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Hand Welder, Paracord (100m), Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Holdout Pistol, Portable Computer Terminal, MRE (7 uses) |
 | 6 | Standard Crew Attire (1 AP, as Reinforced Clothes), Scalpel, Cybernetic Diagnostic Scanner, Duct Tape | Salvage Suit (7 AP, as Standard Infantry Armor), Vibrosword, SR Comms Jammer, Quickoag (×2) | Standard Crew Attire (1 AP, as Reinforced Clothes), Combat Shotgun (4 rounds), Cat (pet) | Armor Vest (4 AP), Hardlight Holoblade, First Aid Kit |
 | 7 | Hazard Suit (2 AP), Flamethrower (1 charge), Electronic Tool Set, Stimpack | Civilian Vaccsuit (3 AP), Varmint Rifle, Salvage Drone, Hardineram (×2) | Standard Crew Attire (1 AP, as Reinforced Clothes), Nail Gun (32 rounds), Assorted Tools | Armor Vest (4 AP), Smart Rifle, Portable Computer Terminal, Lubrenisone (×2) |
 | 8 | Scrubs (1 AP, as Reinforced Clothes), Scalpel, Oxygen Tank with Filter Mask, Automed (×5) | Armor Vest (4 AP), Power Saw, Powercell (×3), Quickoag | Hazard Suit (2 AP), Vibechete, Spanner, MoHab Unit, Water Filtration Device | Civilian Vaccsuit (3 AP), Holdout Pistol, Jetpack, Automed (×5) |
@@ -265,7 +263,7 @@ Roll for a **Starting Patch**.
 | 96 | Can of Space Spinach [+3 Strength] |
 | 97 | Tylenol Bottle [+4 Body Save] |
 | 98 | (entirety of [Litany Against Fear](https://dune.fandom.com/wiki/Litany_Against_Fear)) [+4 Fear Save] |
-| 99 | Light Spectrum Graph [+3 Any Skill] |
+| 99 | Light Spectrum Graph [+3 Any Skill, pick one] |
 
 Determine how many **Credits** you have. Credits (cr) are the primary currency in Mommyship, and are notated as follows:
 
@@ -274,7 +272,7 @@ Determine how many **Credits** you have. Credits (cr) are the primary currency i
 - 35.2mcr = 35.2 million credits (35,200,000cr)
 - 4bcr = 4 billion credits (4,000,000,000cr)
 
-Characters get 2d10×10cr in addition to their Starting Loadout. If you want to forgo a Starting Loadout and buy gear piecemeal, roll 2d10×100cr for starting credits instead.
+Characters get 2d10×10cr in addition to their Starting Loadout. If you want to forgo a Starting Loadout and buy gear piecemeal, roll 2d10×100cr for starting credits instead. If your character comes from a particularly rich or poor background, ask your Warden if you can change your starting credits to 2d10×1000 or 2d10×10 instead.
 
 ## 1.8 FINISHING TOUCHES
 

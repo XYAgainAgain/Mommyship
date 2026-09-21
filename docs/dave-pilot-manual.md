@@ -2,16 +2,16 @@
 
 Reborn Robotics is excited to present our newest line of bespoke multi-purpose recreational combat droids — the **D**efense **A**nd **V**iolent **E**ncounter droid, **D.A.V.E.**!
 
-D.A.V.E. is fully equipped with auto-loading armature support, top-of-the-line armor plating, military-grade jet thrusters, and a luxurious triple-foam, pleather-lined pilot's seat in the color of your choice. Our R&D department has developed a revolutionary weapon configuration specifically to equip D.A.V.E. with an unprecedented level of firepower for one-on-one combat: our patented Softpoints™ system. Congratulations on being alive during such an exciting period of product development!
+D.A.V.E. is fully equipped with auto-loading armature support, top-of-the-line armored plating, military-grade jet thrusters, and a luxurious triple-foam, pleather-lined pilot's seat in the color of your choice. Our R&D department has developed a revolutionary weapon configuration specifically to equip D.A.V.E. with an unprecedented level of firepower for one-on-one combat: our patented Softpoints™ system. Congratulations on being alive during such an exciting period of product development!
 
-Each D.A.V.E. can carry a single pilot of typical human(oid) size. While piloting D.A.V.E., the pilot gains the benefits of 15 Armor Points (AP) and standard radiation shielding. If these AP are reduced to 0, the D.A.V.E. unit can be repaired over the course of 48 hours in a machine bay, hangar, or ship nursery with repair tools, using Mechanical Repair or Industrial Equipment [-].
+Each D.A.V.E. can carry a single pilot of typical human(oid) size. While piloting D.A.V.E., the pilot gains the benefits of 15 Armor Points (AP) and standard radiation shielding. If these AP are reduced to 0, D.A.V.E. is rendered inert and inoperable until it can be repaired over the course of 48 hours in a machine bay, hangar, or ship nursery with repair tools, using Mechanical Repair or Industrial Equipment [-].
 
 Additionally, D.A.V.E.'s integrated Jetpack allows movement within Long Range, horizontally and/or vertically, while it is powered. D.A.V.E. requires a Powercell to operate; a fully charged cell can power the unit for 24 hours.
 
 While piloting D.A.V.E., the pilot uses their own Stats and Skills to operate its systems, weapons, and utilities, but does not need to roll to lift objects up to 5000kg or use the Jetpack, and gains [+] on Strength checks. D.A.V.E. is also equipped with 12 hours of O2.
 
 > ***DISCLAIMER:***
-> *Due to corporate code classifications for vessels and military operations (CC105.2.3.x12), D.A.V.E.s are not considered spaceworthy. Under no circumstances should you attempt to operate, pilot, take shelter in, or launch your D.A.V.E. while in the vacuum of space or similar environs. If operating in Zero-G, expect reduced control accuracy, diminished air quality, and/or swift & brutal death.*
+> *Due to corporate code classifications for vessels and military operations (CC105.2.3.x12), D.A.V.E.s are not considered spaceworthy. Under no circumstances should you attempt to operate, pilot, take shelter in, or launch your D.A.V.E. while in the vacuum of space or similar environs. If operating in Zero-G, expect reduced control accuracy ([-] on SPD Checks), diminished air quality (O2 capacity halved), and/or swift & brutal death (rolling a Critical Failure on anything combat-related will result in a catastrophic lethal implosion).*
 
 <div class="sheet-pair">
 <div class="sheet-pair__col">
@@ -45,21 +45,21 @@ Ranged or ammo-based weapons installed as Handhelds auto-reload over the course 
 
 D.A.V.E. is equipped with one shoulder-mounted Softpoint™ slot, which can be used to install either a Basic or Premium weapon.
 
-**Basic Installation (500kcr):** Install a standard weapon in a Softpoint™ slot. When installed, the weapon's Range increases by one (Adjacent → Close → Long → Extreme) and it gains [+] on damage rolls.
+**Basic Installation (500kcr):** Install a standard weapon (sold separately) in a Softpoint™ slot. When installed, the weapon's Range increases by one (Adjacent → Close → Long → maximum of Extreme) and it gains [+] on damage rolls.
 
 **Premium Installation (2mcr).** Install one of the following options:
 
-- **Acid Slinger:** Long. Light. Energy Cells, 1 shot. 2d10 (Corrosive). Affects target & all Close, and remains stationary hazard for 1d5 rounds.
-- **Arc Thrower:** Close. Tech. Energy Cells, 3 shots. Affects 2d5 targets in Range. 2d10 damage (Fire/Explosives). Body Save or Stunned for 1 round.
-- **Coilgun:** Extreme. Heavy. Heavy Shells, 4 shots. [+] if target is magnetized. 5d10 damage (Gunshot).
-- **Minigun:** Long. Heavy. Heavy Shells, 3 shots. Affects target & all Adjacent. Ignores ≤5 AP. 3d10 damage (Gunshot).
-- **Particle Shield:** 10 AP cover in Close range of D.A.V.E. for 1d5 rounds or until reduced to 0 AP. If reduced to 0 AP, can be recharged with 1 hour's worth of Powercell charge.
-- **Scrapblaster:** Close. Heavy. Special (scrap metal), 1 shot. Ignores AP/cover. Variable damage:
+- **Acid Slinger:** Long. Light. Energy Cells, 1 shot. 2d10 (Corrosive). Affects target & all Close; acid remains stationary hazard inflicting 1d10 DMG/turn on touch for 1d5 rounds.
+- **Arc Thrower:** Close. Tech. Energy Cells, 3 shots. Smart Lightning® affects 2d5 targets of your choice. 2d10 DMG (Fire/Explosives). Body Save or Stunned for 1 round.
+- **Coilgun:** Extreme. Heavy. Heavy Shells, 4 shots. [+] on attacks if target is ferromagnetic. 5d10 DMG (Gunshot [-]).
+- **Minigun:** Long. Heavy. Heavy Shells, 3 shots. Affects target & all Adjacent. Ignores ≤5 AP. 3d10 DMG (Gunshot).
+- **Particle Shield:** Provides shared 10 AP Cover to all creatures within Close range of D.A.V.E. for 1d5 rounds or until reduced to 0 AP. If reduced to 0 AP, can be recharged with 1 hour's worth of Powercell charge.
+- **Scrapblaster:** Close. Heavy. Special (scrap metal), 1 shot. Ignores AP/cover. Variable damage per current AP:
     - Target AP 20+: 1d10+1
     - Target AP 10–19: 2d10+2
     - Target AP 5–9: 3d10+3
-    - Target AP 1–4: 4d10+4
-- **Thermite Launcher:** Close. Heavy. Heavy Shells, 1 shot. Body Save ([-] if Adjacent) or 2d10 damage (Fire/Explosives).
+    - Target AP 0–4: 4d10+4
+- **Thermite Launcher:** Close. Heavy. Heavy Shells, 1 shot. 2d10 DMG (Fire/Explosives). On a hit, target is set on fire (2d10 DMG/round). Hit or miss, the impact area becomes an Adjacent fire hazard for 1d5 rounds; any contact sets creatures/objects on fire.
 - **Tractor Beam:** Close. Heavy. Energy Cells, 4 shots. Body Save [-] or pulled Adjacent to D.A.V.E.
 - **Ultrasonic Cannon:** Long. Tech. Energy Cells, 4 shots. Sanity Save ([-] for Humans) or Stunned for 1d5 rounds.
 
@@ -67,31 +67,31 @@ Ranged or ammo-based weapons installed as Softpoints**™** automatically reload
 
 **3. UTILITIES**
 
-D.A.V.E. has one Utility slot, which can be used to install one of the following options:
+Installed Utilities are integrated into D.A.V.E.'s controls, require no free hands for the pilot to operate, and are protected by D.A.V.E.'s AP. D.A.V.E. has one Utility slot, which can be used to install one of the following options:
 
 **Basic Utilities (25kcr)**
 
 - **Backup Powercell:** Doubles charge duration to 48 hours.
 - **Drink Dispenser:** A 10-gallon keg with nozzle attachment and 6 magnetic cups. Includes interior and passenger cupholders.
 - **O2 Reserve:** Doubles O2 duration to 24 hours.
-- **Piggyback Seat:** Exposed seat with roll-cage for a single passenger. Does not grant AP protection to the passenger.
+- **Piggyback Seat:** Exposed seat with roll-cage for a single passenger. Grants half of D.A.V.E.'s current AP (rounded down) as Cover for the passenger.
 - **Short-Range Comms:** Allows communication surface-to-surface within 12 kilometers. Blocked by jammers.
-- **Solar Panel:** Recharges Powercell and regulates keg temperature with 6 hours of solar exposure.
+- **Solar Panel:** Fully recharges the D.A.V.E.'s Powercell and regulates keg temperature with 6 hours of solar exposure.
 - **Storage Locker:** Metal storage locker, 2' wide, 1.5' deep, 5' tall. Interior shelves (removable).
 
 **Advanced Utilities (50kcr)**
 
-- **Auto Injector:** Auto-injects pilot with chem dose. Holds 3 doses (chems not included).
+- **Auto Injector:** Auto-injects pilot with Chem dose when preprogrammed with a specific trigger (can be per-Chem). Holds 3 doses (Chems not included).
 - **Long-Range Comms:** Communication device for use in surface-to-ship communication.
 - **Infrared Array:** Allows the wearer to see heat signatures, sometimes up to several hours old.
 - **Integrated Terminal:** Interface which allows the user to hack into external computers and networks, as well as perform standard computational tasks.
 - **Radio Jammer:** When activated, renders all radio signals within Extreme Range incomprehensible.
-- **Winch**: 50m retractable high-tension cable with hook.
+- **Winch**: 50m retractable high-tension carbon steel cable with hook. Rated for standard D.A.V.E. 5,000kg loads. Winch requires occasional lubrication.
 
 **Premium Utilities (100kcr)**
 
 - **Cloaking Unit:** [+] on Speed checks to move unseen, evade notice, and obscures D.A.V.E.'s heat signature on infrared sensors.
-- **Deployable Drone:** Remote controlled drone. Can fly up to 450m high, to a distance of 3km from operator. Maximum total flight time of 2 hours. Can record and transmit footage to receiver and carry up to 30kg.
+- **Deployable Multipurpose Drone:** Chassis-mounted autonomous drone with integrated D.A.V.E. control link. Can fly up to 500m high and 3km from D.A.V.E. for 2 hours, record/transmit audiovisual data, and carry up to 30kg. Can equip up to 2 compatible equipment modules, but cannot equip weaponry. Requires no free hands to operate and can be given simple autonomous commands such as Follow, Scout, Retrieve, Guard, or Return. Fully recharges while docked to D.A.V.E.
 - **Mag-Treads:** Grants a magnetic grip to D.A.V.E., allowing it to easily walk on the exterior of a ship (while docked), metallic landscapes, or any other ferromagnetic surface.
 
 **4. PAINT JOBS**

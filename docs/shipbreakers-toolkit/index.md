@@ -6,7 +6,7 @@
 
 ***SYSTEM CHANGES***
 
-Mommyship differs from [Mothership](https://www.tuesdayknightgames.com/pages/mothership-rpg)® in several notable ways — changing how Hull and Megadamage works, adding new Ship Upgrades and Amenities, and generally rebalancing expenses associated with running a ship and its crew.
+Mommyship differs from [Mothership](https://www.tuesdayknightgames.com/pages/mothership-rpg)® in several notable ways — changing how Hull and Megadamage works, adding multiple Ship Roles to synergize with whatever spacers you have, adding new Ship Upgrades, Hardpoints, and Amenities, and generally rebalancing expenses associated with running a ship and its crew.
 
 It also introduces an expenses calculator for modularly creating ships and calculating the costs of used vessels.
 

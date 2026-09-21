@@ -10,17 +10,17 @@ Most large spaceships are not equipped for atmospheric entry and thus rely on sh
 
 ## 2.2 INTERPLANETARY TRAVEL
 
-Interplanetary trips can take anywhere from a few weeks to reach a nearby planet, to several years to reach the edge of the system. These trips are made via the ship's thrusters at a cost of 1 unit of Fuel for every month of travel. Fuel costs are paid up-front once the destination for the trip has been decided and it costs 1 Fuel to change course.
+Interplanetary (AKA subspace) trips can take anywhere from a few weeks to reach a nearby planet, to several years to reach the edge of the system. These trips are made via the ship's thrusters at a cost of 1 unit of Fuel for every month of travel. Fuel costs are paid up-front once the destination for the trip has been decided and it costs 1 Fuel to change course.
 
 ## 2.3 REFUEL & RESUPPLY
 
 You refuel and resupply your ship while in port. Each Ship Class uses a different grade of Fuel, but Fuel from a ship one class below yours can be siphoned and used on a 2:1 basis. Likewise, Fuel from a ship one class above yours can be used on a 1:2 basis. All other Fuel is incompatible.
 
-After any number of engagements equal to your ship's class where you used your ship's weapons, you must resupply. If you fail to resupply, Battle Checks are at [-] on your next ship combat. After that, you automatically fail all Battle Checks.
+After any number of engagements equal to your ship's class (minimum 1) where you used your ship's weapons, you must resupply. If you fail to resupply, Battle Checks have [-] during your next ship combat. After that, you automatically fail all Battle Checks.
 
 | REFUEL & RESUPPLY | COST |
 | :---: | :---: |
-| **Class-I Fuel** | 10kcr |
+| **Class-0/Class-I Fuel** | 10kcr |
 | **Class-II Fuel** | 20kcr |
 | **Class-III Fuel** | 50kcr |
 | **Class-IV Fuel** | 100kcr |
@@ -34,7 +34,7 @@ To travel to other star systems, you need a vessel equipped with a **Jump Drive.
 
 ### *2.4.1 JUMP DRIVES*
 
-Jump Drives are rated from 1–9 based on how large a jump they can make. The vast majority of commercial vessels built for interstellar travel use a Jump-1 Drive. Only powerful corporations, governments, and militaries use Jump-4 or greater. **Each Jump to hyperspace expends 1 unit of a powerful Fuel known as a Warp Core.**
+Jump Drives are rated from 1–9 based on how large a jump they can make. The vast majority of commercial vessels built for interstellar travel use a Jump-1 Drive. Only powerful corporations, governments, and militaries use Jump-4 or greater. Jump-9 Drives are almost impossible to find anywhere, but they certainly exist. **Each Jump to hyperspace expends 1 unit of a powerful Fuel known as a Warp Core.**
 
 ### *2.4.2 JUMP POINTS*
 
@@ -42,7 +42,7 @@ Before a ship can enter hyperspace, it must first travel to a Jump Point a safe 
 
 ### *2.4.3 CRYOSLEEP*
 
-Most crews spend their time in hyperspace in cryosleep while an android monitors an astronavigation computer. Those who stay awake during hyperspace jumps report strange and conflicting stories about the experience, and often androids' memories of their time in hyperspace are at best described as… unsettling.
+Most crews spend their time in hyperspace in cryosleep (which requires Cryopods) while an android monitors an astronavigation computer. Those who stay awake during hyperspace jumps report strange and conflicting stories about the experience, and often androids' memories of their time in hyperspace are at best described as… unsettling.
 
 ### *2.4.4 TIME DILATION*
 
@@ -60,7 +60,7 @@ You don't need to own a ship to get across the galaxy, but you need to pay your 
 | Passenger Seating | 250cr | Interplanetary, C-I | 100kcr |
 | Cargo Space | 1kcr | Interplanetary, C-II | 200kcr |
 | Private Shuttle | 5kcr | Interstellar, C-I | 250kcr |
-| Coffin Lander (orbit-to-ground only) | 50cr | Interstellar, C-I | 500kcr |
+| Coffin Lander (orbit-to-ground only) | 50cr | Interstellar, C-II | 500kcr |
 | **PASSENGER LINER (INTERPLANETARY)** | **COST** | **PASSENGER LINER (INTERSTELLAR)** | **COST** |
 | Steerage Deck (cryopod only) | 1kcr | Steerage Deck (cryopod only) | 2kcr |
 | Second Class (4 bunks/cabin, cryopod) | 2.5kcr | Second Class (4 bunks/cabin, cryopod) | 5kcr |
@@ -104,12 +104,12 @@ The result of this roll is how long it takes for help to pick up your Distress S
 
 | D10 | CORE WORLDS | ASTEROID BELT | RIM SPACE | DEEP SPACE/DEAD ZONES |
 | :---: | :---: | :---: | :---: | :---: |
-| 00 | **1d10 DAYS** Fate is on your side. | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. |
-| 01–02 | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. |
-| 03–04 | **1d10 WEEKS** You're one of the very lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. | **2d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. |
-| 05–06 | **1d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. | **2d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. |
-| 07–08 | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **1d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. |
-| 09 | **1d10 YEARS** Make a Body Save [+] or lose 1d5 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **???** You wake up. Something is horribly, *horribly* wrong. |
+| 0 | **1d10 DAYS** Fate is on your side. | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. |
+| 1–2 | **2d10 DAYS** Fate is on your side. | **2d10 WEEKS** You're one of the lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. |
+| 3–4 | **1d10 WEEKS** You're one of the very lucky ones. | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. | **2d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. |
+| 5–6 | **1d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **2d10 YEARS** Make a Body Save or lose 1d5 to all Stats & Saves. | **2d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. |
+| 7–8 | **2d10 MONTHS** Remember to review the Company policy on backpay in the event of a cryo-emergency. | **1d10 DECADES** Make a Body Save [-] or lose 1d10 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. |
+| 9 | **1d10 YEARS** Make a Body Save [+] or lose 1d5 to all Stats & Saves. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **NEVER** The ship floats endlessly in the all-consuming void of space. Thanks for playing Mommyship. | **???** You wake up. Something is horribly, *horribly* wrong. |
 
 ## 2.7 SHIP-TO-SHIP COMBAT {#2.7-ship-to-ship-combat}
 
@@ -117,9 +117,9 @@ Combat between two spaceships may look slow and serene, but for the crews it's l
 
 ### *2.7.1 SHIP ROUNDS*
 
-During a violent confrontation, we split time into intervals called ship rounds. Each ship round is made up of three phases: Movement, Attack, and Morale.
+During a violent confrontation, we split time into intervals called ship rounds. Each ship round is made up of three phases: **Movement**, **Attack**, and **Morale**.
 
-How long is a ship round? Anywhere from a few minutes to a few hours depending on how far apart the ships are. After each ship round, time returns to normal while you and the other players plan your next move in anticipation of the next ship round. Ships at contact Range only have a few minutes between ship rounds (enough for a few rounds of normal time). Ships at firing Range may have anywhere from a few hours to several days between rounds.
+**How long is a ship round?** Anywhere from a few minutes to a few hours depending on how far apart the ships are. After each ship round, time returns to normal while you and the other players plan your next move in anticipation of the next ship round. Ships at Contact Range only have a few minutes between ship rounds (enough for a few rounds of normal time). Ships at Firing Range may have anywhere from a few hours to several days between rounds.
 
 Most ship combats are over in 1 round. Almost none go longer than 3.
 
@@ -149,7 +149,7 @@ You may spend any amount of Fuel you want (even none).
 
 Once you have determined the total amount of Fuel you want to bid, each side reveals their choice and makes a Thrusters Check. Whoever bid more Fuel gets [+] on the Check.
 
-- **Success:** You get what you want and increase or decrease the distance between you and the enemy ship by one band.
+- **Success:** You get what you want and increase or decrease the distance between you and the enemy ship by one band. If opposing ships all succeed, distances don't change.
 - **Critical Success:** You make progress even if the enemy also succeeded.
 - **Failure:** You don't get what you want, and the distance between you and the enemy ship does not change.
 - **Critical Failure:** Your enemy makes progress even if they failed.
@@ -160,19 +160,19 @@ You don't spend any extra Fuel, but your enemy gets what they want (to evade or 
 
 ### *2.7.4 THE ATTACK PHASE* {#2.7.4-the-attack-phase}
 
-At the end of the **Movement Phase**, all ships within firing Range or closer choose a target and make a Battle Check.
+At the end of the **Movement Phase**, all ships within the Range of at least one functional weapon choose a target and make a Battle Check.
 
 - **Success:** Ship deals MDMG.
 - **Critical Success:** Ship deals double MDMG.
 - **Failure:** Ship takes 1 MDMG in addition to any dealt by the enemy.
 - **Critical Failure:** Ship takes 2 MDMG in addition to any dealt by the enemy.
 
-If a ship has no weapons, or their weapons are offline, they automatically fail all Battle Checks.
+If a ship has no weapons, or their weapons are offline, they automatically fail all Battle Checks if they are being attacked.
 
 **Megadamage (MDMG)** is like a character's Damage and Wounds rolled into one. Whenever your ship takes MDMG, add it to any previous MDMG incurred, mark the new total on the tracker, and apply the listed effect. If your ship ever has 9 or more total MDMG, it is destroyed.
 
 | MDMG | EFFECT |
-| :---: | :---: |
+| :---: | :---- |
 | 00 | **ALL SYSTEMS NOMINAL.** 5x5, ready to ride. |
 | 01 | **EMERGENCY FUEL LEAK.** Every time you spend Fuel, you spend 1 more. |
 | 02 | **FIRE ON DECK.** Fire spreads around the ship, creating a Toxic/Corrosive atmosphere. Deals 1d10 DMG/round to crew in affected areas. |
@@ -184,7 +184,7 @@ If a ship has no weapons, or their weapons are offline, they automatically fail 
 | 08 | **DEAD IN THE WATER.** All systems offline, emergency power only. |
 | 09 | **ABANDON SHIP!** Ship is destroyed in 1d10 minutes. |
 
-**Hull** works like a character's Armor Points. Your ship ignores all MDMG less than its current Hull. If it takes MDMG equal to or greater than its Hull in one hit, reduce the MDMG inflicted by the amount of the Hull, apply any remaining, and then reduce the current Hull by 1.
+**Hull** works like a character's Armor Points. Your ship ignores all MDMG less than its current Hull. If it takes MDMG equal to or greater than its Hull in one hit, reduce the MDMG inflicted by the amount of the Hull, apply any remaining, and then reduce the current Hull by 1 (minimum 0).
 
 #### *2.7.4.1 Ship Class and Unwinnable Fights*
 
@@ -208,7 +208,7 @@ Every ship starts with a little wear-and-tear. Whenever you acquire a ship, roll
 
 ### *2.8.2 ROUTINE MAINTENANCE*  {#2.8.2-routine-maintenance}
 
-Once a month (or more), your ship needs to perform a **Maintenance Check**. To do this, make a Systems Check. If your vessel contains parts of a lower level of degradation than Pristine, you must make these Checks a number of times equal to the lowest level of part degradation currently installed.
+Once a month (or more), your ship needs to perform a **Maintenance Check**. To do this, make a Systems Check. If your vessel contains parts of a lower level of degradation than Pristine, you must make these Checks as determined by the most degraded Upgrade currently installed. These are listed in [section 1.5](ships-and-space-travel.md#15-used-and-salvaged-upgrades).
 
 - **Success:** Everything continues working as normal.
 - **Critical Success:** [+] the next time you roll on the Maintenance Issues table.
@@ -223,7 +223,7 @@ If you have Refurbished or Used Upgrades/Hardpoints installed on your ship and a
 
 ### *2.8.4 MAJOR REPAIRS*
 
-**Major Repairs** cover large scale structural or system damage, including repairing MDMG and Hull. **Major Repairs can only be performed in port and cost 1mcr multiplied by the Ship's Class** (unless you have a Machine Shop on board). Every point of Hull or Megadamage counts as a separate Major Repair for cost purposes.
+**Major Repairs** cover large scale structural or system damage, including repairing MDMG and Hull. **Major Repairs can only be performed in port and cost 1mcr multiplied by the Ship's Class (or halved for C-0)** unless you have a Machine Shop on board. Every point of Hull or Megadamage counts as a separate Major Repair for cost purposes.
 
 Major Repairs can take anywhere from a few months to up to a year depending on the severity of the damage, and availability of parts and labor. They will not change the condition of Upgrades or Hardpoints.
 
@@ -267,5 +267,5 @@ Major Repairs can take anywhere from a few months to up to a year depending on t
 | 29 | **Faulty Cryopods**. Nightmares, cryosickness lasts +1 Week. | 63 | **Malfunctioning Waste Management.** One Amenity becomes non-functional. | 95 | **Corrupted A.I.** [-] on Systems Checks. |
 | 30 | **Malfunctioning Escape Pods.** 50% chance will not eject from ship. | 64 | **Fusion Reactor Overheating.** -1d10 Thrusters. | 96 | **Drive Jamming.** 10% chance warp core consumed and Jump fails. |
 | 31 | **Cycling Transponder**. Unable to send Distress Signals. | 65 | **Failed Radiation Shielding.** +1 Radiation Level. | 97 | **Rust Bucket.** +1 Minimum Stress to all crew. |
-| 32 | **Sabotaged Coolant System.** [-] Rest Checks while onboard. | 66 | **Structural Damage.** One Upgrade becomes non-functional. | 98 | **Security Malfunction.** 1d5 bulkheads seal and will not open. |
+| 32 | **Sabotaged Coolant System.** [-] Body Saves while onboard. | 66 | **Structural Damage.** One Upgrade becomes non-functional. | 98 | **Security Malfunction.** 1d5 bulkheads seal and will not open. |
 | 33 | **Death Trap.** [-] on all Ship Checks. |  |  | 99 | **Slagged.** One Hardpoint becomes inoperable. |

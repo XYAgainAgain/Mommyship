@@ -19,12 +19,12 @@ Your ship has three main Stats which represent its capabilities when acting unde
 In addition to these Ship Stats, vessels also typically have a number of other parts and functions you'll need to be aware of:
 
 - **Transponder:** Your Transponder is an automated radio system that broadcasts important information about your ship. In most star systems, it is illegal (or highly suspect) to turn this off.
-- **Hull:** Your ship's armor — this functions the same as a character's Armor Points, and represents how much damage your ship can withstand before things start to go wrong. Your ship will have a Maximum Hull value, and you will need to track the current amount of Hull as you take attacks and sustain damage. No ship can have more than 9 Maximum Hull.
+- **Hull:** Your ship's Armor — this functions the same as a character's Armor Points, and represents how much damage your ship can withstand before things start to go wrong. Your ship will have a Maximum Hull value, and you will need to track the current amount of Hull as you take attacks and sustain damage. No ship can have more than 9 Maximum Hull.
 - **Fuel:** Your ship spends 1 unit of Fuel each month it travels, and 1 Warp Core each time it jumps through Hyperspace. Your ship will have a Maximum Fuel amount it can store in its tanks, and you will need to track the current amount of Fuel available as it is expended.
 - **Crew:** Your ship's life support systems can only support a certain number of biological crew, and its power systems can only support charging a certain number of mechanical crew, so it will have a maximum crew capacity which represents the combined limit of both these systems.
 - **Cryopods:** The number of available cryopods, used to store & protect biological crew on long journeys or while awaiting aid in the void of space.
 - **Escape Pods:** The number of available escape pods, in case the ship experiences a catastrophic failure.
-- **Cargo:** How much stuff your ship can hold. One unit of cargo is approximately one shipping container (20-foot cube).
+- **Cargo:** How much stuff your ship can hold. One unit of cargo is equivalent to a 6×6×6m (20×20×20ft.) cube.
 - **Passengers:** If you need to take on people beyond the maximum Crew, some ships have auxiliary systems that allow you to take on Passengers.
 - **Upgrades:** Depending on its size and type, ships will have a number of open slots for upgrade modules to be installed. For more information, see [Upgrades [1.3]](#1.3.1-upgrades)
 - **Hardpoints:** Depending on its size and type, ships will have a number of available Hardpoints where Weapons can be installed.
@@ -40,7 +40,7 @@ These icons can be found on maps of vessels of all kinds, indicating certain fac
 
 ### *1.1.2 ROLES ON A SHIP* {#1.1.2-roles-on-a-ship}
 
-Ships don't fly themselves (at least, not always). Crewing a ship requires at least ¼ its maximum Crew capacity, rounded up (minimum 1), and it must have a **Captain**. Each Role can only be filled by one character at a time, regardless of ship size or Class. There are benefits to running with a fuller crew, however — crew can inhabit Roles on the ship, conferring their Skills to certain rolls or granting additional benefits to running the ship. If someone aboard the ship meets no prerequisites, they are considered a Passenger (or potential Acting Captain).
+Ships don't fly themselves (at least, not always). Crewing a ship requires at least ¼ its base maximum Crew capacity before Upgrades, rounded up (minimum 1), and it must have a **Captain**. Each Role can only be filled by one character at a time, regardless of ship size or Class. There are benefits to running with a fuller crew, however — Crewmembers can inhabit Roles on the ship, conferring their Skills to certain rolls or granting additional benefits to running the ship. If someone aboard the ship meets no prerequisites, they are usually considered a Passenger (or potential Acting Captain).
 
 | ROLE | PREREQ. | DESCRIPTION |
 | :---: | :---: | :---: |
@@ -59,7 +59,25 @@ Ships don't fly themselves (at least, not always). Crewing a ship requires at le
 
 Both player characters and Contractors can be assigned a Role, as long as they have the Prerequisite Skills. Assigning a Contractor to a **Liaison**, **Custodian**, **Cook**, or **Accountant** Role increases their Salary by 500cr and adds +1 to their Loyalty. Contractors assigned to any other Role increase their Salary by 1kcr and add +2 to their Loyalty.
 
-#### *1.1.3 THE SHIP MANIFEST*
+#### *1.1.2.1 YOUR SALARY*
+
+Player character Crewmember Salaries are calculated from their Stats, Skills, Wounds, and assigned Ship Role. Only actual learned Skills count toward Salary calculations; bonuses from Patches or similar equipment do not. The Captain or X.O. may dole out bonuses as they see fit (such as hazard pay). To determine a character's standard monthly Salary:
+
+1. **Physical Ability:** Take the higher of **Speed or Strength** and multiply it by **20**.
+2. **Technical/Social Ability:** Take the higher of **Smarts or Savvy** and multiply it by **30**.
+3. **Durability:** Multiply your character's **Maximum Wounds** by **750**.
+4. **Training:** Add...
+    1. **300** for each Trained Skill.
+    2. **600** for each Expert Skill.
+    3. **900** for each Master Skill.
+5. **Ship Role:** Add the Salary Bonus (listed above) for your assigned Ship Role, if any.
+6. **Add everything together.** The result is your **Monthly Salary** in credits.
+
+It's wise to run the numbers at character creation so you know your worth from the jump. If you prefer to use an actual formula:
+
+**Monthly Salary** = (max(SPD, STR) × 20) + (max(SMT, SVY) × 30) + (Max Wounds × 750) + (Trained Skills × 300) + (Expert Skills × 600) + (Master Skills × 900) + Ship Role Bonus
+
+### *1.1.3 THE SHIP MANIFEST*
 
 Much like a character sheet, the Ship's Manifest helps you keep track of your ship's status and other resources.
 
@@ -69,9 +87,9 @@ Ships come in all shapes and sizes, and are built and modified to all sorts of p
 
 The Jump Rating determines how many systems a ship can travel with the use of a single Warp Core. Most ships in the galaxy are either Jump 0 (J0), interplanetary travel only, or Jump-1 (J1). Some heavy commercial vessels will be equipped with J2 or J3 drives, and specialized military carriers may have up to Jump-9 capability, but this is prohibitively expensive technology.
 
-The Class of a ship is a general measure of its size and capability. Ships are rated on a scale of Class-0 (C-0) to Class-5 (C-V). The higher a ship's class, the larger, more powerful, and more expensive it is.
+The Class of a ship is a general measure of its size and capability. Ships are rated on a scale of Class-0 (C-0) to Class-V (C-V). The higher a ship's class, the larger, more powerful, and more expensive it is.
 
-Ship class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel. The chart below outlines what a ship of a given Class would generally be equipped with. Further amenities, functions, and capacity can be installed via Upgrades. Vessels with higher capacities tend to cost more initially.
+Ship class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel. The chart below outlines what a ship of a given Class would generally be equipped with. Further amenities, functions, and capacity can be installed via Upgrades. Vessels with higher capacities tend to cost more initially. Hardpoints, Cryopods, and Escape Pods are determined by the vessel's make/model and are not included in the generic Class frame.
 
 | FEATURE | C-0 | C-I | C-II | C-III | C-IV | C-V |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -99,7 +117,7 @@ The base frames above can be further modified at additional cost. Most frames av
 | Thrusters +5 | 250kcr | 500kcr | 1mcr | 1.5mcr | 2mcr | 2.5mcr |
 | Systems +5 | 150kcr | 300kcr | 600kcr | 900kcr | 1.2mcr | 1.5mcr |
 | Escape Pod +1 | 750kcr | 1.5mcr | 3mcr | 4.5mcr | 6mcr | 7.5mcr |
-| Cryopod +1 | — | 250kcr | 500kcr | 750mcr | 1mcr | 1.25mcr |
+| Cryopod +1 | — | 250kcr | 500kcr | 750kcr | 1mcr | 1.25mcr |
 | Crew Capacity +1 | 75kcr (max +1) | 150kcr | 300kcr | 450kcr | 600kcr | 750kcr |
 | Fuel Capacity +1 | — | 100kcr | 200kcr | 300kcr | 400kcr | 500kcr |
 | Passenger Capacity +1 | 25kcr (max +10) | 50kcr | 100kcr | 150kcr | 200kcr | 250kcr |
@@ -115,7 +133,7 @@ Every ship can be fitted with a certain number of Upgrades. Upgrades can be inst
 
 Average installation times (given availability, labor, etc.) are listed below. If your vessel is being serviced, the time cost is parallel and simultaneous, not cumulative and sequential (e.g., if installing multiple Upgrades that all take 1 month or less to complete, it will only take 1 month to get all the work done), though you may have to pay a premium on labor to the station providing the install services.
 
-**The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost. For Class-0 vessels, halve the cost.**
+**The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost. For Class-0 vessels, halve the cost but not the time.**
 
 | AMENITY UPGRADES |  |  |  |
 | :---: | :---: | :---: | :---: |
@@ -126,16 +144,16 @@ Average installation times (given availability, labor, etc.) are listed below. I
 | **Habitat Module** | 4mcr | 1 month | Increases maximum crew capacity by up to 24 per Ship Class (e.g., Class-IV could have up to 96). |
 | **Hangar/ Dronebay** | 600kcr | 1 month | Allows for the storage and maintenance of 4 Class-0 Vessels. |
 | **Machine Shop** | 5mcr | 3 weeks | Allows crew to repair up to 3 MDMG and 3 Hull without returning to port. Resupply for 1mcr. |
-| **Medbay** | 2mcr | 3 weeks | [+] Body Saves to regain health while aboard the ship. Offers other medical treatments available at Warden's discretion. |
+| **Medbay** | 2mcr | 3 weeks | [+] Body Saves to regain Health while aboard the ship. Offers other medical treatments available at Warden's discretion. |
 | **Recreation Module** | 800kcr | 1 month | Entertainment hub, basic streaming plan, Zero-G pool table, minifridge. |
 | **Science Lab** | 500kcr | 3 weeks | Allows for detailed research, study, testing, and experimentation of samples. |
 | **MINOR UPGRADES** | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded cryopods which cuts Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years. Then only every other year after that. |
-| **Cargo Container** | 100kcr | 1 day | 20 ft.^3^ metallic container that slots into the Cargo Bay (4× ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
+| **Cargo Container** | 100kcr | 1 day | Cube-shaped metallic container that slots into the Cargo Bay (4× ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
 | **Cryochamber** | 5mcr | 2 weeks | Increase the number of cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
 | **Dedicated Reactor** | 1mcr | 1 month | Grants +5 Systems. |
-| **Deep Space Scanners** | 1mcr | 2 weeks | Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at firing Range, etc.). |
+| **Deep Space Scanners** | 1mcr | 2 weeks | Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at Firing Range, etc.). |
 | **Emergency Systems** | 1mcr | 1 month | Grants 1 month of emergency power and Life Support. Must be replaced after use. |
 | **Onboard Android Databank** | 3mcr | 2 weeks | Backs up mechanical crew memory files weekly for reconstitution in new bot bodies (not included). |
 | **Escape Pod** | 1.5mcr | 1 week | A replacement escape pod, holds up to 4 Passengers/class. |
@@ -153,12 +171,12 @@ Average installation times (given availability, labor, etc.) are listed below. I
 | **Hydrogen Probe** | 3mcr | 1 month | Allows ship to harvest Fuel while in orbit around a gas giant planet. For each week in orbit, make a Systems Check. On a success, gain 1 Fuel. On a failure, gain no Fuel. |
 | **Redundant Systems** | 5mcr | 1 month | Allows ship to ignore any one MDMG roll. Must be replaced after use. |
 | **Signature Reduction** | 15mcr | 1 month | While activated, your ship is only detectable with a successful Systems Check [-] at Firing Range. Double Fuel cost and travel times while in use. Does not work in Core Space. |
-| **Streamlined Fuel Injectors** | 4mcr | 2 months | Fuel lasts for 2 months of space travel. In the Movement Phase, bidding 1 Fuel also counts as bidding 2 Fuel. |
+| **Streamlined Fuel Injectors** | 4mcr | 2 months | Fuel lasts for 2 months of space travel (rounded up). Additionally, in the Movement Phase, bidding 1 Fuel counts as bidding 2 Fuel. |
 | **Targeting Sensors** | 2mcr | 2 weeks | Systems Check (Firing Range): Confers [+] to Battle Checks made in ship-to-ship combat. |
 | **ILLEGAL UPGRADES** | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Accelerated Afterburner** | 2.5mcr | 2 weeks | If you win the Fuel bid while Pursuing or Evading a target, that target has [-] on their Thrusters Check. |
-| **Comms Jammer** | 500kcr | 1 week | Systems Check (Firing Range): Allows for communication jamming and eavesdropping within Detection Range. |
+| **Comms Jammer** | 500kcr | 1 week | Systems Check: Allows for communication jamming and eavesdropping within Detection Range. |
 | **Contraband Hold** | 500kcr | 1 month | Small, hidden compartment that holds 1 standard Cargo Container (not included). Very hard for boarding parties to detect. |
 | **Embedded Clone Pod** | 15mcr | 2 months × Ship Class | Allows a Crewmember to be reconstituted in the form of their last time aboard the ship 1d10 months after their untimely demise. Can only generate one clone at a time. |
 | **Expanded Ammo Bay** | 3mcr | 2 weeks | Your ship counts as one class greater for determining when you must resupply your Hardpoint ammo. |
@@ -169,7 +187,7 @@ Average installation times (given availability, labor, etc.) are listed below. I
 
 Hardpoints function similarly to Upgrades, but are specially-installed ports meant for Weapons and Defenses.
 
-**The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost.**
+**The prices below are listed for Class-I vessels. Multiply the cost by your ship's Class to get its total cost (or halve it for C-0 vessels).**
 
 | DEFENSIVE HARDPOINTS |  |  |  |
 | :---: | :---: | :---: | :---: |
@@ -182,7 +200,7 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 | **Tractor Beam** | 3.5mcr | 2 weeks | When in Contact Range and attacking a ship of your Class or lower, instead of dealing MDMG, the target fails their next Thrusters Check. If you roll a Critical Success on your Battle Check, the target Critical Fails their next Thrusters Check. |
 | **WEAPON HARDPOINTS** | ———— | ———— | ———— |
 | **Autocannon** | 4mcr | 2 weeks | Grants +10 to Battle. Kinetic ballistic weaponry. |
-| **Extra Hardpoint** | 3mcr | 2 weeks | Grants +1 Hardpoint. Each additional Hardpoint costs 2× the previous. |
+| **Extra Hardpoint** | 3mcr | 2 weeks | Exterior module. Grants +1 Hardpoint without consuming a slot. Each additional Hardpoint costs 2× the previous. |
 | **Heavy Missile Launcher** | 6mcr | 2 weeks | Grants +15 to Battle. Grants +1 MDMG. One big explosive. |
 | **Laser Cannon** | 1.5mcr | 2 weeks | Grants +5 to Battle. Powerful laser beam used for scrapping hulks and cutting asteroids. |
 | **Light Missile Launcher** | 5mcr | 2 weeks | Grants +15 to Battle. Many smaller explosives. |
@@ -193,9 +211,9 @@ Hardpoints function similarly to Upgrades, but are specially-installed ports mea
 
 ## 1.4 DRIVES
 
-Most ships will already have a Jump-Drive installed when you encounter them; but if they don't, or you want to upgrade your current Jump-Drive, they can be purchased and installed at an X or A-Class Port.
+Most ships will already have a Jump Drive installed when you encounter them; but if they don't, or you want to upgrade your current Jump Drive, they can be purchased and installed at an X or A-Class Port.
 
-Jump-Drives don't require an Upgrade slot to install, but you may only have one installed.
+Jump Drives don't require an Upgrade slot to install, but you may only have one installed. Class-0 ships cannot have Jump Drives.
 
 | DRIVE | COST | INST. | DESCRIPTION |
 | :---: | :---: | :---: | :---: |
@@ -209,14 +227,14 @@ It is assumed that any ship component you purchase is (at minimum) secondhand to
 
 There are 4 levels of Upgrade degradation:
 
-- **Pristine:** Baseline prices, standard Maintenance routines
-- **Refurbished:** 25% discount, Maintenance Checks 2/month to keep functional
-- **Used:** 50% discount, Maintenance Checks 3/month to keep functional
-- **Risky:** 75% discount, Maintenance Checks as often as possible; if a Crit Failure is rolled on any Ship Stat Check, Risky Upgrades are destroyed
+- **Pristine:** Baseline prices, standard Maintenance routines.
+- **Refurbished:** 25% discount, Maintenance Checks 2/month to keep functional.
+- **Used:** 50% discount, Maintenance Checks 3/month to keep functional.
+- **Risky:** 75% discount, Maintenance Checks as often as possible; if a Crit Failure is rolled on any Ship Stat Check, all installed Risky Upgrades are destroyed.
 
 When swapping out ship Upgrades or Hardpoints, a Smarts (Mechanical Repair or Engineering) Check must be rolled to determine how much the Upgrade/Hardpoint has degraded.
 
-- **Success:** The Upgrade/Hardpoint's degradation level increases by 1 (Pristine → Refurbished → Used → Risky).
+- **Success:** The Upgrade/Hardpoint's degradation level worsens by 1 (Pristine → Refurbished → Used → Risky).
 - **Critical Success:** The Upgrade/Hardpoint retains its original condition.
 - **Failure:** The Upgrade/Hardpoint's degradation level worsens by 2 to a minimum of Risky.
 - **Critical Failure:** The Upgrade/Hardpoint is destroyed regardless of its current condition and becomes scrap.
