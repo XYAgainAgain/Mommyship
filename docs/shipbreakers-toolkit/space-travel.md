@@ -91,7 +91,7 @@ Communication across the vast reaches of space is difficult and time consuming. 
 | RANGE | INFORMATION REVEALED | HAILING LATENCY |
 | :---: | ----- | ----- |
 | Detection | Presence, trajectory, rough size, any unencrypted transponder broadcasts. | Minutes to hours. |
-| Firing | All above, and ship class & type. | Seconds. |
+| Firing | All above, and Ship Class & type. | Seconds. |
 | Contact | All above, and presence of lifeforms, ship's status. | None. |
 
 Your **Transponder** constantly broadcasts important information about your ship including, among other things, its **Callsign**, the name of its Captain, as well as the type of ship, its Class, home port, destination, and more. Transponder information is subject to the Latency as shown on the Hailing table above.

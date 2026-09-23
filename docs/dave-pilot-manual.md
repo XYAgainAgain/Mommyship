@@ -72,11 +72,11 @@ Installed Utilities are integrated into D.A.V.E.'s controls, require no free han
 **Basic Utilities (25kcr)**
 
 - **Backup Powercell:** Doubles charge duration to 48 hours.
-- **Drink Dispenser:** A 10-gallon keg with nozzle attachment and 6 magnetic cups. Includes interior and passenger cupholders.
+- **Drink Dispenser:** A 50-liter keg with nozzle attachment and 6 magnetic cups. Includes interior and passenger cupholders.
 - **O2 Reserve:** Doubles O2 duration to 24 hours.
 - **Piggyback Seat:** Exposed seat with roll-cage for a single passenger. Grants half of D.A.V.E.'s current AP (rounded down) as Cover for the passenger.
 - **Short-Range Comms:** Allows communication surface-to-surface within 20km. Blocked by Jammers.
-- **Solar Panel:** Fully recharges the D.A.V.E.'s Powercell and regulates keg temperature with 6 hours of solar exposure.
+- **Solar Panel:** Fully recharges the D.A.V.E.'s Powercell with 6 hours of in-atmosphere solar exposure (3 hours without atmosphere).
 - **Storage Locker:** Metal storage locker, 2' wide, 1.5' deep, 5' tall. Interior shelves (removable).
 
 **Advanced Utilities (50kcr)**

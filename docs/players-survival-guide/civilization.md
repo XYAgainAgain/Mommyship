@@ -24,7 +24,7 @@ Surviving on the Rim is tough, but those who do come out even tougher. Between c
 
 You can take Shore Leave at any relatively safe Port. Characters need something between a long weekend and a short vacation (roughly 2d10 days) to benefit from Shore Leave. Any less and you may incur penalties at the Warden's discretion.
 
-Shore Leave can be as detailed or abstract as your group prefers. You might play out the entire time with different leisure activities, social scenarios, and costs associated with it, or you could just roll once and head out. Groups that like a little buffer between horrific adventures might appreciate the break with some "slice of life" sessions. To take Shore Leave:
+Shore Leave can be as detailed or abstract as your group prefers. You might play out the entire time with different leisure activities, social scenarios, and costs associated with it, or you could just roll once and head out. Groups that like a little buffer between horrific adventures might appreciate the break with some “slice of life” sessions. To take Shore Leave:
 
 1. **Pay the Shore Leave Costs.** Every port charges a different amount for Shore Leave based on the different amenities and activities it has to offer.
 

@@ -49,8 +49,8 @@ Once you've collected all of these items and built your character, you're ready 
 
 - The Mommyship Player's Survival Guide (you're reading it right now)
 - Your Spacer Sheet (Character Sheet)
-- 1d100 "percentile dice" (one d10 with single digits and another with double digits, rolled together)
-- 1d20 "Panic Die"
+- 1d100 “percentile dice” (one d10 with single digits and another with double digits, rolled together)
+- 1d20 “Panic Die”
 - Something to take notes with
 - Your imagination and attention
 

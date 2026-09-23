@@ -11,7 +11,7 @@ Oftentimes the difference between life and death is having the right tools for t
 | Assault Rifle | 1.2kcr | Ranged | Light | Long. 2d10+2 DMG. 10 shots. Gunshot. | Heavy Shells |
 | Basic Blade | 50cr | Melee | Light | (Scalpel, utility knife, switchblade.) Adjacent. 1d5 DMG. Bleeding [-]. | N/A |
 | Basic Bludgeon | 50cr | Melee | Heavy | (Wrench, hammer, baton, stick.) Adjacent. 1d5 DMG. Blunt Force [-]. | N/A |
-| Boarding Axe | 150cr | Melee | Heavy | Adjacent. 2d10 DMG. Gore [+]. [+] on STR Checks vs inanimate objects. | N/A |
+| Boarding Axe | 150cr | Melee | Heavy | Adjacent. 2d10 DMG. Gore [+]. [+] on STR Checks vs. inanimate objects. | N/A |
 | Chem-Caster | 900cr | Ranged | Tech | Close. 1 DMG. Organic Trauma. If DMG dealt: administers one Chem the shooter has on hand to the target. | Special |
 | Combat Knife | 75cr | Melee | Light | Adjacent. 1d5+SPD/10 DMG. Bleeding. Can be thrown at Close Range. | N/A |
 | Combat Shotgun | 1.4kcr | Ranged | Light | Close. 3d10+3 DMG. 6 shots. Gunshot. 1d10+3 DMG at Long Range or Longer. | Heavy Shells |
@@ -67,16 +67,16 @@ Oftentimes the difference between life and death is having the right tools for t
 | ARMOR | PRICE | AP | O2 | REPAIR | SPECIAL |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | Reinforced Clothing | 500cr | 1 | No | 3 hours, Sewing Kit, no Check. | AP does not stack with any other Armor, but can be worn underneath them. |
-| Commissioned Attire | 625cr | 2 | No | 3 hours, Sewing Kit, no Check. | N/A |
-| Civilian Vaccsuit | 1kcr | 3 | 12 hrs | 3 hours, Patch Kit. 0-G [+], JR [+], MR [+]. | Includes SR Comms, Flashlight, radiation shielding. Decompression once AP is 0. |
+| Commissioned Attire | 625cr | 2 | No | 3 hours, Sewing Kit, no Check. | You look extra nice and people may comment on it. |
+| Civilian Vaccsuit | 1kcr | 3 | 12 hrs | 3 hours, Patch Kit. 0-G [+]/JR [+]/MR [+]. | Includes SR Comms, Flashlight, radiation shielding. Decompression once AP is 0. |
 | Armor Vest | 1.5kcr | 4 | No | 4 hours, Assorted Tools, MR [+]. | Can be hidden underneath standard clothing. |
-| Hazard Suit | 2.1kcr | 2 | 2 hrs | 4 hours, Assorted Tools, JR [+], IE [+], MR [+]. | Includes air filter, extreme heat/cold protection, hydration reclamation system, SR Comms, Flashlight, radiation shielding. |
-| Longhaul Jumpsuit | 3kcr | 5 | No | 4 hours, Sewing Kit, RW [+] or JR [+]. | Includes hydration reclamation system, radiation shielding. |
-| Battle Vaccsuit | 5kcr | 6 | 12 hrs | 5 hours, Patch Kit, 0-G, JR, MR. | Includes SR Comms, Flashlight, Patch Kit. Speed [-] when worn. Radiation shielding. Decompression once AP is 0. |
+| Hazard Suit | 2.1kcr | 2 | 2 hrs | 4 hours, Assorted Tools, JR [+]/IE [+]/MR [+]. | Includes air filter, extreme heat/cold protection, hydration reclamation system, SR Comms, Flashlight, radiation shielding. |
+| Longhaul Jumpsuit | 3kcr | 5 | No | 4 hours, Sewing Kit, RW [+]/JR [+]. | Includes hydration reclamation system, radiation shielding. |
+| Battle Vaccsuit | 5kcr | 6 | 12 hrs | 5 hours, Patch Kit, 0-G/JR/MR. | Includes SR Comms, Flashlight, Patch Kit. Speed [-] when worn. Radiation shielding. Decompression once AP is 0. |
 | Standard Infantry Armor | 7kcr | 7 | No | 6 hours, Assorted Tools, MR [+]. | Includes SR Comms, Flashlight, bodycam. |
-| Cybersuit | 11kcr | 8 | No | 6 hours, Assorted Tools, MR or CN [+]. | Includes SR Comms, HUD, built-in Computer Terminal. |
+| Cybersuit | 11kcr | 8 | No | 6 hours, Assorted Tools, MR/CN [+]. | Includes SR Comms, HUD, built-in Computer Terminal. |
 | Assault Infantry Armor | 16kcr | 9 | 1 hr | 6 hours, Assorted Tools, MR. | Includes SR Comms, Flashlight, bodycam, air filter (separate from O2 supply). Reduces chemical and fire DMG by half (rounded down) while intact. |
-| Black Ops Armor | 25kcr | 10 | 6 hrs | 12 hours, Assorted Tools, MR or Inf. | Includes SR Comms Jammer, Stimpack auto-injector (Stimpacks sold separately), radiation shielding. Decompression once AP is 0. |
+| Black Ops Armor | 25kcr | 10 | 6 hrs | 12 hours, Assorted Tools, MR/Inf. | Includes SR Comms Jammer, Stimpack auto-injector (Stimpacks sold separately), radiation shielding. Decompression once AP is 0. |
 | Powered Infantry Armor | 35kcr | 12 | 2 hrs | 12 hours, Machine Shop, MR. | Includes SR Comms, Flashlight, bodycam, air filter (separate from O2 supply), exoskeleton. Completely immune to radiation, chemical, and fire DMG while intact. Speed [-], Strength [+] when worn. Decompression at 0 AP. |
 
 ## 4.3 CHEMS

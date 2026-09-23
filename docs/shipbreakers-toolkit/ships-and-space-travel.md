@@ -66,7 +66,7 @@ Player character Crewmember Salaries are calculated from their Stats, Skills, Wo
 1. **Physical Ability:** Take the higher of **Speed or Strength** and multiply it by **20**.
 2. **Technical/Social Ability:** Take the higher of **Smarts or Savvy** and multiply it by **30**.
 3. **Durability:** Multiply your character's **Maximum Wounds** by **750**.
-4. **Training:** Add...
+4. **Training:** Add…
     1. **300** for each Trained Skill.
     2. **600** for each Expert Skill.
     3. **900** for each Master Skill.
@@ -89,7 +89,7 @@ The Jump Rating determines how many systems a ship can travel with the use of a 
 
 The Class of a ship is a general measure of its size and capability. Ships are rated on a scale of Class-0 (C-0) to Class-V (C-V). The higher a ship's class, the larger, more powerful, and more expensive it is.
 
-Ship class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel. The chart below outlines what a ship of a given Class would generally be equipped with. Further amenities, functions, and capacity can be installed via Upgrades. Vessels with higher capacities tend to cost more initially. Hardpoints, Cryopods, and Escape Pods are determined by the vessel's make/model and are not included in the generic Class frame.
+Ship Class is often abbreviated and combined with its Jump Rating. For example: J1C-II refers to a Jump-1 Class-II vessel. The chart below outlines what a ship of a given Class would generally be equipped with. Further amenities, functions, and capacity can be installed via Upgrades. Vessels with higher capacities tend to cost more initially. Hardpoints, Cryopods, and Escape Pods are determined by the vessel's make/model and are not included in the generic Class frame.
 
 | FEATURE | C-0 | C-I | C-II | C-III | C-IV | C-V |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -150,7 +150,7 @@ Average installation times (given availability, labor, etc.) are listed below. I
 | **MINOR UPGRADES** | ———— | ———— | ———— |
 | **UPGRADE** | **COST** | **INST.** | **DESCRIPTION** |
 | **Agar Cushioning** | 1.5mcr | 2 weeks | Upgraded Cryopods which cut Cryosickness from 1 week to 1d10 hours. Stats & Saves don't deteriorate from Cryosickness for the first ten years, then only every other year after that. |
-| **Cargo Container** | 100kcr | 1 day | Cube-shaped metallic container that slots into the Cargo Bay (4 × ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
+| **Cargo Container** | 100kcr | 1 day | Cube-shaped metallic container that slots into the Cargo Bay (4 × Ship Class per Bay). Holds basically anything that doesn't require life support. It's a big space box, what did you expect? |
 | **Cryochamber** | 5mcr | 2 weeks | Increase the number of Cryopods by up to 24 per Ship Class (e.g., Class-III could have up to 72). |
 | **Dedicated Reactor** | 1mcr | 1 month | Grants +5 Systems. |
 | **Deep Space Scanners** | 1mcr | 2 weeks | Increases the Range of all detection abilities by 1 Range band (i.e. what you used to be able to scan at Contact Range, you can now scan at Firing Range, etc.). |

@@ -89,13 +89,13 @@ There are eight class options, as detailed here:
     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
 2. **Agent**: Computers, Hacking, Influence
     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
-3. **Marine**: Military Training, Athletics, Firearms or Hand-to-Hand Combat
+3. **Marine**: Military Training & Athletics + Firearms or Hand-to-Hand Combat
     - **Bonus:** 1 Expert Skill with prerequisite or 2 Trained Skills
 4. **Psion**: Psychokinesis with prerequisites
     - **Bonus:** 1 Trained Skill
 5. **Scientist**: Any Master Skill with prerequisites, except: Command, Psychokinesis, or Infiltration
     - **Bonus:** 1 Trained Skill
-6. **Scum**: Rimwise, Hand-to-Hand Combat or Firearms
+6. **Scum**: Rimwise + Hand-to-Hand Combat or Firearms
     - **Bonus:** 3 Trained Skills
 7. **Teamster**: Industrial Equipment, Zero-G
     - **Bonus:** 1 Expert Skill with prerequisite & 1 Trained Skill
@@ -108,7 +108,7 @@ Roll for a **Loadout** based on your character's class. If your Warden is nice, 
 
 | D10 | ADHERENT | AGENT | MARINE | PSION |
 | :---: | ----- | ----- | ----- | ----- |
-| 0 | Preacher's Attire (1 AP, as Reinforced Clothing), Foam Gun (1 Energy Cell), Medscanner, MoHab Unit | Armor Vest (4 AP), Sniper Rifle (3 rounds), Paracord, Chemlight (5 uses) | Tank Top & Camo Pants (1 AP, as Reinforced Clothing), Combat Knife, Stimpack ×5 | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Psypulse Launcher, Rebreather |
+| 0 | Preacher's Attire (1 AP, as Reinforced Clothing), Foam Gun (1 Energy Cell), Medscanner, MoHab Unit | Armor Vest (4 AP), Sniper Rifle (3 rounds), Paracord, Chemlight (5 uses) | Tank Top & Camo Pants (1 AP, as Reinforced Clothing), Combat Knife, Stimpack (×5) | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Psypulse Launcher, Rebreather |
 | 1 | Preacher's Attire (1 AP, as Reinforced Clothing), Flare Gun (1 Energy Cell), Water Filtration Device, Pet (Synthetic) | Civilian Clothes (1 AP, as Reinforced Clothing), Fountain Pen (as Poison Injector), Briefcase, Pamphlets | Fatigues (2 AP, as Commissioned Attire), Large Stick (as Martial Bludgeon), Dog (pet), Leash, Tennis Ball | Laboratory Jumpsuit (1 AP, as Reinforced Clothing), Hardlight Holoblade, Chemlight (5 uses), Medscanner |
 | 2 | Commissioned Attire (2 AP), Scythe (as Basic Blade), Salvage Drone, Pet (Organic) | Corporate Attire (2 AP, as Commissioned Attire), Stun Baton, VIP Corporate Keycard, Soci-stim (×3) | Assault Infantry Armor (7 AP), Combat Shotgun (4 rounds), MoHab Unit, Rucksack | Containment Suit (2 AP, as Hazard Suit), Energy Whip, Powercell (×3), First Aid Kit |
 | 3 | Commissioned Attire (2 AP), Varmint Rifle (4 rounds), Patch Kit, Ambidextrin (×3) | Cybersuit (8 AP), Cane with Hidden Sword (As Martial Blade), VIP Corporate Keycard | Assault Infantry Armor (7 AP), Pulse Rifle (3 mags), Infrared Goggles | Containment Suit (2 AP, as Hazard Suit), Mind Melter, Geiger Counter, Emergency Beacon |
@@ -124,7 +124,7 @@ Roll for a **Loadout** based on your character's class. If your Warden is nice, 
 | 2 | Labsuit (3 AP, as Civilian Vaccsuit), Rigging Gun, Flashlight, Sample Collection Kit, Lab Rat (pet) | Repurposed Jumpsuit (1 AP, as Reinforced Clothing), Revolver, Explosives & Detonator, Metallysis (×3) | Standard Crew Attire (1 AP, as Reinforced Clothing), Flare Gun (1 Energy Cell), Water Filtration Device, Personal Locator | Haute Couture (2 AP, as Commissioned Attire), Tranq Pistol, Sewing Kit, Metallysis (×3) |
 | 3 | Labsuit (3 AP, as Civilian Vaccsuit), Foam Gun (1 Energy Cell), Foldable Stretcher, First Aid Kit | Battle Vaccsuit (6 AP), Crowbar, Short-Range Comms, Soci-stim (×3) | Ship's Uniform (3 AP, as Civilian Vaccsuit), Rigging Gun (1 shot), Shovel, Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Smoke Grenade, Rebreather, Focusitol (×3) |
 | 4 | Lab Coat (1 AP, as Reinforced Clothing), Screwdriver (as Assorted Tools), Medscanner, Vaccine (1 dose) | Faction Bomber Jacket (2 AP, as Commissioned Attire), Vibechete, Jetpack, Metallysis (×3) | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Explosives & Detonator, Cigarettes | Haute Couture (2 AP, as Commissioned Attire), Holdout Pistol, Electronic Tool Set, Soci-stim (×3) |
-| 5 | Lab Coat (1 AP, as Reinforced Clothing), Portable Computer Terminal, Cybernetic Diagnostic Scanner | Faction Bomber Jacket (2 AP, as Commissioned Attire), Grenade Launcher, Frag Grenade ×2, Smoke Grenade ×2 | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Hand Welder, Paracord (100m), Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Holdout Pistol, Portable Computer Terminal, MRE (7 uses) |
+| 5 | Lab Coat (1 AP, as Reinforced Clothing), Portable Computer Terminal, Cybernetic Diagnostic Scanner | Faction Bomber Jacket (2 AP, as Commissioned Attire), Grenade Launcher, Frag Grenade (×2), Smoke Grenade (×2) | Heavy Duty Work Clothes (2 AP, as Commissioned Attire), Hand Welder, Paracord (100m), Salvage Drone | Holofit (1 AP, as Reinforced Clothing), Holdout Pistol, Portable Computer Terminal, MRE (7 uses) |
 | 6 | Standard Crew Attire (1 AP, as Reinforced Clothing), Scalpel, Cybernetic Diagnostic Scanner, Duct Tape | Salvage Suit (7 AP, as Standard Infantry Armor), Vibrosword, SR Comms Jammer, Quickoag (×2) | Standard Crew Attire (1 AP, as Reinforced Clothing), Combat Shotgun (4 rounds), Cat (pet) | Armor Vest (4 AP), Hardlight Holoblade, First Aid Kit |
 | 7 | Hazard Suit (2 AP), Flamethrower (1 charge), Electronic Tool Set, Stimpack | Civilian Vaccsuit (3 AP), Varmint Rifle, Salvage Drone, Hardineram (×2) | Standard Crew Attire (1 AP, as Reinforced Clothing), Nail Gun (32 rounds), Assorted Tools | Armor Vest (4 AP), Smart Rifle, Portable Computer Terminal, Lubrenisone (×2) |
 | 8 | Scrubs (1 AP, as Reinforced Clothing), Scalpel, Oxygen Tank with Filter Mask, Automed (×5) | Armor Vest (4 AP), Power Saw, Powercell (×3), Quickoag | Hazard Suit (2 AP), Vibechete, Spanner, MoHab Unit, Water Filtration Device | Civilian Vaccsuit (3 AP), Holdout Pistol, Jetpack, Automed (×5) |
@@ -150,7 +150,7 @@ Roll for a **Trinket** (1d100). If you crit, you'll probably get a single-use Pa
 | 13 | Snake Whiskey | 38 | Heirloom Dog Tags | 63 | Fleshy Thing Sealed in a Murky Jar | 88 | Pamphlet, Seditious Smut: *The Captain, Ordered* (Command) |
 | 14 | Medical Container, Purple Powder | 39 | Token: "Is Your Morale Improving?" | 64 | Spiked Bracelet | 89 | 10m^2^ Tarp |
 | 15 | Pills: Male Enhancement, Shoddy | 40 | Pull-String Cowboy Toy | 65 | Harmonica | 90 | *I Ching*, Missing Sticks |
-| 16 | Casino Playing Cards | 41 | “Borrowed” Spanner | 66 | Pamphlet: *Military Battles* (Military Training) | 91 | Pamphlet: *Treat Your Rifle Like a Lady* (Firearms) |
+| 16 | Casino Playing Cards | 41 | "Borrowed" Spanner | 66 | Pamphlet: *Military Battles* (Military Training) | 91 | Pamphlet: *Treat Your Rifle Like a Lady* (Firearms) |
 | 17 | Lagomorph Foot | 42 | Trench Shovel | 67 | Coffee Cup, Chipped, reads: HAPPINESS IS MANDATORY | 92 | Pamphlet: *The Relic of Flesh* (Theology) |
 | 18 | Moonstone Ring | 43 | Shiv, Sharpened Butter Knife | 68 | Miniature Chess Set, Bone, Missing Pieces | 93 | Pamphlet: *Rich Captain, Poor Captain* (Extortion) |
 | 19 | Expired Bartender's Certification | 44 | Pamphlet: *Zen and the Art of Cargo Arrangement* (Rimwise) | 69 | Pictorial Pornography, Dog-eared, Well-thumbed, Optionally Stained | 94 | Pamphlet: *A Lover In Every Port* (Influence) |
@@ -272,7 +272,7 @@ Determine how many **Credits** you have. Credits (cr) are the primary currency i
 - 35.2mcr = 35.2 million credits (35,200,000cr)
 - 4bcr = 4 billion credits (4,000,000,000cr)
 
-Characters get 2d10×10cr in addition to their Starting Loadout. If you want to forgo a Starting Loadout and buy gear piecemeal, roll 2d10×100cr for starting credits instead. If your character comes from a particularly rich or poor background, ask your Warden if you can change your starting credits to 2d10×1000 or 2d10×10 instead.
+Characters get 2d10×10cr in addition to their Starting Loadout. If you want to forgo a Starting Loadout and buy gear piecemeal, roll 2d10×100cr for starting credits instead. If your character comes from a particularly rich or poor background, ask your Warden if you can change your starting credits to 2d10×1000cr or 2d10×10cr instead.
 
 ## 1.8 FINISHING TOUCHES
 
