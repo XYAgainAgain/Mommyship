@@ -2,7 +2,7 @@
 
 ![](../assets/images/MothershipSplash1.webp){.splash-banner}
 
-Oftentimes the difference between life and death is having the right tools for the job at hand. Below is a non-comprehensive list of the kinds of Armor, weapons, supplies, and tools available to characters at the start of the game.
+Oftentimes the difference between life and death is having the right tools for the job at hand. This section is a non-comprehensive list of the kinds of personal protective equipment, weapons, supplies, tools, and tchotchkes available in Mommyship. If there's something you think your game is missing, make it up! It's all imaginary anyway, and we won't be upset.
 
 ## 4.1 WEAPONS
 

@@ -2,6 +2,8 @@
 
 ![](../assets/images/MothershipSplash2.webp){.splash-banner}
 
+It's a big galaxy out there. Luckily, you only have to worry about yourself, your psyche, your gear, your crew, your ship, and every other responsibility you've collectively taken on. While that might sound overwhelming, Mommyship is meant to be an approachable game. This section tells you everything you need to know about how it's played and what you need to keep track of. If the rules seem like a lot to remember, the [Quick Guide](quick-guide.md#50-quick-guide) is what you want for a refresher or reference while trying to survive the horrors of the void!
+
 ## 2.1 HOW TO BE A GREAT PLAYER
 
 Mommyship can be a very challenging game. You should expect:

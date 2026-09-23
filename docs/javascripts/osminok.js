@@ -2059,10 +2059,8 @@ document$.subscribe(function () {
   }
 
   var abyss = document.querySelector('.ocean-abyss');
-  var abyssParent = null;
-  var abyssNext = null;
 
-  /* Pressure squeeze — 2% narrowing per h3 (ecology only) */
+  /* Pressure squeeze — 0.5% narrowing per h3 (ecology only) */
   var squeezedEls = [];
   if (!isDive) {
     (function () {
@@ -2567,7 +2565,7 @@ document$.subscribe(function () {
         tryPassby();
       }
 
-      /* Ambient passbys — the ocean is always alive, even when you stop scrolling */
+      /* Ambient passbys — an 8–20 s timer on top of the distance trigger, checked only while scrolling: the descent is what startles them */
       if (Date.now() - lastAmbientPassby > nextAmbientInterval) {
         lastAmbientPassby = Date.now();
         nextAmbientInterval = rand(8000, 20000);
@@ -2791,7 +2789,7 @@ document$.subscribe(function () {
       }
     }
 
-    /* Header fades to transparent — dive: by ~250m, ecology: by 80% scroll */
+    /* Header fades to transparent — dive: by ~100m, ecology: by 80% scroll */
     if (header) {
       var headerAlpha;
       if (isDive) {

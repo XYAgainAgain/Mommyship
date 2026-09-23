@@ -84,9 +84,11 @@ body:has(.osminok-ocean) .md-header__topic .md-ellipsis {
   -webkit-text-stroke: 0;
 }
 
-/* Reserve left nav space so content width matches the main site */
-body:has(.osminok-ocean) .md-content {
-  margin-left: 12.1rem;
+/* Reserve left nav space so content width matches the main site (only where the nav sidebar exists) */
+@media (width >= 76.25em) {
+  body:has(.osminok-ocean) .md-content {
+    margin-left: 12.1rem;
+  }
 }
 
 /* Font swap: Capriola for body (slightly smaller), Gabriela for headings (slightly bigger) */
@@ -388,8 +390,7 @@ body:has(.osminok-ocean) .md-typeset h1 {
   contain: layout paint style;
 }
 
-/* Abyss — JS reparents this outside .osminok-ocean so it layers
-   above bio (z-index: 1). SVG waves crest upward into the content. */
+/* Abyss sits above the bio layers (z-index: 1); its SVG waves crest upward into the content */
 .ocean-abyss {
   position: relative;
   z-index: 2;

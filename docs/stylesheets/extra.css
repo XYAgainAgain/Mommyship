@@ -8,13 +8,20 @@
   animation: neon-pulse 3s ease-in-out infinite;
 }
 
-/* Footer: match header height, fixed colors */
-.md-footer {
-  height: 2.4rem;
+/* No stray overflow may open a sideways scroll (phones pan to it); clip, unlike hidden, keeps the sticky header */
+body {
+  overflow-x: clip;
 }
 
+/* Desktop rubber-band overscroll bared the page background under the footer; touch keeps pull-to-refresh */
+@media (pointer: fine) {
+  html {
+    overscroll-behavior-y: none;
+  }
+}
+
+/* Footer: header height as a floor, so wrapped content grows the bar instead of spilling out */
 .md-footer-meta {
-  height: 100%;
   padding: 0;
   background: rgba(0, 0, 0, 0.06);
 }
@@ -23,26 +30,91 @@
   background: rgba(13, 13, 26, 0.7);
 }
 
-.md-footer-meta__inner {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Circuitry behind the footer text: isolate keeps the z-index -1 layer above the footer's own fill */
+.md-footer-meta {
+  position: relative;
+  isolation: isolate;
 }
 
+.md-footer-meta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: 0 0 / 64rem 2.4rem repeat;
+  /* footer-greebles.js sets a fresh per-load strip. No inline fallback: it would flash first */
+  background-image: var(--footer-greebles);
+  opacity: 0.075;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  pointer-events: none;
+}
+
+/* Baked strip for no-JS, or if the generator throws */
+:is(.no-js, [data-greebles="static"]) .md-footer-meta::before {
+  background-image: url("../assets/images/footer-greebles.svg");
+}
+
+/* The SVG is drawn white; flip it dark for the light theme */
+[data-md-color-scheme="default"] .md-footer-meta::before {
+  filter: invert(1);
+}
+
+body:has(.osminok-ocean) .md-footer-meta::before {
+  display: none;
+}
+
+.md-footer-meta__inner {
+  min-height: 2.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 1.5rem;
+  padding: 0 0.8rem;
+}
+
+.footer-credits,
 .shortcut-legend {
-  text-align: center;
   padding: 0.6rem 0;
   font-size: 0.7rem;
   color: rgba(0, 0, 0, 0.4);
 }
 
-[data-md-color-scheme="slate"] .shortcut-legend {
+[data-md-color-scheme="slate"] :is(.footer-credits, .shortcut-legend) {
   color: rgba(255, 250, 255, 0.45);
 }
 
-.shortcut-legend__sep::before {
-  content: "\00a0\00a0\2022\00a0\00a0";
+.md-footer-meta.md-typeset .footer-credits a {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
+}
+
+.md-footer-meta.md-typeset .footer-credits a:is(:hover, :focus-visible) {
+  color: var(--md-accent-fg-color);
+}
+
+/* Two halves that break apart cleanly; the pipe floats in the gap so hiding it can't re-flow the line */
+.footer-credits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 1.6em;
+}
+
+.footer-credits__part + .footer-credits__part {
+  position: relative;
+}
+
+.footer-credits__part + .footer-credits__part::before {
+  content: "|";
+  position: absolute;
+  right: calc(100% + 0.8em);
+  translate: 50% 0;
+}
+
+.footer-credits--split .footer-credits__part + .footer-credits__part::before {
+  display: none;
 }
 
 .shortcut-legend kbd {
@@ -57,6 +129,18 @@
   border-radius: 3px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
   vertical-align: baseline;
+}
+
+/* Phones have no keyboard to use these with; tablets often do */
+@media screen and (max-width: 44.984375em) {
+  .shortcut-legend {
+    display: none;
+  }
+
+  .md-footer-meta__inner {
+    justify-content: center;
+    text-align: center;
+  }
 }
 
 [data-md-color-scheme="slate"] .shortcut-legend kbd {
@@ -100,7 +184,7 @@
   --md-default-fg-color--lightest: rgba(0, 0, 0, 0.12);
 }
 
-/* Doubled attribute selector beats Material's palette CSS (loads after extra.css) */
+/* Doubled attribute selector: palette CSS loads first today, but this still wins if that order ever flips */
 [data-md-color-scheme="slate"][data-md-color-scheme="slate"] {
   --md-hue: 280;
   --md-default-bg-color: #0d0d1a;
@@ -144,12 +228,12 @@
   color: var(--md-accent-fg-color) !important;
 }
 
-/* TOC: dim passed sections */
-.md-nav__link--passed {
+/* TOC: dim passed sections (the one being read is also --passed, so skip it) */
+.md-nav__link--passed:not(.md-nav__link--current) {
   color: rgba(0, 0, 0, 0.4) !important;
 }
 
-[data-md-color-scheme="slate"] .md-nav__link--passed {
+[data-md-color-scheme="slate"] .md-nav__link--passed:not(.md-nav__link--current) {
   color: rgba(255, 250, 255, 0.35) !important;
 }
 
@@ -159,6 +243,22 @@
 
 .md-header {
   background-color: #41ead4;
+}
+
+/* Theme-swap fade. Zensical zeroes every descendant transition while it swaps schemes
+   (body itself is exempt), so the header, footer, and starfield opt back in */
+body,
+.md-footer-meta {
+  transition: background-color 125ms, color 125ms;
+}
+
+/* transform kept from stock's header-hide slide */
+.md-header {
+  transition: background-color 125ms, color 125ms, transform 0.25s cubic-bezier(0.1, 0.7, 0.1, 1);
+}
+
+[data-md-color-switching] :is(.md-header, .md-footer-meta, #warp-bg) {
+  transition-duration: 125ms !important;
 }
 
 [data-md-color-scheme="slate"] .md-header {
@@ -311,7 +411,7 @@ html {
 }
 
 /* Full-width title/sub-header cells merged by extra.js (spanTableBands); tag selectors
-   outrank the theme's th text-align: left, which loads after this file */
+   outrank the theme's th text-align: left */
 .md-typeset table:not([class]) th.table-band,
 .md-typeset table:not([class]) td.table-band {
   text-align: center;
@@ -730,36 +830,56 @@ body:has(.section-landing) {
   font-size: 0.55rem;
   font-weight: 500;
   line-height: 1.4;
-  white-space: nowrap;
+  width: max-content;
+  max-width: min(18rem, 80vw);
   color: var(--md-default-fg-color);
   background: var(--md-default-bg-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 2px;
+  /* display:none, not just opacity 0: an invisible tooltip near the right edge still widens the page */
+  display: none;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, display 0.2s allow-discrete;
   z-index: 10;
 }
 
 .md-typeset abbr[data-title]:hover::after {
+  display: block;
   opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Back-to-top: stock stretches the flex row, so the icon sits at the top of League Spartan's taller line */
+.md-top {
+  align-items: center;
+  line-height: 1;
 }
 
 /* Warp background (WebGPU canvas)! Visible in dark mode only (except homepage) */
+/* lvh = the viewport with the mobile URL bar retracted, so the bar sliding never resizes it */
 #warp-bg {
-  display: none;
-}
-
-[data-md-color-scheme="slate"] #warp-bg {
   display: block;
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0 auto auto 0;
+  width: 100vw;
+  height: 100lvh;
   z-index: -1;
   background: #000;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 125ms, visibility 125ms;
+}
+
+/* --warp-opacity is the Galacticity slider, set inline by warp-bg.js */
+[data-md-color-scheme="slate"] #warp-bg {
+  opacity: var(--warp-opacity, 1);
+  visibility: visible;
 }
 
 body:has(.homepage-hero) #warp-bg {

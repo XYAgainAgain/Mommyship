@@ -1,4 +1,5 @@
-// Mark the current TOC section — the first non-passed link is always the current one
+// Mark the TOC section being read. Zensical's scroll-spy flags it as the last passed link (--active),
+// but also dims it with --passed, so we add our own class that the dim rule skips
 function updateCurrentTocItem() {
   var toc = document.querySelector(".md-sidebar--secondary .md-nav");
   if (!toc) return;
@@ -7,16 +8,8 @@ function updateCurrentTocItem() {
     el.classList.remove("md-nav__link--current");
   });
 
-  var links = toc.querySelectorAll(".md-nav__link");
-  var foundPassed = false;
-  for (var i = 0; i < links.length; i++) {
-    if (links[i].classList.contains("md-nav__link--passed")) {
-      foundPassed = true;
-    } else if (foundPassed) {
-      links[i].classList.add("md-nav__link--current");
-      break;
-    }
-  }
+  var active = toc.querySelector(".md-nav__link--active");
+  if (active) active.classList.add("md-nav__link--current");
 }
 
 var TEXT_SCALE_KEY = "mommyship-text-scale";
@@ -198,22 +191,36 @@ function bindKeyboardShortcuts() {
   });
 }
 
-/* Wrap [+] and [-] in <abbr> tooltips — abbr extension can't handle non-word chars */
-var BRACKET_SKIP = { CODE: 1, PRE: 1, SCRIPT: 1, STYLE: 1, ABBR: 1 };
-var BRACKET_RE = /\[\+\]|\[-\]/g;
-var BRACKET_TITLES = {
+/* Tooltips for notation the abbr extension can't match: [+]/[-] aren't word characters, and
+   credits and dice hug their number (100cr, 2d5), so its word boundaries never fire */
+var NOTATION_SKIP = { CODE: 1, PRE: 1, SCRIPT: 1, STYLE: 1, ABBR: 1 };
+var NOTATION_RE = /\[\+\]|\[-\]|(?<=\d)[kmb]?cr\b|\d+d5\b/g;
+var NOTATION_TITLES = {
   "[+]": "Advantage \u2014 roll twice, take the better result",
-  "[-]": "Disadvantage \u2014 roll twice, take the worse result"
+  "[-]": "Disadvantage \u2014 roll twice, take the worse result",
+  "cr": "Credits",
+  "kcr": "Thousand credits",
+  "mcr": "Million credits",
+  "bcr": "Billion credits"
 };
 
-function wrapBracketNotation() {
-  var content = document.querySelector(".md-typeset");
+function notationTitle(token) {
+  var dice = /^(\d+)d5$/.exec(token);
+  if (!dice) return NOTATION_TITLES[token];
+  return dice[1] === "1" ? "1d10 halved & rounded up" : dice[1] + "d10, each die halved & rounded up";
+}
+
+function wrapNotation() {
+  /* Not bare .md-typeset: Zensical also puts that class on nav labels, which come first */
+  var content = document.querySelector(".md-content__inner");
   if (!content) return;
 
   var walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
     acceptNode: function(node) {
-      if (BRACKET_SKIP[node.parentElement.tagName]) return NodeFilter.FILTER_REJECT;
-      return BRACKET_RE.test(node.data) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      if (NOTATION_SKIP[node.parentElement.tagName]) return NodeFilter.FILTER_REJECT;
+      /* A /g regex's test() resumes from lastIndex, which would skip matches in later nodes */
+      NOTATION_RE.lastIndex = 0;
+      return NOTATION_RE.test(node.data) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
     }
   });
 
@@ -225,38 +232,31 @@ function wrapBracketNotation() {
     var text = textNode.data;
     var lastIdx = 0;
     var match;
-    BRACKET_RE.lastIndex = 0;
-    while ((match = BRACKET_RE.exec(text)) !== null) {
+    NOTATION_RE.lastIndex = 0;
+    while ((match = NOTATION_RE.exec(text)) !== null) {
       if (match.index > lastIdx) frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
       var abbr = document.createElement("abbr");
-      abbr.setAttribute("data-title", BRACKET_TITLES[match[0]]);
+      abbr.setAttribute("data-title", notationTitle(match[0]));
+      abbr.setAttribute("aria-description", notationTitle(match[0]));
       abbr.textContent = match[0];
       frag.appendChild(abbr);
-      lastIdx = BRACKET_RE.lastIndex;
+      lastIdx = NOTATION_RE.lastIndex;
     }
     if (lastIdx < text.length) frag.appendChild(document.createTextNode(text.slice(lastIdx)));
     textNode.parentNode.replaceChild(frag, textNode);
   });
 }
 
-/* Replace Material's below-cursor tooltips with our CSS above-cursor tooltips */
+/* Our CSS tooltips replace Zensical's below-cursor ones. Swapping in a clone sheds the hover
+   listener Zensical bound to the original, which would otherwise pop an empty tooltip */
 function unifyAbbrTooltips() {
-  document.querySelectorAll(".md-typeset abbr").forEach(function(abbr) {
-    if (abbr.hasAttribute("data-title")) return;
-
-    /* Material places an md-tooltip2 sibling after each <abbr> it processes */
-    var sibling = abbr.nextElementSibling;
-    if (sibling && sibling.classList.contains("md-tooltip2")) {
-      var inner = sibling.querySelector(".md-tooltip2__inner");
-      if (inner) abbr.setAttribute("data-title", inner.textContent.trim());
-      sibling.remove();
-    }
-
-    /* Catch any <abbr> that Material hasn't reached yet */
-    if (abbr.hasAttribute("title") && !abbr.hasAttribute("data-title")) {
-      abbr.setAttribute("data-title", abbr.getAttribute("title"));
-      abbr.removeAttribute("title");
-    }
+  document.querySelectorAll(".md-typeset abbr[title]").forEach(function(abbr) {
+    var clean = abbr.cloneNode(true);
+    clean.setAttribute("data-title", abbr.getAttribute("title"));
+    /* The ::after tooltip is invisible to screen readers; this keeps the expansion announced */
+    clean.setAttribute("aria-description", abbr.getAttribute("title"));
+    clean.removeAttribute("title");
+    abbr.replaceWith(clean);
   });
 }
 
@@ -352,11 +352,29 @@ document$.subscribe(function() {
   bindTextSizeRocker();
   bindKeyboardShortcuts();
   handleNavBottom();
-  wrapBracketNotation();
+  wrapNotation();
   unifyAbbrTooltips();
   applyQuickGuideWidth();
   bindMassholeNav();
+  bindFooterSplit();
 });
+
+/* Footer credits: the pipe only belongs between the halves while they share a line */
+var footerSplitObserver = null;
+
+function bindFooterSplit() {
+  var credits = document.querySelector(".footer-credits");
+  if (!credits || credits._splitBound) return;
+  credits._splitBound = true;
+  var parts = credits.querySelectorAll(".footer-credits__part");
+  if (parts.length < 2) return;
+  /* One observer for the session: instant navigation swaps in a new footer each page */
+  if (footerSplitObserver) footerSplitObserver.disconnect();
+  footerSplitObserver = new ResizeObserver(function() {
+    credits.classList.toggle("footer-credits--split", parts[1].offsetTop > parts[0].offsetTop);
+  });
+  footerSplitObserver.observe(credits);
+}
 
 /* Header title click → Galaxy Map (Mommyship pages only) */
 function bindMassholeNav() {

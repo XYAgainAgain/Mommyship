@@ -2,7 +2,7 @@
 
 ![](../assets/images/MothershipSplash3.webp){.splash-banner}
 
-The Known Galaxy is expansive and expensive. Between adventures, contracts, and detours, you may find yourself encountering established and populated settlements, outposts, and satellites, and can find safety for a time among their residents.
+The Known Galaxy is both expansive *and* expensive. Between adventures, contracts, fuel stops, intolerable fetch quests, zero-G poker games, and detours, you might find yourself encountering established and populated settlements, outposts, and satellites, and may enjoy safety for a time among their residents. Until something goes horribly wrong, of course.
 
 ## 3.1 PORTS
 

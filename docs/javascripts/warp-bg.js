@@ -4,17 +4,20 @@ import * as THREE from 'three/webgpu';
 import {
   Fn, attribute, uniform, varyingProperty, positionLocal, uv, instanceIndex, texture,
   vec2, vec3, vec4, float, sin, cos, atan, mix, clamp, smoothstep, min, max, abs, fract, floor, pow, length, dot,
-  Break, Discard, If, Loop, mx_noise_float,
+  Break, Discard, If, Loop, select, mx_noise_float,
 } from 'three/tsl';
 
 const TAU = Math.PI * 2;
 const NEBULA_SEED = crypto.getRandomValues(new Uint32Array(1))[0];
 const GALACTICITY_KEY = 'mommyship-galacticity';
-/* Phones default to off (25–40 FPS on the live build), tablets to 10 */
+/* Phones default to off (the shader is opt-in there, and finding the slider is half the fun), tablets to 10 */
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const PHONE = COARSE && Math.min(screen.width, screen.height) < 600;
 const GALACTICITY_DEFAULT = PHONE ? 0 : COARSE ? 10 : 40;
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PARAMS = new URLSearchParams(location.search);
+/* ?warpdebug=nostars,nogal,noneb,nodark,nocore hides layers, to find who owns the JUMP frame time */
+const WARP_DEBUG = new Set((PARAMS.get('warpdebug') || '').split(','));
 
 const clampJS = (x, a, b) => x < a ? a : x > b ? b : x;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -52,16 +55,20 @@ const C = {
   warpPush: 1.5, streakLen: 500, streakGlowWidth: 6, streakCoreWidth: 1.5, warpSpeedMult: 20,
   galWarpBright: 0.1, galStreakGlowBright: 0.1, galStreakCoreBright: 0.75,
   nebWarpBlur: 2.5, nebWarpTwist: 1.5, nebTwistSpeed: -0.02,
-  nebTwistSnap: 1, nebTwistFalloff: 4, nebWarpCondense: 0, nebWarpStretch: 2.9, nebWarpOctDrop: 2,
+  nebTwistSnap: 1, nebTwistFalloff: 2.5, nebWarpCondense: 0, nebWarpStretch: 4.35, nebWarpOctDrop: 2,
   nebWarpBright: 1.5, nebWarpSaturation: 1.5, nebSpiralArms: 1,
   jumpDuration: 10, warpAttack: 0.15, warpRelease: 0.13, depthEnvDip: 0.12,
   galCount: 10, galParticles: 420, galSpiralTurns: 1, galArms: 3, galDrift: 0.008, galSize: 50, galBright: 0.7, galSpin: 0.2,
   nebCount: 20, nebSize: 1200, nebBright: 0.5,
-  coreGlow: 0.06, coreBlend: 'multiply',
+  coreGlow: 0.06, coreBlend: 'multiply', darkWarpAbsorb: 1,
 };
 if (REDUCED_MOTION) { C.flySpeed = 0; C.galDrift = 0; C.galSpin = 0; C.nebTwistSpeed = 0; }
 /* Phones: fewer nebula cards and galaxies, for fill cost and to leave more OLED black between them */
 if (PHONE) { C.nebCount = 8; C.galCount = 5; }
+/* A narrow screen crowds the JUMP tube into the star blob: phones get a wider twist, bigger clouds, and
+   lighter dark cards, whose grey multiply over that blob was muting the blue */
+if (PHONE) { C.nebTwistFalloff = 1.5; C.nebWarpStretch = 7; C.darkWarpAbsorb = 0.25; }
+const PHONE_JUMP_THIN = 0.75;
 
 const CORE_BLENDS = {
   add:      { kind: 0, pma: false, apply: (m) => { m.blending = THREE.AdditiveBlending; } },
@@ -72,12 +79,14 @@ const CORE_BLENDS = {
 };
 
 const U = {
-  uFly: uniform(0), uGalPhase: uniform(0), uWarp: uniform(0), uNebWarp: uniform(0),
-  /* Trig phases accumulate JS-side, wrapped to TAU: WGSL only guarantees sin/cos
-     precision below |x| ≈ 65536, and this runs for hours as a site background */
+  uFly: uniform(0), uGalPhase: uniform(0), uWarp: uniform(0), uNebWarp: uniform(0), uNebOctShift: uniform(0),
+  /* Trig phases accumulate JS-side and stay bounded (wrapped to TAU, or reset at idle for the
+     twist): WGSL only guarantees sin/cos precision below |x| ≈ 65536, over hours as a background */
   uTwinklePhase: uniform(0), uGalSpinPhase: uniform(0), uNebTwistT: uniform(0),
   uMaxR: uniform(800), uDepthExp: uniform(C.depthExp), uGlowDiam: uniform(2000),
 };
+
+const NEB_OCTAVES = 4.25, NEB_CONTRAST = 4.2;
 
 /* Hand-tuned values as literal nodes, not uniforms: WGSL folds them (and the dead math they
    gate, e.g. condense at 0) out of the shader. Changing one at runtime does nothing. */
@@ -93,12 +102,13 @@ const K = {
   nebWarpBlur: float(C.nebWarpBlur), nebWarpTwist: float(C.nebWarpTwist),
   nebTwistSnap: float(C.nebTwistSnap),
   nebTwistFalloff: float(C.nebTwistFalloff), nebWarpCondense: float(C.nebWarpCondense),
-  nebWarpStretch: float(C.nebWarpStretch), nebOctDrop: float(C.nebWarpOctDrop),
+  nebWarpStretch: float(C.nebWarpStretch), darkWarpAbsorb: float(C.darkWarpAbsorb),
   nebWarpBright: float(C.nebWarpBright), nebWarpSaturation: float(C.nebWarpSaturation),
   nebSpiralArms: float(C.nebSpiralArms),
   nmsNebs: float(1),
   nebRes1: float(1.75), nebRes2: float(1.45), nebResMix: float(1),
-  nebDomainWarp: float(0.3), nebOctaves: float(4.25), nebContrast: float(4.2),
+  nebDomainWarp: float(0.3), nebOctaves: float(NEB_OCTAVES),
+  nebContrast: float(NEB_CONTRAST), nebContrastInv: float(1 / NEB_CONTRAST),
   nebColA: vec3(0.051, 0.051, 0.102),
   nebColB: vec3(0.275, 0.086, 0.663),
   nebColC: vec3(0.851, 0.263, 0.549),
@@ -106,13 +116,18 @@ const K = {
   coreGlow: float(C.coreGlow), coreBlendKind: float((CORE_BLENDS[C.coreBlend] || CORE_BLENDS.add).kind),
 };
 
-/* Idle nebula cards are static in card space, so their clouds bake once into one atlas tile per
-   card (emission in rgb, dark-card density in alpha); only JUMP frames run the live noise */
-const NEB_BAKE_RES = 512;
+/* Nebula noise never runs per frame: each card's cloud fields bake once into its own atlas tile
+   (c1, c3, bright density, dark-card density), and JUMP warps the tile lookup instead */
+const NEB_CORE_RES = 512, NEB_PAD_RES = 32, NEB_PAD_SPAN = 0.32;
+const NEB_BAKE_RES = NEB_CORE_RES + 2 * NEB_PAD_RES;
+/* The card's ±1 keeps the 512-texel grid; the pad ring reaches ±1.32, past NEB_REACH, where the
+   edge term is exactly 0 for any c1, so warped reads never need clamping */
+const NEB_TILE_CORE = NEB_CORE_RES / NEB_BAKE_RES, NEB_TILE_PAD = (1 - NEB_TILE_CORE) / NEB_PAD_SPAN;
+const NEB_REACH = 1.28;
 const NEB_COLS = Math.ceil(Math.sqrt(C.nebCount)), NEB_ROWS = Math.ceil(C.nebCount / NEB_COLS);
-const NEB_LIVE_MIN = 0.0005;
-/* Half float: the emission tops out near 1.5 before the card fade, and 8-bit would add a second
-   quantization step to the dim cloud edges */
+/* Idle-cost guard only: the warp branch's trig is wasted at rest, where it reduces to the idle fetch */
+const NEB_WARP_MIN = 0.0005;
+/* Half float: densities reach ~2, and 8-bit would add a second quantization step to the dim cloud edges */
 const nebBakeRT = new THREE.RenderTarget(NEB_COLS * NEB_BAKE_RES, NEB_ROWS * NEB_BAKE_RES, {
   type: THREE.HalfFloatType, depthBuffer: false, generateMipmaps: false,
   minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
@@ -155,8 +170,17 @@ const starVert = Fn(() => {
   const size = sizeBase.mul(K.starSize).mul(zc.mul(0.55).add(0.45));
   const radGlow = min(size.mul(K.streakGlowW), float(26)).mul(0.5);
   const radCore = max(size.mul(K.streakCoreW).mul(0.5), float(0.6));
-  const along = positionLocal.x.mul(halfLen.add(radGlow).mul(2));
-  const perp = positionLocal.y.mul(radGlow.mul(2));
+  let along = positionLocal.x.mul(halfLen.add(radGlow).mul(2));
+  let perp = positionLocal.y.mul(radGlow.mul(2));
+  /* Phones: JUMP streaks pile into one white blob there, so PHONE_JUMP_THIN of the field (a golden-ratio
+     index hash, the same stars every jump) fades out on thresholds staggered across warp 0–1 */
+  const hash = fract(float(instanceIndex).mul(0.6180339887)), thinAt = hash.mul(0.6 / PHONE_JUMP_THIN);
+  const thin = PHONE ? select(hash.lessThan(PHONE_JUMP_THIN), smoothstep(thinAt, thinAt.add(0.4), U.uWarp), float(0)) : null;
+  if (thin) {
+    /* Fully faded stars collapse to zero area: no fragments, same pixels */
+    const keepQuad = select(thin.lessThan(1), float(1), float(0));
+    along = along.mul(keepQuad); perp = perp.mul(keepQuad);
+  }
   const perpDir = vec2(dir.y.negate(), dir.x);
   const pos2 = center.add(dir.mul(along)).add(perpDir.mul(perp));
 
@@ -170,7 +194,8 @@ const starVert = Fn(() => {
   const radial = smoothstep(float(0), float(50), r);
   const twRaw = float(0.5).add(float(0.5).mul(sin(U.uTwinklePhase.add(twV.mul(6.2831853)))));
   const tw = mix(float(1), twRaw, K.twinkle.mul(float(1).sub(U.uWarp)));
-  vAlpha.assign(brightV.mul(K.bright).mul(fadeIn).mul(fadeOut).mul(radial).mul(tw));
+  const alpha = brightV.mul(K.bright).mul(fadeIn).mul(fadeOut).mul(radial).mul(tw);
+  vAlpha.assign(thin ? alpha.mul(float(1).sub(thin)) : alpha);
   vColor.assign(mix(vec3(1, 1, 1), aColor, K.colorMix));
 
   return vec3(pos2.x, pos2.y, float(0));
@@ -318,28 +343,60 @@ const nebulaBakeVert = Fn(() => {
   return vec3(cell.x, cell.y, float(0));
 });
 
-/* Card-border reject and per-card rotation, shared by the bake and the live JUMP path */
+const rotateCard = Fn(([p]) => {
+  const cs = vNCosSin.x, sn = vNCosSin.y;
+  return vec2(p.x.mul(cs).sub(p.y.mul(sn)), p.x.mul(sn).add(p.y.mul(cs)));
+});
+const unrotateCard = Fn(([p]) => {
+  const cs = vNCosSin.x, sn = vNCosSin.y;
+  return vec2(p.x.mul(cs).add(p.y.mul(sn)), p.y.mul(cs).sub(p.x.mul(sn)));
+});
+
+/* Unrotated card coords (±1 at the card border) and the card-border fade, always from the
+   unwarped fragment */
 const nebulaCard = Fn(() => {
   const p = uv().sub(vec2(0.5)).mul(2);
   const cardRadius = max(abs(p.x), abs(p.y));
   const cardGuard = float(1).sub(smoothstep(float(0.78), float(0.98), cardRadius));
   If(cardGuard.lessThan(float(0.005)), () => { Discard(); });
-  const cs = vNCosSin.x, sn = vNCosSin.y;
-  return vec3(p.x.mul(cs).sub(p.y.mul(sn)), p.x.mul(sn).add(p.y.mul(cs)), cardGuard);
+  return vec3(p, cardGuard);
 });
 
 /* Render-target v runs top-down on both backends (WebGPU convention; GLSL flips to match), so
-   the atlas row is mirrored. Explicit LOD 0 keeps the fetch legal inside the uniform branch */
-const nebulaAtlas = Fn(() => {
-  const local = clamp(uv(), vec2(0.5 / NEB_BAKE_RES), vec2(1 - 0.5 / NEB_BAKE_RES));
+   the atlas row is mirrored. Explicit LOD 0 keeps the fetch legal after Discard */
+const nebulaAtlas = Fn(([p]) => {
+  const core = clamp(p, vec2(-1), vec2(1));
+  const local = core.mul(NEB_TILE_CORE).add(p.sub(core).mul(NEB_TILE_PAD)).mul(0.5).add(0.5);
   const cell = vNTile.add(local).div(vec2(NEB_COLS, NEB_ROWS));
   return texture(nebBakeRT.texture, vec2(cell.x, float(1).sub(cell.y)), float(0));
 });
 
-/* Idle emission and dark density with no card fade; must match the live path at uNebWarp 0 */
+/* JUMP twists in the rotated cloud frame; past NEB_REACH the cloud is exactly empty, so the
+   reject is lossless and keeps every read inside this card's padded tile */
+const nebulaWarpedCard = Fn(([p]) => {
+  const rp = warpNebulaUv(rotateCard(p), vNTubePos);
+  If(length(rp).greaterThanEqual(float(NEB_REACH)), () => { Discard(); });
+  return unrotateCard(rp);
+});
+
+/* uNebOctShift emulates the dropped fine octaves by subtracting their mean. Density is baked as
+   scale·edge²·c2^K, so c2 shifts in its K-th root: exact where edge is 1, rims a touch thinner */
+const nebulaShiftDensity = Fn(([d, scale]) => {
+  const root = pow(d.div(scale), K.nebContrastInv).sub(U.uNebOctShift);
+  return pow(max(root, float(0)), K.nebContrast).mul(scale);
+});
+
+/* Bake pass: tile uv back to card coords, inverting nebulaAtlas's core/pad mapping */
+const nebulaBakeCard = Fn(() => {
+  const t = uv().sub(vec2(0.5)).mul(2);
+  const core = clamp(t, vec2(-NEB_TILE_CORE), vec2(NEB_TILE_CORE));
+  return rotateCard(core.mul(1 / NEB_TILE_CORE).add(t.sub(core).mul(1 / NEB_TILE_PAD)));
+});
+
+/* Everything that depends only on cloud position, so the twist can warp the lookup. No card
+   fade here: the padded ring lies outside the card */
 const nebulaBakeFrag = Fn(() => {
-  const card = nebulaCard();
-  const rp = card.xy, cardGuard = card.z;
+  const rp = nebulaBakeCard();
   const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
   const seed = vec3(vNPhase);
   const c1 = nebulaCloudNoise(pN, K.nebRes1, seed, K.nebOctaves);
@@ -347,86 +404,68 @@ const nebulaBakeFrag = Fn(() => {
   const edge = float(1).sub(smoothstep(float(0.58), float(1.12), warpedDist));
   const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4), K.nebOctaves);
   const c3 = nebulaCloudNoise(pN, K.nebResMix, seed.add(661.384), K.nebOctaves);
-  const ramp = mix(mix(K.nebColA, K.nebColB, c3), mix(K.nebColC, K.nebColD, c3), c1);
-  return vec4(ramp.mul(pow(c2, K.nebContrast).mul(2)).mul(edge.mul(edge).mul(cardGuard)), 0);
+  return vec4(c1, c3, pow(c2, K.nebContrast).mul(2).mul(edge.mul(edge)), 0);
 });
 
 const nebulaDarkBakeFrag = Fn(() => {
-  const card = nebulaCard();
-  const rp = card.xy, cardGuard = card.z;
+  const rp = nebulaBakeCard();
   const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
   const seed = vec3(vNPhase);
   const c1 = nebulaCloudNoise(pN, K.nebRes1, seed, K.nebOctaves);
   const warpedDist = length(rp).add(c1.sub(0.5).mul(0.32));
   const edge = float(1).sub(smoothstep(float(0.52), float(1.08), warpedDist));
   const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4), K.nebOctaves);
-  return vec4(0, 0, 0, edge.mul(edge).mul(cardGuard).mul(2.1).mul(pow(c2, K.nebContrast)));
+  return vec4(0, 0, 0, edge.mul(edge).mul(2.1).mul(pow(c2, K.nebContrast)));
 });
 
-/* JUMP path. Progressive sampling: c1 alone decides the silhouette, c2 the density, c3 only
-   the hue, so each FBM stack runs only for fragments the previous one couldn't reject */
+const nebulaRamp = Fn(([c1, c3]) => mix(mix(K.nebColA, K.nebColB, c3), mix(K.nebColC, K.nebColD, c3), c1));
+
+/* Idle: one fetch, the ramp, and the card fade; culls stay under half an 8-bit step */
+const nebulaIdleFrag = Fn(() => {
+  const card = nebulaCard();
+  const f = nebulaAtlas(card.xy);
+  const color = nebulaRamp(f.r, f.g).mul(f.b).mul(card.z.mul(vNAlpha));
+  If(max(color.r, max(color.g, color.b)).lessThan(float(0.001)), () => { Discard(); });
+  return vec4(color, 1);
+});
+
 const nebulaWarpFrag = Fn(() => {
   const card = nebulaCard();
-  const rp = warpNebulaUv(card.xy, vNTubePos), cardGuard = card.z;
-  const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
-  const seed = vec3(vNPhase);
-  /* Warp sheds fine octaves: the stretched cards cover ~2× the pixels mid-jump, and the
-     radial smear hides the detail anyway */
-  const oct = max(K.nebOctaves.sub(U.uNebWarp.mul(K.nebOctDrop)), float(1));
-  const c1 = nebulaCloudNoise(pN, K.nebRes1, seed, oct);
-  const warpedDist = length(rp).add(c1.sub(0.5).mul(0.32));
-  const edge = float(1).sub(smoothstep(float(0.58), float(1.12), warpedDist));
-  const coverage = clamp(edge.mul(edge).mul(cardGuard).mul(vNAlpha), float(0), float(1));
-  If(coverage.lessThan(float(0.0005)), () => { Discard(); });
+  const f = nebulaAtlas(nebulaWarpedCard(card.xy));
+  const c1 = max(f.r.sub(U.uNebOctShift), float(0)), c3 = max(f.g.sub(U.uNebOctShift), float(0));
   const warpGate = smoothstep(float(0), float(1), U.uNebWarp);
-  const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4), oct);
-  const strength = pow(c2, K.nebContrast).mul(2).mul(mix(float(1), K.nebWarpBright, warpGate));
+  const strength = nebulaShiftDensity(f.b, float(2)).mul(mix(float(1), K.nebWarpBright, warpGate)).mul(card.z.mul(vNAlpha));
   /* Screen blend ignores alpha: even after the JUMP saturation boost this stays under half an 8-bit step */
-  If(strength.mul(coverage).lessThan(float(0.001)), () => { Discard(); });
-  const c3 = nebulaCloudNoise(pN, K.nebResMix, seed.add(661.384), oct);
-  const ramp = mix(mix(K.nebColA, K.nebColB, c3), mix(K.nebColC, K.nebColD, c3), c1);
+  If(strength.lessThan(float(0.001)), () => { Discard(); });
   const jitter = vNJitter.sub(0.5).mul(0.12);
   const nmsColor = nmsRamp(clamp(c3.mul(0.55).add(c1.mul(0.45)).add(jitter), float(0), float(1)));
-  const mixed = mix(ramp, nmsColor, warpGate.mul(K.nmsNebs));
+  const mixed = mix(nebulaRamp(c1, c3), nmsColor, warpGate.mul(K.nmsNebs));
   const luminance = dot(mixed, vec3(0.2126, 0.7152, 0.0722));
   const color = mix(vec3(luminance), mixed, mix(float(1), K.nebWarpSaturation, warpGate));
-  return vec4(color.mul(strength).mul(coverage), coverage);
+  return vec4(color.mul(strength), 1);
 });
 
-const nebulaDarkWarpFrag = Fn(() => {
-  const card = nebulaCard();
-  const rp = warpNebulaUv(card.xy, vNTubePos), cardGuard = card.z;
-  const pN = vec3(rp.x, rp.y, vNPhase.mul(0.13));
-  const seed = vec3(vNPhase);
-  const oct = max(K.nebOctaves.sub(U.uNebWarp.mul(K.nebOctDrop)), float(1));
-  const c1 = nebulaCloudNoise(pN, K.nebRes1, seed, oct);
-  const warpedDist = length(rp).add(c1.sub(0.5).mul(0.32));
-  const edge = float(1).sub(smoothstep(float(0.52), float(1.08), warpedDist));
-  const reach = edge.mul(edge).mul(cardGuard).mul(vNAlpha).mul(2.1);
-  /* Multiply blend: a tint this close to white is a no-op, so skip the density stack */
-  If(reach.lessThan(float(0.002)), () => { Discard(); });
-  const c2 = nebulaCloudNoise(pN.add(vec3(c1.mul(K.nebDomainWarp))), K.nebRes2, seed.add(310.4), oct);
-  const absorption = clamp(reach.mul(pow(c2, K.nebContrast)), float(0), float(0.72));
-  const nmsMix = smoothstep(float(0), float(1), U.uNebWarp).mul(K.nmsNebs);
-  const darkColor = mix(vec3(0.035, 0.025, 0.085), vec3(0.0235, 0.0275, 0.0745), nmsMix);
-  return vec4(mix(vec3(1), darkColor, absorption), 1);
-});
-
-/* Idle frames are one atlas fetch times the card fade; culls stay under half an 8-bit step */
 const nebulaFrag = Fn(() => {
   const out = vec4(0).toVar();
-  If(U.uNebWarp.greaterThan(float(NEB_LIVE_MIN)), () => { out.assign(nebulaWarpFrag()); }).Else(() => {
-    const color = nebulaAtlas().rgb.mul(vNAlpha);
-    If(max(color.r, max(color.g, color.b)).lessThan(float(0.001)), () => { Discard(); });
-    out.assign(vec4(color, 1));
-  });
+  If(U.uNebWarp.greaterThan(float(NEB_WARP_MIN)), () => { out.assign(nebulaWarpFrag()); })
+    .Else(() => { out.assign(nebulaIdleFrag()); });
   return out;
 });
 
+/* Multiply blend: a tint this close to white is a no-op */
 const nebulaDarkFrag = Fn(() => {
   const out = vec4(1).toVar();
-  If(U.uNebWarp.greaterThan(float(NEB_LIVE_MIN)), () => { out.assign(nebulaDarkWarpFrag()); }).Else(() => {
-    const absorption = clamp(nebulaAtlas().a.mul(vNAlpha), float(0), float(0.72));
+  const card = nebulaCard();
+  If(U.uNebWarp.greaterThan(float(NEB_WARP_MIN)), () => {
+    const d = nebulaShiftDensity(nebulaAtlas(nebulaWarpedCard(card.xy)).a, float(2.1));
+    const warpGate = smoothstep(float(0), float(1), U.uNebWarp);
+    const absorption = clamp(d.mul(card.z).mul(vNAlpha).mul(mix(float(1), K.darkWarpAbsorb, warpGate)), float(0), float(0.72));
+    If(absorption.lessThan(float(0.001)), () => { Discard(); });
+    const nmsMix = warpGate.mul(K.nmsNebs);
+    const darkColor = mix(vec3(0.035, 0.025, 0.085), vec3(0.0235, 0.0275, 0.0745), nmsMix);
+    out.assign(vec4(mix(vec3(1), darkColor, absorption), 1));
+  }).Else(() => {
+    const absorption = clamp(nebulaAtlas(card.xy).a.mul(card.z).mul(vNAlpha), float(0), float(0.72));
     If(absorption.lessThan(float(0.001)), () => { Discard(); });
     out.assign(vec4(mix(vec3(1), vec3(0.035, 0.025, 0.085), absorption), 1));
   });
@@ -594,6 +633,15 @@ let W = 0, H = 0, maxR = 0;
 let flyPhase = 0, galPhase = 0, prev = 0;
 let twinklePhase = 0, galSpinPhase = 0, nebTwistT = 0;
 let nebWarpState = 0;
+
+/* Octave i of the cloud noise averages 0.25/2^i; the atlas bakes every octave, so JUMP subtracts
+   the mean of the ones it would have dropped from each field, instead of re-baking */
+function nebOctaveShift(w) {
+  const oct = Math.max(NEB_OCTAVES - w * C.nebWarpOctDrop, 1);
+  let s = 0;
+  for (let i = 0; i < 8; i++) s += (clampJS(NEB_OCTAVES - i, 0, 1) - clampJS(oct - i, 0, 1)) * 0.25 / 2 ** i;
+  return s;
+}
 let initState = 'idle'; // idle | starting | ready | failed
 let running = false;
 let galacticity = GALACTICITY_DEFAULT;
@@ -666,9 +714,13 @@ function applyCoreBlend() {
 
 function onResize() {
   if (!renderer) return;
-  W = window.innerWidth; H = window.innerHeight;
+  /* CSS sizes the canvas to the large viewport (100lvh), so a mobile URL bar sliding in or
+     out changes nothing here; reprojecting on every bar toggle is what made the stars hop */
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h || (w === W && h === H)) return;
+  W = w; H = h;
   renderer.setPixelRatio(1);
-  renderer.setSize(W, H);
+  renderer.setSize(W, H, false);
   camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2;
   camera.updateProjectionMatrix();
   maxR = Math.hypot(W, H) * 0.55;
@@ -697,7 +749,7 @@ function loop(time) {
   const nebResponse = warp > nebWarpState ? 2.6 : 1.8;
   nebWarpState += (warp - nebWarpState) * (1 - Math.exp(-nebResponse * dt));
   if (Math.abs(warp - nebWarpState) < 0.0001) nebWarpState = warp;
-  // Leave phases unbounded: the per-star aPar multiplier means modulo-wrapping would shift the field.
+  // Leave phases unbounded: the per-star par multiplier means modulo-wrapping would shift the field.
   flyPhase += C.flySpeed * (1 + warp * C.warpSpeedMult) * dt;
   galPhase += C.galDrift * (1 + warp * C.warpSpeedMult) * dt;
   twinklePhase = (twinklePhase + C.twinkleRate * dt) % TAU;
@@ -705,6 +757,7 @@ function loop(time) {
   /* Twist drift resets at idle: bounds the trig arg and makes every jump's spiral identical */
   nebTwistT = nebWarpState > 0.001 ? nebTwistT + C.nebTwistSpeed * dt : 0;
   U.uFly.value = flyPhase; U.uGalPhase.value = galPhase; U.uWarp.value = warp; U.uNebWarp.value = nebWarpState;
+  U.uNebOctShift.value = nebOctaveShift(nebWarpState);
   U.uTwinklePhase.value = twinklePhase; U.uGalSpinPhase.value = galSpinPhase; U.uNebTwistT.value = nebTwistT;
 
   renderer.render(scene, camera);
@@ -715,11 +768,13 @@ async function initRenderer() {
   try {
     canvas = document.createElement('canvas');
     canvas.id = 'warp-bg';
+    /* The light-theme fade-out keeps the canvas visible until it ends; park the loop then */
+    canvas.addEventListener('transitionend', syncActive);
     document.body.prepend(canvas);
 
     /* Every edge here is analytic soft alpha, so MSAA buys nothing; no material touches depth */
     /* ?webgl=1 debug override, matching the galaxy map: A/B the WebGL2 backend */
-    const forceWebGL = new URLSearchParams(location.search).get('webgl') === '1';
+    const forceWebGL = PARAMS.get('webgl') === '1';
     renderer = new THREE.WebGPURenderer({ canvas, antialias: false, depth: false, alpha: false, forceWebGL });
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     renderer.setClearColor(0x000000, 1);
@@ -740,6 +795,8 @@ async function initRenderer() {
     applyCoreBlend();
     coreMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), coreMat);
     for (const m of [nebulaDarkMesh, nebulaMesh, starMesh, galaxyMesh, coreMesh]) { m.frustumCulled = false; scene.add(m); }
+    const debugLayers = { nostars: starMesh, nogal: galaxyMesh, noneb: nebulaMesh, nodark: nebulaDarkMesh, nocore: coreMesh };
+    for (const [flag, m] of Object.entries(debugLayers)) if (WARP_DEBUG.has(flag)) m.visible = false;
     bakeNebulae();
 
     onResize();
@@ -747,11 +804,11 @@ async function initRenderer() {
     initState = 'ready';
     applyGalacticity(galacticity, false);
   } catch (e) {
-    /* No WebGPU: no background, and the dead controls go away */
+    /* Neither WebGPU nor its automatic WebGL2 fallback initialized: no background, and the dead controls go away */
     initState = 'failed';
     if (canvas) canvas.remove();
     document.querySelectorAll('.galacticity-control').forEach((el) => { el.style.display = 'none'; });
-    console.warn('Warp background disabled (WebGPU unavailable):', e && e.message ? e.message : e);
+    console.warn('Warp background disabled (renderer failed to initialize):', e && e.message ? e.message : e);
   }
 }
 
@@ -759,8 +816,9 @@ let rebuildTimer = 0;
 function applyGalacticity(val, rebuild) {
   galacticity = val;
   if (!canvas) return;
-  canvas.style.opacity = (val / 100).toFixed(2);
+  canvas.style.setProperty('--warp-opacity', (val / 100).toFixed(2));
   canvas.style.display = val === 0 ? 'none' : '';
+  onResize();
   armJump();
   if (rebuild && starMesh) {
     clearTimeout(rebuildTimer);
@@ -780,10 +838,11 @@ function syncActive() {
   if (initState !== 'ready') return;
   /* navigation.instant morphs the whole body and drops JS-created nodes — re-attach.
      The element (and its WebGPU context) survives in JS; only the DOM link is lost. */
-  if (!canvas.isConnected) { document.body.prepend(canvas); renderStill(); }
-  const visible = galacticity > 0 && canvas.checkVisibility();
+  if (!canvas.isConnected) { document.body.prepend(canvas); onResize(); renderStill(); }
+  const visible = galacticity > 0 && canvas.checkVisibility({ visibilityProperty: true });
   if (visible && !running) {
     running = true;
+    onResize();
     if (REDUCED_MOTION) { renderStill(); return; }
     prev = lastRender = performance.now();
     renderer.setAnimationLoop(loop);

@@ -1,7 +1,10 @@
-# The Usual
+# The Usual & Unusual
 site/
 docs/.obsidian/
 docs/*.canvas
 docs/galaxy/galaxy-update.json
 .cache/
 .dev/
+.venv/
+.venv-linux/
+/three.webgpu.r184.js
