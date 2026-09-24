@@ -475,6 +475,33 @@ canvas { display: block; }
   cursor: pointer;
 }
 
+.gx-settings-app {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gx-border);
+}
+/* The on-open page only means something inside the installed app */
+html:not(.pwa-standalone) #open-page-row { display: none; }
+.gx-settings-select { justify-content: space-between; }
+.gx-settings-select select {
+  font-family: var(--gx-font);
+  font-size: 10pt;
+  color: var(--gx-text);
+  background: var(--gx-input);
+  border: 1px solid var(--gx-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.gx-offline-btn {
+  border: 1px solid var(--gx-border-bright);
+  color: var(--gx-text);
+  text-align: center;
+}
+.gx-offline-btn:disabled { opacity: 0.6; cursor: default; }
+
 /* Workspace — panel positioned below settings dropdown */
 .gx-workspace {
   flex: 1;
@@ -1452,6 +1479,7 @@ canvas { display: block; }
 }
 
 .gx-status-toggle:hover { color: var(--gx-text); border-color: var(--gx-border-bright); }
+.gx-status-right { margin-left: auto; }
 
 .gx-status-center {
   position: absolute;

@@ -29,6 +29,7 @@ jobs:
 
       - run: pip install zensical
       - run: zensical build --clean
+      - run: python .github/scripts/pwa-build.py site --build ${GITHUB_SHA::7}
 
       - uses: actions/upload-pages-artifact@v5
         with:

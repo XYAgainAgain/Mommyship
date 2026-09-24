@@ -2,15 +2,20 @@
 
 {#- Warp background: importmap must precede the module script that imports three -#}
 {% block extrahead %}
+  <link rel="manifest" href="{{ 'manifest.webmanifest' | url }}">
+  <link rel="apple-touch-icon" href="{{ 'assets/icons/apple-touch-icon.png' | url }}">
+  {#- pwa.js retints this to the active palette (purple in dark, turquoise in light) -#}
+  <meta name="theme-color" content="#8332ac">
   <script type="importmap">
   {
     "imports": {
-      "three":        "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
-      "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
-      "three/tsl":    "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js"
+      "three":        "{{ 'vendor/three/build/three.module.js' | url }}",
+      "three/webgpu": "{{ 'vendor/three/build/three.webgpu.js' | url }}",
+      "three/tsl":    "{{ 'vendor/three/build/three.tsl.js' | url }}"
     }
   }
   </script>
+  <script type="module" src="{{ 'javascripts/pwa.js' | url }}"></script>
   <script type="module" src="{{ 'javascripts/warp-bg.js' | url }}"></script>
   <script type="module" src="{{ 'javascripts/footer-greebles.js' | url }}"></script>
 {% endblock %}

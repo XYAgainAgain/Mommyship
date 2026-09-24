@@ -57,7 +57,16 @@
       <button class="text-size-rocker__btn" data-text-size="reset" title="Reset text size" aria-label="Reset text size">Aa</button>
       <button class="text-size-rocker__btn" data-text-size="increase" title="Increase text size" aria-label="Increase text size">&plus;</button>
     </div>
-    {#- The two control groups above move into this popover (extra.js placeHeaderTray) -#}
+    {#- Installed app only (CSS hides it in a browser tab): which page the app opens on -#}
+    <label class="open-page-control" for="open-page-select">
+      <span>App opens on</span>
+      <select id="open-page-select">
+        <option value="home">Home</option>
+        <option value="2d">2D Map</option>
+        <option value="3d">3D Map</option>
+      </select>
+    </label>
+    {#- The control groups above move into this popover (extra.js placeHeaderTray) -#}
     {#- No title: Material keeps a focused button's tooltip open, and the toggle stays focused while the tray is up -#}
     <button class="md-header__button md-icon header-tray__toggle" popovertarget="header-tray" aria-label="Display controls">
       {% include ".icons/material/creation-outline.svg" %}

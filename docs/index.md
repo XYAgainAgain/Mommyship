@@ -21,6 +21,14 @@ Welcome to Mommyship! This is a mildly friendlier, broader, more robust, and eve
 
 Mommyship was created by two big nerds, **Jaz** & **Sam**, to fill some gaps in the original system. It's since branched out a fair bit. Much love & respect to the OG, of course.
 
+<div class="install-cta" id="install-cta" hidden>
+<button class="install-cta__btn" id="install-app" type="button" hidden>Install Mommyship</button>
+<details class="install-cta__firefox" id="install-firefox" hidden>
+<summary>Install Mommyship as an app</summary>
+<p>Firefox can't install web apps by itself: add the <a href="https://pwasforfirefox.filips.si/">PWAsForFirefox</a> extension, then use its toolbar button on this page. The galaxy map runs noticeably better in a Chromium browser (Chrome, Brave, Edge), which installs straight from the address bar.</p>
+</details>
+</div>
+
 ---
 
 ***CONTENT ADVISORY:** Mommyship is a horror game for mature audiences. It contains violence, foul language, body horror, some sexual content, drug use, and depictions of mental illness, trauma, stress, panic, and capitalistic abuse which may not be suitable for all audiences. Please enjoy responsibly.*

@@ -300,7 +300,7 @@ function spanTableBands() {
 
 /* The Galacticity and text-size groups live in a popover tray off the header sparkle button.
    Nodes are moved, not cloned, so their listeners and state come along. */
-var TRAY_GROUPS = [".galacticity-control", ".text-size-rocker"];
+var TRAY_GROUPS = [".galacticity-control", ".text-size-rocker", ".open-page-control"];
 
 function placeHeaderTray() {
   var tray = document.getElementById("header-tray");
@@ -357,7 +357,27 @@ document$.subscribe(function() {
   applyQuickGuideWidth();
   bindMassholeNav();
   bindFooterSplit();
+  bindOpenPageSelect();
 });
+
+/* pwa.js is a module and can land a beat after this classic script, so poll for its global;
+   the shared counter caps retries (~5 s total) if it never loads */
+var openPageTries = 0;
+
+function bindOpenPageSelect() {
+  var sel = document.getElementById("open-page-select");
+  if (!sel || sel._pwaBound) return;
+  var api = window.mommyshipPWA;
+  if (!api) {
+    if (openPageTries++ < 20) setTimeout(bindOpenPageSelect, 250);
+    return;
+  }
+  sel._pwaBound = true;
+  sel.value = api.getOpenPage();
+  sel.addEventListener("change", function() {
+    api.setOpenPage(sel.value);
+  });
+}
 
 /* Footer credits: the pipe only belongs between the halves while they share a line */
 var footerSplitObserver = null;

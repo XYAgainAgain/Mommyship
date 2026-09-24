@@ -1,6 +1,7 @@
 /* Galaxy UI — search, context panel, 2D map delegation, settings, status bar */
 
 import { createMap2D } from './map2d.js';
+import { keepAwake, getOpenPage, setOpenPage, getGalaxyOfflineStatus, downloadGalaxy } from '../javascripts/pwa.js';
 
 let galaxyData = null;
 let selectedId = null;
@@ -2037,7 +2038,7 @@ document.addEventListener('keydown', (e) => {
   /* Undo/redo — works even when focused on inputs */
   if (editorMode && e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); editorUndo(); return; }
   if (editorMode && e.ctrlKey && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); editorRedo(); return; }
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
   /* Photo Mode's hide list only covers 3D chrome — in 2D it half-strips the UI with no visible undo */
   if (e.key === 'F2' && viewMode === '3d') { e.preventDefault(); toggleScreenshot(); }
   /* Bare 1/2/3 only (Ctrl+2 is a browser tab switch), and never mid-Muse — 2D hides Muse's exit affordance */
@@ -2126,6 +2127,70 @@ document.getElementById('btn-2d').addEventListener('click', () => {
   setViewMode('2d');
 });
 
+/* App settings: on-open page and the galaxy offline download */
+function bindAppSettings() {
+  const sel = document.getElementById('open-page-select');
+  if (sel) {
+    sel.value = getOpenPage();
+    sel.addEventListener('change', () => setOpenPage(sel.value));
+  }
+  const btn = document.getElementById('offline-download');
+  if (!btn) return;
+  const toMB = (bytes) => Math.round(bytes / 1048576);
+  let busy = false;
+  const refresh = async () => {
+    let status = null;
+    try { status = await getGalaxyOfflineStatus(); } catch { }
+    /* The load-time check can land after a click started a download; don't re-enable mid-save */
+    if (busy) return;
+    if (!status) {
+      btn.textContent = 'Offline download unavailable';
+      btn.disabled = true;
+    } else if (status.complete) {
+      btn.textContent = `Galaxy saved for offline (${toMB(status.totalBytes)} MB)`;
+      btn.disabled = true;
+    } else {
+      btn.textContent = `Download galaxy for offline (${toMB(status.totalBytes - status.cachedBytes)} MB)`;
+      btn.disabled = false;
+    }
+  };
+  btn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    btn.disabled = true;
+    try {
+      const { failed } = await downloadGalaxy(({ done, total }) => {
+        btn.textContent = `Saving galaxy… ${total ? Math.floor(done / total * 100) : 0}%`;
+      });
+      busy = false;
+      if (failed > 0) {
+        btn.textContent = `${failed} file${failed === 1 ? '' : 's'} failed, try again`;
+        btn.disabled = false;
+      } else {
+        await refresh();
+      }
+    } catch {
+      busy = false;
+      btn.textContent = 'Download failed, try again';
+      btn.disabled = false;
+    }
+  });
+  refresh();
+}
+
+/* Fullscreen toggle */
+const fullscreenBtn = document.getElementById('fullscreen-toggle');
+if (fullscreenBtn) {
+  if (!document.documentElement.requestFullscreen) fullscreenBtn.hidden = true;
+  fullscreenBtn.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  });
+  document.addEventListener('fullscreenchange', () => {
+    fullscreenBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+  });
+}
+
 export function init(data, cbs, systems) {
   galaxyData = data;
   callbacks = cbs || {};
@@ -2143,10 +2208,14 @@ export function init(data, cbs, systems) {
       onUntrack: () => { if (callbacks.onUntrack) callbacks.onUntrack(); }
     }
   });
-  /* Restore last-used view; also catches '2' pressed during load */
+  /* ?view=2d|3d (launcher + app shortcuts) beats the saved view; '2' pressed during load still counts */
+  const urlView = new URLSearchParams(location.search).get('view');
   const savedView = lsGet(VIEW_KEY);
-  if (savedView === '2d' && viewMode !== '2d') setViewMode('2d');
+  const wanted = urlView === '2d' || urlView === '3d' ? urlView : savedView === '2d' ? '2d' : viewMode;
+  if (wanted !== viewMode) setViewMode(wanted);
   else map2dView.setActive(viewMode === '2d');
+  bindAppSettings();
+  keepAwake();
 
   /* Nav export button — wired once, visibility toggled with editor mode */
   const navExport = document.getElementById('ed-export-nav');

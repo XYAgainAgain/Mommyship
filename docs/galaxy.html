@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Known Galaxy</title>
   <link rel="icon" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0d0d1a">
   <link rel="stylesheet" href="galaxy/galaxy.css">
 </head>
 <body>
@@ -31,7 +33,7 @@
         <circle class="gx-loading-orbit gx-orbit-3" cx="50" cy="12" r="2" fill="#fffaff" fill-opacity="0.7"/>
         <circle class="gx-loading-head" id="gx-loading-head" cx="50" cy="7" r="3" fill="#41ead4"/>
       </svg>
-      <div class="gx-loading-text" id="gx-loading-text">Dialing up the CDN...</div>
+      <div class="gx-loading-text" id="gx-loading-text">Loading the galaxy engine...</div>
       <div class="gx-loading-hint" id="gx-loading-hint" hidden></div>
     </div>
   </div>
@@ -82,11 +84,11 @@
         state = 'done';
         clearInterval(watchdog);
       }
-      /* Only our own modules or the CDN can fail the boot — Firefox extension content
-         scripts throw during this window too, and their filenames filter them out */
+      /* Only our own modules can fail the boot — Firefox extension content scripts
+         throw during this window too, and their filenames filter them out */
       function onError(e) {
         var src = e.filename || '';
-        if (src.indexOf(location.origin) !== 0 && src.indexOf('cdn.jsdelivr.net') === -1) return;
+        if (src.indexOf(location.origin) !== 0) return;
         fail(e.error || e.message);
       }
       /* Trap only covers the module fetch/eval window (before init runs);
@@ -349,6 +351,17 @@
           <input type="checkbox" id="show-fps"> Show FPS
         </label>
       </div>
+      <div class="gx-settings-app">
+        <label class="gx-settings-row gx-settings-select" id="open-page-row">
+          App opens on
+          <select id="open-page-select">
+            <option value="home">Home</option>
+            <option value="2d">2D Map</option>
+            <option value="3d">3D Map</option>
+          </select>
+        </label>
+        <button class="gx-btn gx-offline-btn" id="offline-download">Download galaxy for offline</button>
+      </div>
     </div>
 
     <!-- Workspace (context panel lives here) -->
@@ -426,6 +439,7 @@
     <div class="gx-status">
       <button class="gx-status-toggle" id="controls-toggle">Controls</button>
       <span class="gx-status-center" id="status-center"></span>
+      <button class="gx-status-toggle gx-status-right" id="fullscreen-toggle">Fullscreen</button>
     </div>
   </div>
 
@@ -444,13 +458,14 @@
   <script type="importmap">
   {
     "imports": {
-      "three":         "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
-      "three/webgpu":  "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.webgpu.js",
-      "three/tsl":     "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.tsl.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+      "three":         "vendor/three/build/three.module.js",
+      "three/webgpu":  "vendor/three/build/three.webgpu.js",
+      "three/tsl":     "vendor/three/build/three.tsl.js",
+      "three/addons/": "vendor/three/examples/jsm/"
     }
   }
   </script>
+  <script type="module" src="javascripts/pwa.js"></script>
   <script type="module" src="galaxy/galaxy.js"></script>
 </body>
 </html>

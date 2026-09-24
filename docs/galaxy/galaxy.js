@@ -145,7 +145,7 @@ async function init() {
   const container = document.querySelector('.experience');
   const progress = createLoadingTracker(13);
 
-  /* Reaching this line proves the CDN modules arrived; a hang past it is the GPU */
+  /* Reaching this line proves the engine modules arrived; a hang past it is the GPU */
   if (window.gxBoot) window.gxBoot.stage('Waking up the GPU...');
 
   /* ?webgl=1 debug override: A/B the WebGL2 backend. Its compositor blackout is fixed, but

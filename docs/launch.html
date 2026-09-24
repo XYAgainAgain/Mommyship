@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mommyship</title>
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#8332ac">
+  <style>html { background: #0d0d1a; }</style>
+  <!-- App start page: sends the installed app to whichever page was picked in settings -->
+  <script>
+    (function () {
+      var choice = null;
+      try { choice = localStorage.getItem('mommyship-open-page'); } catch (e) {}
+      var target = choice === '2d' ? 'galaxy.html?view=2d'
+                 : choice === '3d' ? 'galaxy.html?view=3d'
+                 : './';
+      location.replace(target);
+    })();
+  </script>
+</head>
+<body>
+  <noscript><a href="./" style="color:#fffaff;font-family:sans-serif">Open Mommyship</a></noscript>
+</body>
+</html>

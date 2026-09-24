@@ -29,6 +29,8 @@ nav = [
 
 [project.theme]
 variant = "modern"
+# Bungee Outline + League Spartan are self-hosted in extra.css; no Google Fonts call
+font = false
 custom_dir = "overrides"
 favicon = "assets/favicon.png"
 features = [
