@@ -1,0 +1,87 @@
+{#- Homepage install and rules-download row; home.html splices it into the page content. Logos are
+    server-rendered into the picker and pwa.js clones the chosen one into the install button. -#}
+{%- set browsers = [
+  ("chrome", "Chrome", "googlechrome"),
+  ("edge", "Edge", ""),
+  ("brave", "Brave", "brave"),
+  ("vivaldi", "Vivaldi", "vivaldi"),
+  ("opera", "Opera", "opera"),
+  ("operagx", "Opera GX", "operagx"),
+  ("firefox", "Firefox", "firefoxbrowser"),
+  ("zen", "Zen", "zenbrowser"),
+  ("librewolf", "LibreWolf", "librewolf"),
+  ("tor", "Tor Browser", "torbrowser"),
+  ("safari", "Safari", "safari"),
+  ("duckduckgo", "DuckDuckGo", "duckduckgo")
+] -%}
+<div class="home-buttons" id="home-buttons">
+  <button class="install-cta__btn home-btn" id="install-app" type="button" popovertarget="install-help">
+    <span class="home-btn__logo" aria-hidden="true"></span>
+    <span class="home-btn__label">Install Mommyship PWA</span>
+  </button>
+  <div class="home-buttons__links">
+    <button class="home-buttons__link" id="browser-picker-toggle" type="button" popovertarget="browser-picker">Not your browser?</button>
+    <button class="home-buttons__link" id="pwa-info-toggle" type="button" popovertarget="pwa-info">WTF is PWA?</button>
+  </div>
+  <a class="install-cta__btn home-btn home-btn--download" href="/downloads/latest.zip" download>
+    <span class="home-btn__logo" aria-hidden="true">{% include ".icons/material/download-circle-outline.svg" %}</span>
+    <span class="home-btn__label">Download Rules (Markdown)</span>
+  </a>
+</div>
+<div class="home-pop" id="install-help" popover role="dialog" aria-label="Install Mommyship" tabindex="-1">
+  <div class="home-variants" id="icon-variants" hidden>
+    <p class="home-pop__heading">Pick your app icon</p>
+    <div class="home-variants__row" role="group" aria-label="App icon"></div>
+    <p class="home-variants__note">Changing the icon after installing means reinstalling.</p>
+  </div>
+  <div data-flow="prompt" hidden>
+    <p><button class="install-cta__btn home-pop__install" type="button"><strong>Install</strong></button></p>
+  </div>
+  <div data-flow="generic">
+    <p>Look for <strong>Install</strong> or <strong>Add to Home Screen</strong> in your browser's <strong>menu</strong>.</p>
+  </div>
+  <div data-flow="chromium" hidden>
+    <p>Use the <strong>install icon</strong> at the right end of the <strong>address bar</strong>, or find <strong>Install</strong> in the browser's <strong>menu</strong>.</p>
+  </div>
+  <div data-flow="chromium-android" hidden>
+    <p>Open the <strong>browser menu (⋮)</strong> and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+  </div>
+  <div data-flow="firefox" hidden>
+    <p>Hey, sorry! <strong><span class="home-pop__browser-name">Firefox</span></strong> can't install web apps by itself very well. Please add the <a href="https://addons.mozilla.org/firefox/addon/pwas-for-firefox/" target="_blank" rel="noopener"><strong>PWAsForFirefox extension</strong></a>, then use its <strong>toolbar button</strong> on this page!</p>
+    <div class="home-pop__icon-url" hidden>
+      <p>Want your <span class="home-pop__variant-name"></span> icon? Paste this into <strong>Icon URL</strong>:</p>
+      <p class="home-pop__copy-row"><code class="home-pop__icon-src"></code><button class="home-pop__copy" type="button"><strong>Copy</strong></button><span class="home-pop__copied" role="status"></span></p>
+    </div>
+    <p>To Sam's mild dismay, the Galaxy Map runs noticeably better in a Chromium browser (Chrome, Brave, Edge, etc.), which installs right from the address bar.</p>
+  </div>
+  <div data-flow="firefox-android" hidden>
+    <p>Open the <strong><span class="home-pop__browser-name">Firefox</span></strong> <strong>menu (⋮)</strong> and choose <strong>Add app to Home screen</strong>.</p>
+  </div>
+  <div data-flow="safari-mac" hidden>
+    <p>In <strong>Safari</strong>, choose <strong>File</strong> → <strong>Add to Dock</strong>.</p>
+  </div>
+  <div data-flow="ios" hidden>
+    <p>Tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>.</p>
+  </div>
+</div>
+<div class="home-pop" id="pwa-info" popover role="dialog" aria-label="What is a PWA?" tabindex="-1">
+  <p>A PWA (Progressive Web App) is a website that feels and acts like a native app! It's built entirely out of standard web tech and runs in a small, dedicated browser window with some helpful enhancements for good performance and offline support.</p>
+  <p>Everyone should be able to install or just enjoy Mommyship on almost any device, including phones, tablets, and all flavors of PC. If there are site changes, it'll prompt you for a reload, which should be quick.</p>
+  <p><strong>Why bother?</strong> The Galaxy Map (if you use it) should run better/launch faster, and you'll have a dedicated icon on your taskbar for when you forget the rules for making Debt Checks or whatever. Plus it's <em>THEMED!</em></p>
+</div>
+<div class="home-pop home-pop--picker" id="browser-picker" popover role="dialog" aria-label="Choose your browser">
+  <div class="home-picker">
+    {%- for id, name, icon in browsers %}
+    <button class="home-picker__item" type="button" data-browser="{{ id }}" aria-pressed="false">
+      <span class="home-picker__logo" aria-hidden="true">
+        {%- if icon %}{% include ".icons/simple/" ~ icon ~ ".svg" %}{% else -%}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22.6 13.6A10.8 10.8 0 1 0 8.2 22.3C5.6 20.4 4.6 16.8 6.6 14.2C8.6 11.6 12.6 10.8 15.4 12.2C17.2 13.1 17.4 14.6 16.4 15.4C18.8 16.4 21.6 15.8 22.6 13.6ZM21.9 16A10.8 10.8 0 0 1 11.6 22.8C14.8 22.2 16.6 20.6 17.4 18.6C18.8 18.9 20.6 17.9 21.9 16Z"/></svg>
+        {%- endif -%}
+      </span>
+      <span>{{ name }}</span>
+    </button>
+    {%- endfor %}
+    <button class="home-picker__auto" type="button" data-browser="auto" aria-pressed="false">Auto-Detect Browser</button>
+  </div>
+</div>
+<template id="home-landed-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="29 -760 791 800"><path stroke="currentColor" stroke-width="44" stroke-linejoin="round" transform="scale(1 -1)" d="M254 -10H105Q59 -10 59 36V684Q59 730 105 730H266Q285 730 297.5 722.5Q310 715 321 695L411 532Q413 528 415.5 524.0Q418 520 422 520H427Q431 520 433.5 524.0Q436 528 438 532L527 695Q538 715 550.5 722.5Q563 730 582 730H744Q790 730 790 684V36Q790 -10 744 -10H590Q565 -10 554.5 1.0Q544 12 544 36V348L504 274Q484 237 442 237H402Q360 237 340 274L300 348V36Q300 -10 254 -10ZM254 0Q290 0 290 36V388L349 279Q366 247 402 247H442Q478 247 495 279L554 388V36Q554 0 590 0H744Q780 0 780 36V684Q780 720 744 720H582Q552 720 536 690L447 527Q442 518 438.5 514.0Q435 510 429 510H420Q414 510 410.5 514.0Q407 518 402 527L312 690Q296 720 266 720H105Q69 720 69 684V36Q69 0 105 0ZM421 385Q439 385 447.0 393.0Q455 401 472 427L594 613Q600 623 607.5 626.5Q615 630 623 630H640Q667 630 667 599V90H657V599Q657 607 654.0 613.5Q651 620 640 620H625Q618 620 613.0 618.0Q608 616 602 606L480 422Q462 395 452.5 385.0Q443 375 421 375Q399 375 389.5 385.0Q380 395 362 422L240 606Q234 616 228.5 618.0Q223 620 216 620H201Q191 620 188.0 613.5Q185 607 185 599V90H175V599Q175 630 201 630H218Q226 630 234.0 626.5Q242 623 248 613L370 427Q387 401 395.0 393.0Q403 385 421 385Z"/></svg></template>

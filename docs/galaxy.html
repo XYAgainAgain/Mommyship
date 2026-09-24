@@ -106,6 +106,7 @@
 
   <!-- 2D flat map -->
   <div class="gx-map2d" id="map-2d">
+    <div class="gx-compass-dock">
     <div class="gx-compass" id="gx-compass">
 <svg viewBox="0 0 300 300" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
     <g transform="matrix(1.05819,0,0,1.05819,-8.67974,-8.74544)">
@@ -276,6 +277,7 @@
     </g>
 </svg>
     </div>
+    </div>
     <canvas class="gx-map2d-layer gx-m2-bg" id="map2d-bg"></canvas>
     <canvas class="gx-map2d-layer gx-m2-stars" id="map2d-stars"></canvas>
     <canvas class="gx-map2d-layer gx-m2-lightmap" id="map2d-lightmap"></canvas>
@@ -306,6 +308,9 @@
 
       <div class="gx-nav-right">
         <button class="gx-btn gx-ed-export-nav" id="ed-export-nav">EXPORT CHANGES</button>
+        <div class="gx-btn-group">
+          <button class="gx-btn" id="btn-navi" aria-pressed="false" aria-controls="navicomputer-panel">Navicomputer</button>
+        </div>
         <div class="gx-btn-group">
           <button class="gx-btn active" id="btn-3d">3D</button>
           <button class="gx-btn" id="btn-2d">2D</button>
@@ -360,7 +365,7 @@
             <option value="3d">3D Map</option>
           </select>
         </label>
-        <button class="gx-btn gx-offline-btn" id="offline-download">Download galaxy for offline</button>
+        <button class="gx-btn gx-offline-btn" id="offline-download">Offline Galaxy Map</button>
       </div>
     </div>
 
@@ -381,9 +386,17 @@
         <div class="gx-panel-body" id="panel-body"></div>
       </aside>
 
-      <!-- Edit-mode system tree navigator (top-left, 3D only) -->
-      <aside class="gx-navicomputer" id="navicomputer-panel">
-        <div class="gx-panel-name gx-nebula-text" style="margin-bottom:8px">NAVICOMPUTER</div>
+      <!-- System tree navigator (top-left, both views) -->
+      <aside class="gx-navicomputer" id="navicomputer-panel" aria-label="Navicomputer">
+        <div class="gx-navi-header">
+          <button class="gx-navi-step" id="navi-back" title="Back (Alt+←)" aria-label="Back" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="gx-panel-name gx-nebula-text gx-navi-title" id="navi-title" title="Show all systems">NAVICOMPUTER</button>
+          <button class="gx-navi-step" id="navi-forward" title="Forward (Alt+→)" aria-label="Forward" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
         <div class="gx-navicomputer-body" id="navicomputer-body"></div>
       </aside>
     </div>
@@ -411,6 +424,7 @@
       <span data-mode="2d"><b>Esc</b> Clear Measure<br></span>
       <b>Left Click</b> Select<br>
       <span data-mode="3d"><b>Right Click</b> Track/Fly To<br></span>
+      <b>Alt+←/→</b> Navicomputer Back/Forward<br>
       <b>1</b> Reset View<br>
       <b>2</b> Show 2D Map<br>
       <b>3</b> Show 3D Map<br>
@@ -432,14 +446,16 @@
       <div class="scale-bar-label" id="scale-bar-label"></div>
     </div>
 
-    <!-- HUD (camera coords & FPS) -->
-    <div class="gx-hud" id="gx-hud"></div>
-
     <!-- Status bar -->
     <div class="gx-status">
-      <button class="gx-status-toggle" id="controls-toggle">Controls</button>
+      <div class="gx-status-side">
+        <button class="gx-status-toggle" id="controls-toggle">Controls</button>
+      </div>
       <span class="gx-status-center" id="status-center"></span>
-      <button class="gx-status-toggle gx-status-right" id="fullscreen-toggle">Fullscreen</button>
+      <div class="gx-status-side gx-status-end">
+        <span class="gx-status-readout" id="status-readout"></span>
+        <button class="gx-status-toggle" id="fullscreen-toggle">Fullscreen</button>
+      </div>
     </div>
   </div>
 
@@ -458,10 +474,10 @@
   <script type="importmap">
   {
     "imports": {
-      "three":         "vendor/three/build/three.module.js",
-      "three/webgpu":  "vendor/three/build/three.webgpu.js",
-      "three/tsl":     "vendor/three/build/three.tsl.js",
-      "three/addons/": "vendor/three/examples/jsm/"
+      "three":         "./vendor/three/build/three.module.js",
+      "three/webgpu":  "./vendor/three/build/three.webgpu.js",
+      "three/tsl":     "./vendor/three/build/three.tsl.js",
+      "three/addons/": "./vendor/three/examples/jsm/"
     }
   }
   </script>

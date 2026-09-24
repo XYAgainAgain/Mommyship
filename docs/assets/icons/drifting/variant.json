@@ -1,0 +1,180 @@
+{
+  "name": "Drifting",
+  "id": "drifting",
+  "state": {
+    "v": 1,
+    "variant": {
+      "name": "Drifting",
+      "themeOn": false,
+      "theme": "#8332ac",
+      "bgColorOn": false,
+      "bgColor": "#0d0d1a"
+    },
+    "export": {
+      "anyShape": "rounded",
+      "maskScale": 0.8,
+      "customOn": false,
+      "customSize": 1024,
+      "wallOn": true,
+      "wallW": 2560,
+      "wallH": 1440,
+      "wallFg": 25
+    },
+    "view": {
+      "frame": "rounded",
+      "safe": false
+    },
+    "bg": {
+      "type": "warp",
+      "seeds": {
+        "warp": 6942069,
+        "zen": 69,
+        "firmament": 42069,
+        "blackhole": 0,
+        "gradient": 1
+      },
+      "params": {
+        "warp": {
+          "galacticity": 100,
+          "nebSeed": 20260924,
+          "span": 1420,
+          "jumpAt": -1
+        },
+        "zen": {
+          "uMainScale": 0.6,
+          "uMainWarp": 0.24,
+          "uMainOpac": 0.5,
+          "uCov": 0.07,
+          "uPink": 0.16,
+          "uTurqScale": 1.4,
+          "uOpacT": 0.2,
+          "uIndigScale": 0.55,
+          "uOpacI": 0.14,
+          "uFlySpeed": 0.04,
+          "uStarDensity": 2.25,
+          "uStarSize": 0.78,
+          "uStarBright": 1.2,
+          "uTwinkle": 0.85,
+          "uGravy": true,
+          "panX": 0,
+          "panY": 0,
+          "dark": "#0d0d1a",
+          "mid": "#8332ac",
+          "bright": "#f679e5"
+        },
+        "firmament": {
+          "yaw": 0,
+          "pitch": -23.2,
+          "roll": 0,
+          "fov": 70,
+          "galSeed": 1778,
+          "showStars": true,
+          "showGalaxies": true,
+          "starBright": 1.75,
+          "starSize": 0.8,
+          "twinkleDepth": 0.5,
+          "twinkleRate": 0.8,
+          "galCount": 24,
+          "galBaseSize": 24,
+          "galBright": 0.85,
+          "galSpin": 0.07,
+          "skyDrift": 0,
+          "nebIntensity": 0.42,
+          "nebRes1": 1.75,
+          "nebRes2": 1.45,
+          "nebResMix": 1,
+          "nebWarp": 0.3,
+          "nebOctaves": 4.25,
+          "nebContrast": 4.2,
+          "nebDrift": 0.013,
+          "ptsIntensity": 0,
+          "colA": "#0d0d1a",
+          "colB": "#4616a9",
+          "colC": "#d9438c",
+          "colD": "#1f5980"
+        },
+        "blackhole": {
+          "azimuth": 0,
+          "elevation": 18.4,
+          "distance": 4.43,
+          "fov": 50,
+          "shiftX": 0,
+          "shiftY": 0,
+          "speed": 0.5,
+          "rampEmission": 1.6,
+          "width": 0.05,
+          "originRadius": 0.195,
+          "noiseScale": 0.95,
+          "rampCol1": "#f9a4e3",
+          "rampCol2": "#2a0a47",
+          "rampCol3": "#6d6b27",
+          "emissionColor": "#311d5a",
+          "bgIntensity": 1.5,
+          "ringStrength": 0.6,
+          "ringRadius": 0.23,
+          "dopplerAmp": 0,
+          "dopplerPulse": 0.2,
+          "lensStrength": 0,
+          "lensReach": 1.2,
+          "bloomStrength": 1.5,
+          "bloomRadius": 0.5,
+          "bloomThreshold": 0
+        },
+        "gradient": {
+          "mode": "radial",
+          "colorA": "#9a3fc7",
+          "colorMid": "#7c2fa3",
+          "mid": 50,
+          "colorB": "#5e1f80",
+          "cx": 50,
+          "cy": 42,
+          "radius": 70,
+          "angle": 180,
+          "grain": 0
+        }
+      }
+    },
+    "time": {
+      "max": 60,
+      "speed": 1,
+      "playing": false,
+      "t": 35.3000706
+    },
+    "layers": [
+      {
+        "id": "Lmuf8we1h1",
+        "name": "Bungee M",
+        "visible": true,
+        "parts": [
+          {
+            "d": "M254 10L105 10C74.333 10 59 -5.333 59 -36L59 -684C59 -714.667 74.333 -730 105 -730L266 -730C278.667 -730 289.167 -727.5 297.5 -722.5C305.833 -717.5 313.667 -708.333 321 -695L411 -532C412.333 -529.333 413.833 -526.667 415.5 -524C417.167 -521.333 419.333 -520 422 -520L427 -520C429.667 -520 431.833 -521.333 433.5 -524C435.167 -526.667 436.667 -529.333 438 -532L527 -695C534.333 -708.333 542.167 -717.5 550.5 -722.5C558.833 -727.5 569.333 -730 582 -730L744 -730C774.667 -730 790 -714.667 790 -684L790 -36C790 -5.333 774.667 10 744 10L590 10C573.333 10 561.5 6.333 554.5 -1C547.5 -8.333 544 -20 544 -36L544 -348L504 -274C490.667 -249.333 470 -237 442 -237L402 -237C374 -237 353.333 -249.333 340 -274L300 -348L300 -36C300 -5.333 284.667 10 254 10ZM254 0C278 0 290 -12 290 -36L290 -388L349 -279C360.333 -257.667 378 -247 402 -247L442 -247C466 -247 483.667 -257.667 495 -279L554 -388L554 -36C554 -12 566 0 590 0L744 0C768 0 780 -12 780 -36L780 -684C780 -708 768 -720 744 -720L582 -720C562 -720 546.667 -710 536 -690L447 -527C443.667 -521 440.833 -516.667 438.5 -514C436.167 -511.333 433 -510 429 -510L420 -510C416 -510 412.833 -511.333 410.5 -514C408.167 -516.667 405.333 -521 402 -527L312 -690C301.333 -710 286 -720 266 -720L105 -720C81 -720 69 -708 69 -684L69 -36C69 -12 81 0 105 0ZM421 -385C433 -385 441.667 -387.667 447 -393C452.333 -398.333 460.667 -409.667 472 -427L594 -613C598 -619.667 602.5 -624.167 607.5 -626.5C612.5 -628.833 617.667 -630 623 -630L640 -630C658 -630 667 -619.667 667 -599L667 -90L657 -90L657 -599C657 -604.333 656 -609.167 654 -613.5C652 -617.833 647.333 -620 640 -620L625 -620C620.333 -620 616.333 -619.333 613 -618C609.667 -616.667 606 -612.667 602 -606L480 -422C468 -404 458.833 -391.667 452.5 -385C446.167 -378.333 435.667 -375 421 -375C406.333 -375 395.833 -378.333 389.5 -385C383.167 -391.667 374 -404 362 -422L240 -606C236 -612.667 232.167 -616.667 228.5 -618C224.833 -619.333 220.667 -620 216 -620L201 -620C194.333 -620 190 -617.833 188 -613.5C186 -609.167 185 -604.333 185 -599L185 -90L175 -90L175 -599C175 -619.667 183.667 -630 201 -630L218 -630C223.333 -630 228.667 -628.833 234 -626.5C239.333 -624.167 244 -619.667 248 -613L370 -427C381.333 -409.667 389.667 -398.333 395 -393C400.333 -387.667 409 -385 421 -385Z",
+            "fill": true,
+            "sw": 0,
+            "rule": "nonzero",
+            "color": null,
+            "op": 1
+          }
+        ],
+        "size": 72,
+        "x": 0,
+        "y": 0,
+        "rotation": 0,
+        "flipX": false,
+        "flipY": false,
+        "fill": "#fffaff",
+        "useOriginal": false,
+        "fillRule": "auto",
+        "opacity": 1,
+        "blend": "normal",
+        "strokeColor": "#ffffff",
+        "strokeWidth": 3,
+        "strokePos": "over",
+        "glowColor": "#fffaff",
+        "glowRadius": 22,
+        "glowStrength": 2,
+        "glowRings": 3
+      }
+    ],
+    "selected": "Lmuf8we1h1"
+  }
+}

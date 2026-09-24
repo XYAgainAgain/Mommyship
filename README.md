@@ -21,34 +21,38 @@ Hey there, spacer! ***Mommyship*** is a homebrew table ruleset built on top of t
 
 <p align="center">🚀💜🌌</p>
 
-## Running Quick Scan...
+> [!IMPORTANT]
+> In order to play Mommyship properly, your Warden is going to need a copy of the official **Warden's Operations Manual** from TKG, which can be purchased at the link above. If your brave volunteer Warden doesn't have a copy yet, we suggest the table all pitch in some credits and treat yourselves to the Core Kit. Please PDF responsibly, and *support those hardworking game devs!*
+
+## RUNNING QUICK SCAN...
 
 - **[Player's Survival Guide](https://mommyship.mom/players-survival-guide/):** Character creation, stats, skills, classes, species, combat, & gear. Everything you need to make a doomed little spacer of your very own!
 - **[Shipbreaker's Toolkit](https://mommyship.mom/shipbreakers-toolkit/):** Spaceships galore, travel times/hazards, operating costs, crew roster, & ship combat, because the endless void wants you dead *and* broke.
 - **[D.A.V.E. Pilot Manual](https://mommyship.mom/dave-pilot-manual/):** Design & pilot your very own D.A.V.E. (**D**efense **A**nd **V**iolent **E**ncounter) droid. He's your best friend and he's covered in guns and painted with hot pink leopard print.
 - **[The Known Galaxy Map](https://mommyship.mom/galaxy.html):** A fully-explorable 3D galaxy (and 2D for flat map fans) rendered right in your browser with hundreds of stars & planets, hyperlanes, factions, nebulae, asteroids, and one *very* hungry supermassive black hole. Go on, fly into it. See what happens. Bet you'll like it.
 - **Secrets:** There may or may not be more lurking on this site than the nav lets on. Keep your eyes peeled, your sci-fi SCUBA gear ready, and your dosimeter handy. Things await in the deep dark.
+- **Fancy PWA Support:** If you *really* like Mommyship and use it all the time like I do, you can install it as a Progressive Web App super easily right from the homepage. I even made icon sets! 💅
 - **FREE FOREVER!** No paywalls, no trackers, no ads, no bullshit. If you somehow paid for this, file an incident report immediately. I don't know who with. Just a trusted unionized adult, I guess.
 
-## Spacer Sheet Sneak Peek
+## SPACER SHEET SNEAK PEEK
 <p align="center">
   <img src="docs/assets/images/MommyshipSpacerSheet-DARK.png" alt="Mommyship Spacer Sheet Dark" width="100%" />
 </p>
 
-## Got Feedback?
+## GOT FEEDBACK?
 
-Got thoughts, balance gripes, typos, or site bugs to report? Open an [Issue](../../issues) — all feedback is welcome! Worst case, you fail a Fear Save. Best case, we fix it.
+Got thoughts, balance gripes, typos, or site bugs to report? Open an [Issue](../../issues) — all feedback is welcome! Worst case, you fail a Fear Save. Best case, we fix it. Please don't send us any money, though.
 
-## Under the Hull Plating
+## UNDER THE HULL PLATING
 
 The site is built with [Zensical](https://zensical.org/) and hosted on GitHub Pages. The galaxy map is custom [Three.js](https://threejs.org/) with hand-rolled shaders, the fonts are all self-hosted, and all the neon glow & weird little touches are custom CSS and JavaScript! :)
 
-## The Corpo Stuff
+## CORPO STUFF
 
 > [!IMPORTANT]
 > Mommyship is an independent, non-commercial homebrew project and is not affiliated with or endorsed by Tuesday Knight Games. [MOTHERSHIP®](https://www.tuesdayknightgames.com/pages/mothership-rpg) is a registered trademark of [Tuesday Knight Games](https://www.tuesdayknightgames.com/). All rights reserved.
 >
-> Original Mommyship content (rules text, custom CSS/JS, site design, character sheets) is licensed under [CC BY-NC-SA 4.0](LICENSE). That license does **not** extend to anything derived from or reproduced from Mothership RPG, which remains the property of Tuesday Knight Games.
+> Original Mommyship content (rules text, custom CSS/JS, site design, spacer sheets) is licensed under [CC BY-NC-SA 4.0](LICENSE). That license does **not** extend to anything derived from or reproduced from Mothership RPG, which remains the property of TKG.
 >
 > Site theme based on [Zensical](https://zensical.org/) by Martin Donath (MIT License). Fonts used under the SIL Open Font License.
 >

@@ -117,6 +117,20 @@ body:has(.osminok-ocean) .md-footer-meta::before {
   display: none;
 }
 
+/* Lives inside the Zensical credit so it can never wrap onto a line of its own, and its pipe always shows */
+.footer-credits__version {
+  position: relative;
+  padding-inline-start: 1.6em;
+  white-space: nowrap;
+}
+
+.footer-credits__version::before {
+  content: "|";
+  position: absolute;
+  left: 0.8em;
+  translate: -50% 0;
+}
+
 .shortcut-legend kbd {
   display: inline-block;
   padding: 0.15em 0.4em;
@@ -140,6 +154,15 @@ body:has(.osminok-ocean) .md-footer-meta::before {
   .md-footer-meta__inner {
     justify-content: center;
     text-align: center;
+  }
+
+  /* Phones drop "Mommyship" from the version stamp and shrink a touch so the credits fit two lines at 360px */
+  .footer-credits__long {
+    display: none;
+  }
+
+  .footer-credits {
+    font-size: 0.65rem;
   }
 }
 
@@ -515,8 +538,9 @@ html {
   background: rgba(13, 13, 26, 0.7);
   padding: 0.5rem 1.5rem;
   border-radius: 8px;
-  width: min(94cqb, 90cqi);
-  aspect-ratio: 1 / 1;
+  /* 3.4rem: the header plus .md-main's bottom padding */
+  width: min(calc((100dvh - 3.4rem) * 0.94 * 4 / 3), 90vw);
+  aspect-ratio: 4 / 3;
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -526,10 +550,9 @@ html {
   container-type: inline-size;
 }
 
-/* Lock homepage to exactly one viewport, dammit */
+/* At least one viewport tall: the card centers when it fits, and the page scrolls instead of clipping when it doesn't */
 body:has(.homepage-hero) {
-  height: 100dvh;
-  overflow: hidden;
+  min-block-size: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -542,19 +565,15 @@ body:has(.homepage-hero) .md-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
 }
 
+/* safe: an oversized card aligns to the top instead of spilling past it where scrolling can't reach */
 body:has(.homepage-hero) .md-main {
   flex: 1;
   display: grid;
-  place-content: center;
-  min-height: 0;
+  place-content: safe center;
   margin: 0;
-  padding: 0;
-  container-type: size;
-  overflow: hidden;
+  padding: 0 0 1rem;
 }
 
 /* Collapse intermediate wrappers so the hero is a direct grid child */
@@ -568,22 +587,39 @@ body:has(.homepage-hero) .md-footer {
   display: none;
 }
 
-/* Below the desktop breakpoint the square card can't hold its copy; release the lock and let it grow */
+/* Short desktop windows (1080p, 720p): tighten the vertical rhythm so the card fits one screen more often */
+@media (width >= 76.25em) and (height < 72em) {
+  .homepage-hero {
+    padding-block: 0.25rem;
+  }
+
+  /* Doubled up to outrank the base h1 and .md-typeset list rules further down */
+  .md-typeset .homepage-hero h1 {
+    font-size: calc(clamp(2rem, 8cqi, 3.5rem) * var(--md-text-scale, 1));
+  }
+
+  .md-typeset .homepage-hero hr {
+    margin-block: 0.5em;
+  }
+
+  .homepage-hero > p,
+  .homepage-hero > ul {
+    margin-block: 0.55em;
+  }
+
+  .md-typeset .homepage-hero li {
+    margin-block: 0.2em;
+  }
+}
+
+/* Below the desktop breakpoint the 4:3 card can't hold its copy; let it grow as a normal block */
 @media (width < 76.25em) {
   body:has(.homepage-hero) {
-    height: auto;
-    overflow: visible;
     display: block;
-  }
-
-  body:has(.homepage-hero) .md-container,
-  body:has(.homepage-hero) .md-main {
-    overflow: visible;
   }
 
   body:has(.homepage-hero) .md-main {
     display: block;
-    container-type: normal;
     padding-block: 1rem;
   }
 
@@ -678,6 +714,7 @@ body:has(.section-landing) {
 
 .homepage-hero hr {
   border-color: rgba(255, 250, 255, 0.3);
+  margin-block: 0.9em;
 }
 
 .homepage-hero h1 {
@@ -698,9 +735,10 @@ body:has(.section-landing) {
 }
 
 .homepage-disclaimer {
-  font-size: calc(clamp(0.45rem, 1.5cqi, 0.65rem) * var(--md-text-scale, 1));
+  font-size: calc(clamp(0.42rem, 1.1cqi, 0.46rem) * var(--md-text-scale, 1));
   opacity: 0.5;
   margin-bottom: 0;
+  text-wrap: balance;
 }
 
 /* Splash banner images under section h1 headings */
@@ -1123,15 +1161,29 @@ html.pwa-standalone .header-tray .open-page-control {
   padding: 0.2rem 0.4rem;
 }
 
-/* Homepage install CTA, sized like the hero copy so the square card doesn't overflow */
-.install-cta {
+/* Homepage buttons (install + rules download), sized like the hero copy so the square card doesn't overflow */
+.home-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.8rem;
+  width: min(100%, 34em);
   margin: 0.4rem auto 0;
   font-size: calc(clamp(0.55rem, 2.2cqi, 0.85rem) * var(--md-text-scale, 1));
 }
 
-/* The theme gives details display: flow-root, which beats the hidden attribute pwa.js toggles */
-.install-cta[hidden],
-.install-cta [hidden] {
+/* Both pills share row 1 so they match in height; the install extras stack under the left one */
+.home-buttons > * {
+  grid-column: 1;
+}
+
+.home-buttons > .home-btn--download {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* pwa.js toggles hidden on elements whose display rules would otherwise win */
+.home-buttons [hidden],
+.home-pop [hidden] {
   display: none !important;
 }
 
@@ -1139,7 +1191,7 @@ html.pwa-standalone .header-tray .open-page-control {
   font: inherit;
   font-weight: 700;
   letter-spacing: 0.05em;
-  padding: 0.4rem 1.1rem;
+  padding: 0.25em 1.1em;
   border-radius: 999px;
   cursor: pointer;
   /* Page text color, not the theme's white-on-primary: light mode is black on turquoise */
@@ -1149,49 +1201,393 @@ html.pwa-standalone .header-tray .open-page-control {
   box-shadow: 0 0 0.6rem color-mix(in srgb, var(--md-accent-fg-color) 40%, transparent);
 }
 
+/* Page background on the accent keeps hover legible: white on cerulean, navy on pink */
 .install-cta__btn:hover {
+  color: var(--md-default-bg-color);
   background: var(--md-accent-fg-color);
 }
 
-/* Strip the theme's admonition look from this details block; the selectors outrank .md-typeset details */
-.md-typeset details.install-cta__firefox {
-  font-size: 0.75em;
-  text-align: left;
-  max-width: 34rem;
-  margin: 0 auto;
-  padding: 0;
+.install-cta__btn:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  width: 100%;
+  min-height: 2.3em;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+}
+
+/* Outrank the hero's link colors for the download pill */
+.homepage-hero .home-buttons a.home-btn {
+  color: var(--md-default-fg-color);
+}
+
+.homepage-hero .home-buttons a.home-btn:hover {
+  color: var(--md-default-bg-color);
+}
+
+/* Fixed slot so the logo pwa.js fills in doesn't shift the label */
+.home-btn__logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+}
+
+/* The brand marks run edge to edge of their 24-unit box, so SVG's default clip shaves their rims */
+.home-btn__logo svg,
+.home-picker__logo svg,
+.home-variant__wall svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+  fill: currentColor;
+}
+
+/* Material's ring has a 2-unit margin in its box (r = 10 of 12); scale it up to the logos' full-bleed size */
+.home-btn--download .home-btn__logo svg {
+  scale: 1.2;
+}
+
+/* The M fills its whole box, so it reads heavier than the round marks at the same size */
+.home-btn--landed .home-btn__logo svg {
+  scale: 0.9;
+}
+
+/* Installed, it's a status badge that opens the wallpapers; it keeps full color even when inert */
+.home-btn--landed,
+.home-btn--landed:hover,
+.home-btn--landed:disabled {
+  opacity: 1;
+  color: var(--md-default-fg-color);
+  background: var(--md-primary-fg-color);
+}
+
+.home-btn--landed:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.home-btn--landed:disabled {
+  cursor: default;
+}
+
+/* "Not your browser?" and "WTF is PWA?" share a line under the install pill, wrapping on phones */
+.home-buttons__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.1em 0.9em;
+}
+
+.home-buttons__link {
+  font: inherit;
+  font-size: 0.8em;
+  padding: 0.1em 0.3em;
   color: inherit;
   background: none;
-}
-
-.md-typeset details.install-cta__firefox > summary {
+  border: 0;
+  border-radius: 0.2em;
+  opacity: 0.75;
   cursor: pointer;
-  text-align: center;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.home-buttons__link:hover,
+.home-buttons__link:focus-visible {
+  opacity: 1;
+}
+
+.home-buttons__link:focus-visible,
+.home-variant:focus-visible,
+.home-picker button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+
+/* Icon section at the top of the install panel, ruled off from the steps below it */
+.home-variants {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid rgb(255 250 255 / 0.15);
+}
+
+.home-pop[data-mode="landed"] .home-variants {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.homepage-hero .home-pop p.home-pop__heading {
+  align-self: stretch;
   font-weight: 700;
-  display: list-item;
-  list-style: disclosure-closed inside;
   margin: 0;
-  padding: 0;
 }
 
-.md-typeset details.install-cta__firefox[open] > summary {
-  list-style-type: disclosure-open;
+.home-variants__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.35rem 0.6rem;
 }
 
-.md-typeset details.install-cta__firefox > summary::before,
-.md-typeset details.install-cta__firefox > summary::after {
+.home-variant-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.home-variant {
+  padding: 2px;
+  line-height: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 0.45em;
+  cursor: pointer;
+}
+
+.home-variant img {
+  display: block;
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: 0.3em;
+}
+
+.home-variant--static {
+  cursor: default;
+}
+
+button.home-variant:hover,
+.home-variant[aria-pressed="true"] {
+  border-color: var(--md-accent-fg-color);
+}
+
+/* Outranks the hero's scheme link colors; reads like the "Not your browser?" link */
+.homepage-hero .home-variants a.home-variant__wall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-size: 0.85em;
+  line-height: 1.2;
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+  color: inherit;
+  opacity: 0.75;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.homepage-hero .home-variants a.home-variant__wall:hover,
+.homepage-hero .home-variants a.home-variant__wall:focus-visible {
+  color: inherit;
+  opacity: 1;
+}
+
+.home-variant__wall:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+
+.homepage-hero .home-variants a.home-variant__wall svg {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.homepage-hero .home-pop p.home-variants__note {
+  font-size: 0.9em;
+  margin: 0;
+  opacity: 0.7;
+}
+
+.home-pop [data-flow="prompt"] p {
+  text-align: center;
+}
+
+.home-pop__install:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* How-to panel and browser picker: popovers that pwa.js places under their buttons (centered
+   until it does, or with JS off). Dark in both schemes, like the hero card they hang off. */
+.home-pop {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  box-sizing: border-box;
+  max-inline-size: min(22rem, calc(100vw - 1rem));
+  padding: 0.6rem 0.8rem;
+  font-size: calc(0.7rem * var(--md-text-scale, 1));
+  line-height: 1.45;
+  text-align: left;
+  color: #fffaff;
+  background: rgb(13 13 26 / 0.96);
+  border: 1px solid color-mix(in srgb, var(--md-accent-fg-color) 60%, transparent);
+  border-radius: 0.4rem;
+  box-shadow: 0 0 0.6rem color-mix(in srgb, var(--md-accent-fg-color) 35%, transparent), 0 0.4rem 1.2rem rgb(0 0 0 / 0.4);
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 0.2s, translate 0.2s, display 0.2s allow-discrete, overlay 0.2s allow-discrete;
+}
+
+.home-pop:not(:popover-open) {
   display: none;
 }
 
-.md-typeset details.install-cta__firefox p {
-  font-size: inherit;
-  margin: 0.4em 0 0;
+@starting-style {
+  .home-pop:popover-open {
+    opacity: 0;
+    translate: 0 -0.3rem;
+  }
 }
 
+.home-pop:focus {
+  outline: none;
+}
+
+.homepage-hero .home-pop p {
+  font-size: inherit;
+  color: inherit;
+  margin: 0 0 0.5em;
+}
+
+.homepage-hero .home-pop p:last-child {
+  margin-bottom: 0;
+}
+
+.home-pop code {
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.homepage-hero .home-pop p.home-pop__copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35em 0.5em;
+}
+
+.home-pop__copy {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.15em 0.7em;
+  color: #0d0d1a;
+  background: #fffaff;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.home-pop__copy:hover {
+  background: #F679E5;
+}
+
+.home-pop__copy:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.home-pop__copied {
+  font-weight: 700;
+}
+
+.home-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.home-picker button {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0.35em 0.5em;
+  background: rgb(255 250 255 / 0.06);
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.home-picker button:hover,
+.home-picker button[aria-pressed="true"] {
+  border-color: var(--md-accent-fg-color);
+}
+
+.home-picker button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 22%, transparent);
+}
+
+.home-picker__logo {
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.home-picker .home-picker__auto {
+  grid-column: 1 / -1;
+  justify-content: center;
+  margin-top: 0.2rem;
+}
+
+/* No popover support (Firefox before 125, Safari before 17): the panels open inline instead */
+@supports not selector(:popover-open) {
+  .home-pop {
+    display: none;
+    position: static;
+    margin: 0.4rem auto 0;
+  }
+
+  .home-pop.is-open {
+    display: block;
+  }
+}
+
+@media screen and (max-width: 44.984375em) {
+  .home-buttons {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 22em);
+  }
+
+  .home-buttons > .home-btn--download {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 0.3rem;
+  }
+
+  .home-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .galacticity-control__jump {
     display: none;
+  }
+
+  .home-pop {
+    transition: none;
   }
 }
 

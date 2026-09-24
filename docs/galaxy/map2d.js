@@ -1,6 +1,6 @@
 /* 2D galaxy map — full-viewport Canvas2D renderer.
    Camera {cx, cz, k}: screen = (world − c)·k + center. World = canonical map units (±500). */
-import { createFirmament } from './map2d-firmament.js';
+import { createFirmament, CANVAS_FILTER } from './map2d-firmament.js';
 
 /* k = screen px per map unit; 0.8 ≈ the old default 800px disc */
 const K_DEFAULT = 0.8;
@@ -11,11 +11,6 @@ const CORE_VOID_R = 35;
 const PAN_MAX = WORLD_R * 1.05;
 /* Min zoom fills ~78% of the smaller viewport axis with the disc */
 const K_FILL = 0.78;
-/* Unpaused orbital-drift redraw rate: ~10 Hz at overview easing up to display rate
-   zoomed in (motion is sub-pixel far out). Absolute Cinema bypasses entirely. */
-const CIN_HZ_FLOOR = 10;
-const CIN_SCALE_LO = 4, CIN_SCALE_HI = 9;
-
 const PAN_SPEED = 8;
 const ZOOM_SPEED = 0.03;
 
@@ -81,13 +76,6 @@ function hexToRgb(hex) {
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
 }
 
-function lerpRgb(hex1, hex2, t) {
-  const a = hexToRgb(hex1), b = hexToRgb(hex2);
-  return [Math.round(a[0] + (b[0] - a[0]) * t),
-    Math.round(a[1] + (b[1] - a[1]) * t),
-    Math.round(a[2] + (b[2] - a[2]) * t)];
-}
-
 const rgbStr = (c) => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
 const rgbaStr = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
 
@@ -117,12 +105,26 @@ function segCircleT(x1, z1, x2, z2, r) {
 
 const HIDDEN_ZONE_ELLIPSES = new Set(['core', 'a-b', 'rim', 'arm-1', 'arm-2', 'arm-3']);
 
+/* The lightmap grade, baked into its idle double buffer; the live layer applies it via CSS */
+const LM_FILTER = 'brightness(1.12) contrast(1.16)';
+
 const CAM_KEY = 'mommyship-galaxy-map2d';
 
 export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   const ctx = canvas.getContext('2d');
+  /* ?mapperf: per-section draw timings every ~2 s plus the counters on window.__map2dPerf */
+  const PERF = new URLSearchParams(location.search).has('mapperf');
+  const pc = {
+    frames: 0, draws: 0, drawMs: 0, lmRebake: 0, astRebake: 0, bgRebake: 0, bgMs: 0, bakeMs: 0,
+    vecBuilds: 0, vecBlits: 0, starsDraws: 0,
+    labelsCreated: 0, labelBatches: 0, labelTf: 0, zoneTf: 0, staticTf: 0, layerTf: 0, gradients: 0, zoneStrokes: 0
+  };
+  /* Raster events over 2 ms, one console line each, so single hitch frames show up by cause */
+  const perfEvent = (kind, layer, px, ms) => {
+    if (ms > 2) console.log('[map2d] ' + kind + ' ' + layer + ' ' + (px / 1e6).toFixed(2) + ' Mpx ' + ms.toFixed(1) + ' ms');
+  };
   const lightmapImg = document.getElementById('lightmap-img');
-  const firmament = createFirmament(() => { bgBakedSide = 0; dirty = true; });
+  const firmament = createFirmament(() => { bgBakedSide = 0; markDirty(); });
 
   /* DOM layers under the vector canvas — repainted rarely, moved via CSS transforms */
   const bgLayerCanvas = document.getElementById('map2d-bg');
@@ -131,9 +133,25 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   const asteroidsImg = document.getElementById('asteroids-img');
   const astLayerCanvas = document.getElementById('map2d-asteroids');
   const starsCtx = starsCanvas.getContext('2d');
+  if (CANVAS_FILTER) {
+    starsCanvas.classList.add('gx-m2-baked');
+    bgLayerCanvas.classList.add('gx-m2-baked');
+  }
+  /* Static labels (zones + bodies with fixed coords) share one container so a fixed-scale pan
+     moves them with a single transform write */
+  const staticLabelLayer = document.createElement('div');
+  staticLabelLayer.className = 'gx-m2-static-labels';
+  labelLayer.appendChild(staticLabelLayer);
   let bgBakedSide = 0, bgTf = '';
-  let lmBake = null, lmTf = '';
-  let astBake = null, astTf = '';
+  /* Twinklers only change with time or parallax; hover-only redraws skip the stars canvas */
+  const starsAt = { t: NaN, dx: NaN, dz: NaN, side: NaN };
+  /* Region-baked image layers; their tiers fill in asynchronously after decode */
+  const lmL = { name: 'lightmap', canvas: lmLayerCanvas, img: lightmapImg, tiers: [], bake: null, tf: '', src: '', rev: 0 };
+  const astL = { name: 'asteroids', canvas: astLayerCanvas, img: asteroidsImg, tiers: [], bake: null, tf: '', src: '', rev: 0 };
+  /* Smoothed camera velocity in CSS px per draw; pan rebakes lead along it */
+  let panVx = 0, panVz = 0;
+  /* One big raster per draw: a soft rebake waits a frame when another layer already took the slot */
+  let rasterFree = true, rasterDeferred = false;
   /* Mid-gesture zooms ride the CSS scale; layers rebake once, 200 ms after k settles */
   let lastKForSettle = 0, settleAt = 0;
 
@@ -142,24 +160,38 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   let viewW = 0, viewH = 0, dpr = 1;
   let active = false;
   let dirty = true;
-  let cinAccum = 0;
-  let cinRate = CIN_HZ_FLOOR;
-  let dispHz = 60;
+  /* Camera at the previous draw; a draw that moved it owes one settle draw so the
+     mid-motion shortcuts (vector cache offsets, label container) snap back to exact */
+  let prevCx = NaN, prevCz = NaN, prevK = NaN;
+  let restPending = false;
+  /* Set by editor mutations; the next frame drops every data-derived cache in one go */
+  let staleData = false;
 
   let selectedId = null;
   let hoveredId = null;
   let trackedId = null;
+  /* Entries are rewritten in place each tick; recomputed only when rotationTime moves */
   let positions = null;
+  let posTime = NaN;
 
   /* Caches cleared on invalidate() — editor edits land while the map is inactive */
   const tierCache = new Map();
   const orbitCache = new Map();
+  const laneCache = new Map();
 
   const labelEls = new Map();
   const zoneEls = [];
-  let zonesBuilt = false;
+  let zonesBuilt = false, zoneSig = '';
+  let labelsPrimed = false;
   const declutter = new Map();
   let lastDeclutterAt = 0;
+  /* Camera the static label container was built against; slOx/slOy hold the whole-px pan since then */
+  let slAnchor = null;
+  let slOx = 0, slOy = 0;
+  const cands = [];
+  const candPool = [];
+  const zoneRects = [];
+  const missing = [];
 
   let flyAnim = null;
   const keys = {};
@@ -206,18 +238,78 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   const wx = (px) => (px - viewW / 2) / k + cx;
   const wz = (py) => (py - viewH / 2) / k + cz;
 
-  function invalidate() {
+  function markDirty() {
+    dirty = true;
+    callbacks.onWake?.();
+  }
+
+  function ensurePositions(rotationTime) {
+    if (!positions) { positions = new Map(); posTime = NaN; }
+    if (rotationTime !== posTime) {
+      systems.flattenPositionsInto(positions, rotationTime);
+      posTime = rotationTime;
+    }
+    return positions;
+  }
+
+  /* Everything a zone label bakes in at build time: id, name, anchor, faction color */
+  function zoneSignature(data) {
+    let sig = '';
+    for (const zid in data.zones) {
+      const z = data.zones[zid];
+      sig += zid + '|' + z.name + '|' + (z.position ? z.position.x + ',' + z.position.z : '') + '|' +
+        ((z.factionId && data.factions[z.factionId]?.color) || '') + ';';
+    }
+    return sig;
+  }
+
+  /* Editor-edit variant of invalidate(): same cache drops, but labels whose body, text, tier,
+     and container still match survive, so a slider drag doesn't re-fade every label per tick */
+  function refreshData() {
+    staleData = false;
+    labelsPrimed = false;
     tierCache.clear();
     orbitCache.clear();
+    laneCache.clear();
+    positions = null;
+    vec = null;
+    const data = systems.getData();
+    for (const [id, L] of labelEls) {
+      const body = data.bodies[id];
+      const info = body ? bodyInfo(id) : null;
+      if (!info || L.fixed !== info.fixed || L.el.dataset.tier !== info.tier ||
+          L.el.textContent !== displayName(id, body, info.tier)) {
+        L.el.remove();
+        labelEls.delete(id);
+        declutter.delete(id);
+      }
+    }
+    if (zonesBuilt && zoneSignature(data) !== zoneSig) {
+      for (const zl of zoneEls) zl.el.remove();
+      zoneEls.length = 0;
+      zonesBuilt = false;
+    }
+    if (hoveredId && !data.bodies[hoveredId]) hoveredId = null;
+    markDirty();
+  }
+
+  function invalidate() {
+    staleData = false;
+    tierCache.clear();
+    orbitCache.clear();
+    laneCache.clear();
     declutter.clear();
     for (const L of labelEls.values()) L.el.remove();
     labelEls.clear();
     for (const zl of zoneEls) zl.el.remove();
     zoneEls.length = 0;
     zonesBuilt = false;
+    labelsPrimed = false;
+    slAnchor = null;
     positions = null;
+    vec = null;
     hoveredId = null;
-    dirty = true;
+    markDirty();
   }
 
   function clampCam() {
@@ -250,6 +342,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   }
 
   function resize() {
+    const tb = PERF ? performance.now() : 0;
     dpr = window.devicePixelRatio || 1;
     viewW = canvas.clientWidth;
     viewH = canvas.clientHeight;
@@ -259,12 +352,23 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     starsCanvas.height = Math.round(viewH * dpr);
     starsCanvas.style.width = viewW + 'px';
     starsCanvas.style.height = viewH + 'px';
+    starsAt.t = NaN;
     bgBakedSide = 0;
-    lmBake = null;
-    astBake = null;
+    lmL.bake = null;
+    astL.bake = null;
+    dropGrade();
+    vec = null;
+    slAnchor = null;
     kMin = Math.max(K_MIN, Math.min(viewW, viewH) * K_FILL / (WORLD_R * 2));
     if (k < kMin) k = kMin;
-    dirty = true;
+    if (PERF) perfEvent('resize', 'main+stars', canvas.width * canvas.height * 2, performance.now() - tb);
+    markDirty();
+  }
+
+  /* Monitor hops and browser zoom change the DPR without always firing a resize */
+  function watchDpr() {
+    const mq = window.matchMedia?.('(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)');
+    mq?.addEventListener('change', () => { resize(); watchDpr(); }, { once: true });
   }
 
   function bodyInfo(id) {
@@ -275,32 +379,137 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (!body) return null;
     const tier = pinTier(id, body);
     const faction = body.factionId ? data.factions[body.factionId] : null;
+    const color = faction ? faction.color : (body.visual?.color || '#888');
+    const spectral = body.visual?.spectralColor || null;
     info = {
       tier,
-      color: faction ? faction.color : (body.visual?.color || '#888'),
-      spectral: body.visual?.spectralColor || null,
-      size: DOT_SIZE[tier] ?? 1.5
+      color,
+      spectral,
+      size: DOT_SIZE[tier] ?? 1.5,
+      /* Fixed-coordinate bodies never move in 2D; their labels ride the static container */
+      fixed: !!body.position,
+      rgb: hexToRgb(color),
+      specRgb: spectral ? hexToRgb(spectral) : null,
+      /* Per-colorT style strings and the local-space halo gradient, reused while nothing changes */
+      colorT: NaN, fill: '', halo0: '', halo1: '', halo2: '',
+      halo: null, haloR: 0
     };
     tierCache.set(id, info);
     return info;
   }
 
-  /* Decode once to an ImageBitmap; prescaled 2048 mid tier serves far zoom */
-  let lmFull = null, lmMid = null;
-  let astFull = null, astMid = null;
-  async function buildSources(img, assign) {
-    if (!img?.complete || !img.naturalWidth) return;
-    const full = await createImageBitmap(img);
-    const mid = document.createElement('canvas');
-    mid.width = mid.height = 2048;
-    mid.getContext('2d').drawImage(full, 0, 0, 2048, 2048);
-    assign(full, await createImageBitmap(mid));
-    dirty = true;
+  /* Tiers at 2048 and 4096 plus the native size, picked per bake by texels per device px. The native
+     tier alone serves everything above 4.096 texels/unit (no 8192 copy of a 12k image: the memory
+     isn't worth a milder downscale). Firefox caches canvas sources only up to 5280², so a native
+     size above 4096 is cut into tiles. */
+  const TIER_SIZES = [2048, 4096];
+  const TIER_WHOLE_MAX = 4096;
+  /* 8192 → 2×2 and 12288 → 3×3 tiles, and a bake draws only the tiles it touches */
+  const TILE = 4096;
+  /* Overlap texels per interior tile side (tiles top out at 4100²), so a seam's filter taps read
+     the real neighbor instead of a clamped edge */
+  const TILE_PAD = 2;
+  const yieldTask = () => new Promise((r) => setTimeout(r, 0));
+  const imgSrc = (img) => img.currentSrc || img.src;
+
+  /* Swaps in a layer's tier list and closes the tiers it drops; a bake drawn from those can't survive */
+  function setTiers(L, tiers) {
+    const keep = new Set(tiers);
+    let dropped = false;
+    for (const t of L.tiers) {
+      if (keep.has(t)) continue;
+      for (const tile of t.tiles) tile.bmp.close();
+      dropped = true;
+    }
+    L.tiers = tiers;
+    if (dropped) {
+      L.bake = null;
+      if (L === lmL) dropGrade();
+    }
+    markDirty();
   }
-  const buildLightmapSources = () =>
-    buildSources(lightmapImg, (f, m) => { lmFull = f; lmMid = m; lmBake = null; });
-  const buildAsteroidSources = () =>
-    buildSources(asteroidsImg, (f, m) => { astFull = f; astMid = m; astBake = null; });
+
+  /* Everything reads straight from the <img>, one bitmap in flight at a time, and each intermediate
+     closes as soon as the next exists: no full-size copy is ever held. A newer source revision
+     abandons the build and closes whatever it made. */
+  async function buildTiers(L, rev) {
+    const img = L.img, src = imgSrc(img);
+    const stale = () => rev !== L.rev || !img.complete || imgSrc(img) !== src;
+    if (stale() || !img.naturalWidth) return;
+    const n = img.naturalWidth;
+    /* A source swap keeps the old set on screen until the new one is whole */
+    const progressive = !L.tiers.length;
+    const made = [];
+    const held = new Set();
+    const own = (b) => { held.add(b); return b; };
+    const drop = (b) => { held.delete(b); b.close(); };
+    const publish = () => {
+      made.sort((x, y) => x.n - y.n);
+      for (const t of made) for (const tl of t.tiles) held.delete(tl.bmp);
+      setTiers(L, made.slice());
+    };
+    const resize = (from, s) => createImageBitmap(from, { resizeWidth: s, resizeHeight: s, resizeQuality: 'high' });
+    try {
+      /* Down the chain in steps of at most 2× (clean box filtering whatever the resize filter) */
+      let prev = null;
+      for (const s of TIER_SIZES.filter((s) => s < n).reverse()) {
+        let from = prev || img, fromN = prev ? prev.width : n, tmp = null;
+        while (fromN / 2 > s) {
+          const half = own(await resize(from, fromN / 2));
+          if (tmp) drop(tmp);
+          if (stale()) return;
+          from = tmp = half;
+          fromN /= 2;
+        }
+        const bmp = own(await resize(from, s));
+        if (tmp) drop(tmp);
+        if (stale()) return;
+        made.push({ n: s, tiles: [{ bmp, u0: 0, v0: 0, u1: s, v1: s, bx: 0, by: 0 }] });
+        prev = bmp;
+        await yieldTask();
+      }
+      if (progressive && made.length) publish();
+      const tiles = [];
+      if (n <= TIER_WHOLE_MAX) {
+        tiles.push({ bmp: own(await createImageBitmap(img)), u0: 0, v0: 0, u1: n, v1: n, bx: 0, by: 0 });
+      } else {
+        for (let v = 0; v < n; v += TILE) {
+          for (let u = 0; u < n; u += TILE) {
+            const u1 = Math.min(n, u + TILE), v1 = Math.min(n, v + TILE);
+            const bx = Math.max(0, u - TILE_PAD), by = Math.max(0, v - TILE_PAD);
+            const bw = Math.min(n, u1 + TILE_PAD) - bx, bh = Math.min(n, v1 + TILE_PAD) - by;
+            /* The same-size resize forces a real copy; a plain crop would pin the whole decode */
+            const bmp = own(await createImageBitmap(img, bx, by, bw, bh, { resizeWidth: bw, resizeHeight: bh }));
+            tiles.push({ bmp, u0: u, v0: v, u1, v1, bx, by });
+            if (stale()) return;
+            await yieldTask();
+          }
+        }
+      }
+      if (stale()) return;
+      made.push({ n, tiles });
+      publish();
+    } catch (e) {
+      if (!stale()) console.warn('[map2d] ' + L.name + ' tiers:', e);
+    } finally {
+      for (const b of held) b.close();
+    }
+  }
+  /* Serialized so only one tier is ever being built; a repeat load of the same source is a no-op */
+  let tierQueue = Promise.resolve();
+  function queueTiers(L) {
+    const src = imgSrc(L.img);
+    if (!L.img.naturalWidth || src === L.src) return;
+    L.src = src;
+    const rev = ++L.rev;
+    tierQueue = tierQueue.then(() => buildTiers(L, rev));
+  }
+
+  /* Lowest tier with at least one texel per device px, else the sharpest there is */
+  function pickTier(tiers, kd) {
+    for (const t of tiers) if (t.n / 1000 >= kd) return t;
+    return tiers[tiers.length - 1] || null;
+  }
 
   /* Firmament space → screen mapping shared by the bg layer transform and live stars */
   function firmamentGeom() {
@@ -313,52 +522,203 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     return { side, dx: viewW / 2 - side / 2 - offX, dz: viewH / 2 - side / 2 - offZ };
   }
 
-  /* Lightmap + asteroid layers bake a margin slice; pan and moderate zoom ride the CSS transform.
-     Both use the same ±500 world → full-texture mapping, so one baker serves both. */
+  /* Lightmap + asteroid layers bake a margin slice; pan and moderate zoom ride the CSS transform,
+     so a pan costs no raster work until the margin is actually exhausted. Both share one baker. */
   const LM_MARGIN = 1.5;
-  function bakeLayer(layerCanvas, src) {
-    if (!src || !viewW) return null;
-    const w = Math.ceil(viewW * LM_MARGIN), h = Math.ceil(viewH * LM_MARGIN);
-    layerCanvas.width = Math.round(w * dpr);
-    layerCanvas.height = Math.round(h * dpr);
-    layerCanvas.style.width = w + 'px';
-    layerCanvas.style.height = h + 'px';
-    const c = layerCanvas.getContext('2d');
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.clearRect(0, 0, w, h);
-    const N = src.width;
-    const wx0 = cx - w / 2 / k, wz0 = cz - h / 2 / k;
-    const ix0 = Math.max(0, (wx0 / 1000 + 0.5) * N);
-    const iz0 = Math.max(0, (wz0 / 1000 + 0.5) * N);
-    const ix1 = Math.min(N, ((cx + w / 2 / k) / 1000 + 0.5) * N);
-    const iz1 = Math.min(N, ((cz + h / 2 / k) / 1000 + 0.5) * N);
-    if (ix1 > ix0 && iz1 > iz0) {
-      c.imageSmoothingEnabled = true;
-      c.imageSmoothingQuality = 'high';
-      c.drawImage(src, ix0, iz0, ix1 - ix0, iz1 - iz0,
-        ((ix0 / N - 0.5) * 1000 - wx0) * k, ((iz0 / N - 0.5) * 1000 - wz0) * k,
-        (ix1 - ix0) / N * 1000 * k, (iz1 - iz0) / N * 1000 * k);
-    }
-    return { cx, cz, k, w, h };
+  /* A pan rebake centers this share of the margin ahead of the camera, so straight pans rebake less */
+  const LEAD = 0.6;
+
+  function takeRaster() {
+    if (!rasterFree) { rasterDeferred = true; return false; }
+    rasterFree = false;
+    return true;
   }
 
-  /* Rebakes only when scale drifts or it pans off-margin; returns the (possibly refreshed) bake + transform. */
-  function positionLayer(layerCanvas, bake, srcFn, prevTf, zooming) {
-    if (!bake) bake = bakeLayer(layerCanvas, srcFn());
-    if (!bake) return { bake: null, tf: prevTf };
-    let s = k / bake.k;
-    const sHi = zooming ? 2.2 : 1.3, sLo = zooming ? 0.45 : 0.75;
-    if (s > sHi || s < sLo ||
-        Math.abs((bake.cx - cx) * k) > (bake.w * s - viewW) / 2 ||
-        Math.abs((bake.cz - cz) * k) > (bake.h * s - viewH) / 2) {
-      const fresh = bakeLayer(layerCanvas, srcFn());
-      if (fresh) { bake = fresh; s = 1; }
+  /* Soft-rebake slack is three draws of margin burn, so a rebake deferred two frames never shows an edge */
+  const softRoom = (room, rate) => rate > 0 && room < Math.max(48, rate * 3);
+
+  /* Draws device rows [y0, y1) of bake b into c (identity transform) with row y0 at the top.
+     Every interior edge (tile seam, bake edge, grade band cut) draws a few texels past itself and
+     clips at a whole device px, so edge clamping lands off-screen whatever the backend samples. */
+  function drawRegion(c, b, y0, y1) {
+    const t = b.tier, n = t.n, tpu = n / 1000, kd = b.k * b.dpr;
+    const devX = (u) => (u / tpu - 500 - b.wx0) * kd;
+    const devZ = (v) => (v / tpu - 500 - b.wz0) * kd;
+    const texX = (x) => (x / kd + b.wx0 + 500) * tpu;
+    const texZ = (y) => (y / kd + b.wz0 + 500) * tpu;
+    const ru0 = Math.max(0, texX(0)), ru1 = Math.min(n, texX(b.pw));
+    const rv0 = Math.max(0, texZ(y0)), rv1 = Math.min(n, texZ(y1));
+    if (ru1 <= ru0 || rv1 <= rv0) return;
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    for (const tl of t.tiles) {
+      const u0 = Math.max(tl.u0, ru0), u1 = Math.min(tl.u1, ru1);
+      const v0 = Math.max(tl.v0, rv0), v1 = Math.min(tl.v1, rv1);
+      if (u1 <= u0 || v1 <= v0) continue;
+      /* Clip edges: image border → a px clear of the draw; seam → rounded; region cut → exact */
+      const cx0 = u0 === 0 ? Math.floor(devX(0)) - 1 : u0 === tl.u0 ? Math.round(devX(u0)) : 0;
+      const cx1 = u1 === n ? Math.ceil(devX(n)) + 1 : u1 === tl.u1 ? Math.round(devX(u1)) : b.pw;
+      const cz0 = v0 === 0 ? Math.floor(devZ(0)) - 1 : v0 === tl.v0 ? Math.round(devZ(v0)) : y0;
+      const cz1 = v1 === n ? Math.ceil(devZ(n)) + 1 : v1 === tl.v1 ? Math.round(devZ(v1)) : y1;
+      if (cx1 <= cx0 || cz1 <= cz0) continue;
+      const bw = tl.bmp.width, bh = tl.bmp.height;
+      const su0 = u0 === 0 ? 0 : Math.max(tl.bx, texX(cx0) - TILE_PAD);
+      const su1 = u1 === n ? n : Math.min(tl.bx + bw, texX(cx1) + TILE_PAD);
+      const sv0 = v0 === 0 ? 0 : Math.max(tl.by, texZ(cz0) - TILE_PAD);
+      const sv1 = v1 === n ? n : Math.min(tl.by + bh, texZ(cz1) + TILE_PAD);
+      const dx0 = devX(su0), dz0 = devZ(sv0);
+      c.save();
+      c.beginPath();
+      c.rect(cx0, cz0 - y0, cx1 - cx0, cz1 - cz0);
+      c.clip();
+      c.drawImage(tl.bmp, su0 - tl.bx, sv0 - tl.by, su1 - su0, sv1 - sv0,
+        dx0, dz0 - y0, devX(su1) - dx0, devZ(sv1) - dz0);
+      c.restore();
     }
-    const tx = (bake.cx - cx) * k + viewW / 2 - s * bake.w / 2;
-    const tz = (bake.cz - cz) * k + viewH / 2 - s * bake.h / 2;
+  }
+
+  function bakeLayer(L, tier) {
+    if (!tier || !viewW || !viewH) return null;
+    const tb = PERF ? performance.now() : 0;
+    if (PERF) pc[L === lmL ? 'lmRebake' : 'astRebake']++;
+    const layerCanvas = L.canvas;
+    const w = Math.ceil(viewW * LM_MARGIN), h = Math.ceil(viewH * LM_MARGIN);
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    /* Reassigning the size reallocates and clears the backing store even when it's unchanged */
+    const c = layerCanvas.getContext('2d');
+    const resized = layerCanvas.width !== pw || layerCanvas.height !== ph;
+    if (resized) {
+      layerCanvas.width = pw;
+      layerCanvas.height = ph;
+    } else {
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, pw, ph);
+    }
+    if (layerCanvas.style.width !== w + 'px') layerCanvas.style.width = w + 'px';
+    if (layerCanvas.style.height !== h + 'px') layerCanvas.style.height = h + 'px';
+    const sp = Math.hypot(panVx, panVz);
+    const lx = sp > 0.5 ? LEAD * (w - viewW) / 2 * panVx / sp : 0;
+    const lz = sp > 0.5 ? LEAD * (h - viewH) / 2 * panVz / sp : 0;
+    const b = { tier, k, dpr, w, h, pw, ph, wx0: cx + (lx - w / 2) / k, wz0: cz + (lz - h / 2) / k, cx: 0, cz: 0, room: NaN };
+    b.cx = b.wx0 + w / 2 / k;
+    b.cz = b.wz0 + h / 2 / k;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    drawRegion(c, b, 0, ph);
+    if (PERF) {
+      const ms = performance.now() - tb;
+      pc.bakeMs += ms;
+      perfEvent((resized ? 'rebake+resize ' : 'rebake ') + tier.n, L.name, pw * ph, ms);
+    }
+    return b;
+  }
+
+  /* Rebakes now when a pan or zoom-out uncovers the viewport; on the next free draw when the margin
+     runs low, the scale drifts, or a better tier fits. Then writes the CSS transform. */
+  function positionLayer(L, zooming) {
+    const want = pickTier(L.tiers, k * dpr);
+    if (!want) return;
+    let b = L.bake, s = 1;
+    if (b) {
+      s = k / b.k;
+      const room = Math.min((b.w * s - viewW) / 2 - Math.abs((b.cx - cx) * k),
+        (b.h * s - viewH) / 2 - Math.abs((b.cz - cz) * k));
+      const rate = b.room - room;
+      b.room = room;
+      const sHi = zooming ? 2.2 : 1.3, sLo = zooming ? 0.45 : 0.75;
+      const soft = softRoom(room, rate) || s > sHi || s < sLo || (!zooming && b.tier !== want);
+      if (room < 0 || (soft && takeRaster())) b = null;
+    }
+    if (!b) {
+      rasterFree = false;
+      const fresh = bakeLayer(L, want);
+      if (fresh) L.bake = fresh;
+      b = L.bake;
+      if (!b) return;
+      s = k / b.k;
+    }
+    const tx = (b.cx - cx) * k + viewW / 2 - s * b.w / 2;
+    const tz = (b.cz - cz) * k + viewH / 2 - s * b.h / 2;
     const tf = 'translate(' + tx.toFixed(1) + 'px,' + tz.toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
-    if (prevTf !== tf) layerCanvas.style.transform = tf;
-    return { bake, tf };
+    if (L.tf !== tf) { L.canvas.style.transform = tf; L.tf = tf; if (PERF) pc.layerTf++; }
+  }
+
+  /* Graded lightmap double buffer: after the camera sits still for GRADE_IDLE_MS, a CPU canvas
+     rasters the current bake with the grade baked in, one band per frame, then swaps in for the
+     live layer (which keeps its CSS grade). Any rebake drops back to the live layer. */
+  const GRADE_IDLE_MS = 500;
+  const GRADE_BANDS = 12;
+  let gradeCanvas = null, gradeCtx = null, gradeScratch = null;
+  if (CANVAS_FILTER) {
+    gradeCanvas = lmLayerCanvas.cloneNode(false);
+    gradeCanvas.removeAttribute('id');
+    gradeCanvas.classList.add('gx-m2-baked');
+    gradeCanvas.style.display = 'none';
+    lmLayerCanvas.after(gradeCanvas);
+    /* willReadFrequently keeps it on the CPU: a filter on a GPU canvas reads the whole surface
+       back first, which is what hitched pans */
+    gradeCtx = gradeCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  let gradeJob = null, gradedBake = null, gradeShown = false, gradeTf = '';
+  let lastMoveAt = 0;
+
+  function showGrade(on) {
+    if (gradeShown === on) return;
+    gradeShown = on;
+    gradeCanvas.style.display = on ? '' : 'none';
+    lmLayerCanvas.style.display = on ? 'none' : '';
+  }
+
+  function dropGrade() {
+    gradeJob = null;
+    gradedBake = null;
+    if (gradeShown) showGrade(false);
+  }
+
+  const gradeWanted = () => !!gradeCanvas && !!lmL.bake && gradedBake !== lmL.bake;
+
+  /* Each band draws only its own rows, from the live bake's own tier, so graded and live pixels match */
+  function stepGrade() {
+    const now = performance.now();
+    if (!gradeWanted() || settleAt || dragging || flyAnim || now - lastMoveAt < GRADE_IDLE_MS) return;
+    const b = lmL.bake;
+    if (!b.pw || !b.ph) return;
+    if (!gradeJob || gradeJob.bake !== b) {
+      gradeJob = { bake: b, row: 0 };
+      if (gradeCanvas.width !== b.pw || gradeCanvas.height !== b.ph) {
+        gradeCanvas.width = b.pw;
+        gradeCanvas.height = b.ph;
+      }
+    }
+    const band = Math.ceil(b.ph / GRADE_BANDS);
+    const y0 = gradeJob.row, h = Math.min(band, b.ph - y0);
+    if (!gradeScratch || gradeScratch.width < b.pw || gradeScratch.height < band) {
+      gradeScratch = document.createElement('canvas');
+      gradeScratch.width = b.pw;
+      gradeScratch.height = band;
+    }
+    const sc = gradeScratch.getContext('2d', { willReadFrequently: true });
+    sc.setTransform(1, 0, 0, 1, 0, 0);
+    sc.clearRect(0, 0, gradeScratch.width, gradeScratch.height);
+    drawRegion(sc, b, y0, y0 + h);
+    gradeCtx.setTransform(1, 0, 0, 1, 0, 0);
+    gradeCtx.clearRect(0, y0, b.pw, h);
+    gradeCtx.filter = LM_FILTER;
+    gradeCtx.drawImage(gradeScratch, 0, 0, b.pw, h, 0, y0, b.pw, h);
+    gradeCtx.filter = 'none';
+    gradeJob.row += h;
+    if (gradeJob.row >= b.ph) {
+      gradeJob = null;
+      gradedBake = b;
+      gradeCanvas.style.width = lmLayerCanvas.style.width;
+      gradeCanvas.style.height = lmLayerCanvas.style.height;
+      gradeCanvas.style.transform = gradeTf = lmL.tf;
+      showGrade(true);
+    }
+    if (PERF) {
+      const ms = performance.now() - now;
+      perfAdd('grade', ms);
+      perfEvent(gradedBake === b ? 'grade band+swap' : 'grade band', 'lightmap', b.pw * h, ms);
+    }
   }
 
   function updateLayers() {
@@ -366,70 +726,176 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (firmament.isReady()) {
       const g = firmamentGeom();
       const drift = bgBakedSide ? Math.abs(g.side - bgBakedSide) / bgBakedSide : 1;
-      if (!bgBakedSide || drift > (zooming ? 0.5 : 0.04)) {
+      if (!bgBakedSide || (drift > (zooming ? 0.5 : 0.04) && takeRaster())) {
+        rasterFree = false;
+        const tb = PERF ? performance.now() : 0;
         if (firmament.paintBase(bgLayerCanvas, g.side, dpr)) bgBakedSide = g.side;
+        if (PERF) {
+          const ms = performance.now() - tb;
+          pc.bgRebake++;
+          pc.bgMs += ms;
+          perfEvent('repaint', 'background', bgLayerCanvas.width * bgLayerCanvas.height, ms);
+        }
       }
       if (bgBakedSide) {
         const tf = 'translate(' + g.dx.toFixed(1) + 'px,' + g.dz.toFixed(1) + 'px) scale(' + (g.side / bgBakedSide).toFixed(4) + ')';
-        if (bgTf !== tf) { bgLayerCanvas.style.transform = tf; bgTf = tf; }
+        if (bgTf !== tf) { bgLayerCanvas.style.transform = tf; bgTf = tf; if (PERF) pc.layerTf++; }
       }
     }
-    const lm = positionLayer(lmLayerCanvas, lmBake, () => (k <= 2 ? lmMid : lmFull) || lmFull, lmTf, zooming);
-    lmBake = lm.bake; lmTf = lm.tf;
-    const ast = positionLayer(astLayerCanvas, astBake, () => (k <= 2 ? astMid : astFull) || astFull, astTf, zooming);
-    astBake = ast.bake; astTf = ast.tf;
+    const lmBefore = lmL.bake;
+    positionLayer(lmL, zooming);
+    if (lmL.bake !== lmBefore) dropGrade();
+    if (gradeShown && gradeTf !== lmL.tf) gradeCanvas.style.transform = gradeTf = lmL.tf;
+    positionLayer(astL, zooming);
   }
 
-  /* Map-table framing: rim ring + outside vignette, drawn whenever any of it is on screen */
-  function drawRim() {
+  /* Map-table framing: rim ring + outside vignette, drawn whenever any of it touches the
+     CSS-px rect (x0, y0)–(x1, y1) of context `c` */
+  function drawRim(c, x0, y0, x1, y1) {
     const r = WORLD_R * k;
     const rx = sx(0), rz = sz(0);
     const nearest = Math.hypot(
-      Math.max(-rx, rx - viewW, 0),
-      Math.max(-rz, rz - viewH, 0));
-    const farthest = Math.hypot(Math.max(rx, viewW - rx), Math.max(rz, viewH - rz));
+      Math.max(x0 - rx, rx - x1, 0),
+      Math.max(y0 - rz, rz - y1, 0));
+    const farthest = Math.hypot(Math.max(rx - x0, x1 - rx), Math.max(rz - y0, y1 - rz));
     if (farthest > r) {
-      const vg = ctx.createRadialGradient(rx, rz, r, rx, rz, r * 1.8);
+      const vg = c.createRadialGradient(rx, rz, r, rx, rz, r * 1.8);
+      if (PERF) pc.gradients++;
       vg.addColorStop(0, 'rgba(8,8,18,0)');
       vg.addColorStop(1, 'rgba(8,8,18,0.6)');
-      /* Clip to outside the rim — composites only the pixels the gradient can touch */
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, viewW, viewH);
-      ctx.arc(rx, rz, r, 0, Math.PI * 2);
-      ctx.clip('evenodd');
-      ctx.fillStyle = vg;
-      ctx.fillRect(0, 0, viewW, viewH);
-      ctx.restore();
+      /* Even-odd fill of rect + rim circle paints only outside the rim, with no clip mask pass */
+      c.fillStyle = vg;
+      c.beginPath();
+      c.rect(x0, y0, x1 - x0, y1 - y0);
+      c.arc(rx, rz, r, 0, Math.PI * 2);
+      c.fill('evenodd');
     }
     if (r < nearest - 10 || r > farthest + 10) return;
-    ctx.strokeStyle = 'rgba(131,50,172,0.12)';
-    ctx.lineWidth = 7;
-    ctx.beginPath();
-    ctx.arc(rx, rz, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(131,50,172,0.45)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(rx, rz, r, 0, Math.PI * 2);
-    ctx.stroke();
+    c.strokeStyle = 'rgba(131,50,172,0.12)';
+    c.lineWidth = 7;
+    c.beginPath();
+    c.arc(rx, rz, r, 0, Math.PI * 2);
+    c.stroke();
+    c.strokeStyle = 'rgba(131,50,172,0.45)';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.arc(rx, rz, r, 0, Math.PI * 2);
+    c.stroke();
   }
 
-  function drawZones() {
+  /* Conservative: false only when the stroke can't touch the rect, including the zoomed-in
+     case where the rect sits wholly inside the ellipse (sub-px dashes cost per circumference) */
+  function zoneTouches(ex, ez, a, b, rot, x0, y0, x1, y1) {
+    const pad = 2;
+    const co = Math.cos(rot), si = Math.sin(rot);
+    const hx = Math.sqrt(a * a * co * co + b * b * si * si);
+    const hz = Math.sqrt(a * a * si * si + b * b * co * co);
+    if (ex + hx < x0 - pad || ex - hx > x1 + pad || ez + hz < y0 - pad || ez - hz > y1 + pad) return false;
+    /* Every corner inside the ellipse scaled by rho keeps the rect ≥ pad from its edge */
+    const rho = 1 - pad / Math.min(a, b);
+    if (rho <= 0) return true;
+    const rho2 = rho * rho;
+    const inside = (px, py) => {
+      const dx = px - ex, dy = py - ez;
+      const u = (dx * co + dy * si) / a, v = (-dx * si + dy * co) / b;
+      return u * u + v * v < rho2;
+    };
+    return !(inside(x0, y0) && inside(x1, y0) && inside(x0, y1) && inside(x1, y1));
+  }
+
+  function drawZones(c, x0, y0, x1, y1) {
     const data = systems.getData();
-    ctx.save();
-    ctx.strokeStyle = 'rgba(92,225,230,0.15)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([0.5, 0.4]);
-    for (const [zid, zone] of Object.entries(data.zones)) {
+    c.save();
+    c.strokeStyle = 'rgba(92,225,230,0.15)';
+    c.lineWidth = 1.5;
+    c.setLineDash([0.5, 0.4]);
+    for (const zid in data.zones) {
+      const zone = data.zones[zid];
       if (!zone.position || !zone.radius || HIDDEN_ZONE_ELLIPSES.has(zid)) continue;
-      ctx.beginPath();
-      ctx.ellipse(sx(zone.position.x), sz(zone.position.z),
-        zone.radius.rx * k, zone.radius.rz * k,
-        (zone.rotation || 0) * Math.PI / 180, 0, Math.PI * 2);
-      ctx.stroke();
+      const ex = sx(zone.position.x), ez = sz(zone.position.z);
+      const a = zone.radius.rx * k, b = zone.radius.rz * k;
+      const rot = (zone.rotation || 0) * Math.PI / 180;
+      if (!zoneTouches(ex, ez, a, b, rot, x0, y0, x1, y1)) continue;
+      if (PERF) pc.zoneStrokes++;
+      c.beginPath();
+      c.ellipse(ex, ez, a, b, rot, 0, Math.PI * 2);
+      c.stroke();
     }
+    c.restore();
+  }
+
+  /* Rim + zones don't move with time, so they raster once per camera into an overscanned cache that
+     is always the same size (no reallocation). At rest it's built on the exact camera and blitted at a
+     whole-device-px offset, which is bit-exact; mid-pan it slides by whole device px. */
+  const vecCanvas = document.createElement('canvas');
+  const vecCtx = vecCanvas.getContext('2d');
+  const VEC_MARGIN = 1.5;
+  let vec = null;
+
+  function buildVec(lead) {
+    const tb = PERF ? performance.now() : 0;
+    const ox = Math.round(canvas.width * (VEC_MARGIN - 1) / 2);
+    const oy = Math.round(canvas.height * (VEC_MARGIN - 1) / 2);
+    const pw = canvas.width + ox * 2, ph = canvas.height + oy * 2;
+    const resized = vecCanvas.width !== pw || vecCanvas.height !== ph;
+    if (resized) {
+      vecCanvas.width = pw;
+      vecCanvas.height = ph;
+    } else {
+      vecCtx.setTransform(1, 0, 0, 1, 0, 0);
+      vecCtx.clearRect(0, 0, pw, ph);
+    }
+    /* Mid-pan builds shift the cache ahead along the pan by whole device px */
+    const sp = lead ? Math.hypot(panVx, panVz) : 0;
+    const lx = sp > 0.5 ? Math.round(LEAD * ox * panVx / sp) : 0;
+    const ly = sp > 0.5 ? Math.round(LEAD * oy * panVz / sp) : 0;
+    const ex = ox - lx, ey = oy - ly;
+    vecCtx.setTransform(dpr, 0, 0, dpr, ex, ey);
+    drawRim(vecCtx, -ex / dpr, -ey / dpr, (pw - ex) / dpr, (ph - ey) / dpr);
+    drawZones(vecCtx, -ex / dpr, -ey / dpr, (pw - ex) / dpr, (ph - ey) / dpr);
+    vec = { cx, cz, k, dpr, cw: canvas.width, ch: canvas.height, ox, oy, lx, ly, room: NaN };
+    if (PERF) {
+      pc.vecBuilds++;
+      perfEvent(resized ? 'vector cache+resize' : 'vector cache', 'rim+zones', pw * ph, performance.now() - tb);
+    }
+  }
+
+  function blitVec(dx, dy) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(vecCanvas, vec.ox + dx, vec.oy + dy, canvas.width, canvas.height,
+      0, 0, canvas.width, canvas.height);
     ctx.restore();
+    if (PERF) pc.vecBlits++;
+  }
+
+  function drawStaticVectors(settled, kChanged) {
+    /* drawImage throws on a zero-size source (collapsed window) */
+    if (!canvas.width || !canvas.height) return;
+    if (kChanged) {
+      /* Mid-zoom every frame is a new scale; a cache would only add a copy */
+      drawRim(ctx, 0, 0, viewW, viewH);
+      drawZones(ctx, 0, 0, viewW, viewH);
+      return;
+    }
+    if (vec && vec.k === k && vec.dpr === dpr && vec.cw === canvas.width && vec.ch === canvas.height) {
+      const kd = k * dpr;
+      const dx = Math.round((cx - vec.cx) * kd) - vec.lx, dy = Math.round((cz - vec.cz) * kd) - vec.ly;
+      const room = Math.min(vec.ox - Math.abs(dx), vec.oy - Math.abs(dy));
+      const rate = vec.room - room;
+      vec.room = room;
+      const exact = vec.cx === cx && vec.cz === cz;
+      /* A deferred rest rebuild blits the whole-px approximation for one frame, then goes exact */
+      const rebuild = room < 0 || (settled ? !exact && takeRaster() : softRoom(room, rate) && takeRaster());
+      if (!rebuild) {
+        blitVec(dx, dy);
+        return;
+      }
+    }
+    rasterFree = false;
+    buildVec(!settled);
+    blitVec(-vec.lx, -vec.ly);
   }
 
   function drawOrbits(mapScale) {
@@ -441,7 +907,8 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 3;
     const margin = 50 * k;
-    for (const [id, body] of Object.entries(data.bodies)) {
+    for (const id in data.bodies) {
+      const body = data.bodies[id];
       if (!body.parentId || body.position) continue;
       const meta = systems.getBodyMeta(id);
       if (!meta?.orbital) continue;
@@ -472,13 +939,45 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     ctx.restore();
   }
 
+  /* The gradient lives in world units (lanes stroke under a uniform world transform, which keeps
+     Firefox's AA-stroke fast path), so it survives pans and zooms; only a moving endpoint rebuilds it */
+  function laneGradient(lane, x1, z1, x2, z2) {
+    let lc = laneCache.get(lane);
+    if (!lc || lc.x1 !== x1 || lc.z1 !== z1 || lc.x2 !== x2 || lc.z2 !== z2) {
+      const voidHit = segCircleT(x1, z1, x2, z2, CORE_VOID_R);
+      let stops;
+      if (voidHit) {
+        const [t0, t1] = voidHit;
+        stops = [
+          0, laneColorAt(0, 1),
+          Math.max(0, t0 - 0.02), laneColorAt(t0, 1),
+          t0, laneColorAt(t0, 0.25),
+          t1, laneColorAt(t1, 0.25),
+          Math.min(1, t1 + 0.02), laneColorAt(t1, 1),
+          1, laneColorAt(1, 1)
+        ];
+      } else {
+        stops = [0, laneColorAt(0, 1), 0.5, laneColorAt(0.5, 1), 1, laneColorAt(1, 1)];
+      }
+      const grad = ctx.createLinearGradient(x1, z1, x2, z2);
+      if (PERF) pc.gradients++;
+      for (let i = 0; i < stops.length; i += 2) grad.addColorStop(stops[i], stops[i + 1]);
+      lc = { x1, z1, x2, z2, grad };
+      laneCache.set(lane, lc);
+    }
+    return lc.grad;
+  }
+
   /* Lanes run body-center to body-center — dots occlude the endpoints, exactly like 3D */
   function drawLanes() {
     const data = systems.getData();
     ctx.save();
     ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 2;
-    for (const lane of Object.values(data.hyperlanes)) {
+    const kd = k * dpr;
+    ctx.setTransform(kd, 0, 0, kd, (viewW / 2 - cx * k) * dpr, (viewH / 2 - cz * k) * dpr);
+    ctx.lineWidth = 2 / k;
+    for (const laneId in data.hyperlanes) {
+      const lane = data.hyperlanes[laneId];
       const fromId = systems.getPreferStation(lane.fromId);
       const toId = systems.getPreferStation(lane.toId);
       const from = positions.get(fromId);
@@ -493,25 +992,10 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       if (Math.max(sx1, sx2) < 0 || Math.min(sx1, sx2) > viewW ||
           Math.max(sz1, sz2) < 0 || Math.min(sz1, sz2) > viewH) continue;
 
-      const grad = ctx.createLinearGradient(sx1, sz1, sx2, sz2);
-      const voidHit = segCircleT(x1, z1, x2, z2, CORE_VOID_R);
-      if (voidHit) {
-        const [t0, t1] = voidHit;
-        grad.addColorStop(0, laneColorAt(0, 1));
-        grad.addColorStop(Math.max(0, t0 - 0.02), laneColorAt(t0, 1));
-        grad.addColorStop(t0, laneColorAt(t0, 0.25));
-        grad.addColorStop(t1, laneColorAt(t1, 0.25));
-        grad.addColorStop(Math.min(1, t1 + 0.02), laneColorAt(t1, 1));
-        grad.addColorStop(1, laneColorAt(1, 1));
-      } else {
-        grad.addColorStop(0, laneColorAt(0, 1));
-        grad.addColorStop(0.5, laneColorAt(0.5, 1));
-        grad.addColorStop(1, laneColorAt(1, 1));
-      }
-      ctx.strokeStyle = grad;
+      ctx.strokeStyle = laneGradient(lane, x1, z1, x2, z2);
       ctx.beginPath();
-      ctx.moveTo(sx1, sz1);
-      ctx.lineTo(sx2, sz2);
+      ctx.moveTo(x1, z1);
+      ctx.lineTo(x2, z2);
       ctx.stroke();
     }
     ctx.restore();
@@ -534,6 +1018,9 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
 
   const smbhRadius = (mapScale) => 18 + Math.min(mapScale, 20) * 1.35;
 
+  /* Glow gradient in local space around the hole, drawn under a translate so it survives pans */
+  let smbhGlow = null, smbhGlowR = NaN;
+
   /* The heart of the galaxy deserves better than a dot: black core, photon ring, glow */
   function drawSMBH(mapScale) {
     const p = positions.get('smbh');
@@ -542,14 +1029,20 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     const r = smbhRadius(mapScale);
     if (px < -r * 4 || px > viewW + r * 4 || pz < -r * 4 || pz > viewH + r * 4) return;
     ctx.save();
-    const glow = ctx.createRadialGradient(px, pz, r, px, pz, r * 3.5);
-    glow.addColorStop(0, 'rgba(246,121,229,0.35)');
-    glow.addColorStop(0.4, 'rgba(131,50,172,0.18)');
-    glow.addColorStop(1, 'rgba(131,50,172,0)');
-    ctx.fillStyle = glow;
+    if (smbhGlowR !== r) {
+      smbhGlow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 3.5);
+      if (PERF) pc.gradients++;
+      smbhGlow.addColorStop(0, 'rgba(246,121,229,0.35)');
+      smbhGlow.addColorStop(0.4, 'rgba(131,50,172,0.18)');
+      smbhGlow.addColorStop(1, 'rgba(131,50,172,0)');
+      smbhGlowR = r;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, px * dpr, pz * dpr);
+    ctx.fillStyle = smbhGlow;
     ctx.beginPath();
-    ctx.arc(px, pz, r * 3.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, r * 3.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#000';
     ctx.beginPath();
     ctx.arc(px, pz, r, 0, Math.PI * 2);
@@ -567,41 +1060,60 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     ctx.restore();
   }
 
-  function dotRgb(info, colorT) {
-    if (!info.spectral || colorT <= 0) return hexToRgb(info.color);
-    return colorT >= 1 ? hexToRgb(info.spectral) : lerpRgb(info.color, info.spectral, colorT);
+  /* Faction → spectral lerp strings, rebuilt only when the zoom-driven colorT changes */
+  function dotColors(info, colorT) {
+    if (info.colorT === colorT) return;
+    info.colorT = colorT;
+    const a = info.rgb, b = info.specRgb;
+    const rgb = !b || colorT <= 0 ? a : colorT >= 1 ? b
+      : [Math.round(a[0] + (b[0] - a[0]) * colorT),
+        Math.round(a[1] + (b[1] - a[1]) * colorT),
+        Math.round(a[2] + (b[2] - a[2]) * colorT)];
+    info.fill = rgbStr(rgb);
+    info.halo0 = rgbaStr(rgb, 0.55);
+    info.halo1 = rgbaStr(rgb, 0.18);
+    info.halo2 = rgbaStr(rgb, 0);
+    info.halo = null;
   }
 
   function drawDots(mapScale) {
     /* Faction → spectral color lerp as zoom increases (matches 3D crossfade) */
     const colorT = Math.max(0, Math.min(1, (mapScale - 4) / 11));
     const rim = 'rgba(10,10,20,0.75)';
-    for (const [id, p] of positions) {
-      if (id === 'smbh') continue;   /* gets its own portrait via drawSMBH */
+    positions.forEach((p, id) => {
+      if (id === 'smbh') return;   /* gets its own portrait via drawSMBH */
       const info = bodyInfo(id);
-      if (!info) continue;
+      if (!info) return;
       const alpha = dotAlpha(id, info, mapScale);
-      if (alpha <= 0) continue;
+      if (alpha <= 0) return;
       const px = sx(p.x), pz = sz(p.z);
-      if (px < -20 || px > viewW + 20 || pz < -20 || pz > viewH + 20) continue;
-      const rgb = dotRgb(info, colorT);
+      if (px < -20 || px > viewW + 20 || pz < -20 || pz > viewH + 20) return;
+      dotColors(info, colorT);
       const r = dotRadius(info, mapScale);
       ctx.globalAlpha = alpha;
 
       /* Stars and landmarks get a soft halo so they read against the lightmap */
       if (info.tier === 'star' || info.tier === 'landmark') {
         const gr = r * 3;
-        const glow = ctx.createRadialGradient(px, pz, r * 0.4, px, pz, gr);
-        glow.addColorStop(0, rgbaStr(rgb, 0.55));
-        glow.addColorStop(0.5, rgbaStr(rgb, 0.18));
-        glow.addColorStop(1, rgbaStr(rgb, 0));
-        ctx.fillStyle = glow;
+        /* Local-space gradient under a translate: position-free, so pans reuse it */
+        if (!info.halo || info.haloR !== r) {
+          const glow = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, gr);
+          if (PERF) pc.gradients++;
+          glow.addColorStop(0, info.halo0);
+          glow.addColorStop(0.5, info.halo1);
+          glow.addColorStop(1, info.halo2);
+          info.halo = glow;
+          info.haloR = r;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, px * dpr, pz * dpr);
+        ctx.fillStyle = info.halo;
         ctx.beginPath();
-        ctx.arc(px, pz, gr, 0, Math.PI * 2);
+        ctx.arc(0, 0, gr, 0, Math.PI * 2);
         ctx.fill();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      ctx.fillStyle = rgbStr(rgb);
+      ctx.fillStyle = info.fill;
       ctx.strokeStyle = rim;
       ctx.lineWidth = 1;
       if (info.tier === 'gng') {
@@ -614,7 +1126,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
         ctx.fill();
         ctx.stroke();
       }
-    }
+    });
     ctx.globalAlpha = 1;
   }
 
@@ -634,24 +1146,36 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     ctx.restore();
   }
 
-  function labelFor(id, info) {
-    let L = labelEls.get(id);
-    if (L) return L;
-    const body = systems.getData().bodies[id];
-    const el = document.createElement('div');
-    el.className = 'gx-m2-label';
-    el.dataset.tier = info.tier;
-    el.textContent = displayName(id, body, info.tier);
-    labelLayer.appendChild(el);
-    L = { el, w: el.offsetWidth, h: el.offsetHeight };
-    labelEls.set(id, L);
-    return L;
+  /* All writes first, then all reads: one layout flush for the whole batch instead of one per label */
+  function createLabels(ids) {
+    const data = systems.getData();
+    const fixedFrag = document.createDocumentFragment();
+    const movingFrag = document.createDocumentFragment();
+    const made = [];
+    for (const id of ids) {
+      const info = bodyInfo(id);
+      const el = document.createElement('div');
+      el.className = 'gx-m2-label';
+      el.dataset.tier = info.tier;
+      el.textContent = displayName(id, data.bodies[id], info.tier);
+      (info.fixed ? fixedFrag : movingFrag).appendChild(el);
+      const L = { el, fixed: info.fixed, w: 0, h: 0, tx: NaN, ty: NaN, op: '0' };
+      labelEls.set(id, L);
+      made.push(L);
+    }
+    staticLabelLayer.appendChild(fixedFrag);
+    labelLayer.appendChild(movingFrag);
+    for (const L of made) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
+    if (PERF) { pc.labelsCreated += made.length; pc.labelBatches++; }
   }
 
   function buildZoneLabels() {
     zonesBuilt = true;
     const data = systems.getData();
-    for (const [zid, zone] of Object.entries(data.zones)) {
+    zoneSig = zoneSignature(data);
+    const frag = document.createDocumentFragment();
+    for (const zid in data.zones) {
+      const zone = data.zones[zid];
       if (!zone.position || HIDDEN_ZONES.has(zid)) continue;
       const el = document.createElement('div');
       el.className = 'gx-zone-label-2d';
@@ -659,9 +1183,31 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       if (zone.factionId && data.factions[zone.factionId]) {
         el.style.color = data.factions[zone.factionId].color;
       }
-      labelLayer.appendChild(el);
-      zoneEls.push({ el, x: zone.position.x, z: zone.position.z, w: el.offsetWidth, h: el.offsetHeight });
+      frag.appendChild(el);
+      zoneEls.push({ el, x: zone.position.x, z: zone.position.z, w: 0, h: 0, tx: NaN, ty: NaN, rect: [0, 0, 0, 0] });
     }
+    staticLabelLayer.appendChild(frag);
+    for (const zl of zoneEls) { zl.w = zl.el.offsetWidth; zl.h = zl.el.offsetHeight; }
+  }
+
+  /* Label top-left for a dot at screen (px, pz), written into out[0..1] */
+  const spot = [0, 0];
+  function labelSpot(id, info, L, px, pz, mapScale, out) {
+    const dotR = dotRadius(info, mapScale) + 1;
+    out[0] = px - L.w / 2;
+    if (id === 'smbh') out[1] = pz + smbhRadius(mapScale) + 6;
+    else if (info.tier === 'landmark') out[1] = pz - L.h / 2;
+    else if (info.tier === 'child' || info.tier === 'star') out[1] = pz + dotR + 3;
+    else out[1] = pz - dotR - 3 - L.h;
+  }
+
+  /* Whole-px transform writes, skipped when the rounded spot hasn't changed */
+  function placeLabel(L, x, y) {
+    const tx = Math.round(x), ty = Math.round(y);
+    if (L.tx === tx && L.ty === ty) return false;
+    L.tx = tx; L.ty = ty;
+    L.el.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    return true;
   }
 
   function labelAlpha(id, info, mapScale) {
@@ -691,27 +1237,35 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     }
   }
 
-  function updateLabels(mapScale) {
-    if (!zonesBuilt) buildZoneLabels();
-
-    /* Zone labels: big at overview, gone by mapScale 4 */
-    const zoneAlpha = Math.max(0, Math.min(1, (4 - mapScale) / 2));
-    const zoneOp = zoneAlpha.toFixed(2);
-    const zoneRects = [];
-    for (const zl of zoneEls) {
-      const px = sx(zl.x), pz = sz(zl.z);
-      if (zoneAlpha > 0.01) {
-        const tf = 'translate(' + Math.round(px - zl.w / 2) + 'px,' + Math.round(pz - zl.h / 2) + 'px)';
-        if (zl.tf !== tf) { zl.el.style.transform = tf; zl.tf = tf; }
-      }
-      if (zl.op !== zoneOp) { zl.el.style.opacity = zoneOp; zl.op = zoneOp; }
-      if (zoneAlpha > 0.05) zoneRects.push([px - zl.w / 2, pz - zl.h / 2, zl.w, zl.h]);
+  function updateLabels(mapScale, settled) {
+    /* Static container re-anchors at rest and on any scale/viewport change; mid-pan it rides
+       the whole-px offset since the anchor, so fixed labels need no individual writes */
+    if (!slAnchor) slAnchor = { cx: NaN, cz: NaN, k: NaN, vw: 0, vh: 0 };
+    if (settled || slAnchor.k !== k || slAnchor.vw !== viewW || slAnchor.vh !== viewH) {
+      slAnchor.cx = cx; slAnchor.cz = cz; slAnchor.k = k; slAnchor.vw = viewW; slAnchor.vh = viewH;
     }
+    const ox = Math.round((slAnchor.cx - cx) * k), oy = Math.round((slAnchor.cz - cz) * k);
+    if (ox !== slOx || oy !== slOy) {
+      slOx = ox; slOy = oy;
+      staticLabelLayer.style.transform = ox || oy ? 'translate(' + ox + 'px,' + oy + 'px)' : '';
+      if (PERF) pc.staticTf++;
+    }
+    /* Anchor-frame screen coords; identical to sx/sz once re-anchored */
+    const ax = (x) => (x - slAnchor.cx) * k + viewW / 2;
+    const az = (z) => (z - slAnchor.cz) * k + viewH / 2;
 
-    const cands = [];
-    for (const [id, p] of positions) {
+    /* Every label up front in one batch (one layout flush) so pans never create or measure mid-gesture */
+    if (!labelsPrimed) {
+      labelsPrimed = true;
+      missing.length = 0;
+      positions.forEach((p, id) => { if (!labelEls.has(id) && bodyInfo(id)) missing.push(id); });
+      if (missing.length) createLabels(missing);
+    }
+    let n = 0;
+    missing.length = 0;
+    positions.forEach((p, id) => {
       const info = bodyInfo(id);
-      if (!info) continue;
+      if (!info) return;
       const forced = id === selectedId || id === hoveredId;
       let a = labelAlpha(id, info, mapScale);
       if (forced) a = Math.max(a, 1);
@@ -720,23 +1274,51 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
           px < -150 || px > viewW + 150 || pz < -60 || pz > viewH + 60) {
         const L = labelEls.get(id);
         if (L && L.op !== '0') { L.el.style.opacity = '0'; L.op = '0'; }
-        continue;
+        return;
       }
-      const L = labelFor(id, info);
-      const dotR = dotRadius(info, mapScale) + 1;
-      let tx, ty;
-      if (id === 'smbh') {
-        tx = px - L.w / 2; ty = pz + smbhRadius(mapScale) + 6;
-      } else if (info.tier === 'landmark') {
-        tx = px - L.w / 2; ty = pz - L.h / 2;
-      } else if (info.tier === 'child' || info.tier === 'star') {
-        tx = px - L.w / 2; ty = pz + dotR + 3;
+      const c = candPool[n] || (candPool[n] = { id: '', info: null, L: null, a: 0, px: 0, pz: 0, prio: 0, rect: [0, 0, 0, 0] });
+      n++;
+      c.id = id; c.info = info; c.a = a; c.px = px; c.pz = pz;
+      c.prio = forced ? 0 : (LABEL_PRIO[info.tier] ?? 9);
+      c.L = labelEls.get(id) || null;
+      if (!c.L) missing.push(id);
+    });
+    if (!zonesBuilt) buildZoneLabels();
+    if (missing.length) createLabels(missing);
+
+    /* Zone labels: big at overview, gone by mapScale 4 */
+    const zoneAlpha = Math.max(0, Math.min(1, (4 - mapScale) / 2));
+    const zoneOp = zoneAlpha.toFixed(2);
+    zoneRects.length = 0;
+    for (const zl of zoneEls) {
+      const px = sx(zl.x), pz = sz(zl.z);
+      if (zoneAlpha > 0.01 && placeLabel(zl, ax(zl.x) - zl.w / 2, az(zl.z) - zl.h / 2) && PERF) pc.zoneTf++;
+      if (zl.op !== zoneOp) { zl.el.style.opacity = zoneOp; zl.op = zoneOp; }
+      if (zoneAlpha > 0.05) {
+        const r = zl.rect;
+        r[0] = px - zl.w / 2; r[1] = pz - zl.h / 2; r[2] = zl.w; r[3] = zl.h;
+        zoneRects.push(r);
+      }
+    }
+
+    cands.length = 0;
+    for (let i = 0; i < n; i++) {
+      const c = candPool[i];
+      const { id, info, px, pz } = c;
+      const L = c.L || (c.L = labelEls.get(id));
+      const r = c.rect;
+      labelSpot(id, info, L, px, pz, mapScale, r);
+      r[2] = L.w; r[3] = L.h;
+      let moved;
+      if (info.fixed) {
+        const p = positions.get(id);
+        labelSpot(id, info, L, ax(p.x), az(p.z), mapScale, spot);
+        moved = placeLabel(L, spot[0], spot[1]);
       } else {
-        tx = px - L.w / 2; ty = pz - dotR - 3 - L.h;
+        moved = placeLabel(L, r[0], r[1]);
       }
-      const tf = 'translate(' + Math.round(tx) + 'px,' + Math.round(ty) + 'px)';
-      if (L.tf !== tf) { L.el.style.transform = tf; L.tf = tf; }
-      cands.push({ id, L, a, rect: [tx, ty, L.w, L.h], prio: forced ? 0 : (LABEL_PRIO[info.tier] ?? 9) });
+      if (moved && PERF) pc.labelTf++;
+      cands.push(c);
     }
 
     const now = performance.now();
@@ -820,57 +1402,99 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     ctx.restore();
   }
 
-  const PERF = new URLSearchParams(location.search).has('mapperf');
-  const perfAcc = {};
-  let perfN = 0;
+  const perfAcc = {}, perfMax = {}, perfTot = {};
+  let perfN = 0, perfPrintAt = 0;
+  const perfAdd = (name, d) => {
+    perfAcc[name] = (perfAcc[name] || 0) + d;
+    perfMax[name] = Math.max(perfMax[name] || 0, d);
+    perfTot[name] = (perfTot[name] || 0) + d;
+  };
   const perfMark = (name, t0) => {
     const t1 = performance.now();
-    perfAcc[name] = (perfAcc[name] || 0) + (t1 - t0);
+    perfAdd(name, t1 - t0);
     return t1;
   };
 
   function draw(rotationTime) {
     let t = PERF ? performance.now() : 0;
+    const t0 = t;
+    if (PERF) pc.draws++;
+    rasterFree = true;
+    rasterDeferred = false;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, viewW, viewH);
 
-    positions = systems.flattenPositions(rotationTime);
+    ensurePositions(rotationTime);
+    if (PERF) t = perfMark('flatten', t);
     /* Follow-cam: stay centered on the tracked body as it orbits */
     if (trackedId && !flyAnim && !dragging) {
       const tp = positions.get(trackedId);
       if (tp) { cx = tp.x; cz = tp.z; }
     }
     const mapScale = k / K_DEFAULT;
+    const kChanged = k !== prevK;
+    const moving = kChanged || cx !== prevCx || cz !== prevCz;
+    /* A held drag with a still pointer isn't rest: no exact rebuilds or label re-anchors mid-gesture */
+    const settled = !moving && !dragging;
+    if (kChanged || settled) {
+      panVx = panVz = 0;
+    } else if (moving) {
+      panVx = panVx * 0.5 + (cx - prevCx) * k * 0.5;
+      panVz = panVz * 0.5 + (cz - prevCz) * k * 0.5;
+    }
+    prevCx = cx; prevCz = cz; prevK = k;
+    restPending = moving;
+    if (moving) lastMoveAt = performance.now();
 
     updateLayers();
     if (PERF) t = perfMark('layers', t);
-    starsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    starsCtx.clearRect(0, 0, viewW, viewH);
     const g = firmamentGeom();
-    firmament.drawStars(starsCtx, g.dx, g.dz, g.side, viewW, viewH, rotationTime);
+    if (starsAt.t !== rotationTime || starsAt.dx !== g.dx || starsAt.dz !== g.dz || starsAt.side !== g.side) {
+      starsCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      starsCtx.clearRect(0, 0, viewW, viewH);
+      firmament.drawStars(starsCtx, g.dx, g.dz, g.side, viewW, viewH, rotationTime, dpr);
+      if (firmament.isReady()) {
+        starsAt.t = rotationTime; starsAt.dx = g.dx; starsAt.dz = g.dz; starsAt.side = g.side;
+      }
+      if (PERF) pc.starsDraws++;
+    }
     if (PERF) t = perfMark('stars', t);
-    drawRim();
-    if (PERF) t = perfMark('rim', t);
-    drawZones();
+    drawStaticVectors(settled, kChanged);
+    if (PERF) t = perfMark('rim+zones', t);
     drawOrbits(mapScale);
+    if (PERF) t = perfMark('orbits', t);
     drawLanes();
-    if (PERF) t = perfMark('zones+orbits+lanes', t);
+    if (PERF) t = perfMark('lanes', t);
     drawDots(mapScale);
     drawSMBH(mapScale);
     if (hoveredId && hoveredId !== selectedId) drawRing(hoveredId, 3.5, 0.6, mapScale);
     if (selectedId) drawRing(selectedId, 5, 0.9, mapScale);
     drawMeasure();
     if (PERF) t = perfMark('dots+rings', t);
-    updateLabels(mapScale);
+    updateLabels(mapScale, settled);
+    /* A soft rebake lost the raster slot; the next draw takes it */
+    if (rasterDeferred) dirty = true;
     if (PERF) {
-      perfMark('labels', t);
-      if (++perfN >= 120) {
-        const avg = {};
-        for (const [n, v] of Object.entries(perfAcc)) { avg[n] = +(v / perfN).toFixed(2); perfAcc[n] = 0; }
-        console.table(avg);
-        perfN = 0;
-      }
+      pc.drawMs += perfMark('labels', t) - t0;
+      perfN++;
     }
+  }
+
+  /* Per-section averages per draw, printed on a wall-clock beat so an open console stays cheap */
+  function perfPrint() {
+    const now = performance.now();
+    if (now - perfPrintAt < 2000) return;
+    perfPrintAt = now;
+    if (!perfN && !perfAcc.grade) return;
+    const rows = {};
+    for (const [n, v] of Object.entries(perfAcc)) {
+      rows[n] = { avg: +(v / Math.max(1, perfN)).toFixed(2), max: +perfMax[n].toFixed(2) };
+      perfAcc[n] = 0;
+      perfMax[n] = 0;
+    }
+    rows.draws = { avg: perfN, max: 0 };
+    console.table(rows);
+    perfN = 0;
   }
 
   function updateScaleBar() {
@@ -904,7 +1528,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     cz = wzA - (ay - viewH / 2) / k;
     clampCam();
     queueSave();
-    dirty = true;
+    markDirty();
   }
 
   /* Q/E zoom toward the selected body if any, else the cursor */
@@ -921,20 +1545,20 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (!positions) return null;
     const mapScale = k / K_DEFAULT;
     let best = null, bestD2 = Infinity;
-    for (const [id, p] of positions) {
+    positions.forEach((p, id) => {
       const info = bodyInfo(id);
-      if (!info || dotAlpha(id, info, mapScale) <= 0) continue;
+      if (!info || dotAlpha(id, info, mapScale) <= 0) return;
       const dx = sx(p.x) - mx, dy = sz(p.z) - my;
       const d2 = dx * dx + dy * dy;
       const base = id === 'smbh' ? smbhRadius(mapScale) : dotRadius(info, mapScale);
       const r = Math.max(base + 4, 8);
       if (d2 < r * r && d2 < bestD2) { best = id; bestD2 = d2; }
-    }
+    });
     return best;
   }
 
   function flyTo(id) {
-    if (!positions) positions = systems.flattenPositions(lastRotTime);
+    ensurePositions(lastRotTime);
     const p = positions.get(id);
     if (!p) return;
     trackedId = id;
@@ -947,7 +1571,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       toCx: p.x, toCz: p.z, toK: Math.max(targetScale * K_DEFAULT, k),
       start: performance.now(), duration: 800
     };
-    dirty = true;
+    markDirty();
   }
 
   function resetView() {
@@ -957,7 +1581,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       toCx: 0, toCz: 0, toK: Math.max(K_DEFAULT, kMin),
       start: performance.now(), duration: 1000
     };
-    dirty = true;
+    markDirty();
   }
 
   function stepFly() {
@@ -970,14 +1594,19 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       flyAnim = null;
       queueSave();
     }
-    dirty = true;
+    markDirty();
   }
 
-  /* Called from the main RAF every frame while in 2D view */
-  function frame(delta, rotationTime, rotating, cinema) {
-    if (!active) return;
+  const keysHeld = () => keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.KeyQ || keys.KeyE;
+
+  /* Called from the main RAF every frame while in 2D view. Orbital drift and twinkle draw at
+     display rate; returns whether 2D still needs frames (false lets a paused loop park). */
+  function frame(delta, rotationTime, rotating) {
+    if (!active) return false;
+    if (PERF) pc.frames++;
+    if (staleData) refreshData();
     /* T=0 while paused still changes the clock — repaint once so the reset shows */
-    if (!rotating && rotationTime !== lastRotTime) dirty = true;
+    if (!rotating && rotationTime !== lastRotTime) markDirty();
     lastRotTime = rotationTime;
     if (flyAnim) stepFly();
 
@@ -986,7 +1615,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       settleAt = performance.now() + 200;
     } else if (settleAt && performance.now() >= settleAt) {
       settleAt = 0;
-      dirty = true;   /* one clean rebake at the tight thresholds */
+      markDirty();   /* one clean rebake at the tight thresholds */
     }
 
     if (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD) {
@@ -998,27 +1627,22 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       clampCam();
       queueSave();
       releaseTracking();
-      dirty = true;
+      markDirty();
     }
     if (keys.KeyE) zoomFocal(1 + ZOOM_SPEED);
     else if (keys.KeyQ) zoomFocal(1 - ZOOM_SPEED);
 
-    /* Idle throttle: interaction at display rate, orbital drift at the eased
-       zoom-adaptive rate, paused idle = zero redraws */
-    dispHz += (Math.min(1 / Math.max(delta, 0.002), 250) - dispHz) * 0.05;
-    /* Following a body wants full smoothness regardless of zoom */
-    const st = trackedId ? 1
-      : Math.min(Math.max((k / K_DEFAULT - CIN_SCALE_LO) / (CIN_SCALE_HI - CIN_SCALE_LO), 0), 1);
-    const target = CIN_HZ_FLOOR + (dispHz - CIN_HZ_FLOOR) * st * st * (3 - 2 * st);
-    cinRate += (target - cinRate) * (1 - Math.exp(-delta * 2.5));
-
-    cinAccum += delta;
-    const cinematic = rotating && (cinema || cinAccum >= 1 / cinRate);
-    if (!dirty && !cinematic) return;
-    if (cinematic) cinAccum = 0;
-    dirty = false;
-    draw(rotationTime);
-    updateScaleBar();
+    /* Paused idle = zero redraws; a draw that moved the camera owes one settle draw */
+    if (dirty || rotating || restPending) {
+      dirty = false;
+      draw(rotationTime);
+      updateScaleBar();
+    }
+    /* Stays awake through the idle wait and band steps so a paused loop still finishes the grade */
+    const grading = gradeWanted() && !dragging;
+    if (grading) stepGrade();
+    if (PERF) perfPrint();
+    return rotating || dirty || restPending || grading || !!flyAnim || settleAt !== 0 || !!keysHeld();
   }
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -1044,16 +1668,16 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       clampCam();
       queueSave();
       flyAnim = null;
-      dirty = true;
+      markDirty();
       return;
     }
     const hit = hitTest(e.clientX, e.clientY);
     if (hit !== hoveredId) {
       hoveredId = hit;
       canvas.style.cursor = hit ? 'pointer' : '';
-      dirty = true;
+      markDirty();
     }
-    if (measurePts.length && !measureDone) dirty = true;   /* live rubber-band segment */
+    if (measurePts.length && !measureDone) markDirty();   /* live rubber-band segment */
   });
 
   canvas.addEventListener('pointercancel', () => { dragging = false; });
@@ -1061,11 +1685,13 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
   canvas.addEventListener('pointerup', (e) => {
     if (e.button !== 0 || !dragging) return;
     dragging = false;
+    /* A drag held still can let the loop park; releasing must restart the idle grade */
+    markDirty();
     if (dragMoved) return;
     if (e.ctrlKey) {
       if (measureDone) clearMeasure();
       pushWaypoint(measureWaypoint(e));
-      dirty = true;
+      markDirty();
       return;
     }
     const hit = hitTest(e.clientX, e.clientY);
@@ -1079,7 +1705,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (measurePts.length && !measureDone) {
       pushWaypoint(measureWaypoint(e));
       measureDone = true;
-      dirty = true;
+      markDirty();
       return;
     }
     const hit = hitTest(e.clientX, e.clientY);
@@ -1088,7 +1714,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       flyTo(hit);
     } else if (trackedId) {
       releaseTracking();
-      dirty = true;
+      markDirty();
     }
   });
 
@@ -1103,7 +1729,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (measurePts.length && !measureDone) {
       pushWaypoint(measureWaypoint(e));
       measureDone = true;
-      dirty = true;
+      markDirty();
       return;
     }
     const hit = hitTest(e.clientX, e.clientY);
@@ -1119,7 +1745,7 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       fromCx: cx, fromCz: cz, fromK: k,
       toCx, toCz, toK, start: performance.now(), duration: 350
     };
-    dirty = true;
+    markDirty();
   });
 
   window.addEventListener('keydown', (e) => {
@@ -1128,41 +1754,53 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
     if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(e.code)) {
       e.preventDefault();
       keys[e.code] = true;
+      markDirty();
     }
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys[e.code] = true;
     if (e.code === 'Escape' && measurePts.length) {
       clearMeasure();
-      dirty = true;
+      markDirty();
     }
   });
   window.addEventListener('keyup', (e) => { keys[e.code] = false; });
   window.addEventListener('blur', () => { for (const c in keys) keys[c] = false; });
 
   window.addEventListener('resize', resize);
-  if (lightmapImg?.complete && lightmapImg.naturalWidth) {
-    buildLightmapSources();
-  } else if (lightmapImg) {
-    lightmapImg.addEventListener('load', buildLightmapSources);
-  }
-  if (asteroidsImg?.complete && asteroidsImg.naturalWidth) {
-    buildAsteroidSources();
-  } else if (asteroidsImg) {
-    asteroidsImg.addEventListener('load', buildAsteroidSources);
+  for (const L of [lmL, astL]) {
+    if (!L.img) continue;
+    if (L.img.complete) queueTiers(L);
+    L.img.addEventListener('load', () => queueTiers(L));
   }
   /* Remeasure once webfonts land — pre-load widths are wrong for declutter */
   document.fonts?.ready.then(() => {
     for (const L of labelEls.values()) { L.w = L.el.offsetWidth; L.h = L.el.offsetHeight; }
     for (const zl of zoneEls) { zl.w = zl.el.offsetWidth; zl.h = zl.el.offsetHeight; }
-    dirty = true;
+    markDirty();
   });
   resize();
+  watchDpr();
   restoreCam();
+
+  if (PERF) {
+    window.__map2dPerf = {
+      pc, tot: perfTot,
+      reset() { for (const n in pc) pc[n] = 0; for (const n in perfTot) perfTot[n] = 0; },
+      setCam(x, z, kk) { cx = x; cz = z; k = Math.min(Math.max(kk, kMin), K_MAX); markDirty(); },
+      getCam: () => ({ cx, cz, k, kMin, K_MAX }),
+      getState: () => ({ hoveredId, selectedId, trackedId, fixed: hoveredId ? bodyInfo(hoveredId)?.fixed : null })
+    };
+  }
 
   return {
     frame,
     flyTo,
     resetView,
     invalidate,
+    /* Deferred so an edit's autosave + rebuildMarkers pair costs one rebuild, after both land */
+    dataChanged() {
+      staleData = true;
+      markDirty();
+    },
     setActive(v) {
       active = v;
       clearMeasure();
@@ -1173,21 +1811,21 @@ export function createMap2D({ canvas, labelLayer, systems, callbacks }) {
       } else {
         /* Pointer leaves without a move event — else a stale hover ring greets the return */
         hoveredId = null;
-        dirty = true;
+        markDirty();
       }
     },
     setSelected(id) {
       selectedId = id;
-      dirty = true;
+      markDirty();
     },
     /* 3D-side track state syncs in through these — no callbacks, or we'd loop */
     setTracked(id) {
       trackedId = id;
-      dirty = true;
+      markDirty();
     },
     clearTracking() {
       trackedId = null;
-      dirty = true;
+      markDirty();
     },
     getCamera: () => ({ cx, cz, k })
   };

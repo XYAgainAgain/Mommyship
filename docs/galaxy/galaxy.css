@@ -797,31 +797,68 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
   transition: max-height 0.35s ease, opacity 0.2s ease;
 }
 
-/* Edit-mode floating NAVICOMPUTER panel */
+/* Floating NAVICOMPUTER panel (both views); bottom clears the status bar by the workspace's 20px */
 .gx-navicomputer {
   display: none;
   position: fixed;
   left: 20px;
   top: 76px;
-  padding-bottom: 20px;
-  width: 280px;
-  max-height: calc(100vh - 96px);
-  box-sizing: border-box;
+  width: min(300px, 100vw - 40px);
+  max-height: calc(100dvh - 130px);
   z-index: 50;
   pointer-events: none;
+  background: var(--gx-panel);
+  border: 1px solid var(--gx-border);
+  border-radius: 8px;
 }
 .gx-navicomputer.open {
   display: flex;
   flex-direction: column;
   pointer-events: auto;
 }
-.gx-navicomputer-body {
+/* Fixed side columns: Back/Forward only dim when disabled, so the title never shifts */
+.gx-navi-header {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 6px;
   background: var(--gx-panel);
-  border: 1px solid var(--gx-border);
-  border-radius: 8px;
+  border-bottom: 1px solid var(--gx-border);
+  border-radius: 8px 8px 0 0;
+  flex-shrink: 0;
+}
+.gx-navi-step {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gx-text-dim);
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
+}
+.gx-navi-step svg { width: 16px; height: 16px; }
+.gx-navi-step:hover:not(:disabled) { color: var(--gx-text); background: var(--gx-hover); }
+.gx-navi-step:disabled { opacity: 0.3; cursor: default; }
+.gx-navi-title {
+  appearance: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.gx-navi-step:focus-visible,
+.gx-navi-title:focus-visible { outline: 1px solid var(--gx-accent); outline-offset: 2px; }
+.gx-navicomputer-body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 10px 6px;
   overflow-y: auto;
-  max-height: calc(100vh - 134px);
   scrollbar-width: thin;
   scrollbar-color: var(--gx-border-bright) var(--gx-input);
 }
@@ -843,7 +880,7 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
   filter: drop-shadow(0 0 8px rgba(131, 50, 172, 0.6)) drop-shadow(0 0 16px rgba(246, 121, 229, 0.3));
 }
 .gx-navicomputer .gx-panel-name {
-  text-align: left;
+  text-align: center;
   animation: navi-glow 69s linear infinite;
 }
 /* GALAXY FORGE header — above the right panel, reverse nebula gradient */
@@ -1389,23 +1426,6 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 .gx-controls-popup b { color: var(--gx-accent); font-weight: 600; margin-right: 0.3em; }
 .gx-controls-popup .guide-track { opacity: 0.6; font-style: italic; }
 
-/* HUD */
-.gx-hud {
-  position: fixed;
-  bottom: 2.4rem;
-  left: 1rem;
-  z-index: 55;
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.4rem;
-  background: rgba(13, 13, 26, 0.5);
-  font-family: 'Courier New', monospace;
-  font-size: 0.7rem;
-  color: var(--gx-accent);
-  line-height: 1.4;
-  pointer-events: none;
-  white-space: pre;
-}
-
 /* Scale bar */
 .scale-bar {
   position: fixed;
@@ -1451,7 +1471,11 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 .gx-status {
   pointer-events: auto;
   position: relative;
-  display: flex;
+  /* Equal side tracks keep the stats centered; the sides claim their width first, so the
+     stats line truncates instead of sliding under Controls or the readout */
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, max-content) minmax(max-content, 1fr);
+  column-gap: 14px;
   align-items: center;
   padding: 5px 20px;
   font-size: 10pt;
@@ -1479,13 +1503,41 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 }
 
 .gx-status-toggle:hover { color: var(--gx-text); border-color: var(--gx-border-bright); }
-.gx-status-right { margin-left: auto; }
+
+.gx-status-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.gx-status-end {
+  grid-column: 3;
+  justify-content: flex-end;
+}
+
+/* FPS + coordinates */
+.gx-status-readout {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+.gx-status-readout:empty { display: none; }
 
 .gx-status-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
+}
+
+/* Phones: the stats line goes and the readout gets whatever Controls and Fullscreen leave */
+@media (width < 600px) {
+  .gx-status { grid-template-columns: max-content minmax(0, 1fr); }
+  .gx-status-center { display: none; }
+  .gx-status-end { grid-column: 2; }
 }
 
 /* System labels (CSS2D) */
@@ -1542,7 +1594,6 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 .screenshot-active .gx-nav-left,
 .screenshot-active .gx-search,
 .screenshot-active .gx-controls-popup,
-.screenshot-active .gx-hud,
 .screenshot-active .gx-panel,
 .screenshot-active .scale-bar,
 .screenshot-active .gx-status,
@@ -1581,13 +1632,33 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 .gx-map2d.active { display: block; }
 .gx-map2d * { user-select: none; }
 
-.gx-compass {
+/* The dock carries the Navicomputer scoot so the compass keeps its own mini-mode transform */
+.gx-compass-dock {
   position: absolute;
   top: 48px;
   left: 8px;
   width: 400px;
   height: 400px;
   z-index: 10;
+  pointer-events: none;
+  transform-origin: 0 0;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Parks beside the open panel (left 20 + its width + gap 14), top-aligned with it */
+.gx-navi-open .gx-compass-dock { transform: translate(calc(min(300px, 100vw - 40px) + 26px), 28px) scale(0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gx-compass-dock { transition: none; }
+  .gx-navicomputer .gx-panel-name { animation: none; }
+}
+
+.gx-compass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 400px;
   pointer-events: none;
   transform-origin: 200px 200px;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -1643,6 +1714,13 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
   filter: brightness(1.12) contrast(1.16);
 }
 
+/* map2d.js bakes these filters into the raster where canvas filters exist (background blur at
+   repaint, stars as pre-blurred sprites, the lightmap grade in its idle double-buffer canvas),
+   sparing a per-frame compositor pass */
+.gx-m2-bg.gx-m2-baked,
+.gx-m2-stars.gx-m2-baked,
+.gx-m2-lightmap.gx-m2-baked { filter: none; }
+
 /* Asteroid field paints above the lightmap glow (later in DOM at equal z), below the vector markers.
    Normal compositing — the rocks are opaque with their own alpha, not additive glow. */
 .gx-m2-asteroids {
@@ -1688,6 +1766,15 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
 .gx-m2-label[data-tier="moon"] { font-size: 11px; }
 
 .gx-map2d-labels .gx-zone-label-2d { left: 0; top: 0; }
+
+/* Fixed-coordinate labels; map2d.js pans them with one transform on this box, which rides its
+   own layer so the glow-shadowed text isn't re-rasterized every pan frame */
+.gx-m2-static-labels {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
 
 /* 2D zone labels */
 .gx-zone-label-2d {

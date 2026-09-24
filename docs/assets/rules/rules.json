@@ -1,0 +1,35 @@
+{
+  "version": "1.5",
+  "license": "LICENSE",
+  "parts": [
+    "Mommyship Part 1 - Player's Survival Guide.md",
+    "Mommyship Part 2 - Shipbreaker's Toolkit.md",
+    "Mommyship Part 3 - DAVE Pilot Manual.md"
+  ],
+  "sheets": [
+    "DARK-DAVE.png",
+    "DAVE.png",
+    "DECKPLAN-DARK.jpg",
+    "DECKPLAN-LIGHT.jpg",
+    "MommyshipSpacerSheet-DARK.png",
+    "MommyshipSpacerSheet-LIGHT.png"
+  ],
+  "art": [
+    "MOMMYSHIP-logo.webp",
+    "MothershipSplash0.webp",
+    "MothershipSplash0b.webp",
+    "MothershipSplash1.webp",
+    "MothershipSplash2.webp",
+    "MothershipSplash3.webp",
+    "MothershipSplash4.webp",
+    "MothershipSplash5.webp",
+    "MothershipSplash6.webp"
+  ],
+  "wallpapers": [
+    "Candy-Nebula-2560x1440.png",
+    "Deep-Space-2560x1440.png",
+    "Drifting-2560x1440.png",
+    "SMBH-2560x1440.png",
+    "Sensible-Neon-2560x1440.png"
+  ]
+}

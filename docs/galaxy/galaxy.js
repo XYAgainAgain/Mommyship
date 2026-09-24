@@ -364,6 +364,7 @@ async function init() {
   const pauseBtn = document.getElementById('btn-pause');
 
   pauseBtn.addEventListener('click', () => {
+    wakeLoop();
     rotationPaused = !rotationPaused;
     pauseBtn.classList.toggle('active', rotationPaused);
     pauseBtn.textContent = rotationPaused ? 'Resume' : 'Pause';
@@ -372,6 +373,7 @@ async function init() {
   /* T=0 — reset galactic rotation to initial state and pause */
   const t0Btn = document.getElementById('btn-t0');
   if (t0Btn) t0Btn.addEventListener('click', () => {
+    wakeLoop();
     rotationTime = 0;
     rotationPaused = true;
     pauseBtn.classList.add('active');
@@ -448,10 +450,11 @@ async function init() {
     perfMonitor.setBypass(cinemaMode || museActive);
   });
 
-  /* HUD — show/hide based on settings */
-  const hudEl = document.getElementById('gx-hud');
+  /* FPS + coordinates readout in the status bar, gated by the settings checkboxes */
+  const readoutEl = document.getElementById('status-readout');
   const showCoordsCheckbox = document.getElementById('show-coords');
   const showFpsCheckbox = document.getElementById('show-fps');
+  let readoutText = '';
 
   window.addEventListener('resize', () => {
     cam.resize();
@@ -513,8 +516,27 @@ async function init() {
   /* FPS tracking */
   let fpsFrames = 0, fpsTime = 0, fpsDisplay = 0;
   let hudDirty = true;
+  showCoordsCheckbox.addEventListener('change', () => { hudDirty = true; });
+  showFpsCheckbox.addEventListener('change', () => { hudDirty = true; });
 
   let lastFrameTime = performance.now();
+
+  /* Paused 2D with nothing pending stops the RAF loop outright (the renderer's internal loop
+     keeps ticking even with a null callback); 2D input, view switches, and Pause restart it. */
+  const canPark = typeof renderer._animation?.stop === 'function';
+  let loopParked = false;
+  function wakeLoop() {
+    if (!loopParked) return;
+    loopParked = false;
+    requestAnimationFrame(() => {
+      /* Idle gaps aren't frame times: the perf watchdog and timer would read them as one huge frame */
+      lastFrameTime = performance.now();
+      timer.reset();
+      renderer._animation.start();
+    });
+  }
+  showCoordsCheckbox.addEventListener('change', wakeLoop);
+  showFpsCheckbox.addEventListener('change', wakeLoop);
 
   function animate(timestamp) {
     const now = performance.now();
@@ -539,7 +561,12 @@ async function init() {
     if (!rotationPaused) rotationTime += delta;
 
     if (ui.getViewMode() === '2d') {
-      ui.frame2d(delta, rotationTime, !rotationPaused, cinemaMode);
+      const busy = ui.frame2d(delta, rotationTime, !rotationPaused, cinemaMode);
+      if (!busy && rotationPaused && canPark) {
+        updateHUD();
+        loopParked = true;
+        renderer._animation.stop();
+      }
       return;
     }
 
@@ -626,33 +653,29 @@ async function init() {
     }
   }
 
+  /* Runs on camera moves and the 2 Hz FPS tick; touches the DOM only when the string changes */
   function updateHUD() {
-    const showCoords = showCoordsCheckbox.checked;
-    const showFps = showFpsCheckbox.checked;
-
-    if (!showCoords && !showFps) {
-      hudEl.style.display = 'none';
-      return;
-    }
-
-    hudEl.style.display = '';
-    const cp = cam.camera.position;
     let text = '';
-    if (showFps) {
-      text += 'FPS: ' + fpsDisplay;
+    if (showFpsCheckbox.checked) {
+      text = 'FPS: ' + fpsDisplay;
       const ql = perfMonitor.getLevel();
       if (ql > 0) text += ' \u00b7 Q' + ql;
     }
-    if (showCoords && !cinemaMode && !museActive) {
-      if (text) text += '\n';
+    if (showCoordsCheckbox.checked && !cinemaMode && !museActive) {
+      let coords = '';
       if (ui.getViewMode() === '2d') {
         const c2 = ui.get2DCamera();
-        text += c2 ? 'X: ' + c2.cx.toFixed(1) + '  Z: ' + c2.cz.toFixed(1) : '';
+        if (c2) coords = 'X: ' + c2.cx.toFixed(1) + '  Z: ' + c2.cz.toFixed(1);
       } else {
-        text += 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
+        const cp = cam.camera.position;
+        coords = 'X: ' + cp.x.toFixed(1) + '  Y: ' + cp.y.toFixed(1) + '  Z: ' + cp.z.toFixed(1);
       }
+      if (coords) text += (text ? '  \u00b7  ' : '') + coords;
     }
-    hudEl.textContent = text;
+    if (text !== readoutText) {
+      readoutText = text;
+      readoutEl.textContent = text;
+    }
   }
 
   let trackedId = null;
@@ -678,6 +701,8 @@ async function init() {
         cam.setTrackMode(true, bodyVisualRadius(result.bodyId));
         ui.setTracking(true, result.bodyId);
         systems.showOrbitsForBody(result.bodyId);
+        /* Tracking doesn't select in 3D, but it is still a Navicomputer history step */
+        ui.recordNaviStep(result.bodyId);
       } else {
         trackedId = null;
         trackedLastPos = null;
@@ -715,6 +740,7 @@ async function init() {
       systems.setSelectedId(null);
     },
     onViewChange: (mode) => {
+      wakeLoop();
       if (mode === '2d') {
         audio.setGain(0);
       } else if (!museActive) {
@@ -742,6 +768,7 @@ async function init() {
       ui.setTracking(false);
       systems.hideOrbits();
     },
+    onWake2D: () => wakeLoop(),
     onResetView: () => {
       if (museActive) return;
       trackedId = null;

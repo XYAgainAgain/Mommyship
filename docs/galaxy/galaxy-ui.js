@@ -265,24 +265,19 @@ function buildSystemIndex() {
   return html;
 }
 
-/* Edit-mode navicomputer — floating left panel with full tree */
+/* Navicomputer — floating left panel (both views) with the full system tree or the index */
+let naviOpen = false;
+let naviIndexShown = false;
+
 function updateNavicomputer(bodyId) {
   const panel = document.getElementById('navicomputer-panel');
   const container = document.getElementById('navicomputer-body');
   if (!panel || !container) return;
-  if (!editorMode || viewMode !== '3d') { panel.classList.remove('open'); return; }
-  /* No body selected — show all systems by colonization order */
-  if (!bodyId) {
-    container.innerHTML = buildSystemIndex();
-    panel.classList.add('open');
-    container.querySelectorAll('.gx-nav-item[data-id]').forEach(el => {
-      el.addEventListener('click', () => selectBody(el.dataset.id));
-      el.addEventListener('contextmenu', (e) => { e.preventDefault(); selectBody(el.dataset.id); flyToBody(el.dataset.id); });
-    });
-    return;
-  }
-  const tree = buildSystemTree(bodyId);
-  if (!tree) { panel.classList.remove('open'); return; }
+  panel.classList.toggle('open', naviOpen);
+  if (!naviOpen) return;
+  const tree = bodyId && !naviIndexShown ? buildSystemTree(bodyId) : null;
+  /* Nothing selected (or the title was clicked) — all systems by colonization order */
+  if (!tree) { container.innerHTML = buildSystemIndex(); return; }
   let html = renderTreeHTML(tree, 'full');
   /* Hyperlanes for the root star — lets you hop to adjacent systems */
   const rootId = tree.root.id;
@@ -298,17 +293,85 @@ function updateNavicomputer(bodyId) {
     html += '</div></div>';
   }
   container.innerHTML = html;
-  panel.classList.add('open');
-  /* Wire clicks: L-click selects, R-click tracks (consistent with 3D scene behavior) */
-  container.querySelectorAll('.gx-nav-item[data-id], .gx-p-lane[data-id]').forEach(el => {
-    el.addEventListener('click', () => selectBody(el.dataset.id));
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      selectBody(el.dataset.id);
-      flyToBody(el.dataset.id);
-    });
-  });
 }
+
+function setNaviOpen(open) {
+  naviOpen = open;
+  naviIndexShown = false;
+  const btn = document.getElementById('btn-navi');
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-pressed', String(open));
+  document.body.classList.toggle('gx-navi-open', open);
+  updateNavicomputer(selectedId);
+}
+
+/* Browser-style history of selected bodies: the cursor entry is the current step */
+const NAVI_HISTORY_MAX = 10;
+const IS_MAC = /Mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
+const naviHistory = [];
+let naviCursor = -1;
+let naviStepping = false;
+
+function naviPush(id) {
+  if (naviStepping || !galaxyData?.bodies[id] || naviHistory[naviCursor] === id) return;
+  naviHistory.length = naviCursor + 1;
+  naviHistory.push(id);
+  if (naviHistory.length > NAVI_HISTORY_MAX + 1) naviHistory.shift();
+  naviCursor = naviHistory.length - 1;
+  updateNaviButtons();
+}
+
+/* Next live entry in a direction; editor deletions can leave dead ids behind */
+function naviTarget(dir) {
+  let i = naviCursor + dir;
+  while (i >= 0 && i < naviHistory.length && !galaxyData?.bodies[naviHistory[i]]) i += dir;
+  return i >= 0 && i < naviHistory.length ? i : -1;
+}
+
+function updateNaviButtons() {
+  document.getElementById('navi-back').disabled = naviTarget(-1) < 0;
+  document.getElementById('navi-forward').disabled = naviTarget(1) < 0;
+}
+
+function naviStep(dir) {
+  const i = naviTarget(dir);
+  if (i < 0) return;
+  naviCursor = i;
+  const id = naviHistory[i];
+  naviStepping = true;
+  try {
+    selectBody(id);
+    flyToBody(id);
+  } finally {
+    naviStepping = false;
+  }
+  updateNaviButtons();
+}
+
+document.getElementById('btn-navi').addEventListener('click', () => setNaviOpen(!naviOpen));
+document.getElementById('navi-back').addEventListener('click', () => naviStep(-1));
+document.getElementById('navi-forward').addEventListener('click', () => naviStep(1));
+document.getElementById('navi-title').addEventListener('click', () => {
+  naviIndexShown = true;
+  updateNavicomputer(selectedId);
+});
+/* Delegated once — the body's innerHTML is rebuilt on every selection.
+   L-click selects, R-click tracks (consistent with 3D scene behavior) */
+const naviBodyEl = document.getElementById('navicomputer-body');
+naviBodyEl.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-id]');
+  if (!el) return;
+  naviIndexShown = false;
+  selectBody(el.dataset.id);
+});
+naviBodyEl.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const el = e.target.closest('[data-id]');
+  if (!el) return;
+  naviIndexShown = false;
+  selectBody(el.dataset.id);
+  flyToBody(el.dataset.id);
+});
 
 /* Canonical subtype lists */
 const SUBTYPES = {
@@ -1780,7 +1843,9 @@ function wireParentEditor(body, id) {
 
 function selectBody(id) {
   if (!galaxyData || !galaxyData.bodies[id]) return;
+  if (id !== selectedId) naviIndexShown = false;
   selectedId = id;
+  naviPush(id);
   const body = galaxyData.bodies[id];
   const panel = document.getElementById('context-panel');
   panel.classList.add('open');
@@ -1804,11 +1869,11 @@ function selectBody(id) {
       });
     });
     wireEditorEvents(id);
-    /* Update navicomputer tree (edit mode, 3D only) */
-    updateNavicomputer(id);
   } else {
-    /* Wire tree items + hyperlanes: L-click selects, R-click tracks */
-    document.querySelectorAll('.gx-nav-item[data-id], .gx-p-lane[data-id]').forEach(el => {
+    /* Wire tree items + hyperlanes: L-click selects, R-click tracks. Scoped to the context
+       panel: the Navicomputer's items share these classes and wire themselves */
+    const panelBody = document.getElementById('panel-body');
+    panelBody.querySelectorAll('.gx-nav-item[data-id], .gx-p-lane[data-id]').forEach(el => {
       el.addEventListener('click', () => selectBody(el.dataset.id));
       el.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -1817,7 +1882,7 @@ function selectBody(id) {
       });
     });
     /* Hover-expand collapsed tree branches with 200ms collapse delay */
-    document.querySelectorAll('.gx-nav-item[data-id]').forEach(el => {
+    panelBody.querySelectorAll('.gx-nav-item[data-id]').forEach(el => {
       let collapseTimer = 0;
       const sibling = el.nextElementSibling;
       if (!sibling?.classList.contains('gx-nav-children')) return;
@@ -1834,6 +1899,7 @@ function selectBody(id) {
       });
     });
   }
+  updateNavicomputer(id);
   wireTooltips();
 
   if (callbacks.onSelect) callbacks.onSelect(id, body);
@@ -1848,7 +1914,7 @@ function deselectBody() {
   map2dView?.setSelected(null);
 
   /* Show system index in navicomputer when nothing is selected */
-  if (editorMode) updateNavicomputer(null);
+  updateNavicomputer(null);
 
   /* Show nothing-selected editor state if editor mode is on */
   if (editorMode) {
@@ -1875,9 +1941,7 @@ function toggleEditorMode() {
   const navExport = document.getElementById('ed-export-nav');
   if (navExport) navExport.classList.toggle('visible', editorMode);
   updateControlsVisibility();
-  /* Navicomputer + Galaxy Forge sync with editor mode */
-  const naviPanel = document.getElementById('navicomputer-panel');
-  if (naviPanel && !editorMode) naviPanel.classList.remove('open');
+  /* Galaxy Forge syncs with editor mode */
   const forgeTitle = document.getElementById('forge-title');
   if (forgeTitle) forgeTitle.classList.toggle('visible', editorMode);
   if (selectedId) selectBody(selectedId);
@@ -2038,7 +2102,19 @@ document.addEventListener('keydown', (e) => {
   /* Undo/redo — works even when focused on inputs */
   if (editorMode && e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); editorUndo(); return; }
   if (editorMode && e.ctrlKey && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); editorRedo(); return; }
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  const editable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+  /* Alt+←/→ steps the Navicomputer history; once there is history, the galaxy owns the keys
+     (even at an end or in Spoogle) so an extra press can't navigate the page away */
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    /* On Mac, Option+Arrow is word-jump in text fields (browser back is Cmd+[) */
+    if (editable && IS_MAC) return;
+    if (naviHistory.length) {
+      e.preventDefault();
+      naviStep(e.key === 'ArrowLeft' ? -1 : 1);
+    }
+    return;
+  }
+  if (editable) return;
   /* Photo Mode's hide list only covers 3D chrome — in 2D it half-strips the UI with no visible undo */
   if (e.key === 'F2' && viewMode === '3d') { e.preventDefault(); toggleScreenshot(); }
   /* Bare 1/2/3 only (Ctrl+2 is a browser tab switch), and never mid-Muse — 2D hides Muse's exit affordance */
@@ -2110,12 +2186,6 @@ function setViewMode(mode) {
   map2dView?.setActive(mode === '2d');
   updateControlsVisibility();
   updateStatus();
-  /* Navicomputer only in 3D edit mode */
-  const naviPanel = document.getElementById('navicomputer-panel');
-  if (naviPanel) {
-    if (mode === '2d' || !editorMode) naviPanel.classList.remove('open');
-    else if (selectedId) updateNavicomputer(selectedId);
-  }
 
   if (callbacks.onViewChange) callbacks.onViewChange(mode);
 }
@@ -2147,10 +2217,10 @@ function bindAppSettings() {
       btn.textContent = 'Offline download unavailable';
       btn.disabled = true;
     } else if (status.complete) {
-      btn.textContent = `Galaxy saved for offline (${toMB(status.totalBytes)} MB)`;
+      btn.textContent = `Offline Galaxy Map saved (${toMB(status.totalBytes)} MB)`;
       btn.disabled = true;
     } else {
-      btn.textContent = `Download galaxy for offline (${toMB(status.totalBytes - status.cachedBytes)} MB)`;
+      btn.textContent = `Offline Galaxy Map (${toMB(status.totalBytes - status.cachedBytes)} MB)`;
       btn.disabled = false;
     }
   };
@@ -2205,9 +2275,13 @@ export function init(data, cbs, systems) {
       onSelect: selectBody,
       onDeselect: deselectBody,
       onTrack: (id) => { if (callbacks.onFlyTo) callbacks.onFlyTo(id); },
-      onUntrack: () => { if (callbacks.onUntrack) callbacks.onUntrack(); }
+      onUntrack: () => { if (callbacks.onUntrack) callbacks.onUntrack(); },
+      onWake: () => callbacks.onWake2D?.()
     }
   });
+  /* Editor mode also works in 2D: any data mutation (edit, undo/redo, revert, import) must
+     drop the map's position, orbit, lane, color, and label caches */
+  systems?.onDataChanged?.(() => map2dView?.dataChanged());
   /* ?view=2d|3d (launcher + app shortcuts) beats the saved view; '2' pressed during load still counts */
   const urlView = new URLSearchParams(location.search).get('view');
   const savedView = lsGet(VIEW_KEY);
@@ -2264,7 +2338,8 @@ export function setTracking(v, id) {
   if (!v) map2dView.clearTracking();
   else if (id) map2dView.setTracked(id);
 }
-export function frame2d(delta, rotationTime, rotating, cinema) { map2dView?.frame(delta, rotationTime, rotating, cinema); }
+/* Returns false once 2D has nothing left to draw, which lets the paused loop park */
+export function frame2d(delta, rotationTime, rotating, cinema) { return map2dView ? map2dView.frame(delta, rotationTime, rotating, cinema) : true; }
 export function get2DCamera() { return map2dView?.getCamera() || null; }
 
-export { selectBody, deselectBody, setViewMode, flyToBody };
+export { selectBody, deselectBody, setViewMode, flyToBody, naviPush as recordNaviStep };

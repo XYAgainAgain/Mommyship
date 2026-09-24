@@ -1,6 +1,5 @@
-/* Mommyship service worker. Rules pages go network-first so a fresh push never gets stuck
-   behind a cached copy; big galaxy files and fonts go cache-first and only re-download when
-   the build's hash list says they changed. */
+/* Rules pages go network-first, so a fresh push isn't stuck behind a cached copy; big
+   galaxy files and fonts go cache-first, re-downloading only when the build's hash list changes. */
 
 /* Stamped by .github/scripts/pwa-build.py at deploy; stays "dev" under zensical serve */
 const BUILD = '__BUILD__';
@@ -86,6 +85,8 @@ const isAudio = (path) => /\.(ogg|mp3|wav|m4a|opus)$/i.test(path);
 const isGalaxyStatic = (path) => (path.startsWith('/galaxy/') && !isAudio(path)) || path.startsWith('/vendor/');
 /* Galaxy code is small and changes with every push: network-first while online */
 const isGalaxyCode = (path) => path.startsWith('/galaxy/') && /\.(js|css|json)$/.test(path);
+/* The site's own scripts and styles aren't hashed; serving them stale would pair new pages with old code */
+const isSiteCode = (path) => path.startsWith('/javascripts/') || path.startsWith('/stylesheets/');
 const isImmutable = (path) => path.startsWith('/assets/javascripts/') || path.startsWith('/assets/stylesheets/')
   || path.startsWith('/assets/fonts/') || path.startsWith('/assets/icons/');
 
@@ -95,11 +96,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   const path = url.pathname;
+  /* Big one-off downloads (rules ZIP, wallpapers) stay out of every cache; a stale latest.zip would outlive a version bump */
+  if (path.startsWith('/downloads/') || path.startsWith('/assets/rules/')) return;
 
   if (isAudio(path)) { event.respondWith(audioResponse(req)); return; }
   if (isHTML(req, path)) { event.respondWith(networkFirst(event, SHELL_CACHE, true)); return; }
   if (isGalaxyCode(path)) { event.respondWith(networkFirst(event, GALAXY_CACHE, false)); return; }
   if (isGalaxyStatic(path)) { event.respondWith(cacheFirst(event, GALAXY_CACHE)); return; }
+  if (isSiteCode(path)) { event.respondWith(networkFirst(event, SHELL_CACHE, false)); return; }
   if (isImmutable(path)) { event.respondWith(cacheFirst(event, SHELL_CACHE)); return; }
   event.respondWith(staleWhileRevalidate(event, RUNTIME_CACHE));
 });
@@ -129,9 +133,16 @@ async function networkFirst(event, cacheName, offlinePage) {
     const res = await fetchWithTimeout(req, HTML_TIMEOUT_MS);
     if (res.ok) store(event, cacheName, req, res.clone());
     return res;
-  } catch (e) {
+  } catch {
     const hit = await fromAnyCache(req);
     if (hit) return hit;
+  }
+  /* Timed out with nothing cached: a slow answer beats none, and a real outage fails fast here */
+  try {
+    const res = await fetch(req);
+    if (res.ok) store(event, cacheName, req, res.clone());
+    return res;
+  } catch (e) {
     if (offlinePage) return offlineResponse();
     throw e;
   }

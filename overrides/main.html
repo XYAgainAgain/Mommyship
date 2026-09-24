@@ -3,6 +3,8 @@
 {#- Warp background: importmap must precede the module script that imports three -#}
 {% block extrahead %}
   <link rel="manifest" href="{{ 'manifest.webmanifest' | url }}">
+  {#- The homepage icon picker's choice, applied before the browser reads the manifest (pwa.js owns the key) -#}
+  <script>try{var m=localStorage.getItem("mommyship-icon-manifest");if(m&&/^\/manifests\/[\w-]+\.webmanifest$/.test(m))document.querySelector('link[rel="manifest"]').href=m}catch(e){}</script>
   <link rel="apple-touch-icon" href="{{ 'assets/icons/apple-touch-icon.png' | url }}">
   {#- pwa.js retints this to the active palette (purple in dark, turquoise in light) -#}
   <meta name="theme-color" content="#8332ac">

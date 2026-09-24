@@ -182,8 +182,8 @@ function lineHitsSphere(from, to, center, radius) {
   return (t1 > 0.05 && t1 < 0.95) || (t2 > 0.05 && t2 < 0.95) || (t1 < 0.05 && t2 > 0.95);
 }
 
-/* 3D offset from parent via Keplerian orbital elements (Y-up) */
-function orbitalOffset(orb, time) {
+/* 3D offset from parent via Keplerian orbital elements (Y-up), written into `out` */
+function orbitalOffsetInto(orb, time, out) {
   const M = orb.M0 + (TWO_PI / orb.period) * time;
   const E = solveKepler(M, orb.e);
   const px = orb.a * (Math.cos(E) - orb.e);
@@ -191,12 +191,17 @@ function orbitalOffset(orb, time) {
   const cw = Math.cos(orb.omega), sw = Math.sin(orb.omega);
   const ci = Math.cos(orb.incl),  si = Math.sin(orb.incl);
   const cO = Math.cos(orb.Omega), sO = Math.sin(orb.Omega);
-  return {
-    x: (cO * cw - sO * sw * ci) * px + (-cO * sw - sO * cw * ci) * py,
-    y: sw * si * px + cw * si * py,
-    z: (sO * cw + cO * sw * ci) * px + (-sO * sw + cO * cw * ci) * py
-  };
+  out.x = (cO * cw - sO * sw * ci) * px + (-cO * sw - sO * cw * ci) * py;
+  out.y = sw * si * px + cw * si * py;
+  out.z = (sO * cw + cO * sw * ci) * px + (-sO * sw + cO * cw * ci) * py;
+  return out;
 }
+
+function orbitalOffset(orb, time) {
+  return orbitalOffsetInto(orb, time, { x: 0, y: 0, z: 0 });
+}
+
+const _flatOff = { x: 0, y: 0, z: 0 };
 
 /* XZ ellipse point at eccentric anomaly E — same rotation chain as orbitalOffset */
 function orbitalPointXZ(orb, E) {
@@ -480,11 +485,19 @@ export async function createSystems(scene, camera, renderer) {
     adoptData(createEmptyGalaxy());
   }
 
+  /* Every edit path ends in autosave() and/or rebuildMarkers(), so both announce the change
+     to views with their own caches (the 2D map) */
+  const dataListeners = [];
+  function notifyDataChanged() {
+    for (const fn of dataListeners) fn();
+  }
+
   function autosave() {
     galaxyData.meta.lastModified = new Date().toISOString();
     /* A quota or blocked-storage throw must not break the caller's edit chain */
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(galaxyData)); }
     catch (e) { console.error('Galaxy autosave to localStorage failed:', e); }
+    notifyDataChanged();
   }
 
   function exportJSON() {
@@ -1214,6 +1227,7 @@ export async function createSystems(scene, camera, renderer) {
 
     /* Restore orbit visibility if a body was being tracked */
     if (trackedOrbitId) showOrbitsForBody(trackedOrbitId);
+    notifyDataChanged();
   }
 
   /* Show orbit paths for a tracked body's entire system */
@@ -1717,25 +1731,29 @@ export async function createSystems(scene, camera, renderer) {
     updatePool(rotationTime, cachedBhNdcX, cachedBhNdcY, cachedBhScreenR);
   }
 
-  /* Canonical-frame XZ for the 2D map — depth 0 skips galactic rotation (differential
-     rotation can't turn the lightmap bitmap); child offsets are unrotated in 3D too. */
-  function flattenPositions(rotationTime) {
-    const out = new Map();
+  /* Canonical-frame XZ for the 2D map: depth 0 skips galactic rotation (it can't turn the lightmap bitmap),
+     and child offsets are unrotated in 3D too. Rewrites the caller's Map in place, so no per-frame garbage. */
+  function flattenPositionsInto(out, rotationTime) {
     for (const id of depthBuckets[0]) {
       const p = galaxyData.bodies[id]?.position;
-      if (p) out.set(id, { x: p.x, z: p.z });
+      if (!p) continue;
+      const e = out.get(id);
+      if (e) { e.x = p.x; e.z = p.z; } else out.set(id, { x: p.x, z: p.z });
     }
     for (let d = 1; d < 4; d++) {
       for (const id of depthBuckets[d]) {
         const meta = bodyMeta.get(id);
         const pw = out.get(meta.parentId);
         if (!pw) continue;
-        const off = orbitalOffset(meta.orbital, rotationTime);
-        out.set(id, { x: pw.x + off.x, z: pw.z + off.z });
+        const off = orbitalOffsetInto(meta.orbital, rotationTime, _flatOff);
+        const e = out.get(id);
+        if (e) { e.x = pw.x + off.x; e.z = pw.z + off.z; } else out.set(id, { x: pw.x + off.x, z: pw.z + off.z });
       }
     }
     return out;
   }
+
+  const flattenPositions = (rotationTime) => flattenPositionsInto(new Map(), rotationTime);
 
   /* Closed XZ orbit polyline relative to the parent — rings pass through bodies by construction */
   function sampleOrbitXZ(id, count = 64) {
@@ -2011,6 +2029,8 @@ export async function createSystems(scene, camera, renderer) {
     getBodyWorldPos: (id) => bodyWorldPos.get(id) || null,
     getBodyMeta: (id) => bodyMeta.get(id) || null,
     flattenPositions,
+    flattenPositionsInto,
+    onDataChanged: (fn) => { dataListeners.push(fn); },
     sampleOrbitXZ,
     getPreferStation: (id) => preferStation.get(id) || id,
     /* Ships.js LOD hook: the star id currently anchoring the detail-mesh crossfade

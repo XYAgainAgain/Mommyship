@@ -32,6 +32,20 @@ const STAR_COLORS = [
   ['#fff4e8', 2], ['#ffed97', 1.5], ['#ffc46b', 1], ['#ff9a5c', 0.5]
 ];
 
+/* Canvas filters let the layer blur/grade bake into the raster instead of running as CSS
+   filters in the compositor every frame; older engines keep the CSS path */
+export const CANVAS_FILTER = (() => {
+  const c = document.createElement('canvas').getContext('2d');
+  if (!c || !('filter' in c)) return false;
+  c.filter = 'blur(1px)';
+  return c.filter === 'blur(1px)';
+})();
+/* Sprite blur standing in for the stars layer's CSS blur(0.6px): canvas blur reads slightly
+   crisper than WebRender's, and fractional-position draws add a little bilinear softening */
+const STAR_BLUR = 0.65;
+/* The background layer's CSS blur(0.5px), baked in at repaint instead */
+const BG_BLUR = 0.5;
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = (x) => x < 0 ? 0 : x > 1 ? 1 : x;
 
@@ -191,49 +205,103 @@ export function createFirmament(onReady) {
   schedule(bakeRows);
 
   const stars = buildStars();
+  const liveStars = stars.filter(s => s.live);
+
+  /* With canvas filters the twinklers draw from one atlas of pre-blurred sprites, so the stars
+     layer (redrawn every frame) needs no CSS blur pass in the compositor */
+  const SPR_PAD = 3;
+  let atlas = null, atlasDpr = 0, cell = 0;
+  function buildAtlas(dpr) {
+    cell = Math.ceil((3.1 + SPR_PAD * 2) * dpr);
+    const cols = 40;
+    atlas = document.createElement('canvas');
+    atlas.width = cols * cell;
+    atlas.height = Math.ceil(liveStars.length / cols) * cell;
+    const a = atlas.getContext('2d');
+    a.filter = 'blur(' + STAR_BLUR * dpr + 'px)';
+    liveStars.forEach((s, i) => {
+      s.ax = (i % cols) * cell;
+      s.ay = Math.floor(i / cols) * cell;
+      const sz = Math.max(1.2, s.r * 1.8) * dpr;
+      a.fillStyle = s.color;
+      a.fillRect(s.ax + SPR_PAD * dpr, s.ay + SPR_PAD * dpr, sz, sz);
+    });
+    atlasDpr = dpr;
+  }
+
+  /* Unblurred paint target for paintBase, sized only while a repaint runs */
+  let flat = null;
 
   /* Paints nebula + galaxies + static stars into the bg DOM layer at `side` CSS px.
      map2d.js CSS-transforms that layer for parallax; this only reruns on zoom-tier drift. */
   function paintBase(canvas, side, dpr) {
     if (!ready) return false;
     const s = Math.ceil(side);
-    canvas.width = canvas.height = Math.round(s * dpr);
-    canvas.style.width = canvas.style.height = s + 'px';
+    const px = Math.round(s * dpr);
     const bctx = canvas.getContext('2d', { alpha: false });
-    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    bctx.imageSmoothingEnabled = true;
-    bctx.imageSmoothingQuality = 'high';
-    bctx.drawImage(nebCanvas, 0, 0, s, s);
-    bctx.globalCompositeOperation = 'lighter';
+    /* Reassigning the size reallocates the backing store even when it's unchanged */
+    if (canvas.width !== px || canvas.height !== px) canvas.width = canvas.height = px;
+    if (canvas.style.width !== s + 'px') canvas.style.width = canvas.style.height = s + 'px';
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    bctx.fillStyle = '#000';
+    bctx.fillRect(0, 0, px, px);
+    /* With canvas filters the layer paints flat, then lands in one blurred draw: a filter on each
+       star draw would cost a blur pass apiece */
+    let c = bctx;
+    if (CANVAS_FILTER) {
+      if (!flat) flat = document.createElement('canvas');
+      flat.width = flat.height = px;
+      c = flat.getContext('2d', { alpha: false });
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, px, px);
+    }
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(nebCanvas, 0, 0, s, s);
+    c.globalCompositeOperation = 'lighter';
     const scale = s / GAL_RES;
-    bctx.drawImage(galCanvas, 0, 0, s, s);
+    c.drawImage(galCanvas, 0, 0, s, s);
     for (const st of stars) {
       if (st.live) continue;
-      bctx.globalAlpha = st.baseA * 0.8;
-      bctx.fillStyle = st.color;
+      c.globalAlpha = st.baseA * 0.8;
+      c.fillStyle = st.color;
       const sz = Math.max(1.2, st.r * 1.8);
-      bctx.fillRect(st.x * scale, st.y * scale, sz, sz);
+      c.fillRect(st.x * scale, st.y * scale, sz, sz);
     }
-    bctx.globalCompositeOperation = 'source-over';
-    bctx.globalAlpha = 1;
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = 1;
+    if (c !== bctx) {
+      /* Canvas filter lengths are backing-store px, so ×dpr matches the old CSS-px blur */
+      bctx.filter = 'blur(' + BG_BLUR * dpr + 'px)';
+      bctx.drawImage(flat, 0, 0);
+      bctx.filter = 'none';
+      flat.width = flat.height = 0;
+    }
     return true;
   }
 
   /* Live twinklers ride rotationTime, so Pause freezes the sky too.
      dx/dz/side map firmament space → screen, matching the bg layer's CSS transform. */
-  function drawStars(ctx, dx, dz, side, viewW, viewH, time) {
+  function drawStars(ctx, dx, dz, side, viewW, viewH, time, dpr) {
     if (!ready) return;
     const scale = side / GAL_RES;
-    for (const s of stars) {
-      if (!s.live) continue;
+    const sprites = CANVAS_FILTER;
+    if (sprites && atlasDpr !== dpr) buildAtlas(dpr);
+    const cs = cell / dpr;
+    for (const s of liveStars) {
       const px = dx + s.x * scale, py = dz + s.y * scale;
       if (px < -2 || px > viewW + 2 || py < -2 || py > viewH + 2) continue;
       const a = s.baseA * (0.55 + 0.45 * Math.sin(s.phase + time * s.rate));
       if (a < 0.05) continue;
       ctx.globalAlpha = a;
-      ctx.fillStyle = s.color;
-      const sz = Math.max(1.2, s.r * 1.8);
-      ctx.fillRect(px, py, sz, sz);
+      if (sprites) {
+        ctx.drawImage(atlas, s.ax, s.ay, cell, cell, px - SPR_PAD, py - SPR_PAD, cs, cs);
+      } else {
+        ctx.fillStyle = s.color;
+        const sz = Math.max(1.2, s.r * 1.8);
+        ctx.fillRect(px, py, sz, sz);
+      }
     }
     ctx.globalAlpha = 1;
   }
