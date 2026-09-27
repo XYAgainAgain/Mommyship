@@ -22,6 +22,9 @@ const GLOW_SCALE = 1.8;
 export const SIZE_FULL = 0.0267;
 export const SIZE_ACTIVATE = 0.0222;
 export const SIZE_RELEASE = 0.0178;
+/* Shader LOD tiers were tuned in camera distance on a depth-1 size-M planet (visualRadius 0.6);
+   scaling by it keeps that planet identical while every other size gets the same on-screen LOD */
+export const LOD_REF_RADIUS = 0.6;
 
 /* Per-subtype atmosphere scale — thick for gas, thin for rocky, skip for airless */
 function computeAtmoDensity(params) {
@@ -480,10 +483,11 @@ export async function createPlanetDetail(renderer) {
       const meta = bodyMeta?.get(entry.bodyId);
       if (meta) entry.group.scale.setScalar(meta.instanceScale * entry.radius);
 
-      /* Camera distance drives the shader LOD; fade comes from apparent size */
+      /* Shader LOD and fade both follow apparent size, so giants and moons get detail at the same pixel size */
       const dx = cameraPos.x - wp.x, dy = cameraPos.y - wp.y, dz = cameraPos.z - wp.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      entry.pLodDist.value = dist;
+      const visualRadius = meta ? MARKER_RADIUS * meta.instanceScale * (meta.planetRadius || 1) : LOD_REF_RADIUS;
+      entry.pLodDist.value = dist * (LOD_REF_RADIUS / visualRadius);
       let fade;
       if (cinemaSystem && cinemaSystem.has(entry.bodyId)) {
         fade = 1.0;

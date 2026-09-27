@@ -20,7 +20,7 @@ import { bakeStarAtlas } from './star-bake.js';
 import { createStarDetail } from './star-detail.js';
 import { parseMK } from './star-params.js';
 import { bakePlanetAtlas, buildParamTexture } from './planet-bake.js';
-import { createPlanetDetail, SIZE_RELEASE as PLANET_SIZE_RELEASE } from './planet-detail.js';
+import { createPlanetDetail, SIZE_RELEASE as PLANET_SIZE_RELEASE, LOD_REF_RADIUS } from './planet-detail.js';
 import { parsePlanetType, findParentStar } from './planet-params.js';
 
 const STORAGE_KEY = 'mommyship-galaxy-data';
@@ -1548,9 +1548,12 @@ export async function createSystems(scene, camera, renderer) {
         /* Crossfade: big on screen = atlas texture, small = faction color */
         const dx = camPos.x - wp.x, dy = camPos.y - wp.y, dz = camPos.z - wp.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-        const appSize = MARKER_RADIUS * meta.instanceScale * (meta.planetRadius || 1) / dist;
-        /* Only visually significant bodies pull the live-atlas quality ramp */
-        if (appSize > PLANET_SIZE_RELEASE && dist < minPlanetDist) minPlanetDist = dist;
+        const visualRadius = MARKER_RADIUS * meta.instanceScale * (meta.planetRadius || 1);
+        const appSize = visualRadius / dist;
+        /* Only visually significant bodies pull the live-atlas quality ramp, measured in the same
+           size-normalized distance as the detail LOD so a giant isn't starved of octaves */
+        const lodDist = dist * (LOD_REF_RADIUS / visualRadius);
+        if (appSize > PLANET_SIZE_RELEASE && lodDist < minPlanetDist) minPlanetDist = lodDist;
         const cf = smoothstep(PLANET_CF_LOW, PLANET_CF_HIGH, appSize);
         if (planetPackedAttr.array[i * 4 + 1] !== cf) {
           planetPackedAttr.array[i * 4 + 1] = cf;
