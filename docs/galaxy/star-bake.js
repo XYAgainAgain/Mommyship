@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { texture } from 'three/tsl';
 import { main as bakeVert } from './tsl/vert/star-bake.tsl.js';
 import {
   main as bakeFrag, uSeed, uLowTemp, uHighTemp,
@@ -32,13 +31,6 @@ export async function bakeStarAtlas(renderer, bodies) {
   bakeMat.depthTest = false;
   bakeMat.depthWrite = false;
 
-  /* Passthrough copy material — texture(null) auto-samples at geometry UV */
-  const uCopySrc = texture(null);
-  const copyMat = new MeshBasicNodeMaterial();
-  copyMat.fragmentNode = uCopySrc;
-  copyMat.depthTest = false;
-  copyMat.depthWrite = false;
-
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bakeMat);
   const bakeScene = new THREE.Scene();
   bakeScene.add(quad);
@@ -52,13 +44,10 @@ export async function bakeStarAtlas(renderer, bodies) {
   };
   const arrayRT = new THREE.WebGLArrayRenderTarget(ATLAS_SIZE, ATLAS_SIZE, starIds.length, rtOptions);
 
-  /* Single-layer RT for reliable readPixels — avoids array texture layer issues */
-  const tempRT = new THREE.RenderTarget(ATLAS_SIZE, ATLAS_SIZE, rtOptions);
-
   const layerMap = new Map();
   const prevRT = renderer.getRenderTarget();
 
-  /* finally, not catch: a throw mid-bake must still unbind the RT and free tempRT */
+  /* finally, not catch: a throw mid-bake must still unbind the RT and free the bake material */
   try {
     for (let i = 0; i < starIds.length; i++) {
       const id = starIds[i];
@@ -78,17 +67,11 @@ export async function bakeStarAtlas(renderer, bodies) {
       uEmissive.value = params.emissive;
       uSize.value = params.radius;
 
-      renderer.setRenderTarget(tempRT);
+      /* Straight into the layer, same as planet-bake.js */
+      renderer.setRenderTarget(arrayRT, i);
       renderer.clear();
       try { renderer.render(bakeScene, bakeCam); }
       catch (e) { if (i === 0) console.error('Star bake render failed:', e.message); }
-
-      uCopySrc.value = tempRT.texture;
-      quad.material = copyMat;
-      renderer.setRenderTarget(arrayRT, i);
-      renderer.clear();
-      renderer.render(bakeScene, bakeCam);
-      quad.material = bakeMat;
 
       if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
     }
@@ -96,8 +79,6 @@ export async function bakeStarAtlas(renderer, bodies) {
     renderer.setRenderTarget(prevRT);
     quad.geometry.dispose();
     bakeMat.dispose();
-    copyMat.dispose();
-    tempRT.dispose();
   }
 
   /* WebGPU never auto-generates array RT mips — see planet-bake.js */

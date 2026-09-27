@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { texture } from 'three/tsl';
 import { main as bakeVert } from './tsl/vert/planet-bake.tsl.js';
 import {
   main as bakeFrag, uSeed, uPlanetMode, uSlopeness, uOceanLevel,
@@ -61,8 +60,7 @@ export function buildParamTexture(planetIds, paramsCache) {
 }
 
 /**
- * Bake procedural planet/moon surfaces into a DataArrayTexture atlas.
- * Checks IndexedDB cache per body — skips GPU bake on hit.
+ * Bake procedural planet/moon surfaces into a DataArrayTexture atlas, one layer per body.
  * @param {THREE.WebGPURenderer} renderer
  * @param {Object} bodies — galaxyData.bodies keyed by ID
  * @returns {{ atlas, layerMap, churnMap, paramsCache }}
@@ -80,13 +78,6 @@ export async function bakePlanetAtlas(renderer, bodies) {
   bakeMat.depthTest = false;
   bakeMat.depthWrite = false;
 
-  /* Passthrough copy material — texture(null) auto-samples at geometry UV */
-  const uCopySrc = texture(null);
-  const copyMat = new MeshBasicNodeMaterial();
-  copyMat.fragmentNode = uCopySrc;
-  copyMat.depthTest = false;
-  copyMat.depthWrite = false;
-
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bakeMat);
   const bakeScene = new THREE.Scene();
   bakeScene.add(quad);
@@ -101,10 +92,6 @@ export async function bakePlanetAtlas(renderer, bodies) {
   const arrayRT = new THREE.WebGLArrayRenderTarget(ATLAS_SIZE, ATLAS_SIZE, planetIds.length, rtOptions);
   arrayRT.texture.wrapS = THREE.RepeatWrapping;
 
-  /* Single-layer RT for reliable readPixels — reading from ArrayRenderTarget
-     layers directly is unreliable (layer attachment may not persist through readback) */
-  const tempRT = new THREE.RenderTarget(ATLAS_SIZE, ATLAS_SIZE, rtOptions);
-
   const layerMap = new Map();
   const churnMap = new Map();
   const paramsCache = new Map();
@@ -115,7 +102,7 @@ export async function bakePlanetAtlas(renderer, bodies) {
     parentStarCache.set(id, findParentStar(id, bodies));
   }
 
-  /* finally, not catch: a throw mid-bake must still unbind the RT and free tempRT */
+  /* finally, not catch: a throw mid-bake must still unbind the RT and free the bake material */
   try {
     for (let i = 0; i < planetIds.length; i++) {
       const id = planetIds[i];
@@ -159,17 +146,11 @@ export async function bakePlanetAtlas(renderer, bodies) {
       uTerrainType.value       = params.terrainType ?? 1;
       uCrackPattern.value      = params.crackPattern ?? 0;
 
-      renderer.setRenderTarget(tempRT);
-      renderer.clear();
-      renderer.render(bakeScene, bakeCam);
-
-      /* Copy baked result into the atlas array layer */
-      uCopySrc.value = tempRT.texture;
-      quad.material = copyMat;
+      /* Straight into the layer: a scratch target plus copy pass cost a second render and a
+         throwaway mip chain per body */
       renderer.setRenderTarget(arrayRT, i);
       renderer.clear();
       renderer.render(bakeScene, bakeCam);
-      quad.material = bakeMat;
 
       if (i % 8 === 7) await new Promise(r => setTimeout(r, 0));
     }
@@ -177,8 +158,6 @@ export async function bakePlanetAtlas(renderer, bodies) {
     renderer.setRenderTarget(prevRT);
     quad.geometry.dispose();
     bakeMat.dispose();
-    copyMat.dispose();
-    tempRT.dispose();
   }
 
   /* WebGPU never auto-generates array RT mips — without this, mips 1+ stay

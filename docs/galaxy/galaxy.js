@@ -16,6 +16,7 @@ import * as asteroids from './asteroids.js';
 import * as ships from './ships.js';
 import * as ui from './galaxy-ui.js';
 import { createPerfMonitor } from './perf-monitor.js';
+import { parseBoothParams, createBooth } from './booth.js';
 
 const _bhScreen = new THREE.Vector3();
 const _bhScreen2 = new THREE.Vector2();
@@ -570,9 +571,11 @@ async function init() {
       return;
     }
 
-    const elapsed = timer.getElapsed();
+    /* The booth freezes every clock-driven layer (twinkle, drift, ships) so captures repeat */
+    const elapsed = booth ? 0 : timer.getElapsed();
 
     cam.update(delta);
+    if (booth) booth.place();
     /* Refresh matrixWorld now so the BH lens projection matches the sphere's live camera position
        this frame; without it .project() lags a frame and the layers smear when the camera moves. */
     cam.camera.updateMatrixWorld();
@@ -596,7 +599,8 @@ async function init() {
     volumetric.update(delta, elapsed, rotationTime, cam.camera, cinemaMode);
     coreStorm.update(elapsed, rotationTime);
     dustTorus.update(elapsed, rotationTime, cam.camera, cinemaMode);
-    asteroids.update(delta, rotationTime, cam.camera.position, cam.camera);
+    /* No camera position in the booth: belt drift runs on wall-clock ramps that never repeat */
+    asteroids.update(delta, rotationTime, booth ? null : cam.camera.position, cam.camera);
     audio.update();
     if (museActive) museAudio.updateDistance(cam.camera.position.length());
 
@@ -781,6 +785,19 @@ async function init() {
       cam.flyHome();
     }
   }, systems);
+
+  const boothParams = parseBoothParams(location.search);
+  let booth = null;
+  if (boothParams) {
+    booth = createBooth(boothParams, {
+      systems, camera: cam.camera, controls: cam.controls, visualRadius: bodyVisualRadius
+    });
+    rotationPaused = true;
+    rotationTime = boothParams.t;
+    perfMonitor.setBypass(true);
+    /* Derelicts scatter from an unseeded rng each load, so ships would differ run to run */
+    ships.setVisible(false);
+  }
 
   /* Warm-up frame through the full BH compositor so its RTs/pipelines compile now instead
      of on first core approach, mid-flight. lodFactor 0.2 sits inside the 0.1–0.35 crossfade

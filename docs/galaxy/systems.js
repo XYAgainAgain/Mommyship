@@ -856,6 +856,12 @@ export async function createSystems(scene, camera, renderer) {
         }
       }
     }
+
+    /* Only four depth buckets exist, so anything nested deeper silently never renders */
+    const orphaned = depthBuckets[3].flatMap(id => childrenOf.get(id) || []);
+    if (orphaned.length) {
+      console.warn('Galaxy hierarchy deeper than 3 levels; not rendered: ' + orphaned.join(', '));
+    }
   }
 
   function rebuildMarkers() {
@@ -1007,7 +1013,6 @@ export async function createSystems(scene, camera, renderer) {
       const pCrossfades = new Float32Array(planetIds.length);
       const pLightDirs = new Float32Array(planetIds.length * 3);
       const pChurns = new Float32Array(planetIds.length);
-      const pAtmos = new Float32Array(planetIds.length * 4);
 
       for (let i = 0; i < planetIds.length; i++) {
         const id = planetIds[i];
@@ -1028,16 +1033,6 @@ export async function createSystems(scene, camera, renderer) {
         /* Default light dir — updated per frame */
         pLightDirs[i * 3] = 1; pLightDirs[i * 3 + 1] = 0.3; pLightDirs[i * 3 + 2] = 0;
         pChurns[i] = planetAtlasData.churnMap?.get(id) ?? 0;
-        if (pcache) {
-          _color.set(pcache.atmosphereTint);
-          pAtmos[i * 4]     = _color.r;
-          pAtmos[i * 4 + 1] = _color.g;
-          pAtmos[i * 4 + 2] = _color.b;
-          pAtmos[i * 4 + 3] = pcache.atmosphereIntensity;
-        } else {
-          pAtmos[i * 4] = 0.53; pAtmos[i * 4 + 1] = 0.67;
-          pAtmos[i * 4 + 2] = 0.8; pAtmos[i * 4 + 3] = 0.2;
-        }
 
         /* Axial rotation — body.axialTilt overrides random tilt when set */
         const spinRng = createRng(hashString(id) + 333);
@@ -1071,7 +1066,6 @@ export async function createSystems(scene, camera, renderer) {
       planetLightDirAttr.setUsage(THREE.DynamicDrawUsage);
       planetMarkers.geometry.setAttribute('aPackedInfo', planetPackedAttr);
       planetMarkers.geometry.setAttribute('aLightDir', planetLightDirAttr);
-      planetMarkers.geometry.setAttribute('aAtmosphere', new THREE.InstancedBufferAttribute(pAtmos, 4));
 
       planetMarkers.instanceMatrix.needsUpdate = true;
       if (planetMarkers.instanceColor) planetMarkers.instanceColor.needsUpdate = true;

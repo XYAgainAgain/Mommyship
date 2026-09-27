@@ -1,5 +1,5 @@
-/* IndexedDB cache for GPU-baked textures — planet/star atlases + 3D volume noise.
-   Keyed by content hash so shader/param changes auto-invalidate stale entries. */
+/* IndexedDB cache for baked 3D volume noise, content-hashed so changes auto-invalidate.
+   The planet/star stores and key helpers are unused: atlases always bake fresh now. */
 
 const DB_NAME = 'galaxy-cache';
 const DB_VERSION = 1;
