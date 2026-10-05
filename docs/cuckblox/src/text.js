@@ -1,4 +1,4 @@
-// Every word CUCKBLOX shows or speaks, keyed by stable text IDs.
+// Every word CUCKBLOX shows or speaks, keyed by stable text IDs. Ezpz replacement! :)
 // Menu text marks a forced line break with \n, emphasis with **…**, and a letter-by-letter wave with *…*.
 
 /** Picks a random line each call, never one of the last two shown (or the last one, for a list that short). */
@@ -22,10 +22,10 @@ export const TEXT = {
     tenLines: (v) => `${v} LINES`,
     hundredBlocks: (v) => `${v} BLOX`,
     // Consistent's bonus rides under the BLOX callout
-    bonusName: rotation(['PERFORMANCE BONUS', 'SHAREHOLDER PAYOUT', 'FAMILY INHERITANCE', 'INSURANCE CLAIM', 'CLERICAL ERROR', 'SEVERANCE ADVANCE', 'DEATH BENEFIT', 'ONE-TIME PAYMENT', 'UNCLAIMED WAGES', 'RETENTION STIPEND', 'GOODWILL GESTURE', 'TAXABLE INCENTIVE']),
+    bonusName: rotation(['PERFORMANCE BONUS', 'SHAREHOLDER PAYOUT', 'FAMILY INHERITANCE', 'INSURANCE CLAIM', 'CLERICAL ERROR', 'SEVERANCE ADVANCE', 'DEATH BENEFIT', 'ONE-TIME PAYMENT', 'UNCLAIMED WAGES', 'RETENTION STIPEND', 'GOODWILL GESTURE', 'TAXABLE INCENTIVE', 'SECRET LOTTERY']),
     payout: (name, cr) => `${name} +${cr}`,
     tSpin: () => 'BE CAREFUL!',
-    double: rotation(['EFFICIENT', 'ADEQUATE', 'OPTIMAL', 'PRODUCTIVE', 'COMPLIANT', 'SATISFACTORY', 'ON SCHEDULE', 'WITHIN NORMS', 'AS EXPECTED']),
+    double: rotation(['EFFICIENT', 'ADEQUATE', 'OPTIMAL', 'PRODUCTIVE', 'COMPLIANT', 'SATISFACTORY', 'ON SCHEDULE', 'WITHIN NORMS', 'AS EXPECTED', 'THAT WILL DO', 'NO LOLLYGAGGING']),
     combo: (v) => `*CUCKOMBO ${v}*`,
     newBest: () => 'SO YOU **CAN** WORK HARDER',
     gameOver: () => 'BACK TO WORK',
@@ -35,12 +35,12 @@ export const TEXT = {
     tagline: 'C.U.C.K. RECREATION TERMINAL',
     resume: (mode) => `CONTINUE ${mode}?`,
     ghost: 'HOLO PIECE',
-    sfx: 'SFX',
-    music: 'MUSIC',
+    sfx: 'SFX VOL',
+    music: 'MUSIC VOL',
     tune: 'TUNE SELECT',
     touch: 'TOUCH CONTROLS',
     theme: 'TERMINAL CUSTOMIZATION',
-    fps: 'FPS',
+    fps: 'SHOW FPS',
     on: 'ON',
     off: 'OFF',
     hint: '←↓↑→ ZX = move/rotate\nSPACE = drop\nC SHIFT = hold\nESC P = pause',
@@ -101,7 +101,7 @@ export const TEXT = {
   hudShort: { score: 'SCR', lines: 'LNS', level: 'LVL', blocks: 'BLX', depth: 'DEPTH' },
   // Osminok Ocean's dive: zone names in DIVE_ZONES order (zone-entry callouts), the depth readout, and its game over
   osminok: {
-    zones: ['THE MEGASTORM SURFACE', 'TWILIGHT SHELVES', 'MIDNIGHT PLAINS', 'VENT GARDENS', 'CRUSHING DEEP', 'LIVING TRENCHES', 'FORGOTTEN DEPTHS', 'THE UNKNOWABLE DEEP'],
+    zones: ['THE MEGASTORM', 'TWILIGHT SHELVES', 'MIDNIGHT PLAINS', 'VENT GARDENS', 'CRUSHING DEEP', 'LIVING TRENCHES', 'FORGOTTEN DEPTHS', 'THE UNKNOWABLE DEEP'],
     meters: (v) => `${v} m`,
     km: (v) => `${v} km`,
     kmTight: (v) => `${v}km`,

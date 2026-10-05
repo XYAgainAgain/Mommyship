@@ -545,6 +545,24 @@ function wireTooltips() {
   });
 }
 
+/* C.U.C.K. stations open CUCKBLOX; the button shows a random piece drawn in the game's block style */
+const CUCKNOMINOS = [
+  [[0, 0], [1, 0], [2, 0], [3, 0]], [[1, 0], [0, 1], [1, 1], [2, 1]], [[2, 0], [0, 1], [1, 1], [2, 1]],
+  [[0, 0], [0, 1], [1, 1], [2, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[1, 0], [2, 0], [0, 1], [1, 1]],
+  [[0, 0], [1, 0], [0, 1], [1, 1]],
+];
+
+function recTermLink() {
+  const cells = CUCKNOMINOS[Math.floor(Math.random() * CUCKNOMINOS.length)];
+  const ox = (4 - Math.max(...cells.map(([x]) => x)) - 1) / 2;
+  const oy = (4 - Math.max(...cells.map(([, y]) => y)) - 1) / 2;
+  const blocks = cells.map(([x, y]) => '<rect x="' + (x + ox + 0.06) + '" y="' + (y + oy + 0.06) + '" width="0.88" height="0.88"/>' +
+    '<rect class="gx-recterm-core" x="' + (x + ox + 0.3) + '" y="' + (y + oy + 0.3) + '" width="0.4" height="0.4"/>').join('');
+  return '<a class="gx-recterm" href="/cuckblox/" target="_blank" rel="noopener" aria-label="Open the C.U.C.K. recreation terminal">' +
+    '<span class="gx-recterm-label" aria-hidden="true">REC<br>TERM</span>' +
+    '<span class="gx-recterm-btn"><svg viewBox="0 0 4 4" aria-hidden="true">' + blocks + '</svg></span></a>';
+}
+
 /* Shared header update — used by both view and editor modes */
 function updatePanelHeader(body) {
   const typeEl = document.getElementById('panel-type');
@@ -570,6 +588,7 @@ function updatePanelHeader(body) {
   } else {
     nameEl.textContent = body.name;
   }
+  if (body.factionId === 'cuck' && body.type === 'station') nameEl.insertAdjacentHTML('beforeend', recTermLink());
   nameEl.style.cursor = 'context-menu';
 
   const subEl = document.getElementById('panel-subtitle');

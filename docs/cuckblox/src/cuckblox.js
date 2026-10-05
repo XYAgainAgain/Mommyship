@@ -34,6 +34,8 @@ const canvas = document.getElementById('screen');
 canvas.setAttribute('aria-label', TEXT.say.canvas);
 const live = document.getElementById('live');
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+// Phones drop the title's keyboard hint even before the first tap, so the menu has room to stay large
+const coarsePointer = matchMedia('(pointer: coarse)');
 const data = loadData();
 const wallet = ensureWallet(data);
 if (!ownsTheme(wallet, themeById(data.settings.theme, data.settings.customColors))) data.settings.theme = DEFAULT_THEME.id;
@@ -45,18 +47,19 @@ const controls = new GameControls();
 const sound = new Sound({ toneUrl: 'vendor/tone/Tone.js', enabled: data.settings.sfx });
 // Each tune names the speed level its tempo was written for; only Marathon rides the level away from it, 5 BPM a step.
 // kcr is the song shop price (0 is standard issue, 50 the most any tune costs); a new song is one more line here.
+// Tune Select lists them cheapest first; the sort is stable, so the theme leads the freebies.
 const TUNES = [
+  { id: 'theme', name: TEXT.tunes.theme, bundle: './music/cuckblox-theme-a-side.song.json', homeLevel: 0, kcr: 0 },
   { id: 'korobeiniki', name: TEXT.tunes.korobeiniki, bundle: './music/Korobeiniki.song.json', homeLevel: 8, kcr: 0 },
   // homeLevel is where each song's tempo curve gives back its own bpm (Volga 69 at 0, the Minuet about 150 at 14)
   { id: 'volga-boatmen', name: TEXT.tunes.volgaBoatmen, bundle: './music/Volga%20Spacemen.song.json', homeLevel: 0, kcr: 0 },
   { id: 'minuet-type-c', name: TEXT.tunes.minuetTypeC, bundle: './music/Minuet%203%20Type%20C.song.json', homeLevel: 14, kcr: 0 },
   { id: 'anthem', name: TEXT.tunes.anthem, bundle: './music/Anthem%201-2.song.json', homeLevel: 0, kcr: 40 },
   { id: 'never-gonna', name: TEXT.tunes.neverGonna, bundle: './music/Never%20Gonna%20Give%20You%20Up.song.json', homeLevel: 0, kcr: 2 },
-  { id: 'theme', name: TEXT.tunes.theme, bundle: './music/cuckblox-theme-a-side.song.json', homeLevel: 0, kcr: 0 },
-];
+].sort((a, b) => a.kcr - b.kcr);
 // The C.U.C.K. theme plays on the title and menus, and is also a free tune runs can pick or shuffle into. null keeps menus silent.
-export const MENU_TUNE = { bundle: TUNES.at(-1).bundle, homeLevel: 0 };
-const tune = () => TUNES.find((t) => t.id === data.settings.tune) ?? TUNES[0];
+export const MENU_TUNE = { bundle: TUNES[0].bundle, homeLevel: 0 };
+const tune = () => TUNES.find((t) => t.id === data.settings.tune) ?? TUNES.find((t) => t.id === 'korobeiniki');
 const tunePrice = (t) => TEXT.themes.price(t.kcr);
 if (!ownsTune(wallet, tune())) {
   data.settings.tune = TUNES[0].id;
@@ -220,7 +223,7 @@ function buildMenu() {
         // Dividers between the modes, the settings, and the controls hint
         breaks: [resume.length + Object.keys(FAMILIES).length + 1],
         hintBreak: true,
-        hint: usingPad ? TEXT.title.padHint : TEXT.title.hint,
+        hint: usingPad ? TEXT.title.padHint : usingTouch || coarsePointer.matches ? undefined : TEXT.title.hint,
       };
     }
     case 'setup': {

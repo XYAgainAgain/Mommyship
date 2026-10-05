@@ -640,7 +640,7 @@
     "nimbus-prycian-orbital": {
       "type": "station",
       "subtype": "port",
-      "name": "Prycian Orbital",
+      "name": "Prycian Orbital A",
       "description": "",
       "notes": "",
       "class": "A",
@@ -1310,7 +1310,7 @@
     "grupp-prycian-orbital": {
       "type": "station",
       "subtype": "port",
-      "name": "Prycian Orbital",
+      "name": "Prycian Orbital B",
       "description": "",
       "notes": "",
       "class": "A",

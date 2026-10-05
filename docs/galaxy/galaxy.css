@@ -574,6 +574,49 @@ html:not(.pwa-standalone) #open-page-row { display: none; }
   font-weight: 700;
 }
 
+.gx-panel-name:has(.gx-recterm) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* REC TERM: C.U.C.K. stations' door into CUCKBLOX, its square lined up under the close button */
+.gx-recterm {
+  --cuck: #7ed957;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--gx-text-dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.gx-recterm-label {
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.15em;
+  text-align: end;
+}
+
+.gx-recterm-btn {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid oklch(from var(--cuck) l c h / 45%);
+  border-radius: 4px;
+  color: var(--cuck);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.gx-recterm-btn svg { width: 16px; height: 16px; fill: currentColor; }
+.gx-recterm-core { fill: oklch(0% 0 0 / 45%); }
+.gx-recterm:is(:hover, :focus-visible) { color: var(--gx-text); outline: none; }
+.gx-recterm:is(:hover, :focus-visible) .gx-recterm-btn { background: var(--gx-hover); border-color: var(--cuck); }
+
 .gx-colony-badge {
   position: relative;
   display: inline-block;

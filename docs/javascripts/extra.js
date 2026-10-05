@@ -358,7 +358,59 @@ document$.subscribe(function() {
   bindMassholeNav();
   bindFooterSplit();
   bindOpenPageSelect();
+  bindCuckbloxGates();
 });
+
+/* CUCKBLOX's hidden doors: type its name anywhere, or hold the footer for 1.5 s on a touch screen */
+var cuckbloxTyped = "";
+var cuckbloxKeysBound = false;
+
+function openCuckblox() {
+  if (navigator.vibrate) navigator.vibrate(30);
+  window.location.href = "/cuckblox/";
+}
+
+function bindCuckbloxGates() {
+  if (!cuckbloxKeysBound) {
+    cuckbloxKeysBound = true;
+    document.addEventListener("keydown", function(e) {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.matches("input, textarea, select, [contenteditable]")) return;
+      /* Shift and other named keys pass, so a capitalized CUCKBLOX still counts */
+      if (e.key.length !== 1) return;
+      cuckbloxTyped = /^[a-z]$/i.test(e.key) ? (cuckbloxTyped + e.key.toUpperCase()).slice(-8) : "";
+      if (cuckbloxTyped === "CUCKBLOX") openCuckblox();
+    });
+  }
+
+  var footer = document.querySelector(".md-footer-meta");
+  if (!footer || footer._cuckbloxBound) return;
+  footer._cuckbloxBound = true;
+  var timer = 0;
+  var startX = 0;
+  var startY = 0;
+  function cancel() {
+    clearTimeout(timer);
+    timer = 0;
+  }
+  footer.addEventListener("pointerdown", function(e) {
+    if (e.pointerType !== "touch" || e.target.closest("a, button")) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    cancel();
+    timer = setTimeout(openCuckblox, 1500);
+  });
+  footer.addEventListener("pointermove", function(e) {
+    if (timer && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) cancel();
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function(type) {
+    footer.addEventListener(type, cancel);
+  });
+  /* Android opens its long-press menu partway through the hold */
+  footer.addEventListener("contextmenu", function(e) {
+    if (timer) e.preventDefault();
+  });
+}
 
 /* pwa.js is a module and can land a beat after this classic script, so poll for its global;
    the shared counter caps retries (~5 s total) if it never loads */

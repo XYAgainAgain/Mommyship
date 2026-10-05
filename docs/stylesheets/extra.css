@@ -36,6 +36,15 @@ body {
   isolation: isolate;
 }
 
+/* Holding the footer opens CUCKBLOX; text selection and the iOS callout would steal the hold */
+@media (pointer: coarse) {
+  .md-footer-meta {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 .md-footer-meta::before {
   content: "";
   position: absolute;
