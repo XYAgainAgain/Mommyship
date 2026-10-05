@@ -86,7 +86,7 @@ const isGalaxyStatic = (path) => (path.startsWith('/galaxy/') && !isAudio(path))
 /* Galaxy code is small and changes with every push: network-first while online */
 const isGalaxyCode = (path) => path.startsWith('/galaxy/') && /\.(js|css|json)$/.test(path);
 /* The site's own scripts and styles aren't hashed; serving them stale would pair new pages with old code */
-const isSiteCode = (path) => path.startsWith('/javascripts/') || path.startsWith('/stylesheets/');
+const isSiteCode = (path) => path.startsWith('/javascripts/') || path.startsWith('/stylesheets/') || path.startsWith('/cuckblox/');
 const isImmutable = (path) => path.startsWith('/assets/javascripts/') || path.startsWith('/assets/stylesheets/')
   || path.startsWith('/assets/fonts/') || path.startsWith('/assets/icons/');
 
