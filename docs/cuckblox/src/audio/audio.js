@@ -5,6 +5,14 @@ const HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const A5 = 81;
 const HOME = { root: A5, scale: HARMONIC_MINOR };
+let contextConfigured = false;
+
+function configureTone(Tone) {
+  if (contextConfigured) return;
+  // A bigger buffer prevents dropouts on weaker devices.
+  Tone.setContext(new Tone.Context({ latencyHint: 'playback', lookAhead: 0.2 }));
+  contextConfigured = true;
+}
 
 /** Where the blips sit for a key ({ root: 0–11, mode } or null): the root nearest A5, a tritone away going down so
  *  nothing gets shriller, on harmonic minor or major. */
@@ -77,6 +85,7 @@ export class Sound {
       document.head.append(s);
     }).then(() => {
       this.Tone = globalThis.Tone ?? null;
+      if (this.Tone) configureTone(this.Tone);
       if (this.Tone && this.wanted) this.#start();
     });
     return this.loading;
