@@ -11,6 +11,8 @@ export const SWIPE_UP = ['none', 'hardDrop', 'hold', 'pause'];
 export const padPixels = (size) => size * 10;
 
 export const VIBRATION_MS = { gesture: 20, drop: 80, clear: 150, special: 300 };
+// How hard a gamepad rumbles for the same events, 0–1
+export const RUMBLE = { drop: 0.25, clear: 0.55, special: 1 };
 
 export function vibrate(ms) {
   try {

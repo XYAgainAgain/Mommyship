@@ -87,6 +87,7 @@ export class Sound {
   constructor({ enabled = true } = {}) {
     this.enabled = enabled;
     this.wanted = false;
+    this.hidden = false;
     this.context = null;
     this.waves = null;
     this.loading = null;
@@ -120,14 +121,30 @@ export class Sound {
    *  effect once the context exists, which browsers allow once the page has had a gesture. */
   unlock() {
     this.wanted = true;
-    if (this.context) this.#start();
+    if (this.context && !this.hidden) this.#start();
+  }
+
+  /** Whether sound is waiting on a key or tap. Browsers never count a gamepad press as the gesture that may start
+   *  audio, so a player on a pad has to be told. */
+  get blocked() {
+    return !!this.context && !this.hidden && this.context.state !== 'running';
+  }
+
+  /** A hidden page suspends the whole shared context, so every sound stops in the background and the music's clock
+   *  stands still rather than piling up notes to play at once on return. Showing it again resumes a wanted context. */
+  setHidden(hidden) {
+    this.hidden = hidden;
+    const c = this.context;
+    if (!c) return;
+    if (hidden) c.suspend?.()?.catch?.(() => {});
+    else if (this.wanted) this.#start();
   }
 
   /** Makes the context every sound shares, once; resolves when it exists (or Web Audio turns out to be missing). */
   load() {
     this.loading ??= Promise.resolve().then(() => {
       this.context = createContext();
-      if (this.context && this.wanted) this.#start();
+      if (this.context && this.wanted && !this.hidden) this.#start();
     });
     return this.loading;
   }

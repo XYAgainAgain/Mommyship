@@ -271,6 +271,8 @@ export class Renderer {
     // Per-frame draw counters: stack redraws, glow sprites, and text sprites
     this.stats = { glow: 0, text: 0, stack: 0, stackMs: 0 };
     this._showGhost = false;
+    // The shell sets this while the sideways touch HOLD button shows; it stands in for the HOLD label
+    this.holdButton = false;
     this.time = 0;
     this.glowCache = new Map();
     this.starCache = new Map();
@@ -559,10 +561,13 @@ export class Renderer {
       case 'clear': this.#onClear(e); break;
       case 'hold': this.#onHold(e); break;
       case 'callout': {
-        const over = e.kind === 'gameOver';
+        // Game over leaves the words to the DO BETTER card; only Osminok's dive calls out how deep it was lost
+        if (e.kind === 'gameOver') {
+          if (this.theme.dive) this.#queueCallout(TEXT.osminok.lostAt(depthFor(this.game.lines).toLocaleString('en-US')), GAME_OVER_CALLOUT_SECONDS, null);
+          break;
+        }
         // The shell can hang a sub-line on a callout first (Consistent's payout under its BLOX line)
-        const sub = over && this.theme.dive ? TEXT.osminok.lostAt(depthFor(this.game.lines).toLocaleString('en-US')) : e.sub ?? null;
-        this.#queueCallout(CALLOUT_TEXT[e.kind]?.(e.value) ?? e.kind, over ? GAME_OVER_CALLOUT_SECONDS : CALLOUT_SECONDS, sub);
+        this.#queueCallout(CALLOUT_TEXT[e.kind]?.(e.value) ?? e.kind, CALLOUT_SECONDS, e.sub ?? null);
         break;
       }
       case 'critical': this.critical = e.on; break;
@@ -1435,7 +1440,7 @@ export class Renderer {
       rows.push(['depth', TEXT.osminok.meters(fmt(km * 1000)), TEXT.osminok.km(KM.format(km)), TEXT.osminok.kmTight((km < 10 ? KM : WHOLE_KM).format(km))]);
     }
     this.text(TEXT.hud.next, L.nextLabel.x, L.nextLabel.y, { color: theme.dimText, glow: 0.3, staryllic: HUD_STARYLLIC });
-    if (g.mode.hold) this.text(TEXT.hud.hold, L.holdLabel.x, L.holdLabel.y, { color: theme.dimText, glow: 0.3, staryllic: HUD_STARYLLIC });
+    if (g.mode.hold && !this.holdButton) this.text(TEXT.hud.hold, L.holdLabel.x, L.holdLabel.y, { color: theme.dimText, glow: 0.3, staryllic: HUD_STARYLLIC });
     if (L.portrait) {
       const colW = (COLS * L.C) / rows.length;
       const fits = (s) => this.measure(s) <= colW * 0.94;
@@ -1783,30 +1788,33 @@ export class Renderer {
     if (panel.showDrop) this.text('↓', x, y + t + L.unit * 1.2, { ...glyph, align: 'center' });
   }
 
-  /** The on-screen Hold button around the hold preview, in CSS px like pointer events. */
+  /** The on-screen Hold button, in CSS px like pointer events: Lightblocks' strip right of the well, four cells tall
+   *  from the well's top (from under the Next preview in landscape) out to the screen edge. */
   holdButtonRect() {
     const L = this.layout;
     if (!L) return null;
-    const pad = L.C * 0.3;
-    const top = L.holdLabel.y - this.#fontPx(1) - pad;
-    const bottom = this.#toScreen(0, L.hold.y)[1] + L.C + pad;
-    const x = L.wellX + L.hold.x * L.C - pad;
+    const right = L.wellX + COLS * L.C;
+    const gap = Math.min(L.C * 0.5, Math.max(0, (L.W - right - this.#fontPx(1)) / 3));
+    const x = right + gap;
+    const top = L.portrait ? L.wellY : L.wellY + L.C * 5;
+    const w = Math.max(1, Math.min(L.C * 3, L.W - x - gap));
     const k = L.dpr;
-    return { x: x / k, y: top / k, w: (L.C * 4 + pad * 2) / k, h: (bottom - top) / k };
+    return { x: x / k, y: top / k, w: w / k, h: (L.C * 4) / k };
   }
 
+  /** A big sideways HOLD reading down the strip, with no frame around it. */
   drawHoldButton() {
     const r = this.holdButtonRect();
     if (!r) return;
     const { ctx, theme, layout: L } = this;
     const k = L.dpr;
+    const str = TEXT.hud.hold;
+    let size = this.fitSize(str, r.h * k * 0.85, 2);
+    while (size > 1 && this.#fontPx(size) > r.w * k * 0.85) size -= 11 / L.unit;
     ctx.save();
-    ctx.globalAlpha = 0.45;
-    ctx.strokeStyle = theme.dimText;
-    ctx.lineWidth = Math.max(1, 1.5 * k);
-    ctx.beginPath();
-    ctx.roundRect(Math.round(r.x * k), Math.round(r.y * k), Math.round(r.w * k), Math.round(r.h * k), L.C * 0.25);
-    ctx.stroke();
+    ctx.translate(Math.round((r.x + r.w / 2) * k), Math.round((r.y + r.h / 2) * k));
+    ctx.rotate(Math.PI / 2);
+    this.text(str, 0, this.#fontPx(size) * 0.35, { size, align: 'center', color: theme.text, glow: 0.4, alpha: 0.85, staryllic: HUD_STARYLLIC });
     ctx.restore();
   }
 
@@ -1860,10 +1868,12 @@ export function computeLayout(W, H, dpr = 1) {
   let C;
   let unit;
   if (portrait) {
-    // Header rows: stats label and value, then the preview labels, then a 2.4-cell preview row
-    C = Math.max(8, Math.floor(Math.min((H * 0.95 - header(minUnit)) / 22.4, (W * 0.96) / 10.6)));
+    // Header rows: stats label and value, then the preview labels, then a 2.4-cell preview row. Each side of the well
+    // keeps a line and a half of text clear, so the sideways touch HOLD always fits on narrow phones
+    const fit = (u) => Math.max(8, Math.floor(Math.min((H * 0.95 - header(u)) / 22.4, (W * 0.98 - u * 3) / 10)));
+    C = fit(minUnit);
     unit = Math.max(minUnit, Math.floor((C * 0.5) / 11) * 11);
-    C = Math.max(8, Math.floor(Math.min((H * 0.95 - header(unit)) / 22.4, (W * 0.96) / 10.6)));
+    C = fit(unit);
   } else {
     C = Math.max(8, Math.floor(Math.min((H * 0.92) / 21, (W * 0.96) / 22)));
     unit = Math.max(minUnit, Math.floor((C * 0.5) / 11) * 11);
@@ -1881,9 +1891,10 @@ export function computeLayout(W, H, dpr = 1) {
     L.wellY = Math.round(previewTop + C * 2.4);
     // A preview's upper row lines up with previewTop
     const originY = VISIBLE_ROWS - 2 + (L.wellY - previewTop) / C;
-    L.hold = { x: 0, y: originY };
+    // Hold sits 4.5 cells left of Next on the preview row, as Lightblocks lays out portrait
+    L.hold = { x: 1.5, y: originY };
     L.next = { x: 6, y: originY };
-    L.holdLabel = { x: wellX, y: previewLabelY };
+    L.holdLabel = { x: wellX + 1.5 * C, y: previewLabelY };
     L.nextLabel = { x: wellX + 6 * C, y: previewLabelY };
   } else {
     L.wellY = Math.round((H - wellH) / 2 + C * 0.3);

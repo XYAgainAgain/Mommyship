@@ -2715,7 +2715,17 @@ var _i = () => G("detune", "Detune", "Pitch", {
 	curve: "linear",
 	step: 1,
 	unit: "cents"
-}, "Shifts the pitch of the whole voice in cents; 100 cents is one semitone and 1200 is an octave.", "Small amounts against another layer thicken the sound with a slow beating; 1200 or -1200 moves the layer a full octave."), vi = () => G("portamento", "Glide", "Pitch", {
+}, "Shifts the pitch of the whole voice in cents; 100 cents is one semitone and 1200 is an octave.", "Small amounts against another layer thicken the sound with a slow beating; 1200 or -1200 moves the layer a full octave."), vi = () => ({
+	...G("transpose", "Transpose", "Pitch", {
+		min: -48,
+		max: 48,
+		default: 0,
+		curve: "linear",
+		step: 1,
+		unit: "st"
+	}, "Moves the whole layer up or down in semitones, up to four octaves either way; 12 is one octave.", "Stack a layer 12, 19, or 24 semitones up for the bright overtones of bells, glockenspiels, and organ stops."),
+	perNote: !0
+}), yi = () => G("portamento", "Glide", "Pitch", {
 	min: 0,
 	max: 1,
 	default: 0,
@@ -2723,10 +2733,10 @@ var _i = () => G("detune", "Detune", "Pitch", {
 	step: .005,
 	unit: "s"
 }, "How long the pitch slides from one note to the next. It only applies when a voice moves to a new note, so it is clearest with Voices set to 1.", "At 0 notes jump cleanly; small values add a vocal slur between notes, and longer ones give the swoop of a slide guitar or a 303 bass line.");
-function yi(e) {
+function bi(e) {
 	let t = [G("harmonicity", "Mod ratio", "Modulation", {
 		min: .25,
-		max: 8,
+		max: e ? 16 : 8,
 		default: 3,
 		curve: "log",
 		step: .01,
@@ -2746,7 +2756,7 @@ function yi(e) {
 		release: .5
 	})), t;
 }
-function bi() {
+function xi() {
 	return [
 		...fi("", "Oscillator", "", "triangle", {
 			pulse: !0,
@@ -2759,11 +2769,12 @@ function bi() {
 			release: 1
 		}),
 		gi("Envelope", "linear"),
+		vi(),
 		_i(),
-		vi()
+		yi()
 	];
 }
-function xi(e) {
+function Si(e) {
 	return [
 		...fi("", "Oscillator", "", "sine", {
 			pulse: !0,
@@ -2776,13 +2787,37 @@ function xi(e) {
 			release: .5
 		}),
 		gi("Envelope", "linear"),
-		...yi(e),
+		...bi(e),
+		vi(),
 		_i(),
-		vi()
+		yi()
 	];
 }
-var Si = "The resting cutoff frequency of the filter, the brightness the note settles back to when the filter envelope closes.", Ci = "Lower values make the voice darker and more muffled; higher values let more buzz and sparkle through.";
-function wi() {
+function Ci(e) {
+	return [{
+		...G("keyTrack", "Key tracking", e, {
+			min: 0,
+			max: 1,
+			default: 0,
+			curve: "linear",
+			step: .01,
+			unit: ""
+		}, "How far the cutoff follows the note you play: at 1 it moves an octave for every octave, measured from middle C.", "Keeps guitars, harpsichords, and brass equally bright from the bottom of the keyboard to the top; at 0 high notes sound duller than low ones."),
+		perNote: !0
+	}, {
+		...G("velocityToFilter", "Velocity to filter", e, {
+			min: 0,
+			max: 1,
+			default: 0,
+			curve: "linear",
+			step: .01,
+			unit: ""
+		}, "How much playing harder opens the filter envelope further; at 1 the softest notes get no sweep at all.", "The 303 accent, a guitar pick dug in, or brass that brightens when pushed; at 0 every note opens the same way."),
+		perNote: !0
+	}];
+}
+var wi = "The resting cutoff frequency of the filter, the brightness the note settles back to when the filter envelope closes.", Ti = "Lower values make the voice darker and more muffled; higher values let more buzz and sparkle through.";
+function Ei() {
 	return [
 		...fi("", "Oscillator", "", "sawtooth", {
 			pulse: !0,
@@ -2808,7 +2843,7 @@ function wi() {
 			default: 200,
 			curve: "log",
 			unit: "Hz"
-		}, Si, Ci),
+		}, wi, Ti),
 		G("filter.Q", "Resonance", "Filter", {
 			min: .1,
 			max: 20,
@@ -2825,6 +2860,7 @@ function wi() {
 			step: .1,
 			unit: "oct"
 		}, "How far, in octaves, the filter envelope opens the cutoff above its resting frequency.", "At 0 the tone stays static; 2–4 octaves give the classic sweep at the start of each note."),
+		...Ci("Filter"),
 		...mi("filterEnvelope", "Filter envelope", "Filter ", "filter", {
 			attack: .6,
 			decay: .2,
@@ -2838,11 +2874,12 @@ function wi() {
 			release: 1
 		}),
 		gi("Envelope", "linear"),
+		vi(),
 		_i(),
-		vi()
+		yi()
 	];
 }
-function Ti(e) {
+function Di(e) {
 	let t = `voice${e}.`, n = `Voice ${e + 1}`, r = `V${e + 1} `;
 	return [
 		...fi(t, n, r, "sawtooth", {
@@ -2855,7 +2892,7 @@ function Ti(e) {
 			default: 200,
 			curve: "log",
 			unit: "Hz"
-		}, Si, Ci),
+		}, wi, Ti),
 		...mi(`${t}envelope`, n, r, "amp", {
 			attack: .01,
 			decay: .01,
@@ -2864,7 +2901,7 @@ function Ti(e) {
 		})
 	];
 }
-function Ei() {
+function Oi() {
 	return [
 		G("harmonicity", "Interval", "Voices", {
 			min: .25,
@@ -2891,13 +2928,15 @@ function Ei() {
 			step: .1,
 			unit: "Hz"
 		}, "How fast the built-in pitch wobble cycles, in wobbles per second.", "Around 5–6 Hz feels like a singer or violinist; slower rates drift and faster ones flutter."),
-		...Ti(0),
-		...Ti(1),
+		...Di(0),
+		...Di(1),
+		...Ci("Filter"),
+		vi(),
 		_i(),
-		vi()
+		yi()
 	];
 }
-function Di() {
+function ki() {
 	return [
 		...fi("", "Oscillator", "", "sine", {
 			pulse: !1,
@@ -2925,10 +2964,11 @@ function Di() {
 			release: 1.4
 		}),
 		gi("Envelope", "exponential"),
+		vi(),
 		_i()
 	];
 }
-function Oi() {
+function Ai() {
 	return [
 		G("harmonicity", "Pitch ratio", "Tone", {
 			min: .5,
@@ -2968,10 +3008,11 @@ function Oi() {
 			release: .2
 		}),
 		gi("Envelope", "linear"),
+		vi(),
 		_i()
 	];
 }
-function ki() {
+function ji() {
 	let e = G("resonance", "Sustain", "String", {
 		min: .1,
 		max: .99,
@@ -2980,7 +3021,54 @@ function ki() {
 		step: .01,
 		unit: ""
 	}, "How much energy the virtual string keeps on each pass, which sets how long the note rings.", "Low values give a short, dead thunk like pizzicato; values near the top ring out like a harp.");
-	return e.rebuild = !0, [
+	e.rebuild = !0, e.visibleWhen = {
+		path: "stringDecay",
+		equals: ["sustain"]
+	};
+	let t = G("ringTime", "Ring time", "String", {
+		min: .05,
+		max: 20,
+		default: 1.5,
+		curve: "log",
+		unit: "s"
+	}, "How long a plucked note takes to die away to silence, the same for every note from low to high.", "Short times give a muted, plucky thunk; long ones let a harp or a steel string ring on.");
+	t.visibleWhen = {
+		path: "stringDecay",
+		equals: ["ring"]
+	}, t.perNote = !0;
+	let n = K("stringDecay", "String decay", "String", [{
+		value: "sustain",
+		label: "Sustain (fixed loop)"
+	}, {
+		value: "ring",
+		label: "Ring time"
+	}], "sustain", "How the string’s ring is set: Sustain keeps the same loop strength on every note, so high notes die faster; Ring time sets one length in seconds for all of them.", "Sustain is the classic sound of older patches; Ring time lets high notes sing as long as low ones.");
+	n.perNote = !0;
+	let r = K("tuning", "IN TUNE", "Pitch", [{
+		value: "classic",
+		label: "Off"
+	}, {
+		value: "exact",
+		label: "On"
+	}], "classic", "Tunes the virtual string to the nearest pitch it can reach. Off, it always runs a little flat, more on higher notes.", "Clearest against other layers or instruments: high plucks stop sounding sour beside them. Off keeps older patches as they were.");
+	r.toggle = {
+		on: "exact",
+		off: "classic"
+	}, r.perNote = !0;
+	let i = G("velocity", "Velocity", "String", {
+		min: 0,
+		max: 1,
+		default: 0,
+		curve: "linear",
+		step: .01,
+		unit: ""
+	}, "How much harder playing makes the pluck louder; at 0 every note plays at full level.", "Raise it for fingerpicked parts with soft and loud notes; leave it at 0 for an even, machine-like strum.");
+	i.perNote = !0;
+	let a = {
+		..._i(),
+		perNote: !0
+	}, o = vi();
+	return [
 		G("attackNoise", "Pick noise", "String", {
 			min: .1,
 			max: 20,
@@ -2996,17 +3084,23 @@ function ki() {
 			curve: "log",
 			unit: "Hz"
 		}, "The cutoff of the filter inside the virtual string, which sets how quickly its high overtones die away.", "Low values sound like a muted or nylon-string pluck; high values ring like bright steel strings."),
+		n,
 		e,
+		t,
 		G("release", "Release", "String", {
 			min: .01,
 			max: 4,
 			default: 1,
 			curve: "log",
 			unit: "s"
-		}, "How long the string takes to stop ringing after you let go of the key.", "Short values mute the string like a palm resting on it; long ones let it ring naturally.")
+		}, "How long the string takes to stop ringing after you let go of the key.", "Short values mute the string like a palm resting on it; long ones let it ring naturally."),
+		i,
+		r,
+		o,
+		a
 	];
 }
-function Ai() {
+function Mi() {
 	return [
 		K("noise.type", "Noise color", "Noise", [
 			{
@@ -3031,7 +3125,7 @@ function Ai() {
 		gi("Envelope", "linear")
 	];
 }
-var ji = [
+var Ni = [
 	{
 		value: "a",
 		label: "ah (father)"
@@ -3053,8 +3147,8 @@ var ji = [
 		label: "oo (moon)"
 	}
 ];
-function Mi() {
-	let e = K("vowelA", "Vowel", "Syllable", ji, "o", "The vowel each note sings in plain vowel mode, and where its glide starts.", "Ah and oh sound open and warm, ee and oo sound closed and small; eh sits in between."), t = K("vowelB", "Glide-to vowel", "Syllable", ji, "u", "The vowel a held note drifts toward in plain vowel mode.", "Oh gliding to oo gives a rounded “ohw”; ah gliding to ee gives a bright “eye”.");
+function Pi() {
+	let e = K("vowelA", "Vowel", "Syllable", Ni, "o", "The vowel each note sings in plain vowel mode, and where its glide starts.", "Ah and oh sound open and warm, ee and oo sound closed and small; eh sits in between."), t = K("vowelB", "Glide-to vowel", "Syllable", Ni, "u", "The vowel a held note drifts toward in plain vowel mode.", "Oh gliding to oo gives a rounded “ohw”; ah gliding to ee gives a bright “eye”.");
 	e.visibleWhen = {
 		path: "syllableMode",
 		equals: ["vowel"]
@@ -3181,6 +3275,7 @@ function Mi() {
 			step: .01,
 			unit: ""
 		}, "Chops the voice in fast pulses, the way a creaky or growling throat does.", "Low values give a sleepy vocal fry; high values become a growl, a bark, or a frog’s croak. At 0 it costs nothing."),
+		vi(),
 		_i(),
 		G("portamento", "Glide", "Pitch", {
 			min: 0,
@@ -3246,18 +3341,18 @@ function Mi() {
 		}, "How long the voice takes to fade after you let go, and how long any fall on release lasts.", "Short releases clip words off neatly; long ones let each note sigh away.")
 	];
 }
-var Ni = {
-	Synth: bi(),
-	AMSynth: xi(!1),
-	FMSynth: xi(!0),
-	MonoSynth: wi(),
-	DuoSynth: Ei(),
-	MembraneSynth: Di(),
-	MetalSynth: Oi(),
-	PluckSynth: ki(),
-	NoiseSynth: Ai(),
-	FormantVoice: Mi()
-}, Pi = {
+var Fi = {
+	Synth: xi(),
+	AMSynth: Si(!1),
+	FMSynth: Si(!0),
+	MonoSynth: Ei(),
+	DuoSynth: Oi(),
+	MembraneSynth: ki(),
+	MetalSynth: Ai(),
+	PluckSynth: ji(),
+	NoiseSynth: Mi(),
+	FormantVoice: Pi()
+}, Ii = {
 	Synth: { detune: "detune" },
 	AMSynth: {
 		detune: "detune",
@@ -3290,46 +3385,46 @@ var Ni = {
 		vibRate: "vibLfo.frequency"
 	}
 };
-for (let e of oi) for (let t of Ni[e]) Object.hasOwn(Pi[e], t.path) && (t.modulatable = !0);
-function Fi(e, t) {
-	return Object.hasOwn(Pi[e], t) ? Pi[e][t] : void 0;
+for (let e of oi) for (let t of Fi[e]) Object.hasOwn(Ii[e], t.path) && (t.modulatable = !0);
+function Li(e, t) {
+	return Object.hasOwn(Ii[e], t) ? Ii[e][t] : void 0;
 }
-function Ii(e, t) {
+function Ri(e, t) {
 	let { min: n, max: r } = e;
 	if (!(r > n)) return 0;
 	let i = Math.min(r, Math.max(n, t)), a = e.curve === "log" && n > 0 ? Math.log(i / n) / Math.log(r / n) : (i - n) / (r - n);
 	return Number.isFinite(a) ? a : 0;
 }
-function Li(e, t) {
+function zi(e, t) {
 	let { min: n, max: r } = e, i = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
 	return e.curve === "log" && n > 0 ? n * (r / n) ** i : n + (r - n) * i;
 }
-function Ri(e, t) {
-	return Ni[e].find((e) => e.path === t);
+function Bi(e, t) {
+	return Fi[e].find((e) => e.path === t);
 }
-function zi(e) {
+function Vi(e) {
 	let t = {};
-	for (let n of Ni[e]) t[n.path] = n.default;
+	for (let n of Fi[e]) t[n.path] = n.default;
 	return t;
 }
-function Bi(e, t) {
+function Hi(e, t) {
 	if (e.kind === "choice") return typeof t == "string" && e.choices.some((e) => e.value === t) ? t : void 0;
 	if (typeof t != "number" || !Number.isFinite(t)) return;
 	let n = Math.min(e.max, Math.max(e.min, t));
 	return e.step === 1 && (n = Math.round(n)), n;
 }
-function Vi(e, t) {
-	return Hi(Ni[e], t);
+function Ui(e, t) {
+	return Wi(Fi[e], t);
 }
-function Hi(e, t) {
+function Wi(e, t) {
 	let n = typeof t == "object" && t ? t : {}, r = {};
 	for (let t of e) {
 		let e = Object.prototype.hasOwnProperty.call(n, t.path);
-		r[t.path] = (e ? Bi(t, n[t.path]) : void 0) ?? t.default;
+		r[t.path] = (e ? Hi(t, n[t.path]) : void 0) ?? t.default;
 	}
 	return r;
 }
-var Ui = [
+var Gi = [
 	"filter",
 	"distortion",
 	"bitcrusher",
@@ -3339,10 +3434,10 @@ var Ui = [
 	"eq",
 	"compressor"
 ];
-function Wi(e) {
-	return typeof e == "string" && Ui.includes(e);
+function Ki(e) {
+	return typeof e == "string" && Gi.includes(e);
 }
-var Gi = [
+var qi = [
 	{
 		value: "4m",
 		label: "4 bars",
@@ -3418,18 +3513,18 @@ var Gi = [
 		label: "1/32",
 		quarters: .125
 	}
-], Ki = Gi.map(({ value: e, label: t }) => ({
+], Ji = qi.map(({ value: e, label: t }) => ({
 	value: e,
 	label: t
 }));
-function qi(e) {
-	return Gi.find((t) => t.value === e)?.quarters ?? null;
+function Yi(e) {
+	return qi.find((t) => t.value === e)?.quarters ?? null;
 }
-function Ji(e, t) {
-	let n = qi(e) ?? 1;
+function Xi(e, t) {
+	let n = Yi(e) ?? 1;
 	return 60 / (Number.isFinite(t) && t > 0 ? t : 120) * n;
 }
-var Yi = () => {
+var Zi = () => {
 	let e = G("wet", "Mix", "Mix", {
 		min: 0,
 		max: 1,
@@ -3439,7 +3534,7 @@ var Yi = () => {
 		unit: ""
 	}, "How much of the effected sound is heard against the dry sound going in.", "At 1 you hear only the pedal; lower values blend the untouched sound back in.");
 	return e.modulatable = !0, e;
-}, Xi = (e) => (e.modulatable = !0, e), Zi = (e) => (e.rebuild = !0, e), Qi = [
+}, Qi = (e) => (e.modulatable = !0, e), $i = (e) => (e.rebuild = !0, e), ea = [
 	{
 		value: "sine",
 		label: "Sine"
@@ -3457,7 +3552,7 @@ var Yi = () => {
 		label: "Sawtooth"
 	}
 ];
-function $i() {
+function ta() {
 	return [
 		K("type", "Type", "Filter", [
 			{
@@ -3477,14 +3572,14 @@ function $i() {
 				label: "Notch"
 			}
 		], "lowpass", "Which part of the sound the filter keeps: low-pass keeps the lows, high-pass the highs, and band-pass a band in the middle. Notch removes a band.", "Low-pass darkens and warms, high-pass thins, band-pass sounds like a telephone, and a swept notch gives a hollow, phasey whoosh."),
-		Xi(G("frequency", "Cutoff", "Filter", {
+		Qi(G("frequency", "Cutoff", "Filter", {
 			min: 20,
 			max: 2e4,
 			default: 1200,
 			curve: "log",
 			unit: "Hz"
 		}, "Where the filter starts to act on the whole instrument, after every layer is mixed.", "Sweep it slowly for the classic filter rise; an LFO on it gives a wah or a slow throb.")),
-		Xi(G("Q", "Resonance", "Filter", {
+		Qi(G("Q", "Resonance", "Filter", {
 			min: .1,
 			max: 20,
 			default: 1,
@@ -3494,7 +3589,7 @@ function $i() {
 		}, "How much the filter emphasizes the frequencies right at the cutoff.", "Higher values add a vocal, whistling peak that sings as the cutoff moves; very high values squeal."))
 	];
 }
-function ea() {
+function na() {
 	return [
 		G("distortion", "Drive", "Distortion", {
 			min: 0,
@@ -3518,10 +3613,10 @@ function ea() {
 				label: "Smoothest"
 			}
 		], "none", "Runs the distortion at a higher internal sample rate so harsh overtones fold back less.", "Raw has a gritty, aliased crunch that suits chip sounds; smoother settings sound cleaner and cost more processing."),
-		Yi()
+		Zi()
 	];
 }
-function ta() {
+function ra() {
 	return [G("bits", "Bits", "Bitcrusher", {
 		min: 1,
 		max: 16,
@@ -3529,11 +3624,11 @@ function ta() {
 		curve: "linear",
 		step: 1,
 		unit: "bits"
-	}, "How many volume steps the sound is rounded to; each bit doubles the number of steps.", "Around 8 bits sounds like an old console sample; 3 or 4 bits turn into a fizzy, broken-speaker crunch."), Yi()];
+	}, "How many volume steps the sound is rounded to; each bit doubles the number of steps.", "Around 8 bits sounds like an old console sample; 3 or 4 bits turn into a fizzy, broken-speaker crunch."), Zi()];
 }
-function na() {
+function ia() {
 	return [
-		Xi(G("frequency", "Rate", "Chorus", {
+		Qi(G("frequency", "Rate", "Chorus", {
 			min: .1,
 			max: 20,
 			default: 1.5,
@@ -3573,12 +3668,12 @@ function na() {
 			step: 1,
 			unit: "°"
 		}, "How far apart the left and right sweeps run, in degrees of their cycle.", "At 180 the two sides move opposite each other for a wide stereo image; at 0 the chorus sits in the middle."),
-		Yi()
+		Zi()
 	];
 }
-function ra() {
+function aa() {
 	return [
-		Xi(G("frequency", "Rate", "Phaser", {
+		Qi(G("frequency", "Rate", "Phaser", {
 			min: .05,
 			max: 20,
 			default: .5,
@@ -3601,7 +3696,7 @@ function ra() {
 			curve: "log",
 			unit: "Hz"
 		}, "The lowest point of the sweep.", "Low values make the sweep growl through the body of the sound; high values keep it up in the sizzle."),
-		Xi(G("Q", "Resonance", "Phaser", {
+		Qi(G("Q", "Resonance", "Phaser", {
 			min: .1,
 			max: 20,
 			default: 10,
@@ -3609,7 +3704,7 @@ function ra() {
 			step: .1,
 			unit: ""
 		}, "How sharp and pronounced the sweeping notches are.", "Higher values make the sweep whistle and stand out; lower values keep it soft.")),
-		Zi(G("stages", "Stages", "Phaser", {
+		$i(G("stages", "Stages", "Phaser", {
 			min: 1,
 			max: 12,
 			default: 10,
@@ -3617,12 +3712,12 @@ function ra() {
 			step: 1,
 			unit: ""
 		}, "How many filter stages build the effect; more stages carve more notches.", "Few stages sound gentle and vintage; many sound deep and dramatic, and cost more processing.")),
-		Yi()
+		Zi()
 	];
 }
-function ia() {
+function oa() {
 	return [
-		Xi(G("frequency", "Rate", "Tremolo", {
+		Qi(G("frequency", "Rate", "Tremolo", {
 			min: .1,
 			max: 40,
 			default: 6,
@@ -3630,7 +3725,7 @@ function ia() {
 			step: .01,
 			unit: "Hz"
 		}, "How fast the volume pulses, in pulses per second.", "Around 4–8 Hz is the classic surf-amp shimmer; faster rates flutter like a helicopter.")),
-		Xi(G("depth", "Depth", "Tremolo", {
+		Qi(G("depth", "Depth", "Tremolo", {
 			min: 0,
 			max: 1,
 			default: .5,
@@ -3638,7 +3733,7 @@ function ia() {
 			step: .01,
 			unit: ""
 		}, "How far the volume dips on each pulse.", "Low values add a gentle pulse; at 1 the sound chops all the way to silence.")),
-		K("type", "Shape", "Tremolo", Qi, "sine", "The shape of each volume pulse.", "Sine is smooth and gentle; square chops hard like a gate, and sawtooth gives a pumping swell."),
+		K("type", "Shape", "Tremolo", ea, "sine", "The shape of each volume pulse.", "Sine is smooth and gentle; square chops hard like a gate, and sawtooth gives a pumping swell."),
 		G("spread", "Width", "Tremolo", {
 			min: 0,
 			max: 180,
@@ -3647,10 +3742,10 @@ function ia() {
 			step: 1,
 			unit: "°"
 		}, "How far apart the left and right pulses run, in degrees of their cycle.", "At 180 the sound bounces between the speakers like an auto-panner; at 0 both sides pulse together."),
-		Yi()
+		Zi()
 	];
 }
-var aa = (e, t, n, r) => Xi(G(e, t, "EQ", {
+var sa = (e, t, n, r) => Qi(G(e, t, "EQ", {
 	min: -24,
 	max: 12,
 	default: 0,
@@ -3658,11 +3753,11 @@ var aa = (e, t, n, r) => Xi(G(e, t, "EQ", {
 	step: .1,
 	unit: "dB"
 }, n, r));
-function oa() {
+function ca() {
 	return [
-		aa("low", "Low gain", "Boosts or cuts everything below the low split.", "Cut it to stop a lead muddying the bass; boost it for a fatter bottom end."),
-		aa("mid", "Mid gain", "Boosts or cuts the band between the two splits, where most of a sound’s body lives.", "Cutting scoops the sound out like a metal guitar tone; boosting pushes it forward like a telephone."),
-		aa("high", "High gain", "Boosts or cuts everything above the high split.", "Boost for air and sparkle; cut to tame a harsh, fizzy top."),
+		sa("low", "Low gain", "Boosts or cuts everything below the low split.", "Cut it to stop a lead muddying the bass; boost it for a fatter bottom end."),
+		sa("mid", "Mid gain", "Boosts or cuts the band between the two splits, where most of a sound’s body lives.", "Cutting scoops the sound out like a metal guitar tone; boosting pushes it forward like a telephone."),
+		sa("high", "High gain", "Boosts or cuts everything above the high split.", "Boost for air and sparkle; cut to tame a harsh, fizzy top."),
 		G("lowFrequency", "Low split", "EQ", {
 			min: 40,
 			max: 1e3,
@@ -3679,9 +3774,9 @@ function oa() {
 		}, "Where the mid band ends and the high band begins.", "Lower settings let the high knob shape the bite of the sound; higher ones touch only the sheen.")
 	];
 }
-function sa() {
+function la() {
 	return [
-		Xi(G("threshold", "Threshold", "Compressor", {
+		Qi(G("threshold", "Threshold", "Compressor", {
 			min: -60,
 			max: 0,
 			default: -24,
@@ -3721,35 +3816,35 @@ function sa() {
 		}, "How gradually compression fades in around the threshold.", "A hard knee (low) grabs abruptly; a soft knee (high) eases in and sounds more natural.")
 	];
 }
-var ca = {
-	filter: $i(),
-	distortion: ea(),
-	bitcrusher: ta(),
-	chorus: na(),
-	phaser: ra(),
-	tremolo: ia(),
-	eq: oa(),
-	compressor: sa()
+var ua = {
+	filter: ta(),
+	distortion: na(),
+	bitcrusher: ra(),
+	chorus: ia(),
+	phaser: aa(),
+	tremolo: oa(),
+	eq: ca(),
+	compressor: la()
 };
-function la(e) {
-	return ca[e];
+function da(e) {
+	return ua[e];
 }
-function ua(e, t) {
-	return ca[e].find((e) => e.path === t);
+function fa(e, t) {
+	return ua[e].find((e) => e.path === t);
 }
-var da = [
+var pa = [
 	"reverb",
 	"delay",
 	"chorus"
-], fa = {
+], ma = {
 	reverb: "Reverb",
 	delay: "Delay",
 	chorus: "Chorus"
 };
-function pa(e) {
-	return typeof e == "string" && da.includes(e);
+function ha(e) {
+	return typeof e == "string" && pa.includes(e);
 }
-var ma = {
+var ga = {
 	reverb: [G("decay", "Decay", "Reverb", {
 		min: .2,
 		max: 12,
@@ -3765,7 +3860,7 @@ var ma = {
 		step: .001,
 		unit: "s"
 	}, "A short gap before the reverb starts, as if the walls were farther away.", "A little pre-delay keeps notes crisp in front of the reverb instead of smearing into it.")],
-	delay: [K("division", "Time", "Delay", Ki, "8n.", "The gap between echoes, locked to the song’s tempo.", "A dotted eighth gives the galloping echo of countless lead lines; a quarter note sounds like a canyon answering back."), G("feedback", "Feedback", "Delay", {
+	delay: [K("division", "Time", "Delay", Ji, "8n.", "The gap between echoes, locked to the song’s tempo.", "A dotted eighth gives the galloping echo of countless lead lines; a quarter note sounds like a canyon answering back."), G("feedback", "Feedback", "Delay", {
 		min: 0,
 		max: .9,
 		default: .35,
@@ -3808,23 +3903,23 @@ var ma = {
 		}, "How far apart the left and right sweeps run.", "At 180 the chorus is as wide as it gets; at 0 it sits in the middle.")
 	]
 };
-function ha(e) {
-	return ma[e];
+function _a(e) {
+	return ga[e];
 }
-function ga(e) {
-	return Hi(ma[e], {});
+function va(e) {
+	return Wi(ga[e], {});
 }
-function _a(e, t) {
-	return Hi(ma[e], t);
+function ya(e, t) {
+	return Wi(ga[e], t);
 }
-var va = [
+var ba = [
 	"sine",
 	"triangle",
 	"square",
 	"sawtooth"
-], ya = {
-	shape: K("shape", "Shape", "LFO", Qi, "sine", "The shape of the slow wave that turns the knobs it is connected to.", "Sine and triangle sweep smoothly back and forth; square flips between two settings, and sawtooth ramps up and snaps back."),
-	division: K("division", "Rate", "LFO", Ki, "1m", "One full sweep, as a note length at the song’s tempo.", "Longer divisions give slow evolving movement; short ones give rhythmic pulsing that stays in time with the song."),
+], xa = {
+	shape: K("shape", "Shape", "LFO", ea, "sine", "The shape of the slow wave that turns the knobs it is connected to.", "Sine and triangle sweep smoothly back and forth; square flips between two settings, and sawtooth ramps up and snaps back."),
+	division: K("division", "Rate", "LFO", Ji, "1m", "One full sweep, as a note length at the song’s tempo.", "Longer divisions give slow evolving movement; short ones give rhythmic pulsing that stays in time with the song."),
 	hz: G("hz", "Rate", "LFO", {
 		min: .02,
 		max: 20,
@@ -3850,10 +3945,10 @@ var va = [
 		unit: ""
 	}, "How much of this LFO’s swing reaches this one knob, on top of the LFO’s overall Depth. Negative values invert it.", "Run two knobs at opposite amounts and one rises while the other falls.")
 };
-function ba(e, t) {
-	return e.sync ? 1 / Ji(e.division, t) : Number.isFinite(e.hz) ? Math.min(ya.hz.max, Math.max(ya.hz.min, e.hz)) : ya.hz.default;
+function Sa(e, t) {
+	return e.sync ? 1 / Xi(e.division, t) : Number.isFinite(e.hz) ? Math.min(xa.hz.max, Math.max(xa.hz.min, e.hz)) : xa.hz.default;
 }
-var xa = {
+var Ca = {
 	kind: "number",
 	path: "volume",
 	label: "Level",
@@ -3868,13 +3963,13 @@ var xa = {
 	tip: "How loud this layer is against the others.",
 	listenFor: "An LFO here makes the layer swell and fade, a slow tremolo on just this part of the sound."
 };
-function Sa(e, t) {
+function wa(e, t) {
 	return `layer:${e}:${t}`;
 }
-function Ca(e, t) {
+function Ta(e, t) {
 	return `fx:${e}:${t}`;
 }
-function wa(e) {
+function Ea(e) {
 	if (typeof e != "string") return null;
 	let t = e.indexOf(":"), n = t < 0 ? -1 : e.indexOf(":", t + 1);
 	if (n < 0) return null;
@@ -3894,21 +3989,21 @@ function wa(e) {
 		path: a
 	} : null;
 }
-function Ta(e, t) {
-	let n = wa(t);
+function Da(e, t) {
+	let n = Ea(t);
 	if (!n) return null;
 	if (n.kind === "layer") {
 		let t = e.layers[n.layer];
 		if (!t) return null;
-		if (n.path === "volume") return xa;
-		let r = Ri(t.voiceType, n.path);
-		return r?.kind === "number" && Fi(t.voiceType, n.path) ? r : null;
+		if (n.path === "volume") return Ca;
+		let r = Bi(t.voiceType, n.path);
+		return r?.kind === "number" && Li(t.voiceType, n.path) ? r : null;
 	}
-	let r = e.effects?.find((e) => e.id === n.effectId), i = r ? ua(r.type, n.path) : void 0;
+	let r = e.effects?.find((e) => e.id === n.effectId), i = r ? fa(r.type, n.path) : void 0;
 	return i?.kind === "number" && i.modulatable ? i : null;
 }
-function Ea(e, t) {
-	let n = Ta(e, t), r = wa(t);
+function Oa(e, t) {
+	let n = Da(e, t), r = Ea(t);
 	if (!n || !r) return null;
 	let i;
 	if (r.kind === "layer") {
@@ -3917,12 +4012,12 @@ function Ea(e, t) {
 	} else i = e.effects.find((e) => e.id === r.effectId).params[r.path];
 	return typeof i == "number" && Number.isFinite(i) ? i : n.default;
 }
-function Da(e, t, n) {
-	let r = Ii(e, t), i = Math.min(1, Math.abs(Number.isFinite(n) ? n : 0)) / 2, a = Li(e, r - i), o = Li(e, r + i);
+function ka(e, t, n) {
+	let r = Ri(e, t), i = Math.min(1, Math.abs(Number.isFinite(n) ? n : 0)) / 2, a = zi(e, r - i), o = zi(e, r + i);
 	return n < 0 ? [o, a] : [a, o];
 }
-var Oa = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
-function ka(e) {
+var Aa = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
+function ja(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim();
 	return t.length > 0 && t.length <= 64 && !t.includes(":") && ![
@@ -3931,58 +4026,58 @@ function ka(e) {
 		"constructor"
 	].includes(t) ? t : null;
 }
-var Aa = (e, t, n, r) => typeof e == "number" && Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
-function ja(e) {
+var Ma = (e, t, n, r) => typeof e == "number" && Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
+function Na(e) {
 	if (typeof e != "object" || !e || Array.isArray(e)) return null;
-	let t = e, n = ka(Oa(t, "id")), r = Oa(t, "type");
-	return n === null || !Wi(r) ? null : {
+	let t = e, n = ja(Aa(t, "id")), r = Aa(t, "type");
+	return n === null || !Ki(r) ? null : {
 		id: n,
 		type: r,
-		bypass: Oa(t, "bypass") === !0,
-		params: Hi(ca[r], Oa(t, "params"))
+		bypass: Aa(t, "bypass") === !0,
+		params: Wi(ua[r], Aa(t, "params"))
 	};
 }
-function Ma(e, t) {
+function Pa(e, t) {
 	if (typeof e != "object" || !e || Array.isArray(e)) return null;
-	let n = e, r = ka(Oa(n, "id"));
+	let n = e, r = ja(Aa(n, "id"));
 	if (r === null) return null;
-	let i = Oa(n, "shape"), a = Oa(n, "division"), o = [], s = Oa(n, "connections");
+	let i = Aa(n, "shape"), a = Aa(n, "division"), o = [], s = Aa(n, "connections");
 	if (Array.isArray(s)) for (let e of s.slice(0, 64)) {
 		if (o.length >= 16) break;
 		if (typeof e != "object" || !e) continue;
-		let n = Oa(e, "target");
+		let n = Aa(e, "target");
 		typeof n == "string" && t(n) && !o.some((e) => e.target === n) && o.push({
 			target: n,
-			depth: Aa(Oa(e, "depth"), -1, 1, 1)
+			depth: Ma(Aa(e, "depth"), -1, 1, 1)
 		});
 	}
 	return {
 		id: r,
-		shape: va.includes(i) ? i : "sine",
-		sync: Oa(n, "sync") !== !1,
-		division: typeof a == "string" && qi(a) !== null ? a : ya.division.default,
-		hz: Aa(Oa(n, "hz"), ya.hz.min, ya.hz.max, ya.hz.default),
-		depth: Aa(Oa(n, "depth"), 0, 1, ya.depth.default),
+		shape: ba.includes(i) ? i : "sine",
+		sync: Aa(n, "sync") !== !1,
+		division: typeof a == "string" && Yi(a) !== null ? a : xa.division.default,
+		hz: Ma(Aa(n, "hz"), xa.hz.min, xa.hz.max, xa.hz.default),
+		depth: Ma(Aa(n, "depth"), 0, 1, xa.depth.default),
 		connections: o
 	};
 }
-function Na(e) {
+function Fa(e) {
 	let t = [];
 	if (!Array.isArray(e)) return t;
 	for (let n of e.slice(0, 24)) {
 		if (t.length >= 6) break;
-		let e = ja(n);
+		let e = Na(n);
 		e && !t.some((t) => t.id === e.id) && t.push(e);
 	}
 	return t;
 }
-function Pa(e, t) {
+function Ia(e, t) {
 	let n = [];
 	if (!Array.isArray(e)) return n;
-	let r = /* @__PURE__ */ new Set(), i = (e) => !r.has(e) && Ta(t, e) !== null;
+	let r = /* @__PURE__ */ new Set(), i = (e) => !r.has(e) && Da(t, e) !== null;
 	for (let t of e.slice(0, 12)) {
 		if (n.length >= 3) break;
-		let e = Ma(t, i);
+		let e = Pa(t, i);
 		if (e && !n.some((t) => t.id === e.id)) {
 			for (let t of e.connections) r.add(t.target);
 			n.push(e);
@@ -3990,7 +4085,7 @@ function Pa(e, t) {
 	}
 	return n;
 }
-var Fa = [
+var La = [
 	"vox",
 	"melody",
 	"harmony",
@@ -3998,46 +4093,46 @@ var Fa = [
 	"kit",
 	"perc"
 ];
-function Ia(e) {
-	return Fa.includes(e);
+function Ra(e) {
+	return La.includes(e);
 }
-function La() {
+function za() {
 	return [{
 		id: "reverb",
 		name: "Reverb",
 		type: "reverb",
-		params: ga("reverb"),
+		params: va("reverb"),
 		returnDb: 0,
 		mute: !1
 	}, {
 		id: "delay",
 		name: "Delay",
 		type: "delay",
-		params: ga("delay"),
+		params: va("delay"),
 		returnDb: 0,
 		mute: !1
 	}];
 }
-function Ra(e) {
-	return e.buses ?? La();
-}
-function za(e) {
-	return 3840 / e.unit;
-}
 function Ba(e) {
-	return za(e) * e.beats;
+	return e.buses ?? za();
 }
 function Va(e) {
-	return e.startTick + e.lengthTicks;
+	return 3840 / e.unit;
 }
 function Ha(e) {
+	return Va(e) * e.beats;
+}
+function Ua(e) {
+	return e.startTick + e.lengthTicks;
+}
+function Wa(e) {
 	let t = 0;
-	for (let n of e.tracks) for (let e of n.clips) t = Math.max(t, Va(e));
+	for (let n of e.tracks) for (let e of n.clips) t = Math.max(t, Ua(e));
 	return t;
 }
 //#endregion
 //#region src/vendor/ableton-web-audio-sequencing/clock.ts
-var Ua = 10, Wa = 250, Ga = class {
+var Ga = 10, Ka = 250, qa = class {
 	stableTickWorker = null;
 	fallbackTimer = null;
 	audioContext;
@@ -4048,8 +4143,8 @@ var Ua = 10, Wa = 250, Ga = class {
 	onOvertime;
 	constructor(e, t = {}) {
 		this.audioContext = e;
-		let n = t.tickIntervalMs ?? Ua;
-		this.lookaheadTimeInSeconds = (t.lookaheadMs ?? Wa) / 1e3, this.onOvertime = t.onOvertime, console.assert(this.lookaheadTimeInSeconds * 1e3 > n);
+		let n = t.tickIntervalMs ?? Ga;
+		this.lookaheadTimeInSeconds = (t.lookaheadMs ?? Ka) / 1e3, this.onOvertime = t.onOvertime, console.assert(this.lookaheadTimeInSeconds * 1e3 > n);
 		try {
 			let e = new Blob([`
             // the initial timeout time
@@ -4090,11 +4185,11 @@ var Ua = 10, Wa = 250, Ga = class {
 	cleanup() {
 		this.stableTickWorker?.postMessage({ command: "stop" }), this.stableTickWorker?.terminate(), this.fallbackTimer !== null && clearInterval(this.fallbackTimer), this.callbacks.clear(), this.workerBlobUrl && URL.revokeObjectURL(this.workerBlobUrl);
 	}
-}, Ka = .001;
-function qa(e) {
+}, Ja = .001;
+function Ya(e) {
 	let t = [{
 		time: -Infinity,
-		bpm: Math.max(Ka, e),
+		bpm: Math.max(Ja, e),
 		curve: "set"
 	}], n = (e) => {
 		let n = 0, r = t.length - 1;
@@ -4145,7 +4240,7 @@ function qa(e) {
 	}, l = (e, n) => {
 		c(n), t.push({
 			time: n,
-			bpm: Math.max(Ka, e),
+			bpm: Math.max(Ja, e),
 			curve: "set"
 		});
 	};
@@ -4161,7 +4256,7 @@ function qa(e) {
 				curve: "set"
 			}), t.push({
 				time: n + r,
-				bpm: Math.max(Ka, e),
+				bpm: Math.max(Ja, e),
 				curve: i
 			});
 		},
@@ -4197,17 +4292,17 @@ function qa(e) {
 }
 //#endregion
 //#region src/playback/transport/clock-transport.ts
-var Ja = .1, Ya = 25, Xa = 120, Za = 2, Qa = 1e5;
-function $a(e, t = {}) {
-	let n = t.lookahead ?? Ja, r = t.pulse ?? new Ga(e, {
+var Xa = .1, Za = 25, Qa = 120, $a = 2, eo = 1e5;
+function to(e, t = {}) {
+	let n = t.lookahead ?? Xa, r = t.pulse ?? new qa(e, {
 		lookaheadMs: n * 1e3,
-		tickIntervalMs: t.tickIntervalMs ?? Ya,
+		tickIntervalMs: t.tickIntervalMs ?? Za,
 		onOvertime: t.onOvertime
 	}), i = t.pulse === void 0, a = (e, n) => {
 		try {
 			t.onError ? t.onError(e, n) : console.error(e, n);
 		} catch {}
-	}, o = qa(Xa), s = null, c = 0, l = null, u = null, d = 0, f = !1, p = /* @__PURE__ */ new Map(), m = /* @__PURE__ */ new Map(), h = [], g = !1, _ = 1, v = /* @__PURE__ */ new Set(), y = /* @__PURE__ */ new Map(), b = () => e.currentTime, x = () => e.currentTime + n, S = () => u ?? Math.max(b(), d), C = (e) => {
+	}, o = Ya(Qa), s = null, c = 0, l = null, u = null, d = 0, f = !1, p = /* @__PURE__ */ new Map(), m = /* @__PURE__ */ new Map(), h = [], g = !1, _ = 1, v = /* @__PURE__ */ new Set(), y = /* @__PURE__ */ new Map(), b = () => e.currentTime, x = () => e.currentTime + n, S = () => u ?? Math.max(b(), d), C = (e) => {
 		g &&= (h = [...m.keys()].sort((e, t) => e - t), !1);
 		let t = 0, n = h.length;
 		for (; t < n;) {
@@ -4232,7 +4327,7 @@ function $a(e, t = {}) {
 			u = null;
 		}
 	}, D = (e) => {
-		for (let t = 0; s && t < Qa; t++) {
+		for (let t = 0; s && t < eo; t++) {
 			let t = s, n = c, r = Math.min(e, t.stopTime);
 			if (t.cursorTime >= r) return;
 			let i = C(t.cursorTick), a = l ? Math.max(l.end, t.cursorTick) : Infinity;
@@ -4252,12 +4347,12 @@ function $a(e, t = {}) {
 			let u = m.get(i);
 			u && E([...u], (e) => m.get(i)?.has(e) === !0, o, n);
 		}
-		s && a("The music clock cut a pass short; the rest plays on the next one.", /* @__PURE__ */ Error(`over ${Qa} steps`));
+		s && a("The music clock cut a pass short; the rest plays on the next one.", /* @__PURE__ */ Error(`over ${eo} steps`));
 	}, O = () => {
 		let e = b(), t = [...y].filter(([, t]) => t.due <= e).sort((e, t) => e[1].due - t[1].due);
 		for (let [n, r] of t) y.get(n) === r && (r.every === null ? y.delete(n) : r.due = e + r.every, T(r.fn));
 	}, k = () => {
-		let e = b() - Za;
+		let e = b() - $a;
 		if (s) {
 			let t = s.anchors.at(-1);
 			t.time < e && e < s.cursorTime && e < s.stopTime && s.anchors.push({
@@ -4376,44 +4471,44 @@ function $a(e, t = {}) {
 		}
 	};
 }
-function eo(e) {
+function no(e) {
 	return e.some((e) => e.solo);
 }
-function to(e, t) {
+function ro(e, t) {
 	return e.mute ? !1 : !t || e.solo;
 }
-function no(e) {
+function io(e) {
 	return e === -Infinity ? 0 : Number.isFinite(e) ? 10 ** (Math.min(e, 12) / 20) : 1;
 }
-var ro = -.3, io = -1.5, ao = .001, oo = .1;
-10 ** (ro / 20) - 10 ** (io / 20);
-function so(e) {
+var ao = -.3, oo = -1.5, so = .001, co = .1;
+10 ** (ao / 20) - 10 ** (oo / 20);
+function lo(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(1, Math.max(-1, e)) : 0;
 }
-function co(e) {
+function uo(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(1, Math.max(0, e)) : 0;
 }
-function lo(e) {
-	let t = eo(e), n = /* @__PURE__ */ new Map();
-	for (let r of e) n.set(r.id, to(r, t) ? no(r.volume) : 0);
+function fo(e) {
+	let t = no(e), n = /* @__PURE__ */ new Map();
+	for (let r of e) n.set(r.id, ro(r, t) ? io(r.volume) : 0);
 	return n;
 }
-function uo(e) {
-	return e.mute ? 0 : no(Number.isFinite(e.returnDb) ? Math.min(6, Math.max(-60, e.returnDb)) : 0);
+function po(e) {
+	return e.mute ? 0 : io(Number.isFinite(e.returnDb) ? Math.min(6, Math.max(-60, e.returnDb)) : 0);
 }
-function fo(e, t) {
+function mo(e, t) {
 	let n = typeof e.division == "string" ? e.division : "8n.";
-	return Math.min(8, Ji(n, t));
+	return Math.min(8, Xi(n, t));
 }
 //#endregion
 //#region src/playback/engine/param-timeline.ts
-var po = 1e-6, mo = 1e-7, ho = (e, t) => Math.abs(e - t) < po;
-function go(e) {
+var ho = 1e-6, go = 1e-7, _o = (e, t) => Math.abs(e - t) < ho;
+function vo(e) {
 	let t = e.initial, n = [], r = (e) => {
 		let t = 0, r = n.length - 1, i = -1;
 		for (; t <= r;) {
 			let a = t + r >> 1;
-			n[a].time <= e || ho(n[a].time, e) ? (i = a, t = a + 1) : r = a - 1;
+			n[a].time <= e || _o(n[a].time, e) ? (i = a, t = a + 1) : r = a - 1;
 		}
 		return i;
 	}, i = (e) => {
@@ -4425,11 +4520,11 @@ function go(e) {
 				n = [];
 				return;
 			}
-			if (ho(n[t].time, e)) {
-				for (; t > 0 && ho(n[t - 1].time, e);) t--;
+			if (_o(n[t].time, e)) {
+				for (; t > 0 && _o(n[t - 1].time, e);) t--;
 				n = n.slice(0, t);
 			} else n = n.slice(0, t + 1);
-		} else n.length === 1 && n[0].time + po >= e && (n = []);
+		} else n.length === 1 && n[0].time + ho >= e && (n = []);
 	}, o = (e) => {
 		let i = Math.max(e, 0), a = r(i), o = a >= 0 ? n[a] : null, s = n[a + 1] ?? null;
 		if (!o) return t;
@@ -4452,13 +4547,13 @@ function go(e) {
 	}), l = (e, t) => i({
 		kind: "exponential",
 		time: t,
-		value: ho(e, 0) ? mo : e
+		value: _o(e, 0) ? go : e
 	}), u = (e) => {
 		let t = o(e), i = r(e), u = i >= 0 ? n[i] : null, d = n[i + 1] ?? null;
-		u && ho(u.time, e) ? a(d ? d.time : e + po) : d && (a(d.time), d.kind === "linear" ? c(t, e) : d.kind === "exponential" && l(t, e)), s(t, e);
+		u && _o(u.time, e) ? a(d ? d.time : e + ho) : d && (a(d.time), d.kind === "linear" ? c(t, e) : d.kind === "exponential" && l(t, e)), s(t, e);
 	}, d = (e) => {
 		let t = o(e);
-		u(e), t === 0 && (t = mo), s(t, e);
+		u(e), t === 0 && (t = go), s(t, e);
 	}, f = (e, t, n) => {
 		let r = Math.log(n + 1) / Math.log(200);
 		i({
@@ -4502,12 +4597,12 @@ function go(e) {
 }
 //#endregion
 //#region src/playback/engine/elementary/lanes.ts
-var _o = .05, vo = 256;
-function yo(e, t, n) {
+var yo = .05, bo = 256;
+function xo(e, t, n) {
 	let r = e[t];
 	return r.kind === "target" ? t > 0 ? e[t - 1].value : n : r.value;
 }
-function bo(e, t, n, r) {
+function So(e, t, n, r) {
 	let i = e[t], a = e[t + 1];
 	if (i.kind === "target" && (!a || a.kind === "set")) return [{
 		start: i.time,
@@ -4518,13 +4613,13 @@ function bo(e, t, n, r) {
 	}];
 	if (a?.kind === "linear") return [{
 		start: i.time,
-		from: yo(e, t, n),
+		from: xo(e, t, n),
 		to: a.value,
 		end: a.time,
 		pole: 0
 	}];
 	if (a?.kind === "exponential") {
-		let o = yo(e, t, n), s = a.time - i.time, c = Math.abs(Math.log(a.value / o)), l = Number.isFinite(c) ? Math.ceil(c / _o) : 16, u = Math.max(1, Math.min(vo, l, Math.floor(s * r)));
+		let o = xo(e, t, n), s = a.time - i.time, c = Math.abs(Math.log(a.value / o)), l = Number.isFinite(c) ? Math.ceil(c / yo) : 16, u = Math.max(1, Math.min(bo, l, Math.floor(s * r)));
 		return Array.from({ length: u }, (e, t) => {
 			let n = t / u, r = (t + 1) / u;
 			return {
@@ -4544,7 +4639,7 @@ function bo(e, t, n, r) {
 		pole: 0
 	}];
 }
-function xo(e, t) {
+function Co(e, t) {
 	if (e.end === null || e.end <= e.start) return {
 		target: e.from,
 		pole: e.pole
@@ -4555,7 +4650,7 @@ function xo(e, t) {
 		pole: e.pole
 	};
 }
-function So(e, t, n) {
+function wo(e, t, n) {
 	let r = e.at(-1);
 	if (r && r.time >= t) {
 		r.time === t && (r.value = n);
@@ -4566,7 +4661,7 @@ function So(e, t, n) {
 		value: n
 	});
 }
-function Co(e, t, n, r = 0) {
+function To(e, t, n, r = 0) {
 	let i = e.eventsFrom(t), a = [];
 	(i.length === 0 || i[0].time > t) && a.push({
 		start: t,
@@ -4575,17 +4670,17 @@ function Co(e, t, n, r = 0) {
 		end: null,
 		pole: 0
 	});
-	for (let e = 0; e < i.length; e++) a.push(...bo(i, e, r, n));
-	let o = (e) => Math.round(e * n), s = [], c = [], l = a.findLastIndex((e) => e.start <= t), u = xo(a[Math.max(0, l)], t), d = o(t);
-	So(s, d, u.target), So(c, d, u.pole);
+	for (let e = 0; e < i.length; e++) a.push(...So(i, e, r, n));
+	let o = (e) => Math.round(e * n), s = [], c = [], l = a.findLastIndex((e) => e.start <= t), u = Co(a[Math.max(0, l)], t), d = o(t);
+	wo(s, d, u.target), wo(c, d, u.pole);
 	let f = u;
 	for (let e of a.slice(Math.max(0, l))) {
-		let n = Math.max(e.start, t), r = xo(e, n), i = o(n);
+		let n = Math.max(e.start, t), r = Co(e, n), i = o(n);
 		if (r.target !== f.target) {
 			let e = s.at(-1);
-			e.time < i - 1 && So(s, i - 1, f.target), So(s, e.time >= i ? e.time + 1 : i, r.target);
-		} else e.end !== null && e.end > n && So(s, i, r.target);
-		r.pole !== f.pole && So(c, i, r.pole), f = r, e.end !== null && e.end > n && (So(s, o(e.end), e.to), f = {
+			e.time < i - 1 && wo(s, i - 1, f.target), wo(s, e.time >= i ? e.time + 1 : i, r.target);
+		} else e.end !== null && e.end > n && wo(s, i, r.target);
+		r.pole !== f.pole && wo(c, i, r.pole), f = r, e.end !== null && e.end > n && (wo(s, o(e.end), e.to), f = {
 			target: e.to,
 			pole: e.pole
 		});
@@ -4597,7 +4692,7 @@ function Co(e, t, n, r = 0) {
 }
 //#endregion
 //#region src/playback/engine/elementary/graph.ts
-var wo = [];
+var Eo = [];
 function q(e, t) {
 	let n = {
 		dirty: !0,
@@ -4611,14 +4706,14 @@ function q(e, t) {
 	};
 	return {
 		get() {
-			let e = wo.at(-1);
+			let e = Eo.at(-1);
 			if (e && (n.parents.add(e), e.children.add(n)), n.dirty || r === void 0) {
 				for (let e of n.children) e.parents.delete(n);
-				n.children.clear(), wo.push(n);
+				n.children.clear(), Eo.push(n);
 				try {
 					r = t();
 				} finally {
-					wo.pop();
+					Eo.pop();
 				}
 				n.dirty = !1;
 			}
@@ -4635,29 +4730,29 @@ function J(e, t) {
 		value: Number.isFinite(t) ? t : 0
 	});
 }
-function To(e) {
+function Do(e) {
 	return e.length === 0 ? W.const({ value: 0 }) : e.length === 1 ? e[0] : W.add(...e);
 }
-function Eo(e) {
-	return [To(e.map((e) => e[0])), To(e.map((e) => e[1]))];
+function Oo(e) {
+	return [Do(e.map((e) => e[0])), Do(e.map((e) => e[1]))];
 }
-var Do = .25, Oo = 2, ko = (e, t, n, r) => W.sparseq2({
+var ko = .25, Ao = 2, jo = (e, t, n, r) => W.sparseq2({
 	key: e,
 	seq: t,
 	...r ? { interpolate: 1 } : {}
 }, n);
 function Y(e, t, n, r, i = "linear") {
-	return Ao(e, t, n, go({
+	return Mo(e, t, n, vo({
 		initial: r,
 		rampCurve: i
 	}), r);
 }
-function Ao(e, t, n, r, i) {
+function Mo(e, t, n, r, i) {
 	let a = e.lead ? W.add(W.time(), e.lead) : W.time(), o = q(e, () => {
-		let o = e.immediate() - Do;
-		r.prune(e.immediate() - Oo);
-		let s = Co(r, o, e.sampleRate, i), c = ko(`${t}:target`, s.target, a, !0);
-		return n === "line" ? c : W.smooth(ko(`${t}:pole`, s.pole, a, !1), c);
+		let o = e.immediate() - ko;
+		r.prune(e.immediate() - Ao);
+		let s = To(r, o, e.sampleRate, i), c = jo(`${t}:target`, s.target, a, !0);
+		return n === "line" ? c : W.smooth(jo(`${t}:pole`, s.pole, a, !1), c);
 	});
 	return {
 		timeline: r,
@@ -4666,17 +4761,17 @@ function Ao(e, t, n, r, i) {
 		changed: o.invalidate
 	};
 }
-function jo([e, t], n) {
+function No([e, t], n) {
 	let r = W.max(0, W.mul(-1, n)), i = W.max(0, n), a = Math.PI / 2;
 	return [W.add(W.mul(e, W.cos(W.mul(a, i))), W.mul(t, W.sin(W.mul(a, r)))), W.add(W.mul(t, W.cos(W.mul(a, r))), W.mul(e, W.sin(W.mul(a, i))))];
 }
-function Mo([e, t], n) {
+function Po([e, t], n) {
 	return [W.mul(e, n), W.mul(t, n)];
 }
 //#endregion
 //#region src/playback/engine/elementary/buses.ts
-var No = .02, Po = .05, Fo = 128, Io = .00125, Lo = 44100, Ro = 125e-6, zo = .001, Bo = (e, t) => typeof e == "number" && Number.isFinite(e) ? e : t;
-function Vo(e) {
+var Fo = .02, Io = .05, Lo = 128, Ro = .00125, zo = 44100, Bo = 125e-6, Vo = .001, Ho = (e, t) => typeof e == "number" && Number.isFinite(e) ? e : t;
+function Uo(e) {
 	let t = e >>> 0;
 	return () => {
 		t = t + 1831565813 >>> 0;
@@ -4684,24 +4779,24 @@ function Vo(e) {
 		return e = Math.imul(e ^ e >>> 15, e | 1), e ^= e + Math.imul(e ^ e >>> 7, e | 61), ((e ^ e >>> 14) >>> 0) / 4294967296;
 	};
 }
-function Ho(e, t, n, r = Math.random) {
-	let i = Math.max(1, Math.floor((e + t) * n)), a = go({ initial: 1 });
+function Wo(e, t, n, r = Math.random) {
+	let i = Math.max(1, Math.floor((e + t) * n)), a = vo({ initial: 1 });
 	a.setAt(0, 0), a.setAt(1, t), a.approach(0, t, e);
 	let o = new Float32Array(i), s = new Float32Array(i), c = () => r() * 2 - 1, l = 0, u = 1;
 	for (let e = 0; e < i; e++) {
 		let t = a.valueAt(e / n);
-		t >= zo && (u = e + 1), o[e] = t * (c() + c()) / 2, s[e] = t * (c() + c()) / 2, l += o[e] * o[e] + s[e] * s[e];
+		t >= Vo && (u = e + 1), o[e] = t * (c() + c()) / 2, s[e] = t * (c() + c()) / 2, l += o[e] * o[e] + s[e] * s[e];
 	}
-	let d = Math.max(Ro, Math.sqrt(l / (2 * i))), f = Lo / n * Io / d;
+	let d = Math.max(Bo, Math.sqrt(l / (2 * i))), f = zo / n * Ro / d;
 	for (let e = 0; e < u; e++) o[e] *= f, s[e] *= f;
 	return [o.slice(0, u), s.slice(0, u)];
 }
-function Uo(e, t, n, r, i, a) {
-	let o = e.nextId(), s = e.nextSeed(), c = e.sampleRate, l = t.type, u = _a(l, t.params), d = n, f = t.name, p = uo(t), m = 0, h = 0, g = null, _ = !1, v = !1, y = null, b = !1, x = () => [W.const({ value: 0 }), W.const({ value: 0 })], S = (e) => {
+function Go(e, t, n, r, i, a) {
+	let o = e.nextId(), s = e.nextSeed(), c = e.sampleRate, l = t.type, u = ya(l, t.params), d = n, f = t.name, p = po(t), m = 0, h = 0, g = null, _ = !1, v = !1, y = null, b = !1, x = () => [W.const({ value: 0 }), W.const({ value: 0 })], S = (e) => {
 		if (_ = !0, !v) {
 			v = !0;
 			try {
-				i(`The ${fa[l]} bus “${f}” could not be built, so its send is silent.`, e);
+				i(`The ${ma[l]} bus “${f}” could not be built, so its send is silent.`, e);
 			} catch {}
 		}
 	}, C = ([e, t]) => {
@@ -4721,7 +4816,7 @@ function Uo(e, t, n, r, i, a) {
 		};
 		return [n(e, "l"), n(t, "r")];
 	}, w = ([e, t]) => {
-		let n = Math.ceil(8 * c) + 2, r = J(`${o}:delay:len`, fo(u, d) * c), i = J(`${o}:delay:fb`, Math.min(1, Math.max(0, Bo(u.feedback, 0))));
+		let n = Math.ceil(8 * c) + 2, r = J(`${o}:delay:len`, mo(u, d) * c), i = J(`${o}:delay:fb`, Math.min(1, Math.max(0, Ho(u.feedback, 0))));
 		return [W.delay({
 			key: `${o}.${m}:delay:l`,
 			size: n
@@ -4730,12 +4825,12 @@ function Uo(e, t, n, r, i, a) {
 			size: n
 		}, r, i, t)];
 	}, T = ([e, t]) => {
-		let n = Math.ceil(Po * c) + 2, r = Bo(u.delayTime, 3.5) / 1e3, i = r * Bo(u.depth, .7), a = Math.max(r - i, 0), s = r + i, l = Bo(u.spread, 180), d = J(`${o}:chorus:low`, a * c), f = J(`${o}:chorus:half`, (s - a) * c / 2), p = W.mul(2 * Math.PI, W.phasor(J(`${o}:chorus:hz`, Bo(u.frequency, 1.5)))), h = (e, t, r) => {
+		let n = Math.ceil(Io * c) + 2, r = Ho(u.delayTime, 3.5) / 1e3, i = r * Ho(u.depth, .7), a = Math.max(r - i, 0), s = r + i, l = Ho(u.spread, 180), d = J(`${o}:chorus:low`, a * c), f = J(`${o}:chorus:half`, (s - a) * c / 2), p = W.mul(2 * Math.PI, W.phasor(J(`${o}:chorus:hz`, Ho(u.frequency, 1.5)))), h = (e, t, r) => {
 			let i = W.add(1, W.sin(W.sub(p, J(`${o}:chorus:phase:${t}`, r * Math.PI / 180))));
 			return W.delay({
 				key: `${o}.${m}:chorus:${t}`,
 				size: n
-			}, W.max(Fo, W.add(d, W.mul(f, i))), 0, e);
+			}, W.max(Lo, W.add(d, W.mul(f, i))), 0, e);
 		};
 		return [h(e, "l", 90 - l / 2), h(t, "r", 90 + l / 2)];
 	}, E = q(e, () => {
@@ -4746,11 +4841,11 @@ function Uo(e, t, n, r, i, a) {
 		} catch (e) {
 			return S(e), x();
 		}
-	}), D = Y(e, `${o}:return`, "line", p), O = q(e, () => Mo(E.get(), D.get())), k = () => {
-		let t = Bo(u.decay, 2.5), n = Bo(u.preDelay, .02), r = `${o}:reverb:${++h}:${t}:${n}:${c}`;
+	}), D = Y(e, `${o}:return`, "line", p), O = q(e, () => Po(E.get(), D.get())), k = () => {
+		let t = Ho(u.decay, 2.5), n = Ho(u.preDelay, .02), r = `${o}:reverb:${++h}:${t}:${n}:${c}`;
 		g = null, _ = !1;
 		try {
-			let [i, a] = Ho(t, n, c, Vo(s * 7919 + h));
+			let [i, a] = Wo(t, n, c, Uo(s * 7919 + h));
 			if (!e.loadFiles({
 				[`${r}:l`]: i,
 				[`${r}:r`]: a
@@ -4771,12 +4866,12 @@ function Uo(e, t, n, r, i, a) {
 			update(t) {
 				if (b) return;
 				f = t.name;
-				let n = _a(t.type, t.params);
-				t.type === l ? ha(l).some((e) => n[e.path] !== u[e.path]) && (u = n, l === "reverb" ? (A(), y = e.setTimer(() => {
+				let n = ya(t.type, t.params);
+				t.type === l ? _a(l).some((e) => n[e.path] !== u[e.path]) && (u = n, l === "reverb" ? (A(), y = e.setTimer(() => {
 					y = null, !b && l === "reverb" && k();
 				}, 250 / 1e3)) : (_ = !1, E.invalidate())) : (A(), l = t.type, u = n, m++, g = null, _ = !1, l === "reverb" ? k() : E.invalidate());
-				let r = uo(t);
-				r !== p && (p = r, D.timeline.rampTo(r, No, e.immediate()), D.changed());
+				let r = po(t);
+				r !== p && (p = r, D.timeline.rampTo(r, Fo, e.immediate()), D.changed());
 			},
 			setTempo(e) {
 				b || !Number.isFinite(e) || e <= 0 || e === d || (d = e, l === "delay" && E.invalidate());
@@ -4791,7 +4886,7 @@ function Uo(e, t, n, r, i, a) {
 }
 //#endregion
 //#region src/engine/allocator.ts
-var Wo = class {
+var Ko = class {
 	owner = [];
 	stamp = [];
 	held = /* @__PURE__ */ new Map();
@@ -4849,32 +4944,32 @@ var Wo = class {
 	}
 };
 Array.from({ length: 40 }, (e, t) => 1 / (t + 1) ** 1.6);
-function Go(e) {
+function qo(e) {
 	return !!e?.kit && Array.isArray(e.kit.pads);
 }
-function Ko(e) {
-	return e.layers.slice(0, Go(e) ? 48 : 3);
+function Jo(e) {
+	return e.layers.slice(0, qo(e) ? 48 : 3);
 }
-function qo(e, t) {
+function Yo(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(127, Math.max(0, Math.round(e))) : t;
 }
-function Jo(e, t, n, r = () => !0) {
-	let i = typeof e == "object" && e && !Array.isArray(e) ? e : {}, a = qo(Object.hasOwn(i, "note") ? i.note : void 0, t), o = Object.hasOwn(i, "name") ? i.name : void 0, s = typeof o == "string" && o.replace(/[\u0000-\u001f\u007f]/g, " ").trim() ? o.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 24) : ns(a), c = Object.hasOwn(i, "layers") ? i.layers : void 0, l = Array.isArray(c) ? [...new Set(c.filter((e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && r(e)))].slice(0, 3) : [n].filter(r), u = {
+function Xo(e, t, n, r = () => !0) {
+	let i = typeof e == "object" && e && !Array.isArray(e) ? e : {}, a = Yo(Object.hasOwn(i, "note") ? i.note : void 0, t), o = Object.hasOwn(i, "name") ? i.name : void 0, s = typeof o == "string" && o.replace(/[\u0000-\u001f\u007f]/g, " ").trim() ? o.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 24) : is(a), c = Object.hasOwn(i, "layers") ? i.layers : void 0, l = Array.isArray(c) ? [...new Set(c.filter((e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && r(e)))].slice(0, 3) : [n].filter(r), u = {
 		name: s,
 		note: a,
-		pitch: qo(Object.hasOwn(i, "pitch") ? i.pitch : void 0, a),
+		pitch: Yo(Object.hasOwn(i, "pitch") ? i.pitch : void 0, a),
 		layers: l
 	}, d = Object.hasOwn(i, "choke") ? i.choke : void 0;
 	return typeof d == "number" && Number.isInteger(d) && d >= 1 && d <= 8 && (u.choke = d), u;
 }
-function Yo(e, t) {
+function Zo(e, t) {
 	if (!Array.isArray(e)) return null;
 	let n = Math.min(t.length, 48), r = /* @__PURE__ */ new Set(), i = /* @__PURE__ */ new Set(), a = [];
 	for (let t = 0; t < Math.min(e.length, 16); t++) {
-		let o = Jo(e[t], 36 + t, t, (e) => e < n && !r.has(e));
+		let o = Xo(e[t], 36 + t, t, (e) => e < n && !r.has(e));
 		if (o.layers.length !== 0) {
 			for (let e of o.layers) r.add(e);
-			i.has(o.note) && (o.note = Zo(o.note, i)), i.add(o.note), a.push(o);
+			i.has(o.note) && (o.note = $o(o.note, i)), i.add(o.note), a.push(o);
 		}
 	}
 	if (a.length === 0) return null;
@@ -4886,7 +4981,7 @@ function Yo(e, t) {
 		moved: s
 	};
 }
-function Xo(e, t) {
+function Qo(e, t) {
 	let n = e.map((e, n) => (Array.isArray(e.layers) ? e.layers : [n]).filter((e) => Number.isInteger(e) && e >= 0 && e < t)), r = /* @__PURE__ */ new Map(), i = Array.from({ length: t }, () => !1);
 	e.forEach((e, t) => {
 		if (n[t].length > 0 && !r.has(e.note) && r.set(e.note, t), e.choke) for (let e of n[t]) i[e] = !0;
@@ -4897,7 +4992,7 @@ function Xo(e, t) {
 	}] : []), o = a.map((e) => e.pad);
 	for (let e = 0; e < 128; e++) {
 		if (r.has(e)) continue;
-		let t = rs(o, e);
+		let t = as(o, e);
 		t !== null && r.set(e, a[t].i);
 	}
 	return {
@@ -4907,14 +5002,14 @@ function Xo(e, t) {
 		chokeable: i
 	};
 }
-function Zo(e, t) {
+function $o(e, t) {
 	for (let n = 0; n < 128; n++) {
 		if (e + n <= 127 && !t.has(e + n)) return e + n;
 		if (e - n >= 0 && !t.has(e - n)) return e - n;
 	}
 	return e;
 }
-var Qo = {
+var es = {
 	35: "kick",
 	36: "kick",
 	37: "snare",
@@ -4937,11 +5032,19 @@ var Qo = {
 	55: "cymbal",
 	57: "cymbal",
 	59: "cymbal"
-}, $o = 39;
-function es(e) {
-	return Qo[e] ?? "perc";
+}, ts = 39;
+function ns(e) {
+	return es[e] ?? "perc";
 }
-var ts = {
+var rs = {
+	27: "High Q",
+	28: "Slap",
+	29: "Scratch Push",
+	30: "Scratch Pull",
+	31: "Sticks",
+	32: "Square Click",
+	33: "Metronome Click",
+	34: "Metronome Bell",
 	35: "Kick 2",
 	36: "Kick",
 	37: "Side Stick",
@@ -4965,55 +5068,111 @@ var ts = {
 	55: "Splash",
 	56: "Cowbell",
 	57: "Crash 2",
-	59: "Ride 2"
+	58: "Vibraslap",
+	59: "Ride 2",
+	60: "High Bongo",
+	61: "Low Bongo",
+	62: "Mute High Conga",
+	63: "Open High Conga",
+	64: "Low Conga",
+	65: "High Timbale",
+	66: "Low Timbale",
+	67: "High Agogo",
+	68: "Low Agogo",
+	69: "Cabasa",
+	70: "Maracas",
+	71: "Short Whistle",
+	72: "Long Whistle",
+	73: "Short Guiro",
+	74: "Long Guiro",
+	75: "Claves",
+	76: "High Wood Block",
+	77: "Low Wood Block",
+	78: "Mute Cuica",
+	79: "Open Cuica",
+	80: "Mute Triangle",
+	81: "Open Triangle",
+	82: "Shaker",
+	83: "Jingle Bell",
+	84: "Bell Tree",
+	85: "Castanets",
+	86: "Mute Surdo",
+	87: "Open Surdo"
 };
-function ns(e) {
-	return ts[e] ?? `Pad ${e}`;
+function is(e) {
+	return rs[e] ?? `Pad ${e}`;
 }
-function rs(e, t) {
+function as(e, t) {
 	if (e.length === 0) return null;
 	let n = e.findIndex((e) => e.note === t);
 	if (n >= 0) return n;
-	let r = es(t), i = (e) => e === $o ? "clap" : es(e), a = (n) => {
+	let r = ns(t), i = (e) => e === ts ? "clap" : ns(e), a = (n) => {
 		let r = null;
 		return e.forEach((i, a) => {
 			n(i) && (r === null || Math.abs(i.note - t) < Math.abs(e[r].note - t)) && (r = a);
 		}), r;
 	};
-	return a((e) => i(e.note) === i(t)) ?? a((e) => es(e.note) === r) ?? a(() => !0);
+	return a((e) => i(e.note) === i(t)) ?? a((e) => ns(e.note) === r) ?? a(() => !0);
 }
-function is(e) {
+//#endregion
+//#region src/engine/note-math.ts
+var os = 440 * 2 ** (-9 / 12);
+function ss(e, t, n) {
+	let r = e[t];
+	return typeof r == "number" && Number.isFinite(r) ? r : n;
+}
+function cs(e) {
+	return 2 ** (Math.round(ss(e, "transpose", 0)) / 12);
+}
+function ls(e, t, n) {
+	let r = ss(e, "keyTrack", 0), i = ss(e, "velocityToFilter", 0);
+	return {
+		track: r === 0 || !(t > 0) ? 1 : (t / os) ** r,
+		amount: 1 - i + i * n
+	};
+}
+function us(e, t, n, r) {
+	let i = t * 2 ** (ss(e, "detune", 0) / 1200);
+	e.tuning === "exact" && r > 0 && i > 0 && (i = r / (Math.max(1, Math.round(r / i)) - .5));
+	let a = ss(e, "ringTime", 0), o = ss(e, "velocity", 0);
+	return {
+		hz: i,
+		feedback: e.stringDecay === "ring" && a > 0 && i > 0 ? 10 ** (-3 / (i * a)) : null,
+		level: 1 - o + o * n
+	};
+}
+function ds(e) {
 	return 440 * 2 ** ((e - 69) / 12);
 }
-function as(e) {
+function fs(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(16, Math.max(1, Math.round(e))) : 1;
 }
-function os(e) {
+function ps(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(6, Math.max(-60, e)) : 0;
 }
 //#endregion
 //#region src/playback/engine/elementary/lfos.ts
-var ss = .84819, cs = .84854, ls = [
+var ms = .84819, hs = .84854, gs = [
 	"sine",
 	"triangle",
 	"square",
 	"sawtooth"
 ];
-function us(e, t) {
-	return e === "sine" ? W.sin(W.mul(2 * Math.PI, t)) : e === "triangle" ? W.sub(1, W.mul(4, W.abs(W.sub(W.mod(W.add(t, .25), 1), .5)))) : e === "square" ? W.sub(ss, W.mul(2 * ss, W.ge(t, .5))) : W.mul(cs, W.sub(W.mul(2, W.mod(W.add(t, .5), 1)), 1));
+function _s(e, t) {
+	return e === "sine" ? W.sin(W.mul(2 * Math.PI, t)) : e === "triangle" ? W.sub(1, W.mul(4, W.abs(W.sub(W.mod(W.add(t, .25), 1), .5)))) : e === "square" ? W.sub(ms, W.mul(2 * ms, W.ge(t, .5))) : W.mul(hs, W.sub(W.mul(2, W.mod(W.add(t, .5), 1)), 1));
 }
-function ds(e, t, n) {
-	return To(ls.map((r) => W.mul(J(`${e}:w:${r}`, +(r === t)), us(r, n))));
+function vs(e, t, n) {
+	return Do(gs.map((r) => W.mul(J(`${e}:w:${r}`, +(r === t)), _s(r, n))));
 }
-function fs(e, t, n) {
+function ys(e, t, n) {
 	let r = (n / 360 % 1 + 1) % 1;
 	return W.mod(W.add(t, J(e, 1 - r)), 1);
 }
-function ps(e, t) {
-	let n = wa(t);
+function bs(e, t) {
+	let n = Ea(t);
 	return n ? n.kind === "layer" ? n.path === "volume" : e.effects?.find((e) => e.id === n.effectId)?.type === "eq" && (n.path === "low" || n.path === "mid" || n.path === "high") : !1;
 }
-function ms(e, t, n, r = 120) {
+function xs(e, t, n, r = 120) {
 	let i = Number.isFinite(r) && r > 0 ? r : 120, a = 0, o = /* @__PURE__ */ new Map(), s = /* @__PURE__ */ new Map(), c = q(e, () => null), l = () => {
 		s.clear();
 		for (let e of o.values()) for (let t of e.links) s.set(t.target, t);
@@ -5023,7 +5182,7 @@ function ms(e, t, n, r = 120) {
 			target: r,
 			depth: i,
 			node: q(e, () => {
-				let e = n(), i = Ta(e, r), o = Ea(e, r), [s, c] = i && o !== null ? Da(i, o, t.patch.depth * a.depth) : [0, 0], l = ps(e, r), u = J(`${t.key}:${r}:min`, l ? 10 ** (s / 20) : s), d = J(`${t.key}:${r}:max`, l ? 10 ** (c / 20) : c);
+				let e = n(), i = Da(e, r), o = Oa(e, r), [s, c] = i && o !== null ? ka(i, o, t.patch.depth * a.depth) : [0, 0], l = bs(e, r), u = J(`${t.key}:${r}:min`, l ? 10 ** (s / 20) : s), d = J(`${t.key}:${r}:max`, l ? 10 ** (c / 20) : c);
 				return W.add(u, W.mul(W.sub(d, u), W.mul(.5, W.add(t.wave.get(), 1))));
 			})
 		};
@@ -5033,13 +5192,13 @@ function ms(e, t, n, r = 120) {
 			patch: n,
 			key: r,
 			links: [],
-			wave: q(e, () => ds(r, o.patch.shape, W.phasor(J(`${r}:hz`, ba(o.patch, i)))))
+			wave: q(e, () => vs(r, o.patch.shape, W.phasor(J(`${r}:hz`, Sa(o.patch, i)))))
 		};
 		return o.links = n.connections.map((e) => u(o, e.target, e.depth)), o;
 	}, f = (e, t) => e.connections.length === t.connections.length && e.connections.every((e, n) => e.target === t.connections[n].target);
 	return {
 		set(e) {
-			let t = Pa(e, n()), r = new Set(t.map((e) => e.id)), a = !1;
+			let t = Ia(e, n()), r = new Set(t.map((e) => e.id)), a = !1;
 			for (let e of o.keys()) r.has(e) || (o.delete(e), a = !0);
 			for (let e of t) {
 				let t = o.get(e.id);
@@ -5048,7 +5207,7 @@ function ms(e, t, n, r = 120) {
 					continue;
 				}
 				let n = t.patch;
-				t.patch = e, (n.shape !== e.shape || ba(n, i) !== ba(e, i)) && t.wave.invalidate(), t.links.forEach((t, r) => {
+				t.patch = e, (n.shape !== e.shape || Sa(n, i) !== Sa(e, i)) && t.wave.invalidate(), t.links.forEach((t, r) => {
 					let i = e.connections[r].depth;
 					(i !== t.depth || n.depth !== e.depth) && (t.depth = i, t.node.invalidate());
 				});
@@ -5083,12 +5242,12 @@ function ms(e, t, n, r = 120) {
 }
 //#endregion
 //#region src/playback/engine/elementary/effects.ts
-var hs = 128, gs = .05, _s = .006, vs = .0025, ys = 10 ** (1 / 20), bs = (e, t) => [t(e[0], "l"), t(e[1], "r")];
-function xs(e, t, n) {
+var Ss = 128, Cs = .05, ws = .006, Ts = .0025, Es = 10 ** (1 / 20), Ds = (e, t) => [t(e[0], "l"), t(e[1], "r")];
+function Os(e, t, n) {
 	let r = e.driven("wet"), i = r ? W.mul(Math.PI / 2, r) : null, a = e.num("wet", 1), o = i ? W.cos(i) : J(`${e.key}:dry`, Math.cos(a * Math.PI / 2)), s = i ? W.sin(i) : J(`${e.key}:wet`, Math.sin(a * Math.PI / 2));
 	return [W.add(W.mul(o, t[0]), W.mul(s, n[0])), W.add(W.mul(o, t[1]), W.mul(s, n[1]))];
 }
-function Ss(e, t, n, r) {
+function ks(e, t, n, r) {
 	let i = 2 * Math.PI * Math.min(r / 2, Math.max(0, t)) / r, a = Math.sin(i), o = Math.cos(i), s = a / (2 * n), c = 1 + s, l = e === "lowpass" ? [
 		(1 - o) / 2,
 		1 - o,
@@ -5118,7 +5277,7 @@ function Ss(e, t, n, r) {
 		(1 - s) / c
 	];
 }
-function Cs(e, t, n, r) {
+function As(e, t, n, r) {
 	let i = W.mul(2 * Math.PI / r, W.min(r / 2, W.max(0, t))), a = W.sin(i), o = W.cos(i), s = W.div(a, W.mul(2, n)), c = W.add(1, s), l = (e) => W.div(W.add(1, W.mul(e, o)), 2);
 	return [
 		...e === "lowpass" ? [
@@ -5146,49 +5305,49 @@ function Cs(e, t, n, r) {
 		W.sub(1, s)
 	].map((e) => W.div(e, c));
 }
-var ws = (e, t) => t.map((t, n) => J(`${e}:c${n}`, t)), Ts = (e, t) => W.biquad(e[0], e[1], e[2], e[3], e[4], t), Es = (e) => e === "highpass" || e === "bandpass" || e === "notch" || e === "allpass" ? e : "lowpass";
-function Ds(e, t) {
-	let n = Es(e.str("type", "lowpass")), r = (e) => n === "lowpass" || n === "highpass" ? 10 ** (e / 20) : e, i = e.driven("frequency"), a = e.driven("Q"), o;
-	return o = i || a ? Cs(n, i ?? J(`${e.key}:hz`, e.num("frequency", 1200)), a ? n === "lowpass" || n === "highpass" ? W.pow(10, W.div(a, 20)) : a : J(`${e.key}:q`, r(e.num("Q", 1))), e.sr) : ws(e.key, Ss(n, e.num("frequency", 1200), r(e.num("Q", 1)), e.sr)), bs(t, (e) => Ts(o, e));
+var js = (e, t) => t.map((t, n) => J(`${e}:c${n}`, t)), Ms = (e, t) => W.biquad(e[0], e[1], e[2], e[3], e[4], t), Ns = (e) => e === "highpass" || e === "bandpass" || e === "notch" || e === "allpass" ? e : "lowpass";
+function Ps(e, t) {
+	let n = Ns(e.str("type", "lowpass")), r = (e) => n === "lowpass" || n === "highpass" ? 10 ** (e / 20) : e, i = e.driven("frequency"), a = e.driven("Q"), o;
+	return o = i || a ? As(n, i ?? J(`${e.key}:hz`, e.num("frequency", 1200)), a ? n === "lowpass" || n === "highpass" ? W.pow(10, W.div(a, 20)) : a : J(`${e.key}:q`, r(e.num("Q", 1))), e.sr) : js(e.key, ks(n, e.num("frequency", 1200), r(e.num("Q", 1)), e.sr)), Ds(t, (e) => Ms(o, e));
 }
-function Os(e, t) {
+function Fs(e, t) {
 	let n = e.num("distortion", .4) * 100, r = .0012210012210012201, i = (3 + n) * r * (Math.PI / 9) / (Math.PI + n * r), a = J(`${e.key}:k`, n), o = J(`${e.key}:scale`, (3 + n) * (Math.PI / 9)), s = J(`${e.key}:ramp`, i / .0004884004884004884);
-	return xs(e, t, bs(t, (e) => {
+	return Os(e, t, Ds(t, (e) => {
 		let t = W.min(1, W.abs(e)), n = W.div(W.mul(o, t), W.add(Math.PI, W.mul(a, t))), i = W.mul(s, W.max(0, W.sub(t, .0007326007326007317))), c = W.select(W.ge(t, r), n, i);
 		return W.mul(c, W.sub(W.mul(2, W.ge(e, 0)), 1));
 	}));
 }
-function ks(e, t) {
+function Is(e, t) {
 	let n = J(`${e.key}:step`, .5 ** (e.num("bits", 4) - 1));
-	return xs(e, t, bs(t, (e) => W.mul(n, W.floor(W.add(W.div(e, n), .5)))));
+	return Os(e, t, Ds(t, (e) => W.mul(n, W.floor(W.add(W.div(e, n), .5)))));
 }
-function As(e, t) {
-	let n = Math.ceil(gs * e.sr) + 2, r = e.num("delayTime", 3.5) / 1e3, i = r * e.num("depth", .7), a = Math.max(r - i, 0), o = r + i, s = e.num("spread", 180), c = J(`${e.key}:low`, a * e.sr), l = J(`${e.key}:half`, (o - a) * e.sr / 2), u = J(`${e.key}:fb`, e.num("feedback", 0)), d = W.phasor(e.param("frequency", 1.5));
-	return xs(e, t, bs(t, (t, r) => {
-		let i = W.add(1, W.sin(W.mul(2 * Math.PI, fs(`${e.key}:phase:${r}`, d, r === "l" ? 90 - s / 2 : 90 + s / 2))));
+function Ls(e, t) {
+	let n = Math.ceil(Cs * e.sr) + 2, r = e.num("delayTime", 3.5) / 1e3, i = r * e.num("depth", .7), a = Math.max(r - i, 0), o = r + i, s = e.num("spread", 180), c = J(`${e.key}:low`, a * e.sr), l = J(`${e.key}:half`, (o - a) * e.sr / 2), u = J(`${e.key}:fb`, e.num("feedback", 0)), d = W.phasor(e.param("frequency", 1.5));
+	return Os(e, t, Ds(t, (t, r) => {
+		let i = W.add(1, W.sin(W.mul(2 * Math.PI, ys(`${e.key}:phase:${r}`, d, r === "l" ? 90 - s / 2 : 90 + s / 2))));
 		return W.delay({
 			key: `${e.key}:${r}`,
 			size: n
-		}, W.max(hs, W.add(c, W.mul(l, i))), u, t);
+		}, W.max(Ss, W.add(c, W.mul(l, i))), u, t);
 	}));
 }
-function js(e, t) {
+function Rs(e, t) {
 	let n = Math.max(1, Math.round(e.num("stages", 10))), r = e.num("baseFrequency", 350), i = r * 2 ** e.num("octaves", 3), a = J(`${e.key}:low`, r), o = J(`${e.key}:half`, (i - r) / 2), s = e.param("Q", 10), c = W.phasor(e.param("frequency", .5));
-	return xs(e, t, bs(t, (t, r) => {
-		let i = W.add(1, W.sin(W.mul(2 * Math.PI, r === "l" ? c : fs(`${e.key}:phase`, c, 180)))), l = Cs("allpass", W.add(a, W.mul(o, i)), s, e.sr), u = t;
-		for (let e = 0; e < n; e++) u = Ts(l, u);
+	return Os(e, t, Ds(t, (t, r) => {
+		let i = W.add(1, W.sin(W.mul(2 * Math.PI, r === "l" ? c : ys(`${e.key}:phase`, c, 180)))), l = As("allpass", W.add(a, W.mul(o, i)), s, e.sr), u = t;
+		for (let e = 0; e < n; e++) u = Ms(l, u);
 		return u;
 	}));
 }
-function Ms(e, t) {
+function zs(e, t) {
 	let n = e.num("spread", 0), r = e.str("type", "sine"), i = e.param("depth", .5), a = W.phasor(e.param("frequency", 6));
-	return xs(e, t, bs(t, (t, o) => {
-		let s = ds(`${e.key}:${o}`, r, fs(`${e.key}:phase:${o}`, a, o === "l" ? 90 - n / 2 : 90 + n / 2));
+	return Os(e, t, Ds(t, (t, o) => {
+		let s = vs(`${e.key}:${o}`, r, ys(`${e.key}:phase:${o}`, a, o === "l" ? 90 - n / 2 : 90 + n / 2));
 		return W.mul(t, W.mul(.5, W.sub(1, W.mul(i, s))));
 	}));
 }
-function Ns(e, t) {
-	let n = e.num("lowFrequency", 400), r = e.num("highFrequency", 2500), i = (t, n, r) => ws(`${e.key}:${n}`, Ss(t, r, ys, e.sr)), [a, o, s, c] = [
+function Bs(e, t) {
+	let n = e.num("lowFrequency", 400), r = e.num("highFrequency", 2500), i = (t, n, r) => js(`${e.key}:${n}`, ks(t, r, Es, e.sr)), [a, o, s, c] = [
 		i("lowpass", "low", n),
 		i("highpass", "lowmid", n),
 		i("lowpass", "mid", r),
@@ -5198,13 +5357,13 @@ function Ns(e, t) {
 		l("mid"),
 		l("high")
 	];
-	return bs(t, (e) => To([
-		W.mul(u, Ts(a, e)),
-		W.mul(d, Ts(s, Ts(o, e))),
-		W.mul(f, Ts(c, e))
+	return Ds(t, (e) => Do([
+		W.mul(u, Ms(a, e)),
+		W.mul(d, Ms(s, Ms(o, e))),
+		W.mul(f, Ms(c, e))
 	]));
 }
-function Ps(e, t, n) {
+function Vs(e, t, n) {
 	let r = 10 ** (e / 20), i = (e, t) => e < r ? e : r + (1 - Math.exp(-t * (e - r))) / t, a = (e) => 20 * Math.log10(e), o = (e, t) => {
 		if (e < r) return 1;
 		let n = e * 1.001;
@@ -5217,33 +5376,33 @@ function Ps(e, t, n) {
 		saturate: (r) => r < s ? i(r, u) : 10 ** ((d + (a(r) - e - t) / n) / 20)
 	};
 }
-var Fs = (e) => (1 / e.saturate(1)) ** .6;
-function Is(e, t) {
-	let n = e.num("ratio", 4), r = e.num("knee", 30), i = e.num("threshold", -24), a = Ps(i, r, n), o = a.k * 10 ** (i / 20), s = 10 ** (r / 20), c = (e) => e < 1 ? e : 1 + (1 - Math.exp(-o * (e - 1))) / o, l = J(`${e.key}:shape`, o), u = J(`${e.key}:kneeEnd`, s), d = J(`${e.key}:knee`, r), f = J(`${e.key}:atKnee`, 20 * Math.log10(c(s))), p = J(`${e.key}:slope`, 1 / n), m = (e) => {
+var Hs = (e) => (1 / e.saturate(1)) ** .6;
+function Us(e, t) {
+	let n = e.num("ratio", 4), r = e.num("knee", 30), i = e.num("threshold", -24), a = Vs(i, r, n), o = a.k * 10 ** (i / 20), s = 10 ** (r / 20), c = (e) => e < 1 ? e : 1 + (1 - Math.exp(-o * (e - 1))) / o, l = J(`${e.key}:shape`, o), u = J(`${e.key}:kneeEnd`, s), d = J(`${e.key}:knee`, r), f = J(`${e.key}:atKnee`, 20 * Math.log10(c(s))), p = J(`${e.key}:slope`, 1 / n), m = (e) => {
 		let t = W.max(e, 1e-9), n = W.mul(20, W.log(t)), r = W.div(W.add(1, W.div(W.sub(1, W.exp(W.mul(-1, W.mul(l, W.max(0, W.sub(e, 1)))))), l)), t), i = W.db2gain(W.sub(W.add(f, W.mul(p, W.sub(n, d))), n));
 		return W.select(W.ge(e, u), i, W.select(W.ge(e, 1), r, 1));
-	}, h = e.driven("threshold"), g = h ? W.db2gain(h) : J(`${e.key}:linear`, 10 ** (i / 20)), _ = h ? W.pow(m(W.div(1, g)), -.6) : J(`${e.key}:makeup`, Fs(a)), v = (t, n) => J(`${e.key}:${n}`, Math.exp(-1 / (Math.max(t, 1e-6) * e.sr))), y = W.env(0, v(vs, "hold"), W.max(W.abs(t[0]), W.abs(t[1]))), b = W.mul(-20, W.log(m(W.div(y, g)))), x = (e) => e / Math.log(40), S = W.env(v(x(e.num("attack", .003)), "attack"), v(x(e.num("release", .25)), "release"), b), C = W.mul(_, W.db2gain(W.mul(-1, S))), w = Math.round(_s * e.sr);
-	return bs(t, (t, n) => W.mul(C, W.sdelay({
+	}, h = e.driven("threshold"), g = h ? W.db2gain(h) : J(`${e.key}:linear`, 10 ** (i / 20)), _ = h ? W.pow(m(W.div(1, g)), -.6) : J(`${e.key}:makeup`, Hs(a)), v = (t, n) => J(`${e.key}:${n}`, Math.exp(-1 / (Math.max(t, 1e-6) * e.sr))), y = W.env(0, v(Ts, "hold"), W.max(W.abs(t[0]), W.abs(t[1]))), b = W.mul(-20, W.log(m(W.div(y, g)))), x = (e) => e / Math.log(40), S = W.env(v(x(e.num("attack", .003)), "attack"), v(x(e.num("release", .25)), "release"), b), C = W.mul(_, W.db2gain(W.mul(-1, S))), w = Math.round(ws * e.sr);
+	return Ds(t, (t, n) => W.mul(C, W.sdelay({
 		key: `${e.key}:${n}`,
 		size: w
 	}, t)));
 }
-var Ls = {
-	filter: Ds,
-	distortion: Os,
-	bitcrusher: ks,
-	chorus: As,
-	phaser: js,
-	tremolo: Ms,
-	eq: Ns,
-	compressor: Is
+var Ws = {
+	filter: Ps,
+	distortion: Fs,
+	bitcrusher: Is,
+	chorus: Ls,
+	phaser: Rs,
+	tremolo: zs,
+	eq: Bs,
+	compressor: Us
 };
-function Rs(e, t, n, r) {
+function Gs(e, t, n, r) {
 	let i = [], a = 0, o = (n) => {
 		let i = `${t}:${n.id}.${n.generation}`, a = (e, t) => {
 			let r = n.params[e];
 			return typeof r == "number" && Number.isFinite(r) ? r : t;
-		}, o = (e) => r.drive(Ca(n.id, e));
+		}, o = (e) => r.drive(Ta(n.id, e));
 		return {
 			key: i,
 			sr: e.sampleRate,
@@ -5258,15 +5417,15 @@ function Rs(e, t, n, r) {
 	}, s = q(e, () => {
 		let e = n.get();
 		for (let t of i) {
-			let n = o(t), r = Ls[t.type](n, e), i = J(`${n.key}:on`, +!t.bypass), a = W.sub(1, i);
+			let n = o(t), r = Ws[t.type](n, e), i = J(`${n.key}:on`, +!t.bypass), a = W.sub(1, i);
 			e = [W.add(W.mul(i, r[0]), W.mul(a, e[0])), W.add(W.mul(i, r[1]), W.mul(a, e[1]))];
 		}
 		return e;
 	}), c = (e, t) => {
 		let n = !1;
-		for (let i of la(e.type)) {
-			let a = Bi(i, t[i.path]) ?? i.default;
-			a !== e.params[i.path] && (e.params[i.path] = a, i.rebuild ? n = !0 : r.refresh(Ca(e.id, i.path)));
+		for (let i of da(e.type)) {
+			let a = Hi(i, t[i.path]) ?? i.default;
+			a !== e.params[i.path] && (e.params[i.path] = a, i.rebuild ? n = !0 : r.refresh(Ta(e.id, i.path)));
 		}
 		return n;
 	};
@@ -5281,7 +5440,7 @@ function Rs(e, t, n, r) {
 					t.delete(e.id), e.bypass = r.bypass === !0, r.params && c(e, r.params) && (e.generation = ++a), n.push(e);
 					continue;
 				}
-				let i = ja(r);
+				let i = Na(r);
 				i && !n.some((e) => e.id === i.id) && n.push({
 					...i,
 					params: { ...i.params },
@@ -5300,8 +5459,8 @@ function Rs(e, t, n, r) {
 }
 //#endregion
 //#region src/playback/engine/tone-envelope.ts
-function zs(e, t) {
-	let n = go({ initial: 0 }), r = 1 / t, i = e;
+function Ks(e, t) {
+	let n = vo({ initial: 0 }), r = 1 / t, i = e;
 	return {
 		timeline: n,
 		set(e) {
@@ -5323,14 +5482,14 @@ function X(e, t, n) {
 	let r = e[t];
 	return typeof r == "number" && Number.isFinite(r) ? r : n;
 }
-function Bs(e, t, n) {
+function qs(e, t, n) {
 	let r = e[t];
 	return typeof r == "string" ? r : n;
 }
-function Vs(e) {
+function Js(e) {
 	return e["envelope.attackCurve"] === "exponential" ? "exponential" : "linear";
 }
-function Hs(e, t, n) {
+function Ys(e, t, n) {
 	return {
 		attack: X(e, `${t}.attack`, .01),
 		decay: X(e, `${t}.decay`, .1),
@@ -5340,72 +5499,84 @@ function Hs(e, t, n) {
 	};
 }
 function Z(e, t = "") {
-	return Hs(e, `${t}envelope`, Vs(e));
+	return Ys(e, `${t}envelope`, Js(e));
 }
-var Us = (e) => W.pow(2, W.div(e, 1200));
-function Ws(e, t) {
+var Xs = (e) => W.pow(2, W.div(e, 1200));
+function Zs(e, t) {
 	return e === "triangle" ? W.bleptriangle(t) : e === "sawtooth" ? W.blepsaw(t) : e === "square" ? W.blepsquare(t) : W.cycle(t);
 }
-function Gs(e, t, n, r, i = Ws) {
-	let a = Bs(e.params, `${t}oscillator.type`, "sine");
+function Qs(e, t, n, r, i = Zs) {
+	let a = qs(e.params, `${t}oscillator.type`, "sine");
 	if (a === "pulse") {
 		let i = W.mul(.5, W.add(1, e.param(`${t}oscillator.width`, .5, `${n}:width`)));
 		return W.sub(W.mul(2, W.le(W.phasor(r), i)), 1);
 	}
 	if (a.startsWith("fat")) {
-		let o = a.slice(3), s = Math.max(2, Math.round(X(e.params, `${t}oscillator.count`, 3))), c = e.param(`${t}oscillator.spread`, 20, `${n}:spread`), l = 10 ** ((-6 - 1.1 * s) / 20), u = Array.from({ length: s }, (e, t) => i(o, W.mul(r, Us(W.mul(c, t / (s - 1) - .5)))));
+		let o = a.slice(3), s = Math.max(2, Math.round(X(e.params, `${t}oscillator.count`, 3))), c = e.param(`${t}oscillator.spread`, 20, `${n}:spread`), l = 10 ** ((-6 - 1.1 * s) / 20), u = Array.from({ length: s }, (e, t) => i(o, W.mul(r, Xs(W.mul(c, t / (s - 1) - .5)))));
 		return W.mul(l, W.add(...u));
 	}
 	return i(a, r);
 }
-function Ks(e, t) {
+function $s(e, t) {
 	return e === "triangle" ? W.triangle(t) : e === "sawtooth" ? W.saw(t) : e === "square" ? W.square(t) : W.cycle(t);
 }
-function qs(e, t) {
+function ec(e, t) {
 	return W.min(e / 2, W.max(-e / 2, t));
 }
-function Js(e, t, n, r, i) {
+function tc(e, t, n, r, i) {
 	r > 0 && i > .05 ? e.timeline.exponentialRampTo(t, r, n) : e.timeline.setAt(t, n), e.changed();
 }
-function Ys(e, t, n) {
-	let r = zs(n, e.host.sampleRate);
+function nc(e, t, n) {
+	let r = Ks(n, e.host.sampleRate);
 	return {
 		env: r,
-		lane: Ao(e.host, `${e.key}:${t}`, "follower", r.timeline, 0)
+		lane: Mo(e.host, `${e.key}:${t}`, "follower", r.timeline, 0)
 	};
 }
-function Xs({ env: e, lane: t }, n) {
+function rc({ env: e, lane: t }, n) {
 	e.timeline.holdAt(n), e.triggerRelease(n), t.changed();
 }
-function Zs(e) {
+function ic(e) {
 	let t = e.eventsFrom(Infinity).at(-1);
 	return t ? t.value === 0 && t.kind !== "target" ? t.time : Infinity : e.valueAt(0) === 0 ? -Infinity : Infinity;
 }
-var Qs = (...e) => () => Math.max(...e.map((e) => Zs(e.env.timeline)));
-function $s(e, t) {
+var ac = (...e) => () => Math.max(...e.map((e) => ic(e.env.timeline)));
+function oc(e) {
+	let t = Y(e.host, `${e.key}:keytrack`, "line", 1), n = Y(e.host, `${e.key}:velfilter`, "line", 1), { layer: r } = e;
+	return {
+		active: () => X(r.params, "keyTrack", 0) !== 0 || X(r.params, "velocityToFilter", 0) !== 0,
+		track: t.get,
+		amount: n.get,
+		set(e, i, a) {
+			let o = ls(r.params, e, i);
+			t.timeline.setAt(o.track, a), n.timeline.setAt(o.amount, a), t.changed(), n.changed();
+		}
+	};
+}
+function sc(e, t) {
 	e.timeline.holdAt(t), e.changed();
 }
 //#endregion
 //#region src/playback/engine/elementary/formant.ts
-var ec = .35, tc = .47, nc = 1.6, rc = .12, ic = 6e3, ac = .006, oc = .05, sc = Array.from({ length: 40 }, (e, t) => 1 / (t + 1) ** 1.6), cc = 10 ** (.7 / 20), lc = 1e-4, uc = "sine-sculptor:glottal", dc = 4096, fc = 8, pc = zi("FormantVoice");
-function mc() {
-	let e = new Float64Array(dc);
-	for (let t = 0; t < dc; t++) {
-		let n = 2 * Math.PI * t / dc, r = 0;
-		sc.forEach((e, t) => r += e * Math.sin((t + 1) * n)), e[t] = r;
+var cc = .35, lc = .47, uc = 1.6, dc = .12, fc = 6e3, pc = .006, mc = .05, hc = Array.from({ length: 40 }, (e, t) => 1 / (t + 1) ** 1.6), gc = 10 ** (.7 / 20), _c = 1e-4, vc = "sine-sculptor:glottal", yc = 4096, bc = 8, xc = Vi("FormantVoice");
+function Sc() {
+	let e = new Float64Array(yc);
+	for (let t = 0; t < yc; t++) {
+		let n = 2 * Math.PI * t / yc, r = 0;
+		hc.forEach((e, t) => r += e * Math.sin((t + 1) * n)), e[t] = r;
 	}
 	let t = 0;
 	for (let n of e) t = Math.max(t, Math.abs(n));
 	let n = 1 / t, r = /* @__PURE__ */ new Float32Array(4097);
-	for (let t = 0; t < dc; t++) r[t] = e[t] * n;
-	return r[dc] = r[0], {
+	for (let t = 0; t < yc; t++) r[t] = e[t] * n;
+	return r[yc] = r[0], {
 		table: r,
 		scale: n
 	};
 }
-var hc = null, gc = () => hc ??= mc();
-function _c(e) {
-	let { host: t, key: n, layer: r } = e, i = (e) => X(r.params, e, pc[e]), a = (e) => Bs(r.params, e, pc[e]), o = Y(t, `${n}:freq`, "line", 220, "exponential"), s = Y(t, `${n}:vibrato`, "line", 0), c = Y(t, `${n}:amp`, "line", 0), l = Y(t, `${n}:env`, "line", 0), u = Y(t, `${n}:puff`, "line", ec), d = Y(t, `${n}:burst`, "line", 0), f = Y(t, `${n}:burstHz`, "line", 3e3, "exponential"), p = Y(t, `${n}:burstQ`, "line", 2.5), m = Y(t, `${n}:reset`, "line", 0), h = Y(t, `${n}:power`, "line", 0), g = [
+var Cc = null, wc = () => Cc ??= Sc();
+function Tc(e) {
+	let { host: t, key: n, layer: r } = e, i = (e) => X(r.params, e, xc[e]), a = (e) => qs(r.params, e, xc[e]), o = Y(t, `${n}:freq`, "line", 220, "exponential"), s = Y(t, `${n}:vibrato`, "line", 0), c = Y(t, `${n}:amp`, "line", 0), l = Y(t, `${n}:env`, "line", 0), u = Y(t, `${n}:puff`, "line", cc), d = Y(t, `${n}:burst`, "line", 0), f = Y(t, `${n}:burstHz`, "line", 3e3, "exponential"), p = Y(t, `${n}:burstQ`, "line", 2.5), m = Y(t, `${n}:reset`, "line", 0), h = Y(t, `${n}:power`, "line", 0), g = [
 		0,
 		1,
 		2,
@@ -5437,19 +5608,19 @@ function _c(e) {
 			let e = () => {
 				y = !0, x.invalidate();
 			};
-			v = i.loadFiles?.({ [uc]: gc().table }, e) ?? !1, v || (y = !0);
+			v = i.loadFiles?.({ [vc]: wc().table }, e) ?? !1, v || (y = !0);
 		}
 		if (!y) return W.table({
 			key: `${n}:glottal`,
-			path: uc
+			path: vc
 		}, r);
-		let { scale: o } = gc(), s = sc.slice(0, fc).map((e, t) => W.mul(e * o, W.sin(W.mul(2 * Math.PI * (t + 1), r))));
+		let { scale: o } = wc(), s = hc.slice(0, bc).map((e, t) => W.mul(e * o, W.sin(W.mul(2 * Math.PI * (t + 1), r))));
 		return W.add(...s);
 	}, x = q(t, () => {
-		let t = m.get(), a = r.param("vibRate", pc.vibRate, `${n}:vibRate`), _ = W.mul(s.get(), W.sin(W.mul(2 * Math.PI, W.syncphasor(a, t)))), v = W.mul(o.get(), Us(W.add(r.detune.get(), _))), y = r.param("brightness", pc.brightness, `${n}:brightness`), x = h.get(), S = W.svf({
+		let t = m.get(), a = r.param("vibRate", xc.vibRate, `${n}:vibRate`), _ = W.mul(s.get(), W.sin(W.mul(2 * Math.PI, W.syncphasor(a, t)))), v = W.mul(o.get(), Xs(W.add(r.detune.get(), _))), y = r.param("brightness", xc.brightness, `${n}:brightness`), x = h.get(), S = W.svf({
 			key: `${n}:tilt`,
 			mode: "lowpass"
-		}, y, cc, W.mul(x, b(v, W.syncphasor(v, t)))), C = r.param("breath", pc.breath, `${n}:breath`), w = W.mul(S, W.sub(1, W.mul(.5, C))), T = W.mul(C, u.get()), E = W.min(2, W.max(.5, r.param("formantShift", pc.formantShift, `${n}:formantShift`))), D = g.map((e) => {
+		}, y, gc, W.mul(x, b(v, W.syncphasor(v, t)))), C = r.param("breath", xc.breath, `${n}:breath`), w = W.mul(S, W.sub(1, W.mul(.5, C))), T = W.mul(C, u.get()), E = W.min(2, W.max(.5, r.param("formantShift", xc.formantShift, `${n}:formantShift`))), D = g.map((e) => {
 			let t = e.q.get();
 			return {
 				hz: W.mul(e.hz.get(), E),
@@ -5479,7 +5650,7 @@ function _c(e) {
 		let n = i("envelope.release");
 		l.timeline.holdAt(e), l.timeline.linearTo(0, e + n);
 		let r = i("pitchDrop");
-		r > 0 && C > 0 && (o.timeline.holdAt(e), o.timeline.exponentialTo(C * 2 ** (-r / 1200), e + n), o.changed()), d.timeline.holdAt(e), d.timeline.linearTo(0, e + ac), l.changed(), d.changed(), T !== Infinity && t.immediate() < T && h.timeline.cancelFrom(T), T = e + Math.max(n, ac) + oc, h.timeline.setAt(0, T), h.changed();
+		r > 0 && C > 0 && (o.timeline.holdAt(e), o.timeline.exponentialTo(C * 2 ** (-r / 1200), e + n), o.changed()), d.timeline.holdAt(e), d.timeline.linearTo(0, e + pc), l.changed(), d.changed(), T !== Infinity && t.immediate() < T && h.timeline.cancelFrom(T), T = e + Math.max(n, pc) + mc, h.timeline.setAt(0, T), h.changed();
 	};
 	return {
 		output: x,
@@ -5499,7 +5670,7 @@ function _c(e) {
 			}))
 		},
 		attack(e, t, n, r) {
-			!w || t >= T ? (m.timeline.setAt(1, t), m.timeline.setAt(0, t + lc), h.timeline.setAt(1, t)) : T !== Infinity && h.timeline.cancelFrom(T), w = !0, T = Infinity, E = t;
+			!w || t >= T ? (m.timeline.setAt(1, t), m.timeline.setAt(0, t + _c), h.timeline.setAt(1, t)) : T !== Infinity && h.timeline.cancelFrom(T), w = !0, T = Infinity, E = t;
 			let v = i("randomness"), y = i("morph"), b = i("voiceMix"), x = i("formantShift"), D = i("envelope.attack"), O = ei(i("seed"), r.key ?? r.index, r.midi), { syllable: k, manual: A } = ni({
 				mode: a("syllableMode"),
 				set: a("syllableSet"),
@@ -5522,18 +5693,18 @@ function _c(e) {
 				let [r, i, a] = P[n];
 				e.q.timeline.holdAt(t), e.q.timeline.setAt(Math.max(1, r * x / (a * ge)), t);
 				let o = e.hz.timeline, s = e.gain.timeline;
-				o.holdAt(t), s.holdAt(t), o.setAt(ne ? ne[n] : r, t), s.setAt((L ? L[n] : i) * nc, t), o.linearTo(r, oe), s.linearTo(i * nc, oe), y > .01 && (o.setAt(r, se), o.linearTo(te[n][0], ce), s.setAt(i * nc, se), s.linearTo(te[n][1] * nc, ce));
+				o.holdAt(t), s.holdAt(t), o.setAt(ne ? ne[n] : r, t), s.setAt((L ? L[n] : i) * uc, t), o.linearTo(r, oe), s.linearTo(i * uc, oe), y > .01 && (o.setAt(r, se), o.linearTo(te[n][0], ce), s.setAt(i * uc, se), s.linearTo(te[n][1] * uc, ce));
 			});
 			let _e = c.timeline;
 			if (_e.holdAt(t), _e.linearTo(0, t + .004), I?.kind === "nasal") {
 				let e = t + .004 + Math.max(.016, D);
 				_e.linearTo(1 - .65 * F, e), _e.linearTo(1, Math.max(oe, e + .01));
 			} else _e.setAt(0, ae), _e.linearTo(1, ae + Math.max(.004, D));
-			l.timeline.holdAt(t), l.timeline.linearTo(.5 + .5 * n, t + .005), u.timeline.holdAt(t), u.timeline.setAt(tc, t), u.timeline.linearTo(ec, t + .15);
+			l.timeline.holdAt(t), l.timeline.linearTo(.5 + .5 * n, t + .005), u.timeline.holdAt(t), u.timeline.setAt(lc, t), u.timeline.linearTo(cc, t + .15);
 			let ve = d.timeline;
-			if (ve.holdAt(t), ve.linearTo(0, t + ac), I?.burst) {
-				let [e, n, r] = I.burst, i = Math.max(t + r + ie, t + ac * 3);
-				f.timeline.holdAt(t), p.timeline.holdAt(t), f.timeline.linearTo(Math.min(ic, e * Math.sqrt(N)), t + ac), p.timeline.linearTo(n, t + ac), ve.linearTo(rc * F, t + ac * 2), ve.exponentialTo(1e-4, i), ve.linearTo(0, i + ac);
+			if (ve.holdAt(t), ve.linearTo(0, t + pc), I?.burst) {
+				let [e, n, r] = I.burst, i = Math.max(t + r + ie, t + pc * 3);
+				f.timeline.holdAt(t), p.timeline.holdAt(t), f.timeline.linearTo(Math.min(fc, e * Math.sqrt(N)), t + pc), p.timeline.linearTo(n, t + pc), ve.linearTo(dc * F, t + pc * 2), ve.exponentialTo(1e-4, i), ve.linearTo(0, i + pc);
 			}
 			for (let e of _) e.changed();
 		},
@@ -5544,17 +5715,17 @@ function _c(e) {
 			for (let e of _) e.changed();
 		},
 		refresh: x.invalidate,
-		quietAt: () => Zs(h.timeline),
+		quietAt: () => ic(h.timeline),
 		sleep() {
 			v = !1, x.invalidate();
 		}
 	};
 }
-var vc = { FormantVoice: _c }, yc = (e) => .45 * e.sampleRate;
-function bc(e, t, n, r) {
-	return W.min(W.mul(t, W.add(1, W.mul(W.sub(W.pow(2, n), 1), r, r))), yc(e));
+var Ec = { FormantVoice: Tc }, Dc = (e) => .45 * e.sampleRate;
+function Oc(e, t, n, r) {
+	return W.min(W.mul(t, W.add(1, W.mul(W.sub(W.pow(2, n), 1), r, r))), Dc(e));
 }
-function xc(e, t, n, r, i) {
+function kc(e, t, n, r, i) {
 	return e === "bandpass" ? W.div(W.svf({
 		key: t,
 		mode: "bandpass"
@@ -5563,35 +5734,35 @@ function xc(e, t, n, r, i) {
 		mode: e === "highpass" ? "highpass" : "lowpass"
 	}, n, W.db2gain(r), i);
 }
-function Sc(e) {
-	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = () => Hs(r.params, "filterEnvelope", Vs(r.params)), o = Ys(e, "amp", Z(r.params)), s = Ys(e, "filter", a()), c = q(t, () => {
-		let e = W.mul(i.get(), Us(r.detune.get())), a = bc(t, r.param("filterEnvelope.baseFrequency", 200, `${n}:base`), r.param("filterEnvelope.octaves", 3, `${n}:octaves`), s.lane.get()), c = r.param("filter.Q", 1, `${n}:q`), l = Bs(r.params, "filter.type", "lowpass"), u = W.mul(xc(l, `${n}:svf`, a, c, Gs(r, "", n, e)), o.lane.get());
-		return [u, u];
+function Ac(e) {
+	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = () => Ys(r.params, "filterEnvelope", Js(r.params)), o = nc(e, "amp", Z(r.params)), s = nc(e, "filter", a()), c = oc(e), l = q(t, () => {
+		let e = W.mul(i.get(), Xs(r.detune.get())), a = r.param("filterEnvelope.baseFrequency", 200, `${n}:base`), l = r.param("filterEnvelope.octaves", 3, `${n}:octaves`), u = c.active(), d = Oc(t, u ? W.mul(a, c.track()) : a, u ? W.mul(l, c.amount()) : l, s.lane.get()), f = r.param("filter.Q", 1, `${n}:q`), p = qs(r.params, "filter.type", "lowpass"), m = W.mul(kc(p, `${n}:svf`, d, f, Qs(r, "", n, e)), o.lane.get());
+		return [m, m];
 	});
 	return {
-		output: c,
+		output: l,
 		attack(e, t, n) {
-			o.env.set(Z(r.params)), o.env.triggerAttack(t, n), o.lane.changed(), s.env.set(a()), s.env.triggerAttack(t, 1), s.lane.changed(), Js(i, e, t, X(r.params, "portamento", 0), o.env.valueAt(t));
+			o.env.set(Z(r.params)), o.env.triggerAttack(t, n), o.lane.changed(), s.env.set(a()), s.env.triggerAttack(t, 1), s.lane.changed(), c.set(e, n, t), tc(i, e, t, X(r.params, "portamento", 0), o.env.valueAt(t));
 		},
 		release(e) {
 			o.env.set(Z(r.params)), o.env.triggerRelease(e), o.lane.changed(), s.env.set(a()), s.env.triggerRelease(e), s.lane.changed();
 		},
 		silence(e) {
-			Xs(o, e), Xs(s, e), $s(i, e);
+			rc(o, e), rc(s, e), sc(i, e);
 		},
-		refresh: c.invalidate,
-		quietAt: Qs(o)
+		refresh: l.invalidate,
+		quietAt: ac(o)
 	};
 }
-var Cc = 10 ** (-10 / 20);
-function wc(e, t) {
-	let { host: n, key: r, layer: i } = e, a = Y(n, `${r}:freq`, "line", 440, "exponential"), o = () => Hs(i.params, "modulationEnvelope", "linear"), s = Ys(e, "amp", Z(i.params)), c = Ys(e, "mod", o()), l = q(n, () => {
-		let e = a.get(), o = Us(i.detune.get()), l = i.param("harmonicity", 3, `${r}:harmonicity`), u = W.mul(qs(n.sampleRate, W.mul(e, l)), o), d = Ws(Bs(i.params, "modulation.type", "square"), u), f = W.mul(Cc, d, c.lane.get()), p;
+var jc = 10 ** (-10 / 20);
+function Mc(e, t) {
+	let { host: n, key: r, layer: i } = e, a = Y(n, `${r}:freq`, "line", 440, "exponential"), o = () => Ys(i.params, "modulationEnvelope", "linear"), s = nc(e, "amp", Z(i.params)), c = nc(e, "mod", o()), l = q(n, () => {
+		let e = a.get(), o = Xs(i.detune.get()), l = i.param("harmonicity", 3, `${r}:harmonicity`), u = W.mul(ec(n.sampleRate, W.mul(e, l)), o), d = Zs(qs(i.params, "modulation.type", "square"), u), f = W.mul(jc, d, c.lane.get()), p;
 		if (t) {
-			let t = i.param("modulationIndex", 10, `${r}:index`), a = W.mul(qs(n.sampleRate, W.mul(e, W.add(1, W.mul(t, f)))), o);
-			p = W.mul(Cc, Gs(i, "", r, a, Ks), s.lane.get());
+			let t = i.param("modulationIndex", 10, `${r}:index`), a = W.mul(ec(n.sampleRate, W.mul(e, W.add(1, W.mul(t, f)))), o);
+			p = W.mul(jc, Qs(i, "", r, a, $s), s.lane.get());
 		} else {
-			let t = W.mul(Cc, Gs(i, "", r, W.mul(e, o)), s.lane.get());
+			let t = W.mul(jc, Qs(i, "", r, W.mul(e, o)), s.lane.get());
 			p = W.mul(t, W.add(.5, W.mul(.5, f)));
 		}
 		return [p, p];
@@ -5599,19 +5770,19 @@ function wc(e, t) {
 	return {
 		output: l,
 		attack(e, t, n) {
-			s.env.set(Z(i.params)), s.env.triggerAttack(t, n), s.lane.changed(), c.env.set(o()), c.env.triggerAttack(t, n), c.lane.changed(), Js(a, e, t, X(i.params, "portamento", 0), s.env.valueAt(t));
+			s.env.set(Z(i.params)), s.env.triggerAttack(t, n), s.lane.changed(), c.env.set(o()), c.env.triggerAttack(t, n), c.lane.changed(), tc(a, e, t, X(i.params, "portamento", 0), s.env.valueAt(t));
 		},
 		release(e) {
 			s.env.set(Z(i.params)), s.env.triggerRelease(e), s.lane.changed(), c.env.set(o()), c.env.triggerRelease(e), c.lane.changed();
 		},
 		silence(e) {
-			Xs(s, e), Xs(c, e), $s(a, e);
+			rc(s, e), rc(c, e), sc(a, e);
 		},
 		refresh: l.invalidate,
-		quietAt: Qs(s)
+		quietAt: ac(s)
 	};
 }
-var Tc = [
+var Nc = [
 	1,
 	1.483,
 	1.932,
@@ -5619,12 +5790,12 @@ var Tc = [
 	2.63,
 	3.897
 ];
-function Ec(e) {
-	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = Ys(e, "amp", Z(r.params)), o = q(t, () => {
-		let e = i.get(), o = Us(r.detune.get()), s = r.param("harmonicity", 5.1, `${n}:harmonicity`), c = r.param("modulationIndex", 32, `${n}:index`), l = Tc.map((n) => {
-			let r = W.mul(n, e), i = W.blepsquare(W.mul(qs(t.sampleRate, W.mul(r, s)), o));
-			return W.square(W.mul(qs(t.sampleRate, W.mul(r, W.add(1, W.mul(c, i)))), o));
-		}), u = a.lane.get(), d = r.param("resonance", 4e3, `${n}:resonance`), f = r.param("octaves", 1.5, `${n}:octaves`), p = W.min(W.mul(d, W.add(1, W.mul(W.sub(W.pow(2, f), 1), u))), yc(t)), m = W.mul(W.svf({
+function Pc(e) {
+	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = nc(e, "amp", Z(r.params)), o = q(t, () => {
+		let e = i.get(), o = Xs(r.detune.get()), s = r.param("harmonicity", 5.1, `${n}:harmonicity`), c = r.param("modulationIndex", 32, `${n}:index`), l = Nc.map((n) => {
+			let r = W.mul(n, e), i = W.blepsquare(W.mul(ec(t.sampleRate, W.mul(r, s)), o));
+			return W.square(W.mul(ec(t.sampleRate, W.mul(r, W.add(1, W.mul(c, i)))), o));
+		}), u = a.lane.get(), d = r.param("resonance", 4e3, `${n}:resonance`), f = r.param("octaves", 1.5, `${n}:octaves`), p = W.min(W.mul(d, W.add(1, W.mul(W.sub(W.pow(2, f), 1), u))), Dc(t)), m = W.mul(W.svf({
 			key: `${n}:highpass`,
 			mode: "highpass"
 		}, p, 1, W.add(...l)), u);
@@ -5633,92 +5804,93 @@ function Ec(e) {
 	return {
 		output: o,
 		attack(e, t, n) {
-			a.env.set(Z(r.params)), a.env.triggerAttack(t, n), a.lane.changed(), Js(i, e, t, 0, 0);
+			a.env.set(Z(r.params)), a.env.triggerAttack(t, n), a.lane.changed(), tc(i, e, t, 0, 0);
 		},
 		release(e) {
 			a.env.set(Z(r.params)), a.env.triggerRelease(e), a.lane.changed();
 		},
 		silence(e) {
-			Xs(a, e), $s(i, e);
+			rc(a, e), sc(i, e);
 		},
 		refresh: o.invalidate,
-		quietAt: Qs(a)
+		quietAt: ac(a)
 	};
 }
-function Dc(e) {
+function Fc(e) {
 	let t = (t, n) => W.pole(t, W.mul(n * .11, e));
 	return W.add(t(.99886, .0555179), t(.99332, .0750759), t(.969, .153852), t(.8665, .3104856), t(.55, .5329522), t(-.7616, -.016898), W.mul(.058982, e), W.z(W.mul(.01275186, e)));
 }
-var Oc = 8;
-function kc(e, t) {
+var Ic = 8;
+function Lc(e, t) {
 	return Math.floor(Math.fround(1 / e) * t) + 1;
 }
-function Ac(e) {
-	let { host: t, key: n, layer: r } = e, i = Math.ceil(t.sampleRate / Oc) + 2, a = Y(t, `${n}:period`, "line", kc(440, t.sampleRate)), o = Y(t, `${n}:gate`, "line", 0), s = Y(t, `${n}:feedback`, "line", X(r.params, "resonance", .7)), c = q(t, () => {
-		let c = W.mul(2 * Math.PI / t.sampleRate, r.param("dampening", 4e3, `${n}:dampening`)), l = W.sub(1, c), u = o.get(), d = a.get(), f = s.get(), p = (e, t) => {
-			let r = W.mul(u, Dc(W.noise({
+function Rc(e) {
+	let { host: t, key: n, layer: r } = e, i = Math.ceil(t.sampleRate / Ic) + 2, a = Y(t, `${n}:period`, "line", Lc(440, t.sampleRate)), o = Y(t, `${n}:gate`, "line", 0), s = Y(t, `${n}:feedback`, "line", X(r.params, "resonance", .7)), c = Y(t, `${n}:level`, "line", 1), l = q(t, () => {
+		let l = W.mul(2 * Math.PI / t.sampleRate, r.param("dampening", 4e3, `${n}:dampening`)), u = W.sub(1, l), d = o.get(), f = a.get(), p = s.get(), m = (e, t) => {
+			let a = W.mul(d, Fc(W.noise({
 				key: `${n}:${e}`,
 				seed: t
-			})));
-			return W.delay({
+			}))), o = W.delay({
 				key: `${n}:${e}:comb`,
 				size: i
-			}, d, f, W.pole(l, W.mul(c, r)));
+			}, f, p, W.pole(u, W.mul(l, a)));
+			return X(r.params, "velocity", 0) === 0 ? o : W.mul(o, c.get());
 		};
-		return [p("l", e.seed * 2 + 1), p("r", e.seed * 2 + 2)];
-	}), l = (e) => {
+		return [m("l", e.seed * 2 + 1), m("r", e.seed * 2 + 2)];
+	}), u = (e) => {
 		s.timeline.linearRampTo(0, X(r.params, "release", 1), e), s.changed();
 	};
 	return {
-		output: c,
-		attack(e, n) {
-			a.timeline.setAt(Math.min(i - 1, kc(e, t.sampleRate)), n), a.changed(), o.timeline.cancelFrom(n), o.timeline.setAt(1, n), o.timeline.setAt(0, n + X(r.params, "attackNoise", 1) / e), o.changed(), s.timeline.cancelFrom(n), s.timeline.setAt(X(r.params, "resonance", .7), n), s.changed();
+		output: l,
+		attack(e, n, l) {
+			let u = us(r.params, e, l, t.sampleRate);
+			a.timeline.setAt(Math.min(i - 1, Lc(u.hz, t.sampleRate)), n), a.changed(), o.timeline.cancelFrom(n), o.timeline.setAt(1, n), o.timeline.setAt(0, n + X(r.params, "attackNoise", 1) / u.hz), o.changed(), s.timeline.cancelFrom(n), s.timeline.setAt(u.feedback ?? X(r.params, "resonance", .7), n), s.changed(), c.timeline.setAt(u.level, n), c.changed();
 		},
-		release: l,
+		release: u,
 		silence(e) {
-			o.timeline.cancelFrom(e), o.timeline.setAt(0, e), o.changed(), s.timeline.holdAt(e), l(e);
+			o.timeline.cancelFrom(e), o.timeline.setAt(0, e), o.changed(), s.timeline.holdAt(e), u(e);
 		},
-		refresh: c.invalidate,
-		quietAt: () => Math.max(Zs(s.timeline), Zs(o.timeline)) + i / t.sampleRate
+		refresh: l.invalidate,
+		quietAt: () => Math.max(ic(s.timeline), ic(o.timeline)) + i / t.sampleRate
 	};
 }
-var jc = {
-	MonoSynth: Sc,
-	FMSynth: (e) => wc(e, !0),
-	AMSynth: (e) => wc(e, !1),
-	MetalSynth: Ec,
-	PluckSynth: Ac
+var zc = {
+	MonoSynth: Ac,
+	FMSynth: (e) => Mc(e, !0),
+	AMSynth: (e) => Mc(e, !1),
+	MetalSynth: Pc,
+	PluckSynth: Rc
 };
 //#endregion
 //#region src/playback/engine/elementary/voices.ts
-function Mc(e) {
-	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = Ys(e, "amp", Z(r.params)), o = q(t, () => {
-		let e = W.mul(i.get(), Us(r.detune.get())), t = W.mul(Gs(r, "", n, e), a.lane.get());
+function Bc(e) {
+	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = nc(e, "amp", Z(r.params)), o = q(t, () => {
+		let e = W.mul(i.get(), Xs(r.detune.get())), t = W.mul(Qs(r, "", n, e), a.lane.get());
 		return [t, t];
 	});
 	return {
 		output: o,
 		attack(e, t, n) {
-			a.env.set(Z(r.params)), a.env.triggerAttack(t, n), a.lane.changed(), Js(i, e, t, X(r.params, "portamento", 0), a.env.valueAt(t));
+			a.env.set(Z(r.params)), a.env.triggerAttack(t, n), a.lane.changed(), tc(i, e, t, X(r.params, "portamento", 0), a.env.valueAt(t));
 		},
 		release(e) {
 			a.env.set(Z(r.params)), a.env.triggerRelease(e), a.lane.changed();
 		},
 		silence(e) {
-			Xs(a, e), $s(i, e);
+			rc(a, e), sc(i, e);
 		},
 		refresh: o.invalidate,
-		quietAt: Qs(a)
+		quietAt: ac(a)
 	};
 }
-function Nc(e) {
-	let { host: t, key: n, layer: r } = e, i = Ys(e, "amp", Z(r.params)), a = q(t, () => {
-		let t = i.lane.get(), a = Bs(r.params, "noise.type", "white"), o = (e, t) => {
+function Vc(e) {
+	let { host: t, key: n, layer: r } = e, i = nc(e, "amp", Z(r.params)), a = q(t, () => {
+		let t = i.lane.get(), a = qs(r.params, "noise.type", "white"), o = (e, t) => {
 			let r = W.noise({
 				key: `${n}:${e}`,
 				seed: t
 			});
-			return a === "pink" ? Dc(r) : a === "brown" ? W.mul(3.5, W.pole(1 / 1.02, W.mul(.02 / 1.02, r))) : r;
+			return a === "pink" ? Fc(r) : a === "brown" ? W.mul(3.5, W.pole(1 / 1.02, W.mul(.02 / 1.02, r))) : r;
 		};
 		return [W.mul(o("l", e.seed * 2 + 1), t), W.mul(o("r", e.seed * 2 + 2), t)];
 	});
@@ -5730,97 +5902,97 @@ function Nc(e) {
 		release(e) {
 			i.env.set(Z(r.params)), i.env.triggerRelease(e), i.lane.changed();
 		},
-		silence: (e) => Xs(i, e),
+		silence: (e) => rc(i, e),
 		refresh: a.invalidate,
-		quietAt: Qs(i)
+		quietAt: ac(i)
 	};
 }
-var Pc = 1e-4;
-function Fc(e) {
-	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = Y(t, `${n}:reset`, "line", 0), o = () => Z(r.params), s = Ys(e, "amp", o()), c = q(t, () => {
-		let e = qs(t.sampleRate, W.mul(i.get(), Us(r.detune.get()))), o = Bs(r.params, "oscillator.type", "sine") === "sine" ? W.sin(W.mul(2 * Math.PI, W.syncphasor(e, a.get()))) : Gs(r, "", n, e), c = W.mul(o, s.lane.get());
+var Hc = 1e-4;
+function Uc(e) {
+	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = Y(t, `${n}:reset`, "line", 0), o = () => Z(r.params), s = nc(e, "amp", o()), c = q(t, () => {
+		let e = ec(t.sampleRate, W.mul(i.get(), Xs(r.detune.get()))), o = qs(r.params, "oscillator.type", "sine") === "sine" ? W.sin(W.mul(2 * Math.PI, W.syncphasor(e, a.get()))) : Qs(r, "", n, e), c = W.mul(o, s.lane.get());
 		return [c, c];
 	});
 	return {
 		output: c,
 		attack(e, t, n) {
 			let c = !(s.env.valueAt(t) > 0);
-			s.env.set(o()), s.env.triggerAttack(t, n), s.lane.changed(), i.timeline.setAt(e * X(r.params, "octaves", 10), t), i.timeline.exponentialTo(e, t + X(r.params, "pitchDecay", .05)), i.changed(), c && (a.timeline.setAt(1, t), a.timeline.setAt(0, t + Pc), a.changed());
+			s.env.set(o()), s.env.triggerAttack(t, n), s.lane.changed(), i.timeline.setAt(e * X(r.params, "octaves", 10), t), i.timeline.exponentialTo(e, t + X(r.params, "pitchDecay", .05)), i.changed(), c && (a.timeline.setAt(1, t), a.timeline.setAt(0, t + Hc), a.changed());
 		},
 		release(e) {
 			s.env.set(o()), s.env.triggerRelease(e), s.lane.changed();
 		},
 		silence(e) {
-			Xs(s, e), $s(i, e), a.timeline.cancelFrom(e), a.timeline.setAt(0, e), a.changed();
+			rc(s, e), sc(i, e), a.timeline.cancelFrom(e), a.timeline.setAt(0, e), a.changed();
 		},
 		refresh: c.invalidate,
-		quietAt: Qs(s)
+		quietAt: ac(s)
 	};
 }
-var Ic = {
+var Wc = {
 	attack: .01,
 	decay: 0,
 	sustain: 1,
 	release: .5
-}, Lc = 10 ** (1 / 20);
-function Rc(e) {
+}, Gc = 10 ** (1 / 20);
+function Kc(e) {
 	let { host: t, key: n, layer: r } = e, i = Y(t, `${n}:freq`, "line", 440, "exponential"), a = () => ({
-		...Ic,
-		attackCurve: Vs(r.params)
+		...Wc,
+		attackCurve: Js(r.params)
 	}), o = [0, 1].map((t) => {
 		let n = `voice${t}.`;
 		return {
 			prefix: n,
-			amp: Ys(e, `v${t}amp`, Z(r.params, n)),
-			filter: Ys(e, `v${t}filter`, a())
+			amp: nc(e, `v${t}amp`, Z(r.params, n)),
+			filter: nc(e, `v${t}filter`, a())
 		};
-	}), s = q(t, () => {
-		let e = W.mul(50, r.param("vibratoAmount", .5, `${n}:vibratoAmount`), W.cycle(r.param("vibratoRate", 5, `${n}:vibratoRate`))), a = W.mul(i.get(), Us(W.add(r.detune.get(), e))), s = W.mul(a, r.param("harmonicity", 1.5, `${n}:harmonicity`)), c = o.map(({ amp: e, filter: i, prefix: o }, c) => {
-			let l = `${n}.v${c}`, u = r.param(`${o}filterEnvelope.baseFrequency`, 200, `${l}:base`), d = i.lane.get(), f = W.min(W.mul(u, W.add(1, W.mul(7, d, d))), .45 * t.sampleRate), p = W.svf({
-				key: `${l}:lowpass`,
+	}), s = oc(e), c = q(t, () => {
+		let e = s.active(), a = e ? W.sub(W.pow(2, W.mul(3, s.amount())), 1) : 7, c = W.mul(50, r.param("vibratoAmount", .5, `${n}:vibratoAmount`), W.cycle(r.param("vibratoRate", 5, `${n}:vibratoRate`))), l = W.mul(i.get(), Xs(W.add(r.detune.get(), c))), u = W.mul(l, r.param("harmonicity", 1.5, `${n}:harmonicity`)), d = o.map(({ amp: i, filter: o, prefix: c }, d) => {
+			let f = `${n}.v${d}`, p = r.param(`${c}filterEnvelope.baseFrequency`, 200, `${f}:base`), m = e ? W.mul(p, s.track()) : p, h = o.lane.get(), g = W.min(W.mul(m, W.add(1, W.mul(a, h, h))), .45 * t.sampleRate), _ = W.svf({
+				key: `${f}:lowpass`,
 				mode: "lowpass"
-			}, f, Lc, Gs(r, o, l, c === 0 ? a : s));
-			return W.mul(p, e.lane.get());
-		}), l = W.add(c[0], c[1]);
-		return [l, l];
+			}, g, Gc, Qs(r, c, f, d === 0 ? l : u));
+			return W.mul(_, i.lane.get());
+		}), f = W.add(d[0], d[1]);
+		return [f, f];
 	});
 	return {
-		output: s,
+		output: c,
 		attack(e, t, n) {
-			let s = 0;
-			for (let { amp: e, filter: i, prefix: c } of o) e.env.set(Z(r.params, c)), e.env.triggerAttack(t, n), e.lane.changed(), i.env.set(a()), i.env.triggerAttack(t, 1), i.lane.changed(), s += e.env.valueAt(t);
-			Js(i, e, t, X(r.params, "portamento", 0), s);
+			let c = 0;
+			for (let { amp: e, filter: i, prefix: s } of o) e.env.set(Z(r.params, s)), e.env.triggerAttack(t, n), e.lane.changed(), i.env.set(a()), i.env.triggerAttack(t, 1), i.lane.changed(), c += e.env.valueAt(t);
+			s.set(e, n, t), tc(i, e, t, X(r.params, "portamento", 0), c);
 		},
 		release(e) {
 			for (let { amp: t, filter: n, prefix: i } of o) t.env.set(Z(r.params, i)), t.env.triggerRelease(e), t.lane.changed(), n.env.set(a()), n.env.triggerRelease(e), n.lane.changed();
 		},
 		silence(e) {
-			for (let { amp: t, filter: n } of o) Xs(t, e), Xs(n, e);
-			$s(i, e);
+			for (let { amp: t, filter: n } of o) rc(t, e), rc(n, e);
+			sc(i, e);
 		},
-		refresh: s.invalidate,
-		quietAt: Qs(...o.map((e) => e.amp))
+		refresh: c.invalidate,
+		quietAt: ac(...o.map((e) => e.amp))
 	};
 }
-var zc = {
-	Synth: Mc,
-	NoiseSynth: Nc,
-	MembraneSynth: Fc,
-	DuoSynth: Rc,
-	...jc,
-	...vc
+var qc = {
+	Synth: Bc,
+	NoiseSynth: Vc,
+	MembraneSynth: Uc,
+	DuoSynth: Kc,
+	...zc,
+	...Ec
 };
-new Set(Object.keys(zc));
-function Bc(e, t) {
-	let n = zc[e];
+new Set(Object.keys(qc));
+function Jc(e, t) {
+	let n = qc[e];
 	if (!n) throw Error(`${e} doesn't play on the Elementary engine yet.`);
 	return n(t);
 }
 //#endregion
 //#region src/playback/engine/elementary/instrument.ts
-var Vc = .01, Hc = .004, Uc = .005, Wc = 1, Gc = /* @__PURE__ */ new WeakMap();
-function Kc(e) {
-	let t = Gc.get(e);
+var Yc = .01, Xc = .004, Zc = .005, Qc = 1, $c = /* @__PURE__ */ new WeakMap();
+function el(e) {
+	let t = $c.get(e);
 	if (t) return t;
 	let n = !1, r = {
 		sleepers: /* @__PURE__ */ new Set(),
@@ -5830,20 +6002,20 @@ function Kc(e) {
 				let t = !1;
 				for (let n of r.sleepers) n(e.immediate()) && (t = !0);
 				t && r.arm();
-			}, Wc));
+			}, Qc));
 		},
 		run(e) {
 			for (let t of r.sleepers) t(e);
 		}
 	};
-	return Gc.set(e, r), r;
+	return $c.set(e, r), r;
 }
-function qc(e, t, n, r = {}) {
-	let i = e.nextId(), a = !1, o = 0, s = ms(e, i, () => k(), r.bpm ?? 120), c = e.keep !== void 0, l = c && e.sleepingVoices !== !1, u = c ? {
+function tl(e, t, n, r = {}) {
+	let i = e.nextId(), a = !1, o = 0, s = xs(e, i, () => k(), r.bpm ?? 120), c = e.keep !== void 0, l = c && e.sleepingVoices !== !1, u = c ? {
 		...e,
 		lead: 128
-	} : e, d = Vc + (c ? 128 / e.sampleRate : 0), f = Kc(e), p = Go(t) ? t.kit.pads : null, m = Ko(t), h = p ? Xo(p, m.length) : null, g = m.map((t, n) => {
-		let r = t.voiceType, a = as(t.polyphony), o = `${i}.L${n}`, c = Vi(r, t.params), d = Y(u, `${o}:detune`, "line", X(c, "detune", 0)), f = q(u, () => s.drive(Sa(n, "detune")) ?? d.get()), p = {
+	} : e, d = Yc + (c ? 128 / e.sampleRate : 0), f = el(e), p = qo(t) ? t.kit.pads : null, m = Jo(t), h = p ? Qo(p, m.length) : null, g = m.map((t, n) => {
+		let r = t.voiceType, a = fs(t.polyphony), o = `${i}.L${n}`, c = Ui(r, t.params), d = Y(u, `${o}:detune`, "line", X(c, "detune", 0)), f = q(u, () => s.drive(wa(n, "detune")) ?? d.get()), p = {
 			params: c,
 			detune: {
 				timeline: d.timeline,
@@ -5851,8 +6023,8 @@ function qc(e, t, n, r = {}) {
 				get: f.get,
 				invalidate: f.invalidate
 			},
-			param: (e, t, r) => s.drive(Sa(n, e)) ?? J(r, X(p.params, e, t))
-		}, m = Array.from({ length: a }, (t, n) => Bc(r, {
+			param: (e, t, r) => s.drive(wa(n, e)) ?? J(r, X(p.params, e, t))
+		}, m = Array.from({ length: a }, (t, n) => Jc(r, {
 			host: u,
 			key: `${o}.v${n}`,
 			layer: p,
@@ -5860,33 +6032,33 @@ function qc(e, t, n, r = {}) {
 		})), g = {
 			voiceType: r,
 			view: p,
-			db: os(t.volume),
+			db: ps(t.volume),
 			detune: d,
 			choke: h?.chokeable[n] ? Y(u, `${o}:choke`, "follower", 1) : null,
 			slots: m,
 			awake: m.map(() => !l),
 			lastAttack: m.map(() => -Infinity),
-			alloc: new Wo(a),
+			alloc: new Ko(a),
 			notes: 0,
 			output: q(u, () => {
-				let [e, t] = Eo(m.filter((e, t) => g.awake[t]).map((e) => e.output.get())), r = s.drive(Sa(n, "volume")) ?? J(`${o}:gain`, 10 ** (g.db / 20)), i = g.choke ? W.mul(r, g.choke.get()) : r;
+				let [e, t] = Oo(m.filter((e, t) => g.awake[t]).map((e) => e.output.get())), r = s.drive(wa(n, "volume")) ?? J(`${o}:gain`, 10 ** (g.db / 20)), i = g.choke ? W.mul(r, g.choke.get()) : r;
 				return [W.mul(e, i), W.mul(t, i)];
 			})
 		};
 		return g;
-	}), _ = q(u, () => Eo(g.filter((e) => e.awake.includes(!0)).map((e) => e.output.get()))), v = {
+	}), _ = q(u, () => Oo(g.filter((e) => e.awake.includes(!0)).map((e) => e.output.get()))), v = {
 		l: `tap:${i}:l`,
 		r: `tap:${i}:r`
 	}, y = c ? q(e, () => [W.tapIn({ name: v.l }), W.tapIn({ name: v.r })]) : _, b = c ? q(e, () => {
 		let [e, t] = _.get();
-		return To([
+		return Do([
 			W.tapOut({ name: v.l }, e),
 			W.tapOut({ name: v.r }, t),
 			...s.waves()
 		]);
 	}) : null;
 	b && e.keep.add(b);
-	let x = Rs(e, `${i}.fx`, y, s), S = (e) => {
+	let x = Gs(e, `${i}.fx`, y, s), S = (e) => {
 		e.output.invalidate(), _.invalidate();
 	}, C = (e, t) => !e.awake[t] && (e.awake[t] = !0, S(e), f.arm(), !0), w = (e) => {
 		if (a || !l) return !1;
@@ -5933,7 +6105,7 @@ function qc(e, t, n, r = {}) {
 			syllable: typeof n?.syllable == "string" ? n.syllable : void 0
 		};
 	}, M = (e, t, n, r, i, a) => {
-		let o = Math.max(r, e.lastAttack[t] + Hc);
+		let o = Math.max(r, e.lastAttack[t] + Xc);
 		e.lastAttack[t] = o;
 		let s = C(e, t);
 		return e.slots[t]?.attack(n, o, i, a), s;
@@ -5941,7 +6113,7 @@ function qc(e, t, n, r = {}) {
 		t && f.run(e.immediate());
 	}, P = (e, t, n) => e.slots[t]?.release(Math.max(n, e.lastAttack[t])), ee = (e, t) => {
 		for (let n of e.alloc.releaseAll()) P(e, n, t);
-		e.choke && (e.choke.timeline.cancelFrom(t), e.choke.timeline.targetAt(0, t, Uc), e.choke.changed());
+		e.choke && (e.choke.timeline.cancelFrom(t), e.choke.timeline.targetAt(0, t, Zc), e.choke.changed());
 	}, te = (e, t, n, r, i) => {
 		let { padLayers: a, chokes: o } = h, s = a[e].map((e) => g[e]), c = r ?? O(t, s);
 		for (let t of o[e]) for (let e of a[t]) ee(g[e], c);
@@ -5949,7 +6121,7 @@ function qc(e, t, n, r = {}) {
 		for (let e of s) {
 			e.choke && (e.choke.timeline.cancelFrom(c), e.choke.timeline.setAt(1, c), e.choke.changed());
 			let { voice: r, stolen: a } = e.alloc.noteOn(t, T(e, c));
-			a !== null && (u = !0), M(e, r, is(l), c, n, j(e, l, i)) && (d = !0);
+			a !== null && (u = !0), M(e, r, ds(l) * cs(e.view.params), c, n, j(e, l, i)) && (d = !0);
 		}
 		return N(d), u;
 	}, F = {
@@ -5961,10 +6133,10 @@ function qc(e, t, n, r = {}) {
 				t !== void 0 && te(t, e, i, n, r) && o++;
 				return;
 			}
-			let s = n ?? O(e, g), c = is(e), l = !1, u = !1;
+			let s = n ?? O(e, g), c = ds(e), l = !1, u = !1;
 			for (let t of g) {
 				let { voice: n, stolen: a } = t.alloc.noteOn(e, T(t, s));
-				a !== null && (l = !0), M(t, n, c, s, i, j(t, e, r)) && (u = !0);
+				a !== null && (l = !0), M(t, n, c * cs(t.view.params), s, i, j(t, e, r)) && (u = !0);
 			}
 			N(u), l && o++;
 		},
@@ -5989,12 +6161,12 @@ function qc(e, t, n, r = {}) {
 		setParam(t, n, r) {
 			let i = g[t];
 			if (a || !i) return;
-			let o = Ri(i.voiceType, n), c = o ? Bi(o, r) : void 0;
+			let o = Bi(i.voiceType, n), c = o ? Hi(o, r) : void 0;
 			if (o && c !== void 0) {
 				if (i.view.params = {
 					...i.view.params,
 					[n]: c
-				}, s.refresh(Sa(t, n)), n === "detune" && typeof c == "number") {
+				}, s.refresh(wa(t, n)), n === "detune" && typeof c == "number") {
 					let t = e.immediate();
 					i.detune.timeline.cancelFrom(t), i.detune.timeline.setAt(c, t), i.detune.changed();
 					return;
@@ -6004,7 +6176,7 @@ function qc(e, t, n, r = {}) {
 		},
 		setLayerVolume(e, t) {
 			let n = g[e];
-			!a && n && Number.isFinite(t) && (n.db = os(t), s.refresh(Sa(e, "volume")), n.output.invalidate());
+			!a && n && Number.isFinite(t) && (n.db = ps(t), s.refresh(wa(e, "volume")), n.output.invalidate());
 		},
 		setEffects(e) {
 			if (!a) for (let t of x.set(Array.isArray(e) ? e : [])) s.drop(`fx:${t}:`);
@@ -6019,7 +6191,7 @@ function qc(e, t, n, r = {}) {
 			if (a || e.length === 0 || !Number.isFinite(n)) return;
 			let r = Number.isFinite(t) ? Math.max(0, t) : 0;
 			for (let [t, i] of g.entries()) {
-				if (s.drives(Sa(t, "detune"))) continue;
+				if (s.drives(wa(t, "detune"))) continue;
 				let a = X(i.view.params, "detune", 0), o = i.detune.timeline;
 				o.cancelFrom(n), o.setAt(a + (r > 0 ? 0 : e[e.length - 1]), n), r > 0 && e.forEach((t, i) => o.linearTo(a + t, n + r * (i + 1) / e.length)), i.detune.changed();
 			}
@@ -6043,13 +6215,13 @@ function qc(e, t, n, r = {}) {
 }
 //#endregion
 //#region src/playback/engine/elementary/safety.ts
-var Jc = 10 ** (ro / 20), Yc = 10 ** (io / 20), Xc = Jc - Yc;
-function Zc(e) {
-	let t = (e) => W.tanh(W.div(W.max(0, W.sub(e, Yc)), Xc)), n = W.min(Yc, W.max(-Yc, e));
-	return W.add(n, W.mul(Xc, W.sub(t(e), t(W.mul(-1, e)))));
+var nl = 10 ** (ao / 20), rl = 10 ** (oo / 20), il = nl - rl;
+function al(e) {
+	let t = (e) => W.tanh(W.div(W.max(0, W.sub(e, rl)), il)), n = W.min(rl, W.max(-rl, e));
+	return W.add(n, W.mul(il, W.sub(t(e), t(W.mul(-1, e)))));
 }
-function Qc([e, t], n, r) {
-	let i = (e) => Math.exp(-1 / (e * n)), a = (e) => e / Math.log(40), o = W.env(0, i(vs), W.max(W.abs(e), W.abs(t))), s = W.max(0, W.sub(W.gain2db(o), -2)), c = W.mul(1 - 1 / 20, s), l = W.env(i(a(ao)), i(a(oo)), c), u = W.db2gain(W.mul(-1, l)), d = Math.round(_s * n), f = (e, t) => Zc(W.mul(u, W.sdelay({
+function ol([e, t], n, r) {
+	let i = (e) => Math.exp(-1 / (e * n)), a = (e) => e / Math.log(40), o = W.env(0, i(Ts), W.max(W.abs(e), W.abs(t))), s = W.max(0, W.sub(W.gain2db(o), -2)), c = W.mul(1 - 1 / 20, s), l = W.env(i(a(so)), i(a(co)), c), u = W.db2gain(W.mul(-1, l)), d = Math.round(ws * n), f = (e, t) => al(W.mul(u, W.sdelay({
 		key: `${r}:${t}`,
 		size: d
 	}, e)));
@@ -6060,12 +6232,12 @@ function Qc([e, t], n, r) {
 }
 //#endregion
 //#region src/playback/engine/elementary/engine.ts
-var $c = Tr.frequency.max, el = Tr.Q.default, tl = .005, nl = 10, rl = .05, il = .04, al = "out:kept", ol = 25, sl = (e) => e > 0 ? 20 * Math.log10(e) : -Infinity, cl = ([e, t]) => W.max(W.abs(e), W.abs(t));
-function ll(e, t) {
+var sl = Tr.frequency.max, cl = Tr.Q.default, ll = .005, ul = 10, dl = .05, fl = .04, pl = "out:kept", ml = 25, hl = (e) => e > 0 ? 20 * Math.log10(e) : -Infinity, gl = ([e, t]) => W.max(W.abs(e), W.abs(t));
+function _l(e, t) {
 	let n = t + 15, r = W.gain2db(W.env(W.tau2pole(W.mul(.001, 3)), W.tau2pole(W.mul(.001, 10)), e)), i = W.sub(n, W.div(30, 2)), a = W.add(n, W.div(30, 2)), o = W.and(W.geq(r, i), W.leq(r, a)), s = W.sub(1, W.div(1, 20)), c = W.mul(W.div(s, 2), W.mul(W.div(W.sub(r, i), 30), W.sub(i, r)));
 	return W.db2gain(W.min(0, W.select(o, c, W.mul(s, W.sub(n, r)))));
 }
-function ul(e) {
+function vl(e) {
 	let t = (t) => (...n) => {
 		t(...n), e.changed();
 	};
@@ -6077,7 +6249,7 @@ function ul(e) {
 		holdAt: t((t) => e.timeline.holdAt(t))
 	};
 }
-function dl(e) {
+function yl(e) {
 	let { renderer: t, context: n } = e, r = (t, n) => {
 		try {
 			e.onError ? e.onError(t, n) : console.error(t, n);
@@ -6108,7 +6280,7 @@ function dl(e) {
 		},
 		restructureAt: () => y,
 		sleepingVoices: e.sleepingVoices !== !1
-	}, C = q(S, () => To([...x].map((e) => e.get()))), w = S, T = S, E = e.meters === !0 && typeof t.on == "function", D = /* @__PURE__ */ new Map(), O = (e) => {
+	}, C = q(S, () => Do([...x].map((e) => e.get()))), w = S, T = S, E = e.meters === !0 && typeof t.on == "function", D = /* @__PURE__ */ new Map(), O = (e) => {
 		let t = e.source === void 0 ? void 0 : D.get(e.source);
 		t && Number.isFinite(e.max) && (t.latest = e.max, t.peak = Math.max(t.peak, e.max));
 	};
@@ -6120,10 +6292,10 @@ function dl(e) {
 			latest: 0
 		};
 		return D.set(e, t), {
-			tap(t, n = cl(t)) {
+			tap(t, n = gl(t)) {
 				let r = W.maxhold({
 					key: `${e}:hold`,
-					hold: ol
+					hold: ml
 				}, n, 0);
 				return [W.add(t[0], W.mul(0, W.meter({
 					key: e,
@@ -6137,7 +6309,7 @@ function dl(e) {
 			dispose: () => void D.delete(e)
 		};
 	}, A = () => {
-		let e = /* @__PURE__ */ new Set(), t = q(w, () => Eo([...e].map((e) => e.get())));
+		let e = /* @__PURE__ */ new Set(), t = q(w, () => Oo([...e].map((e) => e.get())));
 		return {
 			mix: t,
 			add(n) {
@@ -6148,22 +6320,22 @@ function dl(e) {
 			}
 		};
 	}, j = (e) => e, M = (e) => e, N = A(), P = Y(w, "out:volume", "line", 1), ee = k(), te = k(), F = q(w, () => {
-		let e = Mo(N.mix.get(), P.get());
+		let e = Po(N.mix.get(), P.get());
 		if (l === null) return ee ? ee.tap(e) : e;
-		let t = ll(cl(e), l), r = Qc(Mo(e, t), n.sampleRate, "out:safety");
+		let t = _l(gl(e), l), r = ol(Po(e, t), n.sampleRate, "out:safety");
 		return !ee || !te ? r.out : te.tap(ee.tap(r.out), W.sub(1, W.mul(t, r.gain)));
 	}), I = () => {
 		if (o = !1, a) return u;
-		if (p && !f && g === 0 && n.currentTime - _ >= rl && ne(), f) return o = !0, f.then(() => I());
+		if (p && !f && g === 0 && n.currentTime - _ >= dl && ne(), f) return o = !0, f.then(() => I());
 		try {
 			let [e, a] = F.get(), o = x.size > 0 ? W.add(e, W.mul(W.const({
-				key: al,
+				key: pl,
 				value: 0
 			}), C.get())) : e, s = v === null || v[0] !== o.hash || v[1] !== a.hash;
 			if (s && n.currentTime < y) return b ??= i(() => {
 				b = null, S.requestRender();
 			}, y - n.currentTime), u;
-			b?.(), b = null, s && (y = n.currentTime + il), v = [o.hash, a.hash], h = m, g++, u = Promise.resolve(t.render(o, a)).then(() => void (_ = n.currentTime)).catch((e) => r("The audio graph could not be updated.", e)).finally(() => void g--), L();
+			b?.(), b = null, s && (y = n.currentTime + fl), v = [o.hash, a.hash], h = m, g++, u = Promise.resolve(t.render(o, a)).then(() => void (_ = n.currentTime)).catch((e) => r("The audio graph could not be updated.", e)).finally(() => void g--), L();
 		} catch (e) {
 			r("The audio graph could not be built.", e);
 		}
@@ -6179,11 +6351,11 @@ function dl(e) {
 	}, L = () => {
 		d || a || !t.gc || (d = i(() => {
 			d = null, p = !0;
-		}, nl));
+		}, ul));
 	};
 	Promise.resolve().then(() => t.setCurrentTimeMs(n.currentTime * 1e3)).catch((e) => r("The audio clock could not be set.", e));
 	let re = /* @__PURE__ */ new WeakMap(), ie = (e) => {
-		let t = Y(w, `${e}:hz`, "line", $c, "exponential"), r = Y(w, `${e}:q`, "line", el);
+		let t = Y(w, `${e}:hz`, "line", sl, "exponential"), r = Y(w, `${e}:q`, "line", cl);
 		return {
 			active: !1,
 			removal: null,
@@ -6203,35 +6375,35 @@ function dl(e) {
 	};
 	return {
 		destination: j(N),
-		volume: ul(P),
+		volume: vl(P),
 		setLimiter(e) {
 			l = e === null || !Number.isFinite(e) ? null : e, F.invalidate();
 		},
 		flush: I,
 		deferredUntil: () => b ? y : null,
 		readMaster() {
-			let e = sl(ee?.take() ?? 0), t = Math.min(1, te?.take() ?? 0);
+			let e = hl(ee?.take() ?? 0), t = Math.min(1, te?.take() ?? 0);
 			return {
 				master: e,
-				limiterReductionDb: l === null || t <= 0 ? 0 : Math.min(0, sl(1 - t))
+				limiterReductionDb: l === null || t <= 0 ? 0 : Math.min(0, hl(1 - t))
 			};
 		},
-		createTransport: () => $a(n, {
+		createTransport: () => to(n, {
 			lookahead: e.lookahead,
 			pulse: e.pulse,
 			onError: r
 		}),
 		createTrack(e, t) {
 			let n = S.nextId(), r = M(e), i = A(), a = Y(w, `${n}:gain`, "line", t.gain), o = Y(w, `${n}:pan`, "line", t.pan), s = k(), c = q(w, () => {
-				let e = jo(Mo(i.mix.get(), a.get()), o.get());
+				let e = No(Po(i.mix.get(), a.get()), o.get());
 				return s ? s.tap(e) : e;
 			});
 			r.add(c);
 			let l = /* @__PURE__ */ new Map();
 			return {
 				input: j(i),
-				gain: ul(a),
-				pan: ul(o),
+				gain: vl(a),
+				pan: vl(o),
 				setSend(e, t, r, i) {
 					let a = l.get(e);
 					if (a) {
@@ -6241,7 +6413,7 @@ function dl(e) {
 					}
 					let o = re.get(e);
 					if (t <= 0 || !o) return;
-					let s = Y(w, `${n}:send:${e.id}`, "line", t), u = q(w, () => Mo(c.get(), s.get()));
+					let s = Y(w, `${n}:send:${e.id}`, "line", t), u = q(w, () => Po(c.get(), s.get()));
 					o.add(u), l.set(e, {
 						level: t,
 						lane: s,
@@ -6252,7 +6424,7 @@ function dl(e) {
 					let t = l.get(e);
 					t && (re.get(e)?.remove(t.part), l.delete(e));
 				},
-				readPeak: () => s ? sl(s.take()) : null,
+				readPeak: () => s ? hl(s.take()) : null,
 				dispose() {
 					s?.dispose(), r.remove(c);
 					for (let [e, t] of l) re.get(e)?.remove(t.part);
@@ -6261,18 +6433,18 @@ function dl(e) {
 			};
 		},
 		createBus(e, t, n, i) {
-			let a = M(t), o = A(), s = k(), c = null, l = Uo(T, e, n, o.mix, i ?? r, () => {
+			let a = M(t), o = A(), s = k(), c = null, l = Go(T, e, n, o.mix, i ?? r, () => {
 				s?.dispose(), c && a.remove(c);
 			});
 			c = s ? q(w, () => s.tap(l.output.get())) : l.output, a.add(c);
 			let u = {
 				...l.channel,
-				readPeak: () => s ? sl(s.take()) : null
+				readPeak: () => s ? hl(s.take()) : null
 			};
 			return re.set(u, o), u;
 		},
 		createInstrument(e, t, n) {
-			let r = M(e), i = null, a = qc(S, t, () => {
+			let r = M(e), i = null, a = tl(S, t, () => {
 				i && r.remove(i);
 			}, n);
 			return i = a.output, r.add(i), a.handle;
@@ -6285,7 +6457,7 @@ function dl(e) {
 			}, c = Y(w, `${n}:cue`, "line", 1), l = Y(w, `${n}:pause`, "line", 1), u = Y(w, `${n}:hidden`, "line", 1), d = !1, f = q(w, () => {
 				let e = o.mix.get();
 				for (let t of Object.values(s)) t.active && (e = t.apply(e));
-				return Mo(e, W.mul(c.get(), l.get(), u.get()));
+				return Po(e, W.mul(c.get(), l.get(), u.get()));
 			});
 			a.add(f);
 			let p = t ?? r;
@@ -6293,16 +6465,16 @@ function dl(e) {
 				input: j(o),
 				setLowpass(e, t, n, r) {
 					if (d) return;
-					let a = s[e], o = t >= $c && Math.abs(n - el) < 1e-6;
+					let a = s[e], o = t >= sl && Math.abs(n - cl) < 1e-6;
 					if (o && (!a.active || a.removal !== null)) return;
 					!o && a.removal && (a.removal(), a.removal = null);
-					let c = S.immediate(), l = Math.max(tl, r);
+					let c = S.immediate(), l = Math.max(ll, r);
 					if (!a.active) {
 						a.active = !0;
-						for (let [e, t] of [[a.frequency, $c], [a.q, el]]) e.timeline.cancelFrom(0), e.timeline.setAt(t, c);
+						for (let [e, t] of [[a.frequency, sl], [a.q, cl]]) e.timeline.cancelFrom(0), e.timeline.setAt(t, c);
 						f.invalidate();
 					}
-					a.frequency.timeline.rampTo(Math.min($c, t), l, c), a.q.timeline.rampTo(n, l, c), a.frequency.changed(), a.q.changed(), o && (a.removal = i(() => {
+					a.frequency.timeline.rampTo(Math.min(sl, t), l, c), a.q.timeline.rampTo(n, l, c), a.frequency.changed(), a.q.changed(), o && (a.removal = i(() => {
 						a.removal = null;
 						try {
 							a.active = !1, f.invalidate();
@@ -6311,9 +6483,9 @@ function dl(e) {
 						}
 					}, l + .05));
 				},
-				cue: ul(c),
-				pause: ul(l),
-				hidden: ul(u),
+				cue: vl(c),
+				pause: vl(l),
+				hidden: vl(u),
 				dispose() {
 					if (!d) {
 						d = !0;
@@ -6330,11 +6502,11 @@ function dl(e) {
 }
 //#endregion
 //#region src/song/overrides.ts
-var fl = {
-	hz: ya.hz,
-	depth: ya.depth
+var bl = {
+	hz: xa.hz,
+	depth: xa.depth
 };
-function pl(e) {
+function xl(e) {
 	if (typeof e != "string") return null;
 	if (e.startsWith("lfo:")) {
 		let t = e.indexOf(":", 4), n = e.slice(4, t), r = e.slice(t + 1);
@@ -6344,48 +6516,48 @@ function pl(e) {
 			path: r
 		} : null;
 	}
-	return wa(e);
+	return Ea(e);
 }
-function ml(e, t) {
+function Sl(e, t) {
 	return t.kind === "layer" ? e.layers[t.layer] : void 0;
 }
-function hl(e, t) {
+function Cl(e, t) {
 	return t.kind === "fx" ? e.effects?.find((e) => e.id === t.effectId) : void 0;
 }
-function gl(e, t) {
+function wl(e, t) {
 	return t.kind === "lfo" ? e.lfos?.find((e) => e.id === t.lfoId) : void 0;
 }
-function _l(e, t) {
-	let n = pl(t);
+function Tl(e, t) {
+	let n = xl(t);
 	if (!n) return null;
 	if (n.kind === "layer") {
-		let t = ml(e, n);
-		return t ? n.path === "volume" ? xa : Ri(t.voiceType, n.path) ?? null : null;
+		let t = Sl(e, n);
+		return t ? n.path === "volume" ? Ca : Bi(t.voiceType, n.path) ?? null : null;
 	}
 	if (n.kind === "fx") {
-		let t = hl(e, n);
-		return t ? ua(t.type, n.path) ?? null : null;
+		let t = Cl(e, n);
+		return t ? fa(t.type, n.path) ?? null : null;
 	}
-	return gl(e, n) ? fl[n.path] : null;
+	return wl(e, n) ? bl[n.path] : null;
 }
-function vl(e, t) {
-	let n = _l(e, t), r = pl(t);
+function El(e, t) {
+	let n = Tl(e, t), r = xl(t);
 	if (n) {
 		if (r.kind === "layer") {
-			let t = ml(e, r);
+			let t = Sl(e, r);
 			return (r.path === "volume" ? t.volume : t.params[r.path]) ?? n.default;
 		}
-		return r.kind === "fx" ? hl(e, r).params[r.path] ?? n.default : gl(e, r)[r.path];
+		return r.kind === "fx" ? Cl(e, r).params[r.path] ?? n.default : wl(e, r)[r.path];
 	}
 }
-function yl(e, t, n) {
-	let r = _l(e, t);
-	return r ? Bi(r, n) : void 0;
+function Dl(e, t, n) {
+	let r = Tl(e, t);
+	return r ? Hi(r, n) : void 0;
 }
-function bl(e, t, n) {
-	let r = yl(e, t, n);
-	if (r === void 0 || vl(e, t) === r) return e;
-	let i = pl(t);
+function Ol(e, t, n) {
+	let r = Dl(e, t, n);
+	if (r === void 0 || El(e, t) === r) return e;
+	let i = xl(t);
 	if (i.kind === "layer") {
 		let t = e.layers.map((e, t) => t === i.layer ? i.path === "volume" ? {
 			...e,
@@ -6423,17 +6595,17 @@ function bl(e, t, n) {
 		} : e)
 	};
 }
-function xl(e, t) {
+function kl(e, t) {
 	if (!t) return e;
 	let n = e;
-	for (let [e, r] of Object.entries(t)) n = bl(n, e, r);
+	for (let [e, r] of Object.entries(t)) n = Ol(n, e, r);
 	return n;
 }
-function Sl(e, t) {
-	return xl(e, t?.overrides?.[e.id]);
+function Al(e, t) {
+	return kl(e, t?.overrides?.[e.id]);
 }
-function Cl(e, t) {
-	let n = new Set(e.tracks.map((e) => e.instrumentId)), r = t.filter((e) => n.has(e.id)).map((t) => Sl(t, e));
+function jl(e, t) {
+	let n = new Set(e.tracks.map((e) => e.instrumentId)), r = t.filter((e) => n.has(e.id)).map((t) => Al(t, e));
 	if (!e.overrides) return {
 		song: e,
 		instruments: r
@@ -6444,10 +6616,10 @@ function Cl(e, t) {
 		instruments: r
 	};
 }
-function wl(e) {
+function Ml(e) {
 	return typeof e == "string" || typeof e == "boolean" || typeof e == "number" && Number.isFinite(e);
 }
-function Tl(e, t, n, r) {
+function Nl(e, t, n, r) {
 	if (e === void 0) return null;
 	if (typeof e != "object" || !e || Array.isArray(e)) return n(`${r} had unreadable instrument overrides, so they were dropped.`), null;
 	let i = {}, a = 0;
@@ -6462,7 +6634,7 @@ function Tl(e, t, n, r) {
 		for (let e of Object.keys(r).slice(0, 1024)) {
 			if (s >= 256) break;
 			let t = r[e];
-			if (!pl(e) || !wl(t)) {
+			if (!xl(e) || !Ml(t)) {
 				a++;
 				continue;
 			}
@@ -6474,7 +6646,7 @@ function Tl(e, t, n, r) {
 }
 //#endregion
 //#region src/song/patterns.ts
-var El = [
+var Pl = [
 	{
 		size: "1/8",
 		ticks: 480,
@@ -6501,38 +6673,38 @@ var El = [
 		label: "Sixteenth triplets"
 	}
 ];
-function Dl(e) {
-	return El.some((t) => t.size === e);
+function Fl(e) {
+	return Pl.some((t) => t.size === e);
 }
-function Ol(e) {
-	return El.find((t) => t.size === e)?.ticks ?? 240;
+function Il(e) {
+	return Pl.find((t) => t.size === e)?.ticks ?? 240;
 }
-function kl(e) {
-	return e.length * Ol(e.stepSize);
+function Ll(e) {
+	return e.length * Il(e.stepSize);
 }
-function Al(e, t) {
-	let n = Ol(e.stepSize), r = t % 2 == 1 ? Math.round(e.swing * n / 2) : 0;
+function Rl(e, t) {
+	let n = Il(e.stepSize), r = t % 2 == 1 ? Math.round(e.swing * n / 2) : 0;
 	return t * n + r;
 }
-function jl(e) {
+function zl(e) {
 	return typeof e.patternId == "string";
 }
-function Ml(e, t) {
+function Bl(e, t) {
 	return t === void 0 ? null : e.patterns?.find((e) => e.id === t) ?? null;
 }
-var Nl = /* @__PURE__ */ new WeakMap();
-function Pl(e, t) {
-	let n = Nl.get(e);
-	n || (n = /* @__PURE__ */ new Map(), Nl.set(e, n));
+var Vl = /* @__PURE__ */ new WeakMap();
+function Hl(e, t) {
+	let n = Vl.get(e);
+	n || (n = /* @__PURE__ */ new Map(), Vl.set(e, n));
 	let r = n.get(t);
 	if (r) return n.delete(t), n.set(t, r), r;
-	let i = kl(e), a = [];
+	let i = Ll(e), a = [];
 	if (i > 0 && t > 0) for (let n = 0; n < t; n += i) for (let r of e.rows) for (let o = 0; o < e.length; o++) {
 		let s = r.steps[o] ?? 0;
 		if (!(s > 0)) continue;
-		let c = Al(e, o), l = n + c;
+		let c = Rl(e, o), l = n + c;
 		if (l >= t) continue;
-		let u = o + 1 < e.length ? Al(e, o + 1) : i, d = Math.max(1, Math.min(u - c, t - l));
+		let u = o + 1 < e.length ? Rl(e, o + 1) : i, d = Math.max(1, Math.min(u - c, t - l));
 		a.push({
 			tick: l,
 			durationTicks: d,
@@ -6542,36 +6714,36 @@ function Pl(e, t) {
 	}
 	return a.sort((e, t) => e.tick - t.tick || e.midi - t.midi), n.set(t, a), n.size > 8 && n.delete(n.keys().next().value), a;
 }
-var Fl = [];
-function Il(e, t) {
-	if (!jl(t)) return t.notes;
-	let n = Ml(e, t.patternId);
-	return n ? Pl(n, t.lengthTicks) : Fl;
+var Ul = [];
+function Wl(e, t) {
+	if (!zl(t)) return t.notes;
+	let n = Bl(e, t.patternId);
+	return n ? Hl(n, t.lengthTicks) : Ul;
 }
 //#endregion
 //#region src/playback/events.ts
-function Ll(e) {
+function Gl(e) {
 	return Number.isFinite(e) ? Math.min(1, Math.max(0, e)) : 1;
 }
-function Rl(e, t) {
+function Kl(e, t) {
 	let n = [];
 	for (let r of e.clips) {
 		if (!Number.isFinite(r.startTick) || !(r.lengthTicks > 0)) continue;
 		let e = Math.round(r.startTick + r.lengthTicks);
-		for (let i of Il(t, r)) {
+		for (let i of Wl(t, r)) {
 			if (!Number.isFinite(i.midi) || !(i.durationTicks > 0) || !(i.tick >= 0 && i.tick < r.lengthTicks)) continue;
 			let t = Math.round(r.startTick + i.tick), a = Math.min(Math.round(r.startTick + i.tick + i.durationTicks), e);
 			t < 0 || a <= t || n.push({
 				start: t,
 				end: a,
 				midi: i.midi,
-				velocity: Ll(i.velocity)
+				velocity: Gl(i.velocity)
 			});
 		}
 	}
 	return n;
 }
-function zl(e) {
+function ql(e) {
 	e.sort((e, t) => e.start - t.start || e.midi - t.midi || t.end - e.end);
 	let t = /* @__PURE__ */ new Map(), n = [];
 	for (let r of e) {
@@ -6587,9 +6759,9 @@ function zl(e) {
 	}
 	return n;
 }
-function Bl(e, t = {}) {
+function Jl(e, t = {}) {
 	let n = [];
-	for (let r of zl(Rl(e, t))) n.push({
+	for (let r of ql(Kl(e, t))) n.push({
 		tick: r.start,
 		kind: "on",
 		midi: r.midi,
@@ -6603,7 +6775,7 @@ function Bl(e, t = {}) {
 	let r = (e) => e.kind === "off" ? 0 : 1;
 	return n.sort((e, t) => e.tick - t.tick || r(e) - r(t) || e.midi - t.midi);
 }
-function Vl(e) {
+function Yl(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		let e = t.get(n.tick);
@@ -6617,7 +6789,7 @@ function Vl(e) {
 	}
 	return t;
 }
-function Hl(e) {
+function Xl(e) {
 	let t = /* @__PURE__ */ new Map(), n = 0;
 	for (let r of [...e.keys()].sort((e, t) => e - t)) {
 		let i = e.get(r).ons;
@@ -6630,7 +6802,7 @@ function Hl(e) {
 }
 //#endregion
 //#region src/playback/patch-sync.ts
-function Ul(e, t) {
+function Zl(e, t) {
 	if (e.kit === t.kit) return !0;
 	let n = e.kit?.pads, r = t.kit?.pads;
 	return !n || !r || n.length !== r.length ? !1 : n.every((e, t) => {
@@ -6638,13 +6810,13 @@ function Ul(e, t) {
 		return e.note === n.note && e.pitch === n.pitch && e.choke === n.choke && e.layers.length === n.layers.length && e.layers.every((e, t) => e === n.layers[t]);
 	});
 }
-function Wl(e, t) {
-	return e.id === t.id && Ul(e, t) && e.layers.length === t.layers.length && e.layers.every((e, n) => {
+function Ql(e, t) {
+	return e.id === t.id && Zl(e, t) && e.layers.length === t.layers.length && e.layers.every((e, n) => {
 		let r = t.layers[n];
 		return e.voiceType === r.voiceType && e.polyphony === r.polyphony;
 	});
 }
-function Gl(e, t, n) {
+function $l(e, t, n) {
 	let r = null, i = null, a = !1, o, s = (e, t) => {
 		n ? n(e, t) : console.error(e, t);
 	}, c = () => {
@@ -6677,7 +6849,7 @@ function Gl(e, t, n) {
 					i = null, c();
 					return;
 				}
-				if (r && Wl(r.patch, n)) {
+				if (r && Ql(r.patch, n)) {
 					r.patch !== n && l(r, n);
 					return;
 				}
@@ -6714,13 +6886,13 @@ function Gl(e, t, n) {
 }
 //#endregion
 //#region src/playback/song-player.ts
-var Kl = /* @__PURE__ */ new WeakMap();
-function ql(e, t, n) {
-	let r = Kl.get(e);
-	return r || (r = Hl(e), Kl.set(e, r)), r.get(t)?.get(n);
+var eu = /* @__PURE__ */ new WeakMap();
+function tu(e, t, n) {
+	let r = eu.get(e);
+	return r || (r = Xl(e), eu.set(e, r)), r.get(t)?.get(n);
 }
-var Jl = .02;
-function Yl(e, t) {
+var nu = .02, ru = .1;
+function iu(e, t) {
 	if (t === void 0 || !Number.isFinite(t)) return e;
 	let n = Math.max(1, Math.round(t));
 	return e.layers.every((e) => e.polyphony <= n) ? e : {
@@ -6731,7 +6903,7 @@ function Yl(e, t) {
 		})
 	};
 }
-function Xl(e) {
+function au(e) {
 	if (!e.enabled) return null;
 	let t = Math.max(0, Math.round(e.startTick)), n = Math.round(e.endTick);
 	return Number.isFinite(t) && Number.isFinite(n) && n > t ? {
@@ -6739,13 +6911,13 @@ function Xl(e) {
 		end: n
 	} : null;
 }
-function Zl(e, t) {
+function ou(e, t) {
 	return e.enabled === t.enabled && e.startTick === t.startTick && e.endTick === t.endTick;
 }
-function Ql(e) {
+function su(e) {
 	return Number.isFinite(e) ? Math.max(0, Math.round(e)) : 0;
 }
-function $l(e, t = {}) {
+function cu(e, t = {}) {
 	let n = t.transport === void 0, r = t.transport ?? e.createTransport(), i = t.destination ?? e.destination, a = (e, n) => {
 		try {
 			t.onError ? t.onError(e, n) : console.error(e, n);
@@ -6764,7 +6936,7 @@ function $l(e, t = {}) {
 		O || (O = !0, a("A game rule could not be applied.", e));
 	}, A = (e, t, n) => {
 		let i = r.immediate();
-		n !== null && (e.fadeEnd = n > 0 ? i + n : 0), e.gainTarget = t, e.channel.gain.rampTo(t, Math.max(Jl, n ?? e.fadeEnd - i), i);
+		n !== null && (e.fadeEnd = n > 0 ? i + n : 0), e.gainTarget = t, e.channel.gain.rampTo(t, Math.max(nu, n ?? e.fadeEnd - i), i);
 	}, j = () => {
 		let e = r.tempo();
 		if (!(e === u || !Number.isFinite(e) || e <= 0)) {
@@ -6793,7 +6965,7 @@ function $l(e, t = {}) {
 	}, ee = () => {
 		r.isRunning() && r.stop(r.now());
 	}, te = (e) => {
-		let t = o ? Xl(o.loop) : null;
+		let t = o ? au(o.loop) : null;
 		g = t !== null && e < t.end, r.setLoop(t && g ? {
 			startTick: t.start,
 			endTick: t.end
@@ -6814,30 +6986,30 @@ function $l(e, t = {}) {
 		return !0;
 	}, ne = (e, t) => {
 		if (p !== "playing" || (j(), !I(e, t))) return;
-		let n = y;
+		let n = y, i = t < r.immediate() - ru;
 		for (let r of [...c.values()]) {
-			let i = r.table.get(e), a = i && r.instrument.handle();
-			if (!i || !a) continue;
-			for (let e of i.offs) {
+			let a = r.table.get(e), o = a && r.instrument.handle();
+			if (!a || !o) continue;
+			for (let e of a.offs) {
 				let i = r.held.get(e);
 				if (i !== void 0) {
 					r.held.delete(e);
 					try {
-						a.noteOff(i, t);
+						o.noteOff(i, t);
 					} catch (e) {
 						if (D(e), y !== n) return;
 					}
 				}
 			}
-			let o = r.pitched ? S : 0;
-			for (let { midi: s, velocity: c } of i.ons) try {
-				let n = r.held.get(s);
-				n !== void 0 && (r.held.delete(s), a.noteOff(n, t));
-				let i = s + o;
-				if (i < 0 || i > 127) continue;
-				r.held.set(s, i), a.noteOn(i, c, t, {
+			let s = r.pitched ? S : 0;
+			for (let { midi: c, velocity: l } of a.ons) try {
+				let n = r.held.get(c);
+				if (n !== void 0 && (r.held.delete(c), o.noteOff(n, t)), i) continue;
+				let a = c + s;
+				if (a < 0 || a > 127) continue;
+				r.held.set(c, a), o.noteOn(a, l, t, {
 					key: e,
-					ordinal: ql(r.table, e, s)
+					ordinal: tu(r.table, e, c)
 				});
 			} catch (e) {
 				if (D(e), y !== n) return;
@@ -6878,7 +7050,7 @@ function $l(e, t = {}) {
 		let t = y;
 		for (let n of [...c.values()]) if (!N(n, e, t)) return;
 	}), ae = (e) => {
-		let t = o ? Xl(o.loop) : null;
+		let t = o ? au(o.loop) : null;
 		if (!o || (!t || e >= t.end) && e >= f) return !1;
 		p === "playing" && P(), y++, w++, L(r.immediate()), te(e);
 		let n = r.now();
@@ -6897,8 +7069,8 @@ function $l(e, t = {}) {
 		let t = se(ce(e.track)), n = e.track.voiceLimit, r = x.get(e.track.id)?.knobs;
 		if (t === e.source && n === e.limit && r === e.knobs) return;
 		e.source = t, e.limit = n, e.knobs = r, e.pitched = t !== null && !t.kit;
-		let i = t ? Yl(t, n) : null;
-		if (i && r) for (let [e, t] of Object.entries(r)) i = bl(i, e, t);
+		let i = t ? iu(t, n) : null;
+		if (i && r) for (let [e, t] of Object.entries(r)) i = Ol(i, e, t);
 		let a = e.instrument.handle();
 		e.instrument.update(i), e.instrument.handle() !== a && e.held.clear();
 	}, ue = (e) => {
@@ -6913,7 +7085,7 @@ function $l(e, t = {}) {
 		let t = x.get(e)?.gainScale;
 		return t === void 0 || !Number.isFinite(t) ? 1 : Math.min(1, Math.max(0, t));
 	}, fe = (e) => {
-		let t = lo(e.map(ue));
+		let t = fo(e.map(ue));
 		for (let [e, n] of t) t.set(e, n * de(e));
 		return t;
 	}, pe = (e) => {
@@ -6922,7 +7094,7 @@ function $l(e, t = {}) {
 	}, me = (e) => {
 		let t = pe(e);
 		return {
-			table: Vl(Bl(t === void 0 ? e : {
+			table: Yl(Jl(t === void 0 ? e : {
 				...e,
 				clips: e.clips.map((e) => e.patternId === void 0 ? e : {
 					...e,
@@ -6932,10 +7104,10 @@ function $l(e, t = {}) {
 			swap: t
 		};
 	}, he = (t, n) => {
-		let o = so(ue(t).pan), s = e.createTrack(i, {
+		let o = lo(ue(t).pan), s = e.createTrack(i, {
 			gain: n,
 			pan: o
-		}, a), c = Gl(e, s.input, a);
+		}, a), c = $l(e, s.input, a);
 		r.tempo() > 0 && c.setTempo(r.tempo());
 		let l = {
 			track: t,
@@ -6966,7 +7138,7 @@ function $l(e, t = {}) {
 		for (let e of d.values()) r.clearTick(e);
 		d.clear(), f = 0;
 	}, ye = (t) => {
-		let n = Ra(t), o = new Set(n.map((e) => e.id));
+		let n = Ba(t), o = new Set(n.map((e) => e.id));
 		for (let [e, t] of l) o.has(e) || (_e(t), l.delete(e));
 		for (let o of n) {
 			let n = l.get(o.id);
@@ -6974,15 +7146,15 @@ function $l(e, t = {}) {
 				n.bus !== o && n.channel.update(o), n.bus = o;
 				continue;
 			}
-			t.tracks.some((e) => co(ue(e).sends?.[o.id]) > 0) && l.set(o.id, {
+			t.tracks.some((e) => uo(ue(e).sends?.[o.id]) > 0) && l.set(o.id, {
 				bus: o,
 				channel: e.createBus(o, i, r.tempo(), a)
 			});
 		}
 	}, be = (e, t) => {
-		let n = so(t.pan);
-		n !== e.panTarget && (e.panTarget = n, e.channel.pan.rampTo(n, Jl, r.immediate()));
-		for (let [n, i] of l) e.channel.setSend(i.channel, co(t.sends?.[n]), Jl, r.immediate());
+		let n = lo(t.pan);
+		n !== e.panTarget && (e.panTarget = n, e.channel.pan.rampTo(n, nu, r.immediate()));
+		for (let [n, i] of l) e.channel.setSend(i.channel, uo(t.sends?.[n]), nu, r.immediate());
 	}, xe = () => {
 		p = "stopped", y++, w++, P(), ee(), L(r.immediate()), T();
 	}, Se = (e) => {
@@ -7017,7 +7189,7 @@ function $l(e, t = {}) {
 				c.set(t.id, he(t, a.get(t.id) ?? 0)), l = !0;
 				continue;
 			}
-			let o = n !== null && n.patterns !== e.patterns && t.clips.some(jl), s = t.clips !== r.track.clips || o, d = i || t.instrumentId !== r.track.instrumentId || t.voiceLimit !== r.track.voiceLimit;
+			let o = n !== null && n.patterns !== e.patterns && t.clips.some(zl), s = t.clips !== r.track.clips || o, d = i || t.instrumentId !== r.track.instrumentId || t.voiceLimit !== r.track.voiceLimit;
 			r.track = t, s && ({table: r.table, swap: r.patternSwap} = me(t), Se(r), l = !0), d && le(r);
 		}
 		for (let [e, t] of c) u.has(e) || (ge(t), c.delete(e), l = !0);
@@ -7028,8 +7200,8 @@ function $l(e, t = {}) {
 			n !== t.gainTarget && A(t, n, null);
 		}
 		j();
-		let d = Ql(Ha(e));
-		d !== f && (f = d, l = !0), l && oe(), p === "playing" && (n && !Zl(n.loop, e.loop) && te(F()), !g && F() >= f && xe());
+		let d = su(Wa(e));
+		d !== f && (f = d, l = !0), l && oe(), p === "playing" && (n && !ou(n.loop, e.loop) && te(F()), !g && F() >= f && xe());
 	}, we = () => r.ticksAt(r.immediate());
 	return {
 		setSong(e, t) {
@@ -7043,13 +7215,13 @@ function $l(e, t = {}) {
 			v || p === "playing" || (j(), ae(p === "paused" ? h : m) && E("playing"));
 		},
 		pause() {
-			v || p !== "playing" || (h = Ql(we()), p = "paused", y++, w++, P(), ee(), L(r.immediate()), T());
+			v || p !== "playing" || (h = su(we()), p = "paused", y++, w++, P(), ee(), L(r.immediate()), T());
 		},
 		stop() {
 			v || p === "stopped" || xe();
 		},
 		seek(e) {
-			v || (m = Ql(e), h = m, p === "playing" && (ae(m) || xe()));
+			v || (m = su(e), h = m, p === "playing" && (ae(m) || xe()));
 		},
 		getCursorTick: () => m,
 		getPositionTicks() {
@@ -7093,7 +7265,7 @@ function $l(e, t = {}) {
 			};
 			if (v) return i;
 			if (p !== "playing" || e === "now" || !o) return t(p === "playing" ? r.now() : r.immediate()), i;
-			let a = e === "beat" ? za(o.timeSignature) : Ba(o.timeSignature), s = (Math.floor(Math.max(0, F()) / a) + 1) * a, c = Xl(o.loop);
+			let a = e === "beat" ? Va(o.timeSignature) : Ha(o.timeSignature), s = (Math.floor(Math.max(0, F()) / a) + 1) * a, c = au(o.loop);
 			if (g && c && s >= c.end) {
 				let e = Math.ceil(c.start / a) * a;
 				s = e < c.end ? e : c.start;
@@ -7115,12 +7287,12 @@ function $l(e, t = {}) {
 		},
 		jumpAt(e, t) {
 			if (v) return;
-			let n = Ql(e);
+			let n = su(e);
 			if (p !== "playing" || !o) {
 				m = n, h = n;
 				return;
 			}
-			let i = Xl(o.loop);
+			let i = au(o.loop);
 			if ((!i || n >= i.end) && n >= f) {
 				re(t);
 				return;
@@ -7165,46 +7337,46 @@ function $l(e, t = {}) {
 }
 //#endregion
 //#region src/playback/game-runtime.ts
-var eu = 20, tu = 400, nu = -60, ru = 1 / 30, iu = Tr.frequency.max, au = Tr.Q.default, ou = .1, su = .05, cu = .005, lu = .02, uu = .7, du = 1e-4, fu = "A game rule could not be applied.";
-function pu() {
+var lu = 20, uu = 400, du = -60, fu = 1 / 30, pu = Tr.frequency.max, mu = Tr.Q.default, hu = .1, gu = .05, _u = .005, vu = .02, yu = .7, bu = 1e-4, xu = "A game rule could not be applied.";
+function Su() {
 	let e = globalThis.document;
 	return e && typeof e.addEventListener == "function" && typeof e.removeEventListener == "function" ? e : null;
 }
-function mu(e, t) {
-	return e === void 0 || t === void 0 ? e === t : Math.abs(e - t) <= du * Math.max(1, Math.abs(e), Math.abs(t));
+function Cu(e, t) {
+	return e === void 0 || t === void 0 ? e === t : Math.abs(e - t) <= bu * Math.max(1, Math.abs(e), Math.abs(t));
 }
-function hu(e, t) {
+function wu(e, t) {
 	if (!e || !t) return e === t;
 	let n = Object.keys(e);
-	return n.length === Object.keys(t).length && n.every((n) => Object.hasOwn(t, n) && mu(e[n], t[n]));
+	return n.length === Object.keys(t).length && n.every((n) => Object.hasOwn(t, n) && Cu(e[n], t[n]));
 }
-function gu(e, t) {
-	return !e || !t ? e === t : mu(e.gainScale, t.gainScale) && mu(e.volumeDb, t.volumeDb) && mu(e.pan, t.pan) && hu(e.sends, t.sends) && hu(e.knobs, t.knobs) && e.instrumentId === t.instrumentId && e.patternId === t.patternId;
+function Tu(e, t) {
+	return !e || !t ? e === t : Cu(e.gainScale, t.gainScale) && Cu(e.volumeDb, t.volumeDb) && Cu(e.pan, t.pan) && wu(e.sends, t.sends) && wu(e.knobs, t.knobs) && e.instrumentId === t.instrumentId && e.patternId === t.patternId;
 }
-function _u(e, t, n, r) {
+function Eu(e, t, n, r) {
 	let i = Math.min(1, Math.max(0, t));
-	if (e === "track:volume") return nu + i * 72;
-	if (e === "track:pan") return so(i * 2 - 1);
-	if (e.startsWith("track:send:")) return r.has(e.slice(11)) ? co(i) : null;
-	let a = n ? Ta(n, e) : null;
-	return a && !a.rebuild ? Li(a, i) : null;
+	if (e === "track:volume") return du + i * 72;
+	if (e === "track:pan") return lo(i * 2 - 1);
+	if (e.startsWith("track:send:")) return r.has(e.slice(11)) ? uo(i) : null;
+	let a = n ? Da(n, e) : null;
+	return a && !a.rebuild ? zi(a, i) : null;
 }
-function vu(e = 12) {
+function Du(e = 12) {
 	return Array.from({ length: e }, (t, n) => 1200 * Math.log2(1 - .98 * ((n + 1) / e)));
 }
-function yu(e, t = {}) {
+function Ou(e, t = {}) {
 	let n = t.transport === void 0, r = t.transport ?? e.createTransport(), i = (e, n) => {
 		try {
 			t.onError ? t.onError(e, n) : console.error(e, n);
 		} catch {}
 	}, a = e.createMusicChain(t.destination ?? e.destination, i), { cue: o, pause: s, hidden: c } = a, l = !1, u = (e) => {
-		l || (l = !0, i(fu, e));
-	}, d = $l(e, {
-		onError: (e, t) => e === fu ? u(t) : i(e, t),
+		l || (l = !0, i(xu, e));
+	}, d = cu(e, {
+		onError: (e, t) => e === xu ? u(t) : i(e, t),
 		destination: a.input,
 		transport: r
 	}), f = null, p = [], m = Vr({}), h = /* @__PURE__ */ new Map(), g = /* @__PURE__ */ new Map(), _ = /* @__PURE__ */ new Map(), v = !1, y = null, b = 0, x = null, S = 0, C = null, w = /* @__PURE__ */ new Map(), T = /* @__PURE__ */ new Map(), E = /* @__PURE__ */ new Map(), D = /* @__PURE__ */ new Map(), O = /* @__PURE__ */ new Map(), k = null, A = !1, j = null, M = null, N = null, P = !1, ee = (e) => g.get(e) ?? h.get(e), te = (e) => e.tick === null ? null : e, F = () => r.immediate(), I = (e, t, n, r = F()) => {
-		e.rampTo(t, Math.max(cu, n), r);
+		e.rampTo(t, Math.max(_u, n), r);
 	}, ne = (e) => {
 		e !== null && r.clearTimeout(e);
 	}, L = () => d.getState() === "playing", re = (e) => h.get(e)?.value ?? null, ie = () => {
@@ -7213,18 +7385,18 @@ function yu(e, t = {}) {
 			x?.cancel(), x = null, y !== null && f && Number.isFinite(f.bpm) && (r.setTempo(f.bpm), d.refreshTempo()), y = null;
 			return;
 		}
-		let i = Math.min(tu, Math.max(eu, n));
-		if (b = i, y === null || !mu(y, i) || x) {
+		let i = Math.min(uu, Math.max(lu, n));
+		if (b = i, y === null || !Cu(y, i) || x) {
 			if (e.landing === "now" || !L()) {
 				x?.cancel(), x = null, y = i, r.tempo() !== i && r.setTempo(i), d.refreshTempo();
 				return;
 			}
-			x || y !== null && mu(y, i) || (y = i, x = te(d.atBoundary("bar", (e) => {
+			x || y !== null && Cu(y, i) || (y = i, x = te(d.atBoundary("bar", (e) => {
 				x = null;
 				let t = b;
 				y = t;
-				let n = m.tempo ? m.tempo.glideBeats * 60 / Math.max(eu, r.tempo()) : 0;
-				r.rampTempo(t, Math.max(cu, n), e), d.refreshTempo();
+				let n = m.tempo ? m.tempo.glideBeats * 60 / Math.max(lu, r.tempo()) : 0;
+				r.rampTempo(t, Math.max(_u, n), e), d.refreshTempo();
 			})));
 		}
 	}, ae = () => {
@@ -7257,7 +7429,7 @@ function yu(e, t = {}) {
 		}
 	}, le = (e) => {
 		if (!f) return;
-		let t = new Set(Ra(f).map((e) => e.id)), n = /* @__PURE__ */ new Map(), r = (e) => {
+		let t = new Set(Ba(f).map((e) => e.id)), n = /* @__PURE__ */ new Map(), r = (e) => {
 			let t = n.get(e.id);
 			return t || n.set(e.id, t = {}), t;
 		}, i = new Map(f.tracks.map((e) => [e.id, e]));
@@ -7279,12 +7451,12 @@ function yu(e, t = {}) {
 			if (a === null) continue;
 			if (wr(e.target)) {
 				let t = e.target === "master:filter.Q" ? "Q" : "frequency";
-				o[t] = Li(Tr[t], a);
+				o[t] = zi(Tr[t], a);
 				continue;
 			}
 			let s = e.trackId === void 0 ? void 0 : i.get(e.trackId);
 			if (!s) continue;
-			let c = oe(E.get(s.id)?.instrumentId ?? s.instrumentId), l = _u(e.target, a, c, t);
+			let c = oe(E.get(s.id)?.instrumentId ?? s.instrumentId), l = Eu(e.target, a, c, t);
 			if (l === null) continue;
 			let u = r(s);
 			e.target === "track:volume" ? u.volumeDb = l : e.target === "track:pan" ? u.pan = l : e.target.startsWith("track:send:") ? u.sends = {
@@ -7295,9 +7467,9 @@ function yu(e, t = {}) {
 				[e.target]: l
 			};
 		}
-		for (let [e, t] of n) gu(O.get(e), t) || (O.set(e, t), d.setTrackControl(e, t));
+		for (let [e, t] of n) Tu(O.get(e), t) || (O.set(e, t), d.setTrackControl(e, t));
 		for (let e of [...O.keys()]) n.has(e) || (O.delete(e), d.setTrackControl(e, null));
-		v || (!k || !mu(k.frequency, o.frequency) || !mu(k.Q, o.Q)) && (k = o, a.setLowpass("master", o.frequency, o.Q, e === 0 ? cu : ou));
+		v || (!k || !Cu(k.frequency, o.frequency) || !Cu(k.Q, o.Q)) && (k = o, a.setLowpass("master", o.frequency, o.Q, e === 0 ? _u : hu));
 	}, ue = (e) => {
 		if (f) try {
 			ie(), ae(), ce(), le(e);
@@ -7309,7 +7481,7 @@ function yu(e, t = {}) {
 		let e = F();
 		for (let t of h.values()) t.value = Kr(t.dial, t.from, t.target, e - t.since);
 		ue();
-	}, fe = r.setInterval(de, ru), pe = () => {
+	}, fe = r.setInterval(de, fu), pe = () => {
 		x?.cancel(), x = null, y = null, C?.cancel(), C = null;
 		for (let e of D.values()) e.cancel();
 		D.clear(), w.clear(), T.clear();
@@ -7317,19 +7489,19 @@ function yu(e, t = {}) {
 		M?.cancel(), M = null, N = null, ge();
 	}, he = () => {
 		let e = F();
-		o.holdAt(e), I(o, 1, cu, e);
+		o.holdAt(e), I(o, 1, _u, e);
 	}, ge = () => {
 		P && (P = !1, he());
 	}, _e = () => j !== null || N !== null && N.action !== "jump", ve = () => {
 		me(), ne(j), j = null, f && Number.isFinite(f.bpm) && (r.cancelTempo(F()), r.tempo() !== f.bpm && (r.setTempo(f.bpm), d.refreshTempo())), y = null;
 	}, ye = () => {
-		I(o, 1, cu), d.bendPitch([0], 0, F());
+		I(o, 1, _u), d.bendPitch([0], 0, F());
 	}, be = (e) => {
-		A = !1, a.setLowpass("muffle", iu, au, e), I(s, 1, e);
+		A = !1, a.setLowpass("muffle", pu, mu, e), I(s, 1, e);
 	}, xe = (e) => {
 		if (!f) return 0;
 		let t = e - d.getPositionTicks();
-		return t < 0 && f.loop.enabled && (t += f.loop.endTick - f.loop.startTick), Math.max(0, t) * (60 / (Math.max(eu, r.tempo()) * 960));
+		return t < 0 && f.loop.enabled && (t += f.loop.endTick - f.loop.startTick), Math.max(0, t) * (60 / (Math.max(lu, r.tempo()) * 960));
 	}, Se = (e) => {
 		ne(j), j = r.setTimeout(() => {
 			j = null;
@@ -7352,14 +7524,14 @@ function yu(e, t = {}) {
 			return;
 		}
 		if (e.action === "fadeOut") {
-			let e = Math.max(cu, n);
+			let e = Math.max(_u, n);
 			o.cancelFrom(t), o.setAt(1, t), o.linearTo(0, t + e), Se(t + e - F());
 			return;
 		}
-		let i = n > 0 ? n : Pr, a = Math.max(eu, r.tempo());
-		r.rampTempo(Math.max(1, a * lu), i, t, "linear"), d.bendPitch(vu(), i, t), o.cancelFrom(t), o.setAt(1, t + i * uu), o.linearTo(0, t + i), Se(t + i - F());
-	}, we = t.visibility === void 0 ? pu() : t.visibility, Te = () => {
-		!v && we && I(c, +!we.hidden, su);
+		let i = n > 0 ? n : Pr, a = Math.max(lu, r.tempo());
+		r.rampTempo(Math.max(1, a * vu), i, t, "linear"), d.bendPitch(Du(), i, t), o.cancelFrom(t), o.setAt(1, t + i * yu), o.linearTo(0, t + i), Se(t + i - F());
+	}, we = t.visibility === void 0 ? Su() : t.visibility, Te = () => {
+		!v && we && I(c, +!we.hidden, gu);
 	};
 	return we?.addEventListener("visibilitychange", Te), we?.hidden && c.setAt(0, F()), {
 		player: d,
@@ -7368,7 +7540,7 @@ function yu(e, t = {}) {
 			let r = e?.id !== f?.id, i = e?.bpm !== f?.bpm;
 			if (r) {
 				for (let e of O.keys()) d.setTrackControl(e, null);
-				O.clear(), A && be(cu);
+				O.clear(), A && be(_u);
 			}
 			d.setSong(e, t), f = e, p = t, m = Vr(e ?? {}), (r || i) && (y = null), r && (l = !1, pe(), E.clear(), d.setTranspose(0), S = 0);
 			let a = /* @__PURE__ */ new Set();
@@ -7433,7 +7605,7 @@ function yu(e, t = {}) {
 				onDrop: me
 			})), M && (N = n), n.action === "jump" && n.seconds > 0 && M && M.tick !== null) {
 				let e = F() + xe(M.tick), t = Math.max(F(), e - n.seconds / 2);
-				o.cancelFrom(t), o.setAt(1, t), o.linearTo(0, Math.max(t + cu, e)), P = !0;
+				o.cancelFrom(t), o.setAt(1, t), o.linearTo(0, Math.max(t + _u, e)), P = !0;
 			}
 			return !0;
 		},
@@ -7447,10 +7619,10 @@ function yu(e, t = {}) {
 				d.stop(), d.seek(0);
 				return;
 			}
-			a.setLowpass("muffle", e.muffleHz, au, e.fadeSeconds), e.mode === "freeze" && (d.pause(), e.fadeSeconds > 0 && I(s, 0, e.fadeSeconds));
+			a.setLowpass("muffle", e.muffleHz, mu, e.fadeSeconds), e.mode === "freeze" && (d.pause(), e.fadeSeconds > 0 && I(s, 0, e.fadeSeconds));
 		},
 		stop() {
-			v || (A && be(cu), d.stop(), ve(), ue());
+			v || (A && be(_u), d.stop(), ve(), ue());
 		},
 		isPaused: () => A,
 		settle: () => {
@@ -7459,28 +7631,69 @@ function yu(e, t = {}) {
 		},
 		setMuffle(e, t) {
 			if (v || !Number.isFinite(e)) return;
-			let n = Math.min(iu, Math.max(Tr.frequency.min, e));
-			a.setLowpass("host", n, au, Math.max(cu, Number.isFinite(t) ? t : 0));
+			let n = Math.min(pu, Math.max(Tr.frequency.min, e));
+			a.setLowpass("host", n, mu, Math.max(_u, Number.isFinite(t) ? t : 0));
 		},
 		dispose() {
 			v || (v = !0, r.clearInterval(fe), ne(j), we?.removeEventListener("visibilitychange", Te), d.dispose(), n && r.dispose(), a.dispose(), h.clear(), g.clear(), _.clear());
 		}
 	};
 }
-var bu = 3;
-function xu(e, t) {
+var ku = 3, Au = (() => {
+	let e = Bi("FMSynth", "harmonicity");
+	return e.kind === "number" ? Math.log(8 / e.min) / Math.log(16 / e.min) : 1;
+})();
+function ju(e) {
+	return Math.round(e * Au * 1e6) / 1e6;
+}
+function Mu(e, t) {
+	return Array.isArray(e) ? e.map((e) => {
+		if (typeof e != "object" || !e || !Array.isArray(e.connections)) return e;
+		let n = e.connections.map((e) => {
+			let n = typeof e == "object" && e ? Ea(e.target) : null, r = n ? e.depth : void 0;
+			return n?.kind !== "layer" || n.path !== "harmonicity" || t[n.layer]?.voiceType !== "FMSynth" ? e : typeof r == "number" && Number.isFinite(r) ? {
+				...e,
+				depth: ju(r)
+			} : e;
+		});
+		return {
+			...e,
+			connections: n
+		};
+	}) : e;
+}
+var Nu = {
+	transpose: 0,
+	keyTrack: 0,
+	velocityToFilter: 0,
+	stringDecay: "sustain",
+	velocity: 0,
+	tuning: "classic"
+};
+function Pu(e) {
+	let t = (t) => e.layers[t]?.voiceType === "FMSynth";
+	for (let t of e.layers) {
+		let e = t.params;
+		if (Object.entries(Nu).some(([t, n]) => t in e && e[t] !== n) || t.voiceType === "PluckSynth" && typeof e.detune == "number" && e.detune !== 0 || t.voiceType === "FMSynth" && typeof e.harmonicity == "number" && e.harmonicity > 8) return !0;
+	}
+	return (e.lfos ?? []).some((e) => e.connections.some((e) => {
+		let n = Ea(e.target);
+		return n?.kind === "layer" && n.path === "harmonicity" && t(n.layer);
+	}));
+}
+function Fu(e, t) {
 	return typeof e == "string" ? e : t;
 }
-function Su(e, t) {
+function Iu(e, t) {
 	return Array.isArray(e) ? e.map((e) => {
 		if (typeof e != "object" || !e || !Array.isArray(e.connections)) return e;
 		let n = e.connections.flatMap((e) => {
-			let n = typeof e == "object" && e ? wa(e.target) : null;
+			let n = typeof e == "object" && e ? Ea(e.target) : null;
 			if (n?.kind !== "layer") return [e];
 			let r = t.get(n.layer);
 			return r === void 0 ? [] : [{
 				...e,
-				target: Sa(r, n.path)
+				target: wa(r, n.path)
 			}];
 		});
 		return {
@@ -7489,36 +7702,36 @@ function Su(e, t) {
 		};
 	}) : e;
 }
-function Cu(e) {
-	let t = e;
+function Lu(e, t = {}) {
+	let n = e;
 	if (typeof e == "string") try {
-		t = JSON.parse(e);
+		n = JSON.parse(e);
 	} catch {
 		return {
 			ok: !1,
 			error: "This file is not valid JSON, so it can’t be an instrument patch."
 		};
 	}
-	if (typeof t != "object" || !t || Array.isArray(t)) return {
+	if (typeof n != "object" || !n || Array.isArray(n)) return {
 		ok: !1,
 		error: "An instrument patch must be a JSON object."
 	};
-	let n = t;
-	if (typeof n.version == "number" && n.version > 1) return {
+	let r = n;
+	if (typeof r.version == "number" && r.version > 2) return {
 		ok: !1,
-		error: `This patch was saved by a newer version of Sine Sculptor (format ${n.version}).`
+		error: `This patch was saved by a newer version of Sine Sculptor (format ${r.version}).`
 	};
-	let r = n.id;
-	if (typeof r != "string" || r.trim() === "") return {
+	let i = r.id;
+	if (typeof i != "string" || i.trim() === "") return {
 		ok: !1,
 		error: "The patch has no id."
 	};
-	if (!Array.isArray(n.layers) || n.layers.length === 0) return {
+	if (!Array.isArray(r.layers) || r.layers.length === 0) return {
 		ok: !1,
 		error: "The patch has no layers, so there is nothing to play."
 	};
-	let i = n.kit !== null && typeof n.kit == "object" && !Array.isArray(n.kit) ? n.kit : null, a = i && Object.hasOwn(i, "pads") ? i.pads : void 0, o = Array.isArray(a) ? 48 : bu, s = [];
-	for (let [e, t] of n.layers.slice(0, o).entries()) {
+	let a = r.kit !== null && typeof r.kit == "object" && !Array.isArray(r.kit) ? r.kit : null, o = a && Object.hasOwn(a, "pads") ? a.pads : void 0, s = Array.isArray(o) ? 48 : ku, c = [];
+	for (let [e, t] of r.layers.slice(0, s).entries()) {
 		if (typeof t != "object" || !t) return {
 			ok: !1,
 			error: `Layer ${e + 1} is not an object.`
@@ -7528,110 +7741,111 @@ function Cu(e) {
 			ok: !1,
 			error: `Layer ${e + 1} uses an unknown voice type: ${JSON.stringify(n.voiceType)}.`
 		};
-		s.push({
+		c.push({
 			voiceType: n.voiceType,
-			polyphony: as(n.polyphony),
-			volume: os(n.volume),
-			params: Vi(n.voiceType, n.params)
+			polyphony: fs(n.polyphony),
+			volume: ps(n.volume),
+			params: Ui(n.voiceType, n.params)
 		});
 	}
-	let c, l = n.lfos;
-	if (Array.isArray(a)) {
-		let e = Yo(a, s);
+	let l, u = r.lfos;
+	if (Array.isArray(o)) {
+		let e = Zo(o, c);
 		if (!e) return {
 			ok: !1,
 			error: "The drum kit has no pads, so there is nothing to play."
 		};
-		c = e.kit, s = e.layers, l = Su(l, e.moved);
+		l = e.kit, c = e.layers, u = Iu(u, e.moved);
 	}
-	let u = {
-		id: r,
-		name: xu(n.name, "Untitled"),
-		category: xu(n.category, "Uncategorized"),
-		description: xu(n.description, ""),
-		layers: s
+	(t.legacy ?? (typeof r.version == "number" && r.version < 2)) && (u = Mu(u, c));
+	let d = {
+		id: i,
+		name: Fu(r.name, "Untitled"),
+		category: Fu(r.category, "Uncategorized"),
+		description: Fu(r.description, ""),
+		layers: c
 	};
-	c && (u.kit = c);
-	let d = Na(n.effects);
-	d.length > 0 && (u.effects = d);
-	let f = Pa(l, u);
-	return f.length > 0 && (u.lfos = f), {
+	l && (d.kit = l);
+	let f = Fa(r.effects);
+	f.length > 0 && (d.effects = f);
+	let p = Ia(u, d);
+	return p.length > 0 && (d.lfos = p), {
 		ok: !0,
-		patch: u
+		patch: d
 	};
 }
 //#endregion
 //#region src/state/immutable.ts
-var wu = /* @__PURE__ */ new Set([
+var Ru = /* @__PURE__ */ new Set([
 	"__proto__",
 	"prototype",
 	"constructor"
 ]);
-function Tu(e) {
-	return wu.has(e);
+function zu(e) {
+	return Ru.has(e);
 }
-function Eu(e) {
+function Bu(e) {
 	let t = 0;
-	for (let n of wu) Object.hasOwn(e, n) && t++;
+	for (let n of Ru) Object.hasOwn(e, n) && t++;
 	return t;
 }
-var Du = 16, Ou = Du * 4, ku = 16, Au = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
-function ju(e) {
+var Vu = 16, Hu = Vu * 4, Uu = 16, Wu = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
+function Gu(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim();
-	return t.length > 0 && t.length <= 64 && !Tu(t) ? t : null;
+	return t.length > 0 && t.length <= 64 && !zu(t) ? t : null;
 }
-function Mu(e) {
+function Ku(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(16, Math.max(1, Math.round(e))) : null;
 }
-function Nu(e) {
+function qu(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(6, Math.max(-60, e)) : null;
 }
-function Pu(e, t) {
+function Ju(e, t) {
 	return typeof e == "string" && e.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 40).trim() || t;
 }
-function Fu(e) {
+function Yu(e) {
 	if (typeof e != "object" || !e || Array.isArray(e)) return null;
 	let t = {}, n = 0, r = 0;
 	for (let i in e) {
-		if (n >= Du || r++ >= Ou) break;
+		if (n >= Vu || r++ >= Hu) break;
 		if (!Object.hasOwn(e, i)) continue;
-		let a = ju(i), o = co(Au(e, i));
+		let a = Gu(i), o = uo(Wu(e, i));
 		a === null || a !== i || o <= 0 || (t[a] = o, n++);
 	}
 	return n > 0 ? t : null;
 }
-function Iu(e, t) {
-	let n = so(Au(t, "pan"));
+function Xu(e, t) {
+	let n = lo(Wu(t, "pan"));
 	n !== 0 && (e.pan = n);
-	let r = Fu(Au(t, "sends"));
+	let r = Yu(Wu(t, "sends"));
 	r && (e.sends = r);
-	let i = Mu(Au(t, "voiceLimit"));
+	let i = Ku(Wu(t, "voiceLimit"));
 	i !== null && (e.voiceLimit = i);
 }
-function Lu(e) {
+function Zu(e) {
 	if (typeof e != "object" || !e || Array.isArray(e)) return null;
-	let t = e, n = ju(Au(t, "id")), r = Au(t, "type");
-	return n === null || !pa(r) ? null : {
+	let t = e, n = Gu(Wu(t, "id")), r = Wu(t, "type");
+	return n === null || !ha(r) ? null : {
 		id: n,
-		name: Pu(Au(t, "name"), fa[r]),
+		name: Ju(Wu(t, "name"), ma[r]),
 		type: r,
-		params: _a(r, Au(t, "params")),
-		returnDb: Nu(Au(t, "returnDb")) ?? 0,
-		mute: Au(t, "mute") === !0
+		params: ya(r, Wu(t, "params")),
+		returnDb: qu(Wu(t, "returnDb")) ?? 0,
+		mute: Wu(t, "mute") === !0
 	};
 }
-function Ru(e, t, n) {
+function Qu(e, t, n) {
 	if (e === void 0) return null;
 	if (!Array.isArray(e)) return t(`${n} had an unreadable list of send buses, so it got the default Reverb and Delay.`), null;
-	let r = [], i = Math.max(0, e.length - ku);
-	for (let t of e.slice(0, ku)) {
-		let e = Lu(t);
+	let r = [], i = Math.max(0, e.length - Uu);
+	for (let t of e.slice(0, Uu)) {
+		let e = Zu(t);
 		!e || r.length >= 4 || r.some((t) => t.id === e.id) ? i++ : r.push(e);
 	}
 	return i > 0 && t(`${n}: dropped ${i === 1 ? "a send bus" : `${i} send buses`} that couldn’t be read or didn’t fit.`), r;
 }
-function zu(e, t) {
+function $u(e, t) {
 	if (!e.sends) return e;
 	let n = Object.entries(e.sends).filter(([e]) => t.has(e));
 	if (n.length === Object.keys(e.sends).length) return e;
@@ -7640,70 +7854,70 @@ function zu(e, t) {
 }
 //#endregion
 //#region src/state/pattern-normalize.ts
-var Bu = 128, Vu = 40, Hu = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
-function Uu(e) {
+var ed = 128, td = 40, nd = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
+function rd(e) {
 	return typeof e == "object" && e && !Array.isArray(e) ? e : null;
 }
-function Wu(e) {
+function id(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim();
-	return t.length > 0 && t.length <= Bu ? t : null;
+	return t.length > 0 && t.length <= ed ? t : null;
 }
-function Gu(e, t) {
+function ad(e, t) {
 	if (typeof e != "string") return t;
 	let n = e.slice(0, 160).replace(/[\u0000-\u001f\u007f]/g, " ").trim();
-	return Array.from(n).slice(0, Vu).join("").trim() || t;
+	return Array.from(n).slice(0, td).join("").trim() || t;
 }
-function Ku(e) {
+function od(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(64, Math.max(1, Math.round(e))) : null;
 }
-function qu(e) {
+function sd(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(1, Math.max(0, e)) : null;
 }
-function Ju(e) {
+function cd(e) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.min(1, Math.max(0, e)) : 0;
 }
-function Yu(e, t) {
+function ld(e, t) {
 	let n = Array(t).fill(0);
-	for (let r = 0; r < Math.min(t, e.length); r++) n[r] = Ju(e[r]);
+	for (let r = 0; r < Math.min(t, e.length); r++) n[r] = cd(e[r]);
 	return n;
 }
-function Xu(e, t) {
-	let n = Uu(e);
+function ud(e, t) {
+	let n = rd(e);
 	if (!n) return null;
-	let r = Hu(n, "note"), i = Hu(n, "steps");
+	let r = nd(n, "note"), i = nd(n, "steps");
 	if (typeof r != "number" || !Number.isFinite(r) || !Array.isArray(i)) return null;
 	let a = Math.round(r);
 	return a < 0 || a > 127 ? null : {
 		note: a,
-		steps: Yu(i.slice(0, 64), t)
+		steps: ld(i.slice(0, 64), t)
 	};
 }
-function Zu(e) {
-	let t = Uu(e);
+function dd(e) {
+	let t = rd(e);
 	if (!t) return null;
-	let n = Wu(Hu(t, "id"));
+	let n = id(nd(t, "id"));
 	if (n === null) return null;
-	let r = Ku(Hu(t, "length")) ?? 16, i = Hu(t, "stepSize"), a = Hu(t, "rows"), o = [], s = /* @__PURE__ */ new Set();
+	let r = od(nd(t, "length")) ?? 16, i = nd(t, "stepSize"), a = nd(t, "rows"), o = [], s = /* @__PURE__ */ new Set();
 	if (Array.isArray(a)) for (let e of a.slice(0, 64)) {
-		let t = Xu(e, r);
+		let t = ud(e, r);
 		if (t && !s.has(t.note) && (s.add(t.note), o.push(t), o.length >= 16)) break;
 	}
 	return {
 		id: n,
-		name: Gu(Hu(t, "name"), "Pattern"),
+		name: ad(nd(t, "name"), "Pattern"),
 		length: r,
-		stepSize: Dl(i) ? i : "1/16",
-		swing: qu(Hu(t, "swing")) ?? 0,
+		stepSize: Fl(i) ? i : "1/16",
+		swing: sd(nd(t, "swing")) ?? 0,
 		rows: o
 	};
 }
-function Qu(e, t, n) {
+function fd(e, t, n) {
 	if (e === void 0) return null;
 	if (!Array.isArray(e)) return t(`${n} had an unreadable pattern list, so its pattern clips are now empty.`), null;
 	let r = [], i = /* @__PURE__ */ new Set(), a = 0;
 	for (let t of e.slice(0, 128)) {
-		let e = Zu(t);
+		let e = dd(t);
 		if (!e || i.has(e.id)) {
 			a++;
 			continue;
@@ -7712,7 +7926,7 @@ function Qu(e, t, n) {
 	}
 	return a += Math.max(0, e.length - 128), a > 0 && t(`${n}: dropped ${a} unreadable or repeated ${a === 1 ? "pattern" : "patterns"}.`), r.length > 0 ? r : null;
 }
-function $u(e, t, n, r) {
+function pd(e, t, n, r) {
 	let i = 0, a = e.clips.map((e) => {
 		if (e.patternId === void 0 || t.has(e.patternId)) return e;
 		i++;
@@ -7726,174 +7940,174 @@ function $u(e, t, n, r) {
 }
 //#endregion
 //#region src/song/arrange.ts
-var ed = [...Fa, "none"];
-function td(e) {
-	return e === "none" || Ia(e);
+var md = [...La, "none"];
+function hd(e) {
+	return e === "none" || Ra(e);
 }
-function nd(e) {
+function gd(e) {
 	return e.role ?? "none";
 }
-function rd(e) {
-	return ed.indexOf(e);
+function _d(e) {
+	return md.indexOf(e);
 }
-function id(e) {
+function vd(e) {
 	let t = !0;
-	for (let n = 1; n < e.length && t; n++) rd(nd(e[n - 1])) > rd(nd(e[n])) && (t = !1);
+	for (let n = 1; n < e.length && t; n++) _d(gd(e[n - 1])) > _d(gd(e[n])) && (t = !1);
 	return t ? e : e.map((e, t) => ({
 		track: e,
 		i: t,
-		g: rd(nd(e))
+		g: _d(gd(e))
 	})).sort((e, t) => e.g - t.g || e.i - t.i).map((e) => e.track);
 }
-function ad(e) {
+function yd(e) {
 	if (!Array.isArray(e)) return [];
-	let t = new Set(e.filter(td));
-	return ed.filter((e) => t.has(e));
+	let t = new Set(e.filter(hd));
+	return md.filter((e) => t.has(e));
 }
-function od(e) {
+function bd(e) {
 	return Number.isFinite(e) ? Math.min(40, Math.max(3, Math.round(e * 16) / 16)) : 6;
 }
-function sd(e) {
-	return typeof e == "number" && Number.isFinite(e) ? od(e) : null;
+function xd(e) {
+	return typeof e == "number" && Number.isFinite(e) ? bd(e) : null;
 }
 //#endregion
 //#region src/song/track-colors.ts
-var cd = /^#[0-9a-f]{6}$/;
-function ld(e) {
+var Sd = /^#[0-9a-f]{6}$/;
+function Cd(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim().toLowerCase();
-	return cd.test(t) ? t : null;
+	return Sd.test(t) ? t : null;
 }
 //#endregion
 //#region src/state/document.ts
-function ud(e, t) {
-	let n = ld(Q(t, "color"));
+function wd(e, t) {
+	let n = Cd(Q(t, "color"));
 	n && (e.color = n, Q(t, "colorPicked") === !0 && (e.colorPicked = !0));
-	let r = sd(Q(t, "height"));
+	let r = xd(Q(t, "height"));
 	r !== null && (e.height = r);
 }
-var dd = "Untitled Song", fd = "Track", pd = [
+var Td = "Untitled Song", Ed = "Track", Dd = [
 	2,
 	4,
 	8,
 	16
-], md = 384e5, hd = {
-	rack: 256,
+], Od = 384e5, kd = {
+	rack: 1024,
 	songs: 64,
 	tracksPerSong: 128,
 	clipsPerTrack: 512,
 	notesPerClip: 2e4,
 	totalNotes: 1e5
-}, gd = 50, _d = (e, t, n) => Math.min(n, Math.max(t, e));
-function vd(e) {
+}, Ad = 50, jd = (e, t, n) => Math.min(n, Math.max(t, e));
+function Md(e) {
 	return typeof e == "number" && Number.isFinite(e);
 }
 function Q(e, t) {
 	return Object.hasOwn(e, t) ? e[t] : void 0;
 }
-function yd(e, t, n = `${t}s`) {
+function Nd(e, t, n = `${t}s`) {
 	return `${e.toLocaleString("en-US")} ${e === 1 ? t : n}`;
 }
-function bd(e) {
-	return vd(e) ? _d(e, 20, 400) : null;
+function Pd(e) {
+	return Md(e) ? jd(e, 20, 400) : null;
 }
-function xd(e) {
-	return vd(e) ? _d(e, -60, 12) : null;
+function Fd(e) {
+	return Md(e) ? jd(e, -60, 12) : null;
 }
-function Sd(e) {
-	return vd(e) ? _d(Math.round(e), 0, md) : null;
+function Id(e) {
+	return Md(e) ? jd(Math.round(e), 0, Od) : null;
 }
-function Cd(e) {
-	return vd(e) ? _d(Math.round(e), 1, md) : null;
+function Ld(e) {
+	return Md(e) ? jd(Math.round(e), 1, Od) : null;
 }
-function wd(e) {
+function Rd(e) {
 	if (typeof e != "object" || !e) return null;
 	let t = Q(e, "beats"), n = Q(e, "unit");
-	return typeof t != "number" || !Number.isInteger(t) || t < 1 || t > 32 || typeof n != "number" || !pd.includes(n) ? null : {
+	return typeof t != "number" || !Number.isInteger(t) || t < 1 || t > 32 || typeof n != "number" || !Dd.includes(n) ? null : {
 		beats: t,
 		unit: n
 	};
 }
-function Td(e) {
+function zd(e) {
 	if (typeof e != "object" || !e) return null;
-	let t = Sd(Q(e, "startTick")), n = Sd(Q(e, "endTick"));
+	let t = Id(Q(e, "startTick")), n = Id(Q(e, "endTick"));
 	return t === null || n === null ? null : {
 		enabled: Q(e, "enabled") === !0,
 		startTick: t,
 		endTick: Math.max(t, n)
 	};
 }
-var Ed = /[\u0000-\u001f\u007f]/g;
-function Dd(e, t) {
+var Bd = /[\u0000-\u001f\u007f]/g;
+function Vd(e, t) {
 	if (typeof e != "string") return t;
-	let n = e.slice(0, 400).replace(Ed, " ").trim();
+	let n = e.slice(0, 400).replace(Bd, " ").trim();
 	return n.length > 100 && (n = Array.from(n).slice(0, 100).join("").trim()), n || t;
 }
-function Od(e) {
+function Hd(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim();
 	return t.length > 0 && t.length <= 128 ? t : null;
 }
-function kd() {
+function Ud() {
 	return {
 		beats: 4,
 		unit: 4
 	};
 }
-function Ad() {
+function Wd() {
 	return {
 		enabled: !1,
 		startTick: 0,
 		endTick: 0
 	};
 }
-function jd(e, t = hd.totalNotes) {
+function Gd(e, t = kd.totalNotes) {
 	let n = [], r = 0, i = 0, a = 0;
 	return {
 		rackIds: new Set(e),
 		notesLeft: Math.max(0, t),
 		warn(e) {
-			n.length < gd ? n.push(e) : r++;
+			n.length < Ad ? n.push(e) : r++;
 		},
 		overBudget(e) {
 			a += e;
 		},
 		record(e) {
-			return typeof e != "object" || !e || Array.isArray(e) ? null : (i += Eu(e), e);
+			return typeof e != "object" || !e || Array.isArray(e) ? null : (i += Bu(e), e);
 		},
 		warnings() {
 			let e = [...n];
-			return a > 0 && e.push(`The project held more notes than the ${yd(hd.totalNotes, "note")} limit, so ${yd(a, "note")} were dropped.`), i > 0 && e.push(`Ignored ${yd(i, "unsafe key")} (such as “__proto__”) in the file.`), r > 0 && e.push(`…and ${yd(r, "more problem")}.`), e;
+			return a > 0 && e.push(`The project held more notes than the ${Nd(kd.totalNotes, "note")} limit, so ${Nd(a, "note")} were dropped.`), i > 0 && e.push(`Ignored ${Nd(i, "unsafe key")} (such as “__proto__”) in the file.`), r > 0 && e.push(`…and ${Nd(r, "more problem")}.`), e;
 		}
 	};
 }
-function Md(e, t) {
+function Kd(e, t) {
 	let n = t.record(e);
 	if (!n) return null;
-	let r = Sd(Q(n, "tick")), i = Cd(Q(n, "durationTicks")), a = Q(n, "midi"), o = Q(n, "velocity");
-	if (r === null || i === null || !vd(a) || !vd(o)) return null;
+	let r = Id(Q(n, "tick")), i = Ld(Q(n, "durationTicks")), a = Q(n, "midi"), o = Q(n, "velocity");
+	if (r === null || i === null || !Md(a) || !Md(o)) return null;
 	let s = Math.round(a);
 	return s < 0 || s > 127 ? null : {
 		tick: r,
 		durationTicks: i,
 		midi: s,
-		velocity: _d(o, 0, 1)
+		velocity: jd(o, 0, 1)
 	};
 }
-var Nd = (e, t) => e.tick - t.tick || e.midi - t.midi;
-function Pd(e, t, n) {
+var qd = (e, t) => e.tick - t.tick || e.midi - t.midi;
+function Jd(e, t, n) {
 	return e ? `${t} “${e}”` : `${t} ${n}`;
 }
-function Fd(e) {
-	return typeof e == "object" && e && !Array.isArray(e) ? Od(Q(e, "id")) : null;
+function Yd(e) {
+	return typeof e == "object" && e && !Array.isArray(e) ? Hd(Q(e, "id")) : null;
 }
-function Id(e, t, n, r, i, a) {
+function Xd(e, t, n, r, i, a) {
 	if (!Array.isArray(e)) return e !== void 0 && n.warn(`${r} had an unreadable ${i} list, so it is now empty.`), [];
 	let o = Math.min(e.length, t);
-	e.length > o && n.warn(`${r} held more than ${yd(o, i)}; the extra ${yd(e.length - o, i)} were dropped.`);
+	e.length > o && n.warn(`${r} held more than ${Nd(o, i)}; the extra ${Nd(e.length - o, i)} were dropped.`);
 	let s = [], c = /* @__PURE__ */ new Set(), l = 0, u = 0;
 	for (let t = 0; t < o; t++) {
-		let n = Fd(e[t]);
+		let n = Yd(e[t]);
 		if (n !== null && c.has(n)) {
 			u++;
 			continue;
@@ -7901,14 +8115,14 @@ function Id(e, t, n, r, i, a) {
 		let r = a(e[t]);
 		r ? (c.add(r.id), s.push(r)) : l++;
 	}
-	return l > 0 && n.warn(`${r}: dropped ${yd(l, `unreadable ${i}`)}.`), u > 0 && n.warn(`${r}: dropped ${yd(u, i)} that repeated an earlier ${i}’s id.`), s;
+	return l > 0 && n.warn(`${r}: dropped ${Nd(l, `unreadable ${i}`)}.`), u > 0 && n.warn(`${r}: dropped ${Nd(u, i)} that repeated an earlier ${i}’s id.`), s;
 }
-function Ld(e, t, n = "A track") {
+function Zd(e, t, n = "A track") {
 	let r = t.record(e);
 	if (!r) return null;
-	let i = Od(Q(r, "id")), a = Sd(Q(r, "startTick")), o = Cd(Q(r, "lengthTicks")), s = Q(r, "notes");
+	let i = Hd(Q(r, "id")), a = Id(Q(r, "startTick")), o = Ld(Q(r, "lengthTicks")), s = Q(r, "notes");
 	if (i === null || a === null || o === null || !Array.isArray(s)) return null;
-	let c = Dd(Q(r, "name"), ""), l = `${n}, ${Pd(c, "clip", i)}`, u = Wu(Q(r, "patternId"));
+	let c = Vd(Q(r, "name"), ""), l = `${n}, ${Jd(c, "clip", i)}`, u = id(Q(r, "patternId"));
 	if (u !== null) return {
 		id: i,
 		name: c,
@@ -7917,11 +8131,11 @@ function Ld(e, t, n = "A track") {
 		notes: [],
 		patternId: u
 	};
-	let d = Math.min(s.length, hd.notesPerClip);
-	s.length > d && t.warn(`${l} held more than ${yd(d, "note")}; the extra ${yd(s.length - d, "note")} were dropped.`);
+	let d = Math.min(s.length, kd.notesPerClip);
+	s.length > d && t.warn(`${l} held more than ${Nd(d, "note")}; the extra ${Nd(s.length - d, "note")} were dropped.`);
 	let f = [], p = 0;
 	for (let e = 0; e < d; e++) {
-		let n = Md(s[e], t);
+		let n = Kd(s[e], t);
 		if (!n) {
 			p++;
 			continue;
@@ -7932,8 +8146,8 @@ function Ld(e, t, n = "A track") {
 		}
 		t.notesLeft--, f.push(n);
 	}
-	p > 0 && t.warn(`${l}: dropped ${yd(p, "invalid note")}.`), f.sort(Nd);
-	let m = Od(Q(r, "poolId"));
+	p > 0 && t.warn(`${l}: dropped ${Nd(p, "invalid note")}.`), f.sort(qd);
+	let m = Hd(Q(r, "poolId"));
 	return m === null ? {
 		id: i,
 		name: c,
@@ -7949,16 +8163,16 @@ function Ld(e, t, n = "A track") {
 		poolId: m
 	};
 }
-function Rd(e, t, n = "A song") {
+function Qd(e, t, n = "A song") {
 	let r = t.record(e);
 	if (!r) return null;
-	let i = Od(Q(r, "id"));
+	let i = Hd(Q(r, "id"));
 	if (i === null) return null;
-	let a = Dd(Q(r, "name"), fd), o = `${n}, ${Pd(a, "track", i)}`, s = Q(r, "instrumentId"), c = null;
+	let a = Vd(Q(r, "name"), Ed), o = `${n}, ${Jd(a, "track", i)}`, s = Q(r, "instrumentId"), c = null;
 	typeof s == "string" && t.rackIds.has(s) ? c = s : s != null && t.warn(`${o} used an instrument that isn’t in the rack, so it is now silent.`);
-	let l = Q(r, "volume"), u = xd(l);
+	let l = Q(r, "volume"), u = Fd(l);
 	u === null && (l !== void 0 && t.warn(`${o} had an unreadable volume, so it was reset to 0 dB.`), u = 0);
-	let d = Id(Q(r, "clips"), hd.clipsPerTrack, t, o, "clip", (e) => Ld(e, t, o)), f = {
+	let d = Xd(Q(r, "clips"), kd.clipsPerTrack, t, o, "clip", (e) => Zd(e, t, o)), f = {
 		id: i,
 		name: a,
 		instrumentId: c,
@@ -7967,22 +8181,22 @@ function Rd(e, t, n = "A song") {
 		solo: Q(r, "solo") === !0,
 		clips: d
 	}, p = Q(r, "role");
-	return Ia(p) && (f.role = p), Iu(f, r), ud(f, r), f;
+	return Ra(p) && (f.role = p), Xu(f, r), wd(f, r), f;
 }
-function zd(e, t) {
+function $d(e, t) {
 	let n = t.record(e);
 	if (!n) return null;
-	let r = Od(Q(n, "id"));
+	let r = Hd(Q(n, "id"));
 	if (r === null) return null;
-	let i = Dd(Q(n, "name"), dd), a = `Song “${i}”`, o = bd(Q(n, "bpm"));
+	let i = Vd(Q(n, "name"), Td), a = `Song “${i}”`, o = Pd(Q(n, "bpm"));
 	o === null && (t.warn(`${a} had an unreadable tempo, so it was set to 120 BPM.`), o = 120);
-	let s = wd(t.record(Q(n, "timeSignature")));
-	s ||= (t.warn(`${a} had an unreadable time signature, so it was set to 4/4.`), kd());
-	let c = Td(t.record(Q(n, "loop")));
-	c ||= (Q(n, "loop") !== void 0 && t.warn(`${a} had an unreadable loop region, so looping was turned off.`), Ad());
-	let l = Q(n, "sourcePpq"), u = typeof l == "number" && Number.isInteger(l) && l >= 1 && l <= 32767 ? l : null, d = Ru(Q(n, "buses"), t.warn, a), f = new Set(Ra({ buses: d ?? void 0 }).map((e) => e.id)), p = Qu(Q(n, "patterns"), t.warn, a), m = new Set((p ?? []).map((e) => e.id)), h = Id(Q(n, "tracks"), hd.tracksPerSong, t, a, "track", (e) => {
-		let n = Rd(e, t, a);
-		return n && $u(zu(n, f), m, t.warn, a);
+	let s = Rd(t.record(Q(n, "timeSignature")));
+	s ||= (t.warn(`${a} had an unreadable time signature, so it was set to 4/4.`), Ud());
+	let c = zd(t.record(Q(n, "loop")));
+	c ||= (Q(n, "loop") !== void 0 && t.warn(`${a} had an unreadable loop region, so looping was turned off.`), Wd());
+	let l = Q(n, "sourcePpq"), u = typeof l == "number" && Number.isInteger(l) && l >= 1 && l <= 32767 ? l : null, d = Qu(Q(n, "buses"), t.warn, a), f = new Set(Ba({ buses: d ?? void 0 }).map((e) => e.id)), p = fd(Q(n, "patterns"), t.warn, a), m = new Set((p ?? []).map((e) => e.id)), h = Xd(Q(n, "tracks"), kd.tracksPerSong, t, a, "track", (e) => {
+		let n = Qd(e, t, a);
+		return n && pd($u(n, f), m, t.warn, a);
 	}), g = {
 		id: r,
 		name: i,
@@ -7990,13 +8204,13 @@ function zd(e, t) {
 		timeSignature: s,
 		loop: c,
 		sourcePpq: u,
-		tracks: id(h)
+		tracks: vd(h)
 	};
 	d && (g.buses = d), p && (g.patterns = p);
-	let _ = ad(Q(n, "folded"));
+	let _ = yd(Q(n, "folded"));
 	_.length && (g.folded = _);
-	let v = Tl(Q(n, "overrides"), t.rackIds, t.warn, a);
-	return v && (g.overrides = v), hf(g, n, {
+	let v = Nl(Q(n, "overrides"), t.rackIds, t.warn, a);
+	return v && (g.overrides = v), kf(g, n, {
 		trackIds: new Set(h.map((e) => e.id)),
 		busIds: f,
 		patternIds: m,
@@ -8005,32 +8219,32 @@ function zd(e, t) {
 }
 //#endregion
 //#region src/state/game-normalize.ts
-var Bd = 128, Vd = 40, Hd = 1e6, $ = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
-function Ud(e) {
+var ef = 128, tf = 40, nf = 1e6, $ = (e, t) => Object.hasOwn(e, t) ? e[t] : void 0;
+function rf(e) {
 	return typeof e == "object" && e && !Array.isArray(e) ? e : null;
 }
-function Wd(e) {
+function af(e) {
 	return typeof e == "number" && Number.isFinite(e);
 }
-var Gd = (e, t, n) => Math.min(n, Math.max(t, e));
-function Kd(e) {
+var of = (e, t, n) => Math.min(n, Math.max(t, e));
+function sf(e) {
 	if (typeof e != "string") return null;
 	let t = e.trim();
-	return t.length > 0 && t.length <= Bd && !t.includes(":") && !Tu(t) ? t : null;
+	return t.length > 0 && t.length <= ef && !t.includes(":") && !zu(t) ? t : null;
 }
-function qd(e) {
+function cf(e) {
 	if (typeof e != "string") return null;
-	let t = e.slice(0, 160).replace(/[\u0000-\u001f\u007f]/g, " ").trim(), n = Array.from(t).slice(0, Vd).join("").trim();
-	return n && !Tu(n) ? n : null;
+	let t = e.slice(0, 160).replace(/[\u0000-\u001f\u007f]/g, " ").trim(), n = Array.from(t).slice(0, tf).join("").trim();
+	return n && !zu(n) ? n : null;
 }
-function Jd(e, t) {
-	return Wd(e) ? Gd(e, 0, t) : null;
+function lf(e, t) {
+	return af(e) ? of(e, 0, t) : null;
 }
-function Yd(e, t, n, r, i) {
+function uf(e, t, n, r, i) {
 	if (!Array.isArray(e)) return [];
 	let a = [], o = /* @__PURE__ */ new Set(), s = Math.max(0, e.length - t);
 	for (let n of e.slice(0, t)) {
-		let e = Ud(n), t = e ? i(e) : null;
+		let e = rf(n), t = e ? i(e) : null;
 		if (!t || o.has(t.id)) {
 			s++;
 			continue;
@@ -8039,71 +8253,71 @@ function Yd(e, t, n, r, i) {
 	}
 	return s > 0 && n(`Dropped ${s} unreadable or extra ${r}${s === 1 ? "" : "s"}.`), a;
 }
-function Xd(e) {
-	let t = Ud(e);
+function df(e) {
+	let t = rf(e);
 	if (!t) return null;
-	let n = Kd($(t, "id")), r = qd($(t, "name")), i = $(t, "min"), a = $(t, "max");
-	if (!n || !r || !Wd(i) || !Wd(a)) return null;
-	let o = Gd(i, -1e6, Hd), s = Gd(a, -1e6, Hd);
+	let n = sf($(t, "id")), r = cf($(t, "name")), i = $(t, "min"), a = $(t, "max");
+	if (!n || !r || !af(i) || !af(a)) return null;
+	let o = of(i, -1e6, nf), s = of(a, -1e6, nf);
 	if (!(s > o)) return null;
-	let c = $(t, "step") === "whole" ? "whole" : "continuous", l = $(t, "defaultValue"), u = Wd(l) ? Gd(l, o, s) : o;
-	return c === "whole" && (u = Gd(Math.round(u), o, s)), {
+	let c = $(t, "step") === "whole" ? "whole" : "continuous", l = $(t, "defaultValue"), u = af(l) ? of(l, o, s) : o;
+	return c === "whole" && (u = of(Math.round(u), o, s)), {
 		id: n,
 		name: r,
 		min: o,
 		max: s,
 		step: c,
 		defaultValue: u,
-		riseSeconds: Jd($(t, "riseSeconds"), 60) ?? 0,
-		fallSeconds: Jd($(t, "fallSeconds"), 60) ?? 0,
-		cushion: Wd($(t, "cushion")) ? Gd($(t, "cushion"), 0, s - o) : 0
+		riseSeconds: lf($(t, "riseSeconds"), 60) ?? 0,
+		fallSeconds: lf($(t, "fallSeconds"), 60) ?? 0,
+		cushion: af($(t, "cushion")) ? of($(t, "cushion"), 0, s - o) : 0
 	};
 }
-function Zd(e, t, n) {
+function ff(e, t, n) {
 	if (!Array.isArray(e)) return null;
 	let r = [];
 	for (let i of e.slice(0, Mr.curvePoints)) {
-		let e = Ud(i), a = e ? $(e, "x") : void 0, o = e ? $(e, "y") : void 0;
-		Wd(a) && Wd(o) && r.push({
-			x: Gd(a, -1e6, Hd),
-			y: Gd(o, t, n)
+		let e = rf(i), a = e ? $(e, "x") : void 0, o = e ? $(e, "y") : void 0;
+		af(a) && af(o) && r.push({
+			x: of(a, -1e6, nf),
+			y: of(o, t, n)
 		});
 	}
 	return r.sort((e, t) => e.x - t.x), r.length > 0 ? r : null;
 }
-function Qd(e) {
-	let t = Ud(e), n = t ? Kd($(t, "dialId")) : null, r = t ? Zd($(t, "points"), 20, 400) : null;
+function pf(e) {
+	let t = rf(e), n = t ? sf($(t, "dialId")) : null, r = t ? ff($(t, "points"), 20, 400) : null;
 	if (!t || !n || !r) return null;
 	let i = {
 		dialId: n,
 		points: r,
-		glideBeats: Jd($(t, "glideBeats"), 64) ?? 0
+		glideBeats: lf($(t, "glideBeats"), 64) ?? 0
 	};
 	return $(t, "landing") === "now" && (i.landing = "now"), i;
 }
-function $d(e) {
-	let t = Ud(e), n = t ? Kd($(t, "dialId")) : null, r = t ? Zd($(t, "points"), -24, 24) : null;
+function mf(e) {
+	let t = rf(e), n = t ? sf($(t, "dialId")) : null, r = t ? ff($(t, "points"), -24, 24) : null;
 	return t && n && r ? {
 		dialId: n,
 		points: r
 	} : null;
 }
-function ef(e, t) {
-	return typeof e != "string" || e.length > 256 ? !1 : e === "track:volume" || e === "track:pan" || wr(e) ? !0 : e.startsWith("track:send:") ? t.has(e.slice(11)) : wa(e) !== null;
+function hf(e, t) {
+	return typeof e != "string" || e.length > 256 ? !1 : e === "track:volume" || e === "track:pan" || wr(e) ? !0 : e.startsWith("track:send:") ? t.has(e.slice(11)) : Ea(e) !== null;
 }
-function tf(e, t) {
-	let n = Kd($(e, "id")), r = Kd($(e, "dialId")), i = $(e, "trackId");
+function gf(e, t) {
+	let n = sf($(e, "id")), r = sf($(e, "dialId")), i = $(e, "trackId");
 	return !n || !r || typeof i != "string" || !t.trackIds.has(i) ? null : {
 		id: n,
 		dialId: r,
 		trackId: i
 	};
 }
-function nf(e, t) {
-	let n = Ud(e), r = n ? $(n, "target") : void 0, i = n ? Zd($(n, "points"), 0, 1) : null;
-	if (!n || !ef(r, t.busIds) || !i) return null;
+function _f(e, t) {
+	let n = rf(e), r = n ? $(n, "target") : void 0, i = n ? ff($(n, "points"), 0, 1) : null;
+	if (!n || !hf(r, t.busIds) || !i) return null;
 	if (wr(r)) {
-		let e = Kd($(n, "id")), t = Kd($(n, "dialId"));
+		let e = sf($(n, "id")), t = sf($(n, "dialId"));
 		return e && t ? {
 			id: e,
 			dialId: t,
@@ -8111,61 +8325,61 @@ function nf(e, t) {
 			points: i
 		} : null;
 	}
-	let a = tf(n, t);
+	let a = gf(n, t);
 	return a ? {
 		...a,
 		target: r,
 		points: i
 	} : null;
 }
-function rf(e) {
-	let t = Ud(e);
+function vf(e) {
+	let t = rf(e);
 	if (!t) return null;
 	let { frequency: n, Q: r } = Tr, i = $(t, "frequency"), a = $(t, "Q");
 	return {
-		frequency: Wd(i) ? Gd(i, n.min, n.max) : n.default,
-		Q: Wd(a) ? Gd(a, r.min, r.max) : r.default
+		frequency: af(i) ? of(i, n.min, n.max) : n.default,
+		Q: af(a) ? of(a, r.min, r.max) : r.default
 	};
 }
-function af(e, t) {
-	let n = Ud(e), r = n && tf(n, t), i = n ? $(n, "threshold") : void 0;
-	return !r || !Wd(i) ? null : {
+function yf(e, t) {
+	let n = rf(e), r = n && gf(n, t), i = n ? $(n, "threshold") : void 0;
+	return !r || !af(i) ? null : {
 		...r,
-		threshold: Gd(i, -1e6, Hd),
-		fadeSeconds: Jd($(n, "fadeSeconds"), 30) ?? 0
+		threshold: of(i, -1e6, nf),
+		fadeSeconds: lf($(n, "fadeSeconds"), 30) ?? 0
 	};
 }
-function of(e, t) {
-	let n = Ud(e), r = n && tf(n, t), i = n ? $(n, "threshold") : void 0, a = n ? $(n, "kind") : void 0, o = n ? $(n, "to") : void 0;
-	return !r || !Wd(i) || typeof o != "string" || (a === "instrument" ? !t.rackIds.has(o) : a !== "pattern" || !t.patternIds.has(o)) ? null : {
+function bf(e, t) {
+	let n = rf(e), r = n && gf(n, t), i = n ? $(n, "threshold") : void 0, a = n ? $(n, "kind") : void 0, o = n ? $(n, "to") : void 0;
+	return !r || !af(i) || typeof o != "string" || (a === "instrument" ? !t.rackIds.has(o) : a !== "pattern" || !t.patternIds.has(o)) ? null : {
 		...r,
-		threshold: Gd(i, -1e6, Hd),
+		threshold: of(i, -1e6, nf),
 		kind: a,
 		to: o
 	};
 }
-function sf(e, t, n) {
-	let r = Ud(e);
+function xf(e, t, n) {
+	let r = rf(e);
 	if (!r) return null;
 	let i = {
-		links: Yd($(r, "links"), Mr.links, n, "dial link", (e) => nf(e, t)),
-		layers: Yd($(r, "layers"), Mr.layers, n, "layer rule", (e) => af(e, t)),
-		swaps: Yd($(r, "swaps"), Mr.swaps, n, "swap rule", (e) => of(e, t))
-	}, a = Qd($(r, "tempo"));
+		links: uf($(r, "links"), Mr.links, n, "dial link", (e) => _f(e, t)),
+		layers: uf($(r, "layers"), Mr.layers, n, "layer rule", (e) => yf(e, t)),
+		swaps: uf($(r, "swaps"), Mr.swaps, n, "swap rule", (e) => bf(e, t))
+	}, a = pf($(r, "tempo"));
 	a && (i.tempo = a);
-	let o = $d($(r, "transpose"));
+	let o = mf($(r, "transpose"));
 	return o && (i.transpose = o), i;
 }
-function cf(e) {
+function Sf(e) {
 	return !e.tempo && !e.transpose && e.links.length === 0 && e.layers.length === 0 && e.swaps.length === 0;
 }
-function lf(e) {
-	return Wd(e) ? Gd(Math.round(e), 0, md) : null;
+function Cf(e) {
+	return af(e) ? of(Math.round(e), 0, Od) : null;
 }
-function uf(e) {
-	let t = Ud(e);
+function wf(e) {
+	let t = rf(e);
 	if (!t) return null;
-	let n = Kd($(t, "id")), r = qd($(t, "name")), i = lf($(t, "startTick")), a = lf($(t, "endTick"));
+	let n = sf($(t, "id")), r = cf($(t, "name")), i = Cf($(t, "startTick")), a = Cf($(t, "endTick"));
 	return !n || !r || i === null || a === null ? null : {
 		id: n,
 		name: r,
@@ -8173,102 +8387,102 @@ function uf(e) {
 		endTick: Math.max(i, a)
 	};
 }
-function df(e, t) {
-	return Array.isArray(e) ? Yd(e, Mr.sections, t, "section", uf) : null;
+function Tf(e, t) {
+	return Array.isArray(e) ? uf(e, Mr.sections, t, "section", wf) : null;
 }
-function ff(e, t) {
-	let n = Ud(e);
+function Ef(e, t) {
+	let n = rf(e);
 	if (!n) return null;
-	let r = Kd($(n, "id")), i = qd($(n, "name")), a = $(n, "action"), o = $(n, "landing");
+	let r = sf($(n, "id")), i = cf($(n, "name")), a = $(n, "action"), o = $(n, "landing");
 	if (!r || !i || !kr.includes(a)) return null;
 	let s = {
 		id: r,
 		name: i,
 		action: a,
 		landing: Ar.includes(o) ? o : "bar",
-		seconds: Jd($(n, "seconds"), 30) ?? 0
+		seconds: lf($(n, "seconds"), 30) ?? 0
 	}, c = $(n, "sectionId");
 	return typeof c == "string" && t.has(c) && (s.sectionId = c), s;
 }
-function pf(e, t, n) {
+function Df(e, t, n) {
 	if (!Array.isArray(e)) return null;
 	let r = /* @__PURE__ */ new Set();
-	return Yd(e, Mr.cues, n, "cue", (e) => {
-		let n = ff(e, t);
+	return uf(e, Mr.cues, n, "cue", (e) => {
+		let n = Ef(e, t);
 		return !n || r.has(n.name) ? null : (r.add(n.name), n);
 	});
 }
-function mf(e) {
-	let t = Ud(e);
+function Of(e) {
+	let t = rf(e);
 	if (!t) return null;
 	let n = Ir(), r = $(t, "mode"), i = $(t, "muffleHz");
 	return {
 		mode: jr.includes(r) ? r : n.mode,
-		muffleHz: Wd(i) ? Gd(i, 50, Nr) : n.muffleHz,
-		fadeSeconds: Jd($(t, "fadeSeconds"), 30) ?? n.fadeSeconds
+		muffleHz: af(i) ? of(i, 50, Nr) : n.muffleHz,
+		fadeSeconds: lf($(t, "fadeSeconds"), 30) ?? n.fadeSeconds
 	};
 }
-function hf(e, t, n, r) {
-	let i = sf($(t, "rules"), n, r);
-	i && !cf(i) && (e.rules = i);
-	let a = df($(t, "sections"), r);
+function kf(e, t, n, r) {
+	let i = xf($(t, "rules"), n, r);
+	i && !Sf(i) && (e.rules = i);
+	let a = Tf($(t, "sections"), r);
 	a?.length && (e.sections = a);
-	let o = pf($(t, "cues"), new Set((a ?? []).map((e) => e.id)), r);
+	let o = Df($(t, "cues"), new Set((a ?? []).map((e) => e.id)), r);
 	o && (e.cues = o);
-	let s = mf($(t, "pause"));
+	let s = Of($(t, "pause"));
 	s && (e.pause = s);
-	let c = rf($(t, "masterFilter"));
+	let c = vf($(t, "masterFilter"));
 	c && !Dr(c) && (e.masterFilter = c);
 }
 //#endregion
 //#region src/player/bundle.ts
-var gf = "sine-sculptor-song", _f = 3, vf = Mr.dials;
-function yf(e) {
+var Af = "sine-sculptor-song", jf = 4, Mf = Mr.dials;
+function Nf(e) {
 	return Object.entries(e).map(([e, t]) => ({
 		...t,
 		name: e
 	}));
 }
-function bf() {
+function Pf() {
 	return { limiterDb: -1 };
 }
-function xf(e, t, n = {}) {
-	let { song: r, instruments: i } = Cl(e, t), a = new Set(i.map((e) => e.id));
+function Ff(e, t, n = {}) {
+	let { song: r, instruments: i } = jl(e, t), a = new Set(i.map((e) => e.id));
 	for (let n of e.rules?.swaps ?? []) {
 		let r = n.kind === "instrument" && !a.has(n.to) ? t.find((e) => e.id === n.to) : void 0;
-		r && (a.add(r.id), i.push(Sl(r, e)));
+		r && (a.add(r.id), i.push(Al(r, e)));
 	}
 	return {
-		format: gf,
-		version: i.some(Sf) ? 3 : 2,
+		format: Af,
+		version: i.some(Pu) ? 4 : i.some(If) ? 3 : 2,
 		name: r.name,
 		song: r,
 		instruments: i,
-		dials: Tf(n.dials ?? {}, []),
+		dials: zf(n.dials ?? {}, []),
 		tempo: n.tempo ?? null,
-		mix: Cf(n.mix)
+		mix: Lf(n.mix)
 	};
 }
-function Sf(e) {
+function If(e) {
 	let t = e.kit?.pads;
 	return !!t && (e.layers.length !== t.length || t.some((e, t) => e.layers.length !== 1 || e.layers[0] !== t));
 }
-function Cf(e) {
-	let t = bf();
+function Lf(e) {
+	let t = Pf();
 	if (typeof e != "object" || !e || Array.isArray(e)) return t;
 	let n = Q(e, "limiterDb");
-	return wf(n) && (t.limiterDb = Math.min(0, Math.max(-24, n))), t;
+	return Rf(n) && (t.limiterDb = Math.min(0, Math.max(-24, n))), t;
 }
-function wf(e) {
+function Rf(e) {
 	return typeof e == "number" && Number.isFinite(e);
 }
-function Tf(e, t) {
+function zf(e, t) {
 	let n = {};
 	if (typeof e != "object" || !e || Array.isArray(e)) return n;
 	let r = /* @__PURE__ */ new Set();
-	for (let i of Object.keys(e).slice(0, vf)) {
-		if (Tu(i)) continue;
-		let a = Q(e, i), o = typeof a == "object" && a && !Array.isArray(a) ? a : {}, s = Xd({
+	for (let i of Object.keys(e).slice(0, Mf)) {
+		if (zu(i)) continue;
+		let a = Q(e, i), o = typeof a == "object" && a && !Array.isArray(a) ? a : {}, s = df({
 			id: Q(o, "id") ?? i,
 			...o,
 			name: i
@@ -8281,16 +8495,16 @@ function Tf(e, t) {
 	}
 	return n;
 }
-function Ef(e, t, n) {
+function Bf(e, t, n) {
 	if (typeof e != "object" || !e || Array.isArray(e)) return null;
-	let r = e, i = Q(r, "dial"), a = bd(Q(r, "bpmAtMin")), o = bd(Q(r, "bpmAtMax"));
+	let r = e, i = Q(r, "dial"), a = Pd(Q(r, "bpmAtMin")), o = Pd(Q(r, "bpmAtMax"));
 	return typeof i != "string" || !Object.hasOwn(t, i) || a === null || o === null ? (n.push("The tempo rule was unreadable, so the song keeps one tempo."), null) : {
 		dial: i,
 		bpmAtMin: a,
 		bpmAtMax: o
 	};
 }
-function Df(e) {
+function Vf(e) {
 	let t = e;
 	if (typeof e == "string") try {
 		t = JSON.parse(e);
@@ -8310,49 +8524,49 @@ function Df(e) {
 		error: "This file is not a Sine Sculptor song bundle."
 	};
 	let r = Q(n, "version");
-	if (!wf(r) || r < 1) return {
+	if (!Rf(r) || r < 1) return {
 		ok: !1,
 		error: "The song bundle has no format version."
 	};
-	if (r > 3) return {
+	if (r > 4) return {
 		ok: !1,
 		error: `This bundle needs a newer player (bundle format ${r}).`
 	};
 	let i = [], a = [], o = Q(n, "instruments");
 	if (Array.isArray(o)) {
 		let e = /* @__PURE__ */ new Set();
-		for (let t of o.slice(0, hd.rack)) {
-			let n = Cu(t);
+		for (let t of o.slice(0, kd.rack)) {
+			let n = Lu(t, { legacy: r < 4 });
 			n.ok ? e.has(n.patch.id) || (e.add(n.patch.id), a.push(n.patch)) : i.push(`An instrument was dropped: ${n.error}`);
 		}
 	}
-	let s = jd(a.map((e) => e.id)), c = zd(Q(n, "song"), s);
+	let s = Gd(a.map((e) => e.id)), c = $d(Q(n, "song"), s);
 	if (!c) return {
 		ok: !1,
 		error: "The song bundle holds no readable song."
 	};
 	i.push(...s.warnings());
-	let l = Tf(Q(n, "dials"), i);
+	let l = zf(Q(n, "dials"), i);
 	return {
 		ok: !0,
 		bundle: {
-			format: gf,
-			version: r < 2 ? 1 : r < 3 ? 2 : 3,
-			name: Dd(Q(n, "name"), c.name),
+			format: Af,
+			version: r < 2 ? 1 : r < 3 ? 2 : r < 4 ? 3 : 4,
+			name: Vd(Q(n, "name"), c.name),
 			song: c,
 			instruments: a,
 			dials: l,
-			tempo: Ef(Q(n, "tempo"), l, i),
-			mix: Cf(Q(n, "mix"))
+			tempo: Bf(Q(n, "tempo"), l, i),
+			mix: Lf(Q(n, "mix"))
 		},
 		warnings: i
 	};
 }
 //#endregion
 //#region src/player/core.ts
-var Of = .05, kf = .005;
-function Af(e) {
-	let t = Ha(e), n = Ba(e.timeSignature);
+var Hf = .05, Uf = .005;
+function Wf(e) {
+	let t = Wa(e), n = Ha(e.timeSignature);
 	return t <= 0 || n <= 0 ? e : {
 		...e,
 		loop: {
@@ -8362,15 +8576,15 @@ function Af(e) {
 		}
 	};
 }
-var jf = {
+var Gf = {
 	mode: "freeze",
 	muffleHz: Nr,
 	fadeSeconds: 0
 };
-function Mf(e) {
+function Kf(e) {
 	return e.mode === "freeze" && e.muffleHz >= 2e4 && e.fadeSeconds === 0;
 }
-function Nf(e, t) {
+function qf(e, t) {
 	let n = t.tempo, r = n && Object.hasOwn(t.dials, n.dial) ? t.dials[n.dial] : null;
 	if (!n || !r || e.rules?.tempo) return e;
 	let i = [{
@@ -8393,8 +8607,8 @@ function Nf(e, t) {
 		}
 	};
 }
-function Pf(e, t, n = {}) {
-	let r = yu(e, {
+function Jf(e, t, n = {}) {
+	let r = Ou(e, {
 		destination: t.destination,
 		onError: n.onError,
 		visibility: n.visibility
@@ -8417,7 +8631,7 @@ function Pf(e, t, n = {}) {
 			};
 			let n;
 			try {
-				n = Df(e);
+				n = Vf(e);
 			} catch {
 				return {
 					ok: !1,
@@ -8425,12 +8639,12 @@ function Pf(e, t, n = {}) {
 				};
 			}
 			if (!n.ok) return n;
-			let i = n.bundle, l = Nf(a ? Af(i.song) : i.song, i);
+			let i = n.bundle, l = qf(a ? Wf(i.song) : i.song, i);
 			i.version === 1 && !l.pause && (l = {
 				...l,
-				pause: jf
-			}), c = Mf(Br(l)) ? null : Br(l), r.setGame(null, [], []), t.setLimiter(i.mix.limiterDb);
-			let u = yf(i.dials);
+				pause: Gf
+			}), c = Kf(Br(l)) ? null : Br(l), r.setGame(null, [], []), t.setLimiter(i.mix.limiterDb);
+			let u = Nf(i.dials);
 			return s = u.map(({ name: e, min: t, max: n, step: r }) => ({
 				name: e,
 				min: t,
@@ -8457,10 +8671,10 @@ function Pf(e, t, n = {}) {
 		dials: () => s.map((e) => ({ ...e })),
 		pauseTreatment: () => o || !c ? null : { ...c },
 		cue: (e) => !o && r.cue(e),
-		setVolume(e, n = Of) {
-			o || t.setVolume(e, Math.max(kf, n));
+		setVolume(e, n = Hf) {
+			o || t.setVolume(e, Math.max(Uf, n));
 		},
-		setMuffle(e, t = Of) {
+		setMuffle(e, t = Hf) {
 			o || r.setMuffle(e, t);
 		},
 		getState: u,
@@ -8475,25 +8689,25 @@ function Pf(e, t, n = {}) {
 }
 //#endregion
 //#region src/player/elementary.ts
-async function Ff(e, t = {}) {
+async function Yf(e, t = {}) {
 	let n = new Sr(), r = await n.initialize(e, {
 		numberOfInputs: 0,
 		numberOfOutputs: 1,
 		outputChannelCount: [2]
 	}), i = () => clearInterval(n._timer), a = t.onError ?? ((e, t) => console.error(e, t)), o;
 	try {
-		r.connect(t.destination ?? e.destination), n.on("error", (e) => a("The Elementary engine reported a problem.", e)), o = dl({
+		r.connect(t.destination ?? e.destination), n.on("error", (e) => a("The Elementary engine reported a problem.", e)), o = yl({
 			renderer: n,
 			context: e,
 			lookahead: t.lookahead ?? .2,
 			onError: a
-		}), o.volume.setAt(no(t.volumeDb ?? 0), e.currentTime), o.setLimiter(-1);
+		}), o.volume.setAt(io(t.volumeDb ?? 0), e.currentTime), o.setLimiter(-1);
 	} catch (e) {
 		throw r.disconnect(), i(), e;
 	}
-	let s = Pf(o, {
+	let s = Jf(o, {
 		destination: o.destination,
-		setVolume: (t, n) => o.volume.rampTo(no(t), n, e.currentTime),
+		setVolume: (t, n) => o.volume.rampTo(io(t), n, e.currentTime),
 		setLimiter: (e) => o.setLimiter(e)
 	}, t);
 	return {
@@ -8504,4 +8718,4 @@ async function Ff(e, t = {}) {
 	};
 }
 //#endregion
-export { gf as BUNDLE_FORMAT, _f as BUNDLE_VERSION, xf as buildBundle, Ff as createElementaryPlayer, Df as parseBundle };
+export { Af as BUNDLE_FORMAT, jf as BUNDLE_VERSION, Ff as buildBundle, Yf as createElementaryPlayer, Vf as parseBundle };

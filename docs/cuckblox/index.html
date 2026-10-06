@@ -29,10 +29,11 @@
       overscroll-behavior: none;
     }
 
+    /* Edge-to-edge phones draw the page under the system bars, so the terminal stays inside the safe area */
     #screen {
       display: block;
-      width: 100vw;
-      height: 100dvh;
+      width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+      height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       touch-action: none;
       cursor: default;
     }
@@ -44,6 +45,7 @@
     /* Scanlines, vignette, and flicker live in CSS so the compositor draws them and the canvas never has to */
     .terminal {
       position: relative;
+      margin: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
     }
 
     .terminal::after {

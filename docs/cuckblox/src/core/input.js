@@ -41,6 +41,7 @@ export const PAD = {
   lt: { game: 'rotateCCW', menu: null, test: trigger(6) },
   rt: { game: 'rotateCW', menu: null, test: trigger(7) },
   start: { game: 'pause', menu: 'confirm', test: btn(9) },
+  select: { game: null, menu: 'controls', test: btn(8) },
 };
 
 export class KeyboardInput {
@@ -86,6 +87,7 @@ export class GamepadInput {
   constructor(onControl) {
     this.onControl = onControl;
     this.state = new Map();
+    this.lastIndex = null;
   }
 
   /** Call once per frame; reports edges for every connected standard-mapping pad. */
@@ -101,6 +103,7 @@ export class GamepadInput {
         const now = c.test(pad, was);
         if (now === was) continue;
         this.state.set(key, now);
+        if (now) this.lastIndex = pad.index;
         this.onControl({ game: c.game, menu: c.menu, down: now });
       }
     }
@@ -115,6 +118,17 @@ export class GamepadInput {
 
   clear() {
     for (const k of this.state.keys()) this.state.set(k, true);
+  }
+
+  /** Rumbles the pad pressed last, `strength` 0–1. Chromium browsers have `playEffect`; Firefox has none, so it
+   *  stays still there. */
+  rumble(ms, strength) {
+    try {
+      const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.index === this.lastIndex);
+      pad?.vibrationActuator?.playEffect?.('dual-rumble', { duration: ms, strongMagnitude: strength, weakMagnitude: Math.min(1, strength + 0.2) })?.catch?.(() => {});
+    } catch {
+      // Rumble is optional; a pad that refuses it just stays still
+    }
   }
 }
 

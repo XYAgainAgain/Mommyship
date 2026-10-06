@@ -28,8 +28,9 @@ export const TEXT = {
     double: rotation(['EFFICIENT', 'ADEQUATE', 'OPTIMAL', 'PRODUCTIVE', 'COMPLIANT', 'SATISFACTORY', 'ON SCHEDULE', 'WITHIN NORMS', 'AS EXPECTED', 'THAT WILL DO', 'NO LOLLYGAGGING']),
     combo: (v) => `*CUCKOMBO ${v}*`,
     newBest: () => 'SO YOU **CAN** WORK HARDER',
-    gameOver: () => 'BACK TO WORK',
   },
+  // Shown while the browser holds sound back; a gamepad press can't release it
+  audioBlocked: 'TAP OR PRESS A KEY FOR SOUND',
   title: {
     wordmark: 'CUCKBLOX',
     tagline: 'C.U.C.K. RECREATION TERMINAL',
@@ -60,6 +61,7 @@ export const TEXT = {
     internationale: 'THE INTERNATIONALE',
     caramelldansen: 'CARAMELLDANSEN',
     finallyLanding: "WE'RE FINALLY LANDING",
+    downUnder: 'DOWN UNDER',
     theme: 'CUCKBLOX THEME A-SIDE',
     shuffle: 'SHUFFLE ALL OWNED',
   },
@@ -100,6 +102,7 @@ export const TEXT = {
     again: 'CONTINUE LABOR',
     toTitle: 'RETREAT',
   },
+  controls: { title: 'CONTROLS' },
   hud: { score: 'SCORE', lines: 'LINES', level: 'LEVEL', blocks: 'BLOX', next: 'NEXT', hold: 'HOLD', depth: 'DEPTH' },
   // Portrait phones swap to these when the full labels would run into each other
   hudShort: { score: 'SCR', lines: 'LNS', level: 'LVL', blocks: 'BLX', depth: 'DEPTH' },
@@ -172,7 +175,7 @@ export const TEXT = {
     offline: 'SUBSPACE COMMS FAILED! RETURN TO C.U.C.K. SPACE TO RECONNECT',
     allTime: 'SINCE CYCLE 0',
     monthly: 'LAST NARGON',
-    open: 'PERFORMANCE RANKINGS',
+    open: 'PERF. REVIEWS',
     up: '↑',
     down: '↓',
     submit: 'SUBMIT I.D.',

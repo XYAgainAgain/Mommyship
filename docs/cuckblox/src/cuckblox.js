@@ -9,7 +9,7 @@ import { analyzeSong, circleOrder } from './audio/key.js';
 import { OsminokSoundscape, OCEAN_THEME_ID } from './audio/osminok-audio.js';
 import { ThemeAmbience } from './audio/ambience.js';
 import { depthFor, DIVE_ZONES, PLUNGE_DEPTH } from './scenes/osminok.js';
-import { TouchInput, SWIPE_UP, VIBRATION_MS, vibrate } from './core/touch.js';
+import { TouchInput, SWIPE_UP, VIBRATION_MS, RUMBLE, vibrate } from './core/touch.js';
 import { PRESETS, DEFAULT_THEME, customTheme, themeById, zoneColorsOf } from './themes/themes.js';
 import { openPaintShop } from './themes/paint-shop.js';
 import { TEXT, spoken, plain } from './text.js';
@@ -34,8 +34,12 @@ const canvas = document.getElementById('screen');
 canvas.setAttribute('aria-label', TEXT.say.canvas);
 const live = document.getElementById('live');
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-// Phones drop the title's keyboard hint even before the first tap, so the menu has room to stay large
+// Touch screens drop the title's keyboard hint even before the first tap, so the menu has room to stay large
 const coarsePointer = matchMedia('(pointer: coarse)');
+// Small screens never show the controls hint, whatever is plugged in, so a pad press can't reflow the title;
+// Select on a pad opens the controls screen instead
+const smallScreen = matchMedia('(max-width: 599.98px), (max-height: 599.98px)');
+smallScreen.addEventListener('change', () => hintChanged());
 const data = loadData();
 const wallet = ensureWallet(data);
 if (!ownsTheme(wallet, themeById(data.settings.theme, data.settings.customColors))) data.settings.theme = DEFAULT_THEME.id;
@@ -57,6 +61,7 @@ const TUNES = [
   { id: 'kalinka', name: TEXT.tunes.kalinka, bundle: './music/Kalinka.song.json', homeLevel: 12, kcr: 0 },
   { id: 'internationale', name: TEXT.tunes.internationale, bundle: './music/The%20Internationale.song.json', homeLevel: 0, kcr: 0 },
   { id: 'caramelldansen', name: TEXT.tunes.caramelldansen, bundle: './music/Caramelldansen.song.json', homeLevel: 0, kcr: 5 },
+  { id: 'down-under', name: TEXT.tunes.downUnder, bundle: './music/Down%20Under.song.json', homeLevel: 0, kcr: 15 },
   { id: 'finally-landing', name: TEXT.tunes.finallyLanding, bundle: "./music/We're%20Finally%20Landing.song.json", homeLevel: 0, kcr: 20 },
   { id: 'anthem', name: TEXT.tunes.anthem, bundle: './music/Anthem%201-2.song.json', homeLevel: 0, kcr: 40 },
   { id: 'never-gonna', name: TEXT.tunes.neverGonna, bundle: './music/Never%20Gonna%20Give%20You%20Up.song.json', homeLevel: 0, kcr: 2 },
@@ -93,7 +98,11 @@ const tuneRow = (t = tune()) => (data.settings.shuffle ? 0 : TUNES.indexOf(t) + 
 const musicLevel = () => (game && setup.family === 'marathon' ? game.level : tune().homeLevel);
 const keyboard = new KeyboardInput(canvas, onControl);
 const pad = new GamepadInput((c) => {
-  if (c.down) usePad(true);
+  if (c.down) {
+    usePad(true);
+    // Only works once the page has had a key or tap; until then the screen asks for one
+    wakeAudio();
+  }
   onControl(c);
 });
 
@@ -227,9 +236,11 @@ function buildMenu() {
         // Dividers between the modes, the settings, and the controls hint
         breaks: [resume.length + Object.keys(FAMILIES).length + 1],
         hintBreak: true,
-        hint: usingPad ? TEXT.title.padHint : usingTouch || coarsePointer.matches ? undefined : TEXT.title.hint,
+        hint: smallScreen.matches ? undefined : usingPad ? TEXT.title.padHint : usingTouch || coarsePointer.matches ? undefined : TEXT.title.hint,
       };
     }
+    case 'controls':
+      return { title: TEXT.controls.title, items: [{ label: TEXT.setup.back, select: closeControls }], hint: TEXT.title.padHint, back: closeControls };
     case 'setup': {
       const mode = modeId();
       const best = bestFor(data, mode, setup.level);
@@ -786,9 +797,11 @@ function begin(next) {
   game.on((e) => {
     if (e.type === 'spawn') bonusSay = null;
     music.onGameEvent?.(e, game);
-    if (usingTouch && data.settings.touch.haptics) {
-      if (e.type === 'lock') vibrate(VIBRATION_MS.drop);
-      else if (e.type === 'clear') vibrate(e.special ? VIBRATION_MS.special : VIBRATION_MS.clear);
+    // The one VIBRATION switch covers phones and gamepads alike
+    const buzz = e.type === 'lock' ? 'drop' : e.type === 'clear' ? (e.special ? 'special' : 'clear') : null;
+    if (buzz && data.settings.touch.haptics) {
+      if (usingTouch) vibrate(VIBRATION_MS[buzz]);
+      else if (usingPad) pad.rumble(VIBRATION_MS[buzz], RUMBLE[buzz]);
     }
     // Credits bank the moment lines clear, so quitting or closing the tab never loses them
     if (e.type === 'clear') {
@@ -1213,6 +1226,11 @@ function onControl({ game: action, menu, down, toggle }) {
     if (menu === 'up' || menu === 'down') { sound.ui('move'); stepGlyph(menu === 'up' ? 1 : -1); return; }
     if (menu === 'left' || menu === 'right') { sound.ui('move'); moveGlyph(menu === 'left' ? -1 : 1); return; }
   }
+  if (menu === 'controls') {
+    if (screen === 'title') { sound.ui('confirm'); openControls(); }
+    else if (screen === 'controls') { sound.ui('back'); closeControls(); }
+    return;
+  }
   const items = menuModel.items;
   switch (menu) {
     case 'up': sound.ui('move'); select(nextRow(-1)); break;
@@ -1224,6 +1242,16 @@ function onControl({ game: action, menu, down, toggle }) {
     case 'confirm': if (screenTime >= confirmHold) { sound.ui('confirm'); items[selected]?.select?.(); } break;
     case 'back': if (menuModel.back) { sound.ui('back'); menuModel.back(); } break;
   }
+}
+
+// The pad's controls, opened with Select from the title; going back lands on the row it was opened from
+let controlsFrom = 0;
+function openControls() {
+  controlsFrom = selected;
+  go('controls');
+}
+function closeControls() {
+  go('title', controlsFrom);
 }
 
 /** The next row up or down, wrapping, past rows marked `nav: false`. */
@@ -1347,7 +1375,8 @@ const touch = new TouchInput({
   pause: () => pause(),
   changed: invalidate,
   holdHit: (x, y) => {
-    const r = holdButtonShown() && renderer.holdButtonRect();
+    // Only the strip actually on screen counts, so a tap can't hold through a button nobody can see
+    const r = renderer.holdButton && renderer.holdButtonRect();
     return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
   },
 });
@@ -1380,9 +1409,14 @@ window.addEventListener('gamepaddisconnected', (e) => {
 });
 canvas.addEventListener('contextmenu', (e) => { if (data.settings.touch.mouse) e.preventDefault(); });
 
-// Audio may only start inside a user gesture; the first key or click anywhere unlocks it
-// (the title's ambience preview may have been refused before it, so it tries again here)
-for (const type of ['keydown', 'pointerdown']) window.addEventListener(type, () => { sound.unlock(); ambience.wake(); ocean.wake(); }, { capture: true });
+// Audio may only start inside a user gesture, and a tap only counts as one when the finger lifts (pointerup or
+// touchend), so every gesture event tries; the title's ambience preview may have been refused before, so it retries too
+function wakeAudio() {
+  sound.unlock();
+  ambience.wake();
+  ocean.wake();
+}
+for (const type of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'mousedown']) window.addEventListener(type, wakeAudio, { capture: true });
 
 // Another tab saved: take its credits, purchases, and bests so neither tab's progress erases the other's
 window.addEventListener('storage', (e) => {
@@ -1415,6 +1449,7 @@ canvas.addEventListener('keydown', (e) => {
 canvas.addEventListener('blur', loseFocus);
 // A hidden tab pauses the run like any lost focus, and stops the song outright rather than muffling it
 document.addEventListener('visibilitychange', () => {
+  sound.setHidden(document.hidden);
   ambience.setHidden(document.hidden);
   if (document.hidden) {
     loseFocus();
@@ -1426,15 +1461,28 @@ window.addEventListener('pagehide', () => {
   loseFocus();
   music.pause();
   ambience.setHidden(true);
+  sound.setHidden(true);
 });
-// A page restored from the back-forward cache gets its loop back
-window.addEventListener('pageshow', () => ambience.setHidden(!!document.hidden));
+// A page restored from the back-forward cache gets its loop and its audio back
+window.addEventListener('pageshow', () => {
+  ambience.setHidden(!!document.hidden);
+  sound.setHidden(!!document.hidden);
+});
 new ResizeObserver(() => {
   renderer.resize();
   // Board rows are padded to the panel's width, so they're rebuilt when it changes
   if (screen === 'board') refreshMenu();
   invalidate();
 }).observe(canvas);
+// A new pixel density (zoom, another monitor, a phone preset) can keep the CSS size, so ResizeObserver never fires
+function watchPixelRatio() {
+  matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => {
+    renderer.resize();
+    invalidate();
+    watchPixelRatio();
+  }, { once: true });
+}
+watchPixelRatio();
 
 // Loop. The canvas is only redrawn when the renderer or the menus changed; most frames of play draw nothing.
 
@@ -1502,6 +1550,7 @@ function frame(now) {
 
 
 function drawFrame() {
+  renderer.holdButton = screen === 'playing' && usingTouch && holdButtonShown();
   renderer.draw();
   hitBoxes = [];
   titleAnimating = false;
@@ -1539,13 +1588,22 @@ function drawFrame() {
   if (screen === 'playing') {
     if (touch.panel) renderer.drawTouchPanel(touch.panel);
     if (usingTouch) renderer.drawPauseButton();
-    if (usingTouch && holdButtonShown()) renderer.drawHoldButton();
+    if (renderer.holdButton) renderer.drawHoldButton();
   }
   // The theme picker's swatch animates with wraps that move
   if (screen === 'themes' && renderer.theme.fps && !renderer.reducedMotion) titleAnimating = true;
   // Bottom-left, outlined, so it never sits on the stats
   if (data.settings.fps && perf.text) {
     renderer.text(perf.text, L.unit * 0.6, L.H - L.unit * 0.6, { color: renderer.theme.dimText, glow: 0, outline: renderer.theme.calloutOutline, staryllic: 0 });
+  }
+  if (sound.blocked && (data.settings.sfx || data.settings.music > 0)) {
+    // On its own strip of background, since on a phone it lands across the menu frame
+    const w = renderer.measure(TEXT.audioBlocked) + L.unit;
+    const h = renderer.fontPx(1) * 1.6;
+    const y = L.H - L.unit * 0.6;
+    renderer.ctx.fillStyle = renderer.theme.background;
+    renderer.ctx.fillRect(Math.round((L.W - w) / 2), Math.round(y - h * 0.8), Math.round(w), Math.round(h));
+    renderer.text(TEXT.audioBlocked, L.W / 2, y, { align: 'center', color: renderer.theme.text, glow: 0.4 });
   }
 }
 
@@ -1565,6 +1623,8 @@ async function boot() {
   requestAnimationFrame((t) => { last = t; frame(t); });
   // Audio starts after the first frame so it never delays the picture; the one context carries every sound
   setTimeout(() => sound.load().then(() => {
+    // The sound prompt comes and goes with the context
+    sound.context?.addEventListener?.('statechange', invalidate);
     ocean.setContext(sound.context);
     ambience.setContext(sound.context);
     syncOcean();
