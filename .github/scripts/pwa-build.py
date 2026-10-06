@@ -23,7 +23,8 @@ SHELL_EXCLUDE_DIRS = {'osminok', 'galaxy', 'vendor', 'search', 'downloads'}
 # Subtrees kept out of the shell: the rules ZIP staging (Markdown, rules.json, ~8 MB of wallpapers)
 # CUCKBLOX songs are 2 MB that most visitors never play; each caches the first time it's fetched
 SHELL_EXCLUDE_SUBDIRS = {('assets', 'rules'), ('cuckblox', 'music')}
-SHELL_EXCLUDE_FILES = {'404.html', 'sitemap.xml', 'sitemap.xml.gz', 'objects.inv', 'sw.js', 'precache.json'}
+# Sine Sculptor's export always ships its Tone player too; CUCKBLOX plays through the Elementary one
+SHELL_EXCLUDE_FILES = {'404.html', 'sitemap.xml', 'sitemap.xml.gz', 'objects.inv', 'sw.js', 'precache.json', 'sine-sculptor-player.js'}
 SHELL_ASSET_SUFFIXES = {'.css', '.js', '.woff2', '.svg', '.png', '.webmanifest', '.json'}
 # Lightbox originals and print sheets stay out; the pages reference the WebP copies
 SHELL_IMAGE_SUFFIXES = {'.webp'}

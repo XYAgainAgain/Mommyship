@@ -1,5 +1,5 @@
-// CUCKBLOX music: plays a song bundle exported from Sine Sculptor through its player, on the Tone.js the SFX
-// already loaded. The shell says what it wants (play, pause, stop, level); this applies it once everything arrives.
+// CUCKBLOX music: plays a song bundle exported from Sine Sculptor through its Elementary player, on the context the
+// SFX made. The shell says what it wants (play, pause, stop, level); this applies it once everything arrives.
 import { COLS, VISIBLE_ROWS } from '../core/engine.js';
 import { analyzeSong, keyAt, transposeAt, SONG_PPQ } from './key.js';
 
@@ -86,7 +86,6 @@ export class Music {
     this.want = 'stopped';
     this.level = 0;
     this.muffle = 0;
-    this.filter = null;
     this.songToken = 0;
     this.shell = null;
     this.depth = 0;
@@ -100,7 +99,6 @@ export class Music {
     this.runLevel = 0;
     this.backToBack = false;
     this.wantedCues = new Set();
-    this.Tone = null;
     // The loaded song's key timeline, and whether its game-over ending is still playing out
     this.keys = null;
     this.tempo = null;
@@ -137,22 +135,15 @@ export class Music {
     return this.volume > 0 && this.ownPause ? { phase: 'pause', db: 0, ...this.ownPause } : HUSH;
   }
 
-  /** Fetches the player and the song once Tone exists. A failure leaves the game silent, never broken. */
-  load(Tone) {
-    if (!Tone) return Promise.resolve();
-    this.Tone ??= Tone;
+  /** Fetches the player and the song once the shared context exists. A failure leaves the game silent, never broken.
+   *  The player also fades itself out in a hidden tab, which silences songs whose own pause keeps playing. */
+  load(context) {
+    if (!context) return Promise.resolve();
     this.loading ??= (async () => {
       try {
-        const { createPlayer } = await import(new URL(this.playerUrl, this.base).href);
-        // Without a filter the song plays straight to the speakers, just never muffled
-        try {
-          this.filter = new Tone.Filter({ type: 'lowpass', frequency: muffleHz(this.muffle), Q: Math.SQRT1_2 }).toDestination();
-        } catch (error) {
-          console.warn('CUCKBLOX music filter is unavailable:', error);
-        }
-        const player = createPlayer(Tone, {
+        const { createElementaryPlayer } = await import(new URL(this.playerUrl, this.base).href);
+        const player = await createElementaryPlayer(context, {
           volumeDb: volumeDb(this.volume || 1),
-          destination: this.filter ?? undefined,
           onError: (message, error) => console.warn(message, error),
         });
         this.shell = player;
@@ -262,7 +253,7 @@ export class Music {
     this.player = player;
     // A song that lands under the pause menu brings its own pause, so the hush and the treatment follow it
     if (this.treatment.phase === 'pause') {
-      if (!this.hidden && this.want !== 'stopped') this.want = this.filter && !this.ownPause ? 'hushed' : 'paused';
+      if (!this.hidden && this.want !== 'stopped') this.want = this.#canMuffle() && !this.ownPause ? 'hushed' : 'paused';
       this.#treat(this.#pauseTreatment());
     }
     // A song switched mid-run starts from the run's state rather than gliding up from its defaults
@@ -283,7 +274,7 @@ export class Music {
     this.player?.setDial('level', level);
   }
 
-  /** Dive depth in meters, for songs with their own depth rule; songs without one get setMuffle's filter instead. */
+  /** Dive depth in meters, for songs with their own depth rule; songs without one get setMuffle's low-pass instead. */
   setDepth(meters) {
     this.depth = meters;
     if (this.ownDepth) this.player?.setDial('depth', meters);
@@ -307,13 +298,13 @@ export class Music {
   }
 
   /** The pause menu's sound: the song's own pause treatment if it brings one, otherwise it keeps going muffled and
-   *  quieter behind the game's filter (or simply pauses without one). */
+   *  quieter under the player's host low-pass (or simply pauses on a player without one). */
   hush() {
     this.#cancelTransition();
     this.hidden = false;
     // Told even while the song is silent or stopped, so the ambience still takes the pause
     if (this.want !== 'stopped') {
-      this.want = this.filter && !this.ownPause ? 'hushed' : 'paused';
+      this.want = this.#canMuffle() && !this.ownPause ? 'hushed' : 'paused';
       this.#apply();
     }
     this.#treat(this.#pauseTreatment());
@@ -375,11 +366,8 @@ export class Music {
       const keys = this.keys;
       const player = this.player;
       if (!keys?.segments.length || !player || !this.#audible()) return null;
-      // The player owns the Transport and runs it in song ticks, looping the whole song, so its ticks are the song's
-      const transport = this.Tone?.getTransport?.();
-      if (!transport) return null;
-      const ppq = transport.PPQ > 0 ? transport.PPQ : SONG_PPQ;
-      const key = keyAt(keys, transport.getTicksAtTime(transport.immediate()) * (SONG_PPQ / ppq));
+      // The heard position in song ticks (SONG_PPQ), looping with the song
+      const key = keyAt(keys, player.getPositionTicks?.());
       if (!key) return null;
       const shift = keys.transpose ? transposeAt(keys.transpose, player.getDial?.(keys.transpose.dial)) : 0;
       return shift ? { root: (((key.root + shift) % 12) + 12) % 12, mode: key.mode } : key;
@@ -542,11 +530,15 @@ export class Music {
     else player.stop();
   }
 
-  // The dive and the pause menu each close the low-pass; whichever is lower wins
+  #canMuffle() {
+    return typeof this.shell?.setMuffle === 'function';
+  }
+
+  // The dive and the pause menu each close the player's host low-pass; whichever is lower wins
   #shape(ramp) {
     const hushed = this.want === 'hushed';
     const dive = this.ownDepth ? OPEN_HZ : muffleHz(this.muffle);
-    this.filter?.frequency.exponentialRampTo(Math.min(dive, hushed ? HUSH_HZ : OPEN_HZ), ramp);
+    if (this.#canMuffle()) this.player?.setMuffle(Math.min(dive, hushed ? HUSH_HZ : OPEN_HZ), ramp);
     if (this.volume > 0 && !this.transition) this.player?.setVolume(volumeDb(this.volume) + (hushed ? HUSH_DB : 0));
   }
 }

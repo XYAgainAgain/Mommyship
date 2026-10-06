@@ -44,7 +44,7 @@ const renderer = new Renderer(canvas, { reducedMotion: motionQuery.matches, them
 motionQuery.addEventListener('change', (e) => { renderer.reducedMotion = e.matches; renderer.invalidate(); });
 renderer.showGhost = data.settings.ghost;
 const controls = new GameControls();
-const sound = new Sound({ toneUrl: 'vendor/tone/Tone.js', enabled: data.settings.sfx });
+const sound = new Sound({ enabled: data.settings.sfx });
 // Each tune names the speed level its tempo was written for; only Marathon rides the level away from it, 5 BPM a step.
 // kcr is the song shop price (0 is standard issue, 50 the most any tune costs); a new song is one more line here.
 // Tune Select lists them cheapest first; the sort is stable, so the theme leads the freebies.
@@ -53,7 +53,11 @@ const TUNES = [
   { id: 'korobeiniki', name: TEXT.tunes.korobeiniki, bundle: './music/Korobeiniki.song.json', homeLevel: 8, kcr: 0 },
   // homeLevel is where each song's tempo curve gives back its own bpm (Volga 69 at 0, the Minuet about 150 at 14)
   { id: 'volga-boatmen', name: TEXT.tunes.volgaBoatmen, bundle: './music/Volga%20Spacemen.song.json', homeLevel: 0, kcr: 0 },
-  { id: 'minuet-type-c', name: TEXT.tunes.minuetTypeC, bundle: './music/Minuet%203%20Type%20C.song.json', homeLevel: 14, kcr: 0 },
+  { id: 'minuet-type-c', name: TEXT.tunes.minuetTypeC, bundle: './music/Minuet%20(Type%20C).song.json', homeLevel: 14, kcr: 0 },
+  { id: 'kalinka', name: TEXT.tunes.kalinka, bundle: './music/Kalinka.song.json', homeLevel: 12, kcr: 0 },
+  { id: 'internationale', name: TEXT.tunes.internationale, bundle: './music/The%20Internationale.song.json', homeLevel: 0, kcr: 0 },
+  { id: 'caramelldansen', name: TEXT.tunes.caramelldansen, bundle: './music/Caramelldansen.song.json', homeLevel: 0, kcr: 5 },
+  { id: 'finally-landing', name: TEXT.tunes.finallyLanding, bundle: "./music/We're%20Finally%20Landing.song.json", homeLevel: 0, kcr: 20 },
   { id: 'anthem', name: TEXT.tunes.anthem, bundle: './music/Anthem%201-2.song.json', homeLevel: 0, kcr: 40 },
   { id: 'never-gonna', name: TEXT.tunes.neverGonna, bundle: './music/Never%20Gonna%20Give%20You%20Up.song.json', homeLevel: 0, kcr: 2 },
 ].sort((a, b) => a.kcr - b.kcr);
@@ -67,7 +71,7 @@ if (!ownsTune(wallet, tune())) {
 }
 // Song and player paths are from the game's root, one folder up from here
 const GAME_ROOT = new URL('../', import.meta.url).href;
-const music = new Music({ playerUrl: './vendor/sine-sculptor/sine-sculptor-player.js', bundleUrl: tune().bundle, base: GAME_ROOT, volume: data.settings.music });
+const music = new Music({ playerUrl: './vendor/sine-sculptor/sine-sculptor-elementary-player.js', bundleUrl: tune().bundle, base: GAME_ROOT, volume: data.settings.music });
 const ocean = new OsminokSoundscape({ baseUrl: '../assets/audio/', enabled: data.settings.sfx });
 const ambience = new ThemeAmbience({ baseUrl: './', enabled: data.settings.sfx });
 // Ambience follows music, always: every pause treatment and game-over ending the song gets, the loop gets too
@@ -1555,15 +1559,16 @@ async function boot() {
   applyTube();
   renderer.resize();
   go('title', Math.max(0, titleIndex(setup.family)));
-  // The title previews an owned theme's ambience as soon as Tone arrives
+  // The title previews an owned theme's ambience as soon as the audio context exists
   syncAmbience();
   canvas.focus({ preventScroll: true });
   requestAnimationFrame((t) => { last = t; frame(t); });
-  // Tone.js downloads after the first frame so it never delays the picture; its context carries every sound
+  // Audio starts after the first frame so it never delays the picture; the one context carries every sound
   setTimeout(() => sound.load().then(() => {
     ocean.setContext(sound.context);
     ambience.setContext(sound.context);
-    return music.load(sound.Tone);
+    syncOcean();
+    return music.load(sound.context);
   }).then(syncOcean), 0);
 }
 

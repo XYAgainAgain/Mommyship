@@ -1,20 +1,11 @@
 // CUCKBLOX sound effects: short, fast-decay 8-bit blips synthesized live in plain Web Audio, in the music's key (A
-// minor, Korobeiniki's, when nothing is playing). They play on Tone's context, which loads in the background for the
-// music; sound unlocks on the first key or click.
-import { contextOf, dbToGain } from './context.js';
+// minor, Korobeiniki's, when nothing is playing). Sound unlocks on the first key or click.
+import { createContext, dbToGain } from './context.js';
 
 const HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const A5 = 81;
 const HOME = { root: A5, scale: HARMONIC_MINOR };
-let contextConfigured = false;
-
-function configureTone(Tone) {
-  if (contextConfigured) return;
-  // A bigger buffer prevents dropouts on weaker devices.
-  Tone.setContext(new Tone.Context({ latencyHint: 'playback', lookAhead: 0.2 }));
-  contextConfigured = true;
-}
 
 /** Where the blips sit for a key ({ root: 0–11, mode } or null): the root nearest A5, a tritone away going down so
  *  nothing gets shriller, on harmonic minor or major. */
@@ -92,12 +83,10 @@ export function scheduleEnvelope(param, start, peak, decay, releaseAt) {
 }
 
 export class Sound {
-  /** @param {{ toneUrl: string, enabled?: boolean }} opts */
-  constructor({ toneUrl, enabled = true }) {
-    this.toneUrl = toneUrl;
+  /** @param {{ enabled?: boolean }} opts */
+  constructor({ enabled = true } = {}) {
     this.enabled = enabled;
     this.wanted = false;
-    this.Tone = null;
     this.context = null;
     this.waves = null;
     this.loading = null;
@@ -127,33 +116,17 @@ export class Sound {
     };
   }
 
-  /** Call from a key or pointer handler: audio may only start after a user gesture. If Tone is still downloading,
-   *  it starts on arrival, which browsers allow once the page has had a gesture. */
+  /** Call from a key or pointer handler: audio may only start after a user gesture. A call that beats load() takes
+   *  effect once the context exists, which browsers allow once the page has had a gesture. */
   unlock() {
     this.wanted = true;
     if (this.context) this.#start();
   }
 
-  /** Fetches Tone.js once, as a classic script that defines window.Tone; its context is the one every sound shares. */
+  /** Makes the context every sound shares, once; resolves when it exists (or Web Audio turns out to be missing). */
   load() {
-    if (this.loading) return this.loading;
-    this.loading = new Promise((resolve) => {
-      if (globalThis.Tone) return resolve();
-      const s = document.createElement('script');
-      s.src = this.toneUrl;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => resolve();
-      document.head.append(s);
-    }).then(() => {
-      this.Tone = globalThis.Tone ?? null;
-      if (!this.Tone) return;
-      try {
-        configureTone(this.Tone);
-      } catch (error) {
-        console.warn('CUCKBLOX kept the default audio buffer:', error);
-      }
-      this.context = contextOf(this.Tone);
+    this.loading ??= Promise.resolve().then(() => {
+      this.context = createContext();
       if (this.context && this.wanted) this.#start();
     });
     return this.loading;

@@ -1,11 +1,10 @@
-// The one audio context every CUCKBLOX sound shares, plus the param ramps. Until Sine Sculptor's
-// Elementary player arrives it is Tone's own context: the music still runs on Tone, which breaks on one it didn't make.
+// The one audio context every CUCKBLOX sound shares (effects, ambience, the Osminok beds, and the Elementary music
+// player), plus the param ramps. Nodes come only from its create* methods, so the lab tests' fake context can stand in.
 
-/** Tone's raw context (a standardized-audio-context wrapper, so nodes come from its create* methods, never
- *  constructors), or null without Tone. */
-export function contextOf(Tone) {
+/** A new native context, or null where Web Audio is missing. It may start suspended until a gesture resumes it. */
+export function createContext() {
   try {
-    return Tone?.getContext?.().rawContext ?? null;
+    return globalThis.AudioContext ? new globalThis.AudioContext({ latencyHint: 'balanced' }) : null;
   } catch {
     return null;
   }

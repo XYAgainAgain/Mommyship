@@ -46,7 +46,7 @@ export class ThemeAmbience {
     this.endedFor = null;
   }
 
-  /** The shared audio context (Tone's raw one until the Elementary player lands); null leaves the loop silent. */
+  /** The shared audio context; null leaves the loop silent. */
   setContext(context) {
     this.context = context ?? null;
     this.#apply();
