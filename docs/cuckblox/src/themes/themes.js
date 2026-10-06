@@ -268,7 +268,7 @@ export function osminokColor(type, x, y, dive) {
 // Cozy Storm's blocks come from its window's neon, lights, and city: teal, magenta, green, amber, steel, coral, violet
 const COZY = ['#337b78', '#9c436a', '#466c4d', '#a8763a', '#4a6a8e', '#a34e48', '#6e5490'];
 /** Cozy Storm's sound, for the shell to play while the theme is on: a seamless rain loop (`file`, beside the page) */
-export const COZY_STORM_AMBIENCE = { file: 'sounds/cozy-storm-ambience.ogg', lowpassHz: 15000, gain: 0.35 };
+export const COZY_STORM_AMBIENCE = { file: 'sounds/cozy-storm-ambience.ogg', lowpassHz: 8000, gain: 0.35 };
 /** Osminok's menus preview its megastorm; in a run the dive's own soundscape carries the storm, so this one bows out. */
 export const OSMINOK_AMBIENCE = { file: '../assets/audio/surface/OsminokMegastorm.ogg', lowpassHz: 15000, gain: 0.3, menuOnly: true };
 

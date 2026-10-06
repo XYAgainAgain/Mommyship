@@ -1,6 +1,8 @@
-// A theme's ambient loop (Cozy Storm's rain behind the glass): one recording through a low-pass at a low level,
-// on the Tone.js the sound effects already unlocked. Without Tone, or if anything fails, the theme stays silent.
+// A theme's ambient loop (Cozy Storm's rain behind the glass): one recording through a low-pass at a low level, on
+// the audio context the sound effects already unlocked. Without one, or if anything fails, the theme stays silent.
 import { HUSH_HZ, HUSH_DB } from './music.js';
+import { dbToGain, rampParam, setParam } from './context.js';
+import { MediaWatch } from './media-watch.js';
 
 const FADE = 0.4;
 const CUT = 0.05;
@@ -18,7 +20,6 @@ const TAPE_STEPS = 24;
 // Firefox mutes media played slower than 0.25× (Chrome refuses under 0.0625×), so the slump stops there and fades out
 const MIN_RATE = 0.25;
 
-const dbToGain = (db) => 10 ** (db / 20);
 const ms = (seconds) => Math.max(0, seconds) * 1000;
 
 export class ThemeAmbience {
@@ -29,7 +30,7 @@ export class ThemeAmbience {
     this.makeAudio = makeAudio;
     this.setTimer = setTimer;
     this.clearTimer = clearTimer;
-    this.Tone = null;
+    this.context = null;
     this.spec = null;
     // One element and node chain per file for life, so a theme browsed past and back resumes rather than rebuilds
     this.graphs = new Map();
@@ -45,8 +46,9 @@ export class ThemeAmbience {
     this.endedFor = null;
   }
 
-  setTone(Tone) {
-    this.Tone = Tone ?? null;
+  /** The shared audio context (Tone's raw one until the Elementary player lands); null leaves the loop silent. */
+  setContext(context) {
+    this.context = context ?? null;
     this.#apply();
   }
 
@@ -122,24 +124,20 @@ export class ThemeAmbience {
   }
 
   #build() {
-    if (!this.Tone || !this.spec) return null;
+    if (!this.context || !this.spec) return null;
     const known = this.graphs.get(this.spec.file);
     if (known) return known;
     try {
-      const T = this.Tone;
-      const el = this.makeAudio();
-      el.preload = 'auto';
-      el.loop = true;
-      // A tape stop lowers the pitch with the speed, like the song's
-      el.preservesPitch = false;
-      el.src = this.baseUrl + this.spec.file;
-      const filter = new T.Filter(this.spec.lowpassHz, 'lowpass');
-      const gain = new T.Gain(0);
-      // One source node per element for life: a second createMediaElementSource on it would throw
-      T.connect(T.getContext().createMediaElementSource(el), filter);
+      const c = this.context;
+      const filter = c.createBiquadFilter();
+      filter.type = 'lowpass';
+      setParam(c, filter.frequency, this.spec.lowpassHz);
+      const gain = c.createGain();
+      setParam(c, gain.gain, 0);
       filter.connect(gain);
-      gain.toDestination();
-      const graph = { el, filter, gain, playing: false, attempt: 0 };
+      gain.connect(c.destination);
+      const graph = { file: this.spec.file, el: null, source: null, filter, gain, playing: false, attempt: 0, failed: false, watch: new MediaWatch() };
+      this.#element(graph);
       this.graphs.set(this.spec.file, graph);
       return graph;
     } catch (error) {
@@ -155,8 +153,8 @@ export class ThemeAmbience {
     const same = before && ['kind', 'level', 'hz', 'action'].every((k) => before[k] === target[k]);
     // The ending runs once per game over: a re-sync mid-slump, or after it, changes nothing
     if (target.kind === 'ending' && this.endedFor === this.treatment) return;
-    // Before Tone there is nothing to change, so the state keeps the ramp it was first given
-    if (same && (this.graph || !this.Tone)) return;
+    // Before the context there is nothing to change, so the state keeps the ramp it was first given
+    if (same && (this.graph || !this.context)) return;
     this.#cancelEnding();
     // Only a loop that should sound builds its element; silence and endings act on one already there
     if (target.kind === 'play') this.graph = this.#build();
@@ -169,12 +167,53 @@ export class ThemeAmbience {
       this.#end(g, target);
       return;
     }
-    if (target.hz) g.filter.frequency.exponentialRampTo(target.hz, Math.max(CUT, target.seconds));
+    if (target.hz) rampParam(this.context, g.filter.frequency, target.hz, Math.max(CUT, target.seconds), true);
     if (target.kind === 'silent') {
       this.#silence(g, target.seconds);
       return;
     }
-    g.gain.gain.rampTo(target.level, Math.max(CUT, target.seconds));
+    rampParam(this.context, g.gain.gain, target.level, Math.max(CUT, target.seconds));
+    this.#start(g);
+  }
+
+  // One source node per element for life (a second createMediaElementSource on it would throw), so a stuck loop gets
+  // a fresh element rather than a restart
+  #element(g) {
+    const el = this.makeAudio();
+    el.preload = 'auto';
+    el.loop = true;
+    // A tape stop lowers the pitch with the speed, like the song's
+    el.preservesPitch = false;
+    el.addEventListener?.('error', () => { if (g.el === el) g.failed = true; });
+    el.src = this.baseUrl + g.file;
+    const source = this.context.createMediaElementSource(el);
+    source.connect(g.filter);
+    Object.assign(g, { el, source, failed: false });
+  }
+
+  /** Call every frame: a loop that should be sounding but has stopped moving is started again, then rebuilt. */
+  update(dt) {
+    const g = this.graph;
+    if (!g) return;
+    if (this.state?.kind !== 'play' || this.context.state !== 'running') {
+      g.watch.reset();
+      return;
+    }
+    const verdict = g.watch.check(g.el, dt, g.failed);
+    if (!verdict) return;
+    if (verdict === 'rebuild') {
+      try {
+        g.el.pause();
+        g.el.removeAttribute?.('src');
+        g.el.load?.();
+        g.source.disconnect();
+        this.#element(g);
+      } catch (error) {
+        console.warn('CUCKBLOX theme ambience could not restart:', error);
+        return;
+      }
+    }
+    g.playing = false;
     this.#start(g);
   }
 
@@ -189,7 +228,7 @@ export class ThemeAmbience {
 
   // Fades out, then stops the element so a silent loop costs nothing
   #silence(g, seconds) {
-    g.gain.gain.rampTo(0, Math.max(CUT, seconds));
+    rampParam(this.context, g.gain.gain, 0, Math.max(CUT, seconds));
     if (!g.playing) return;
     const stop = () => {
       this.timer = null;
@@ -217,7 +256,7 @@ export class ThemeAmbience {
         return;
       }
       setRate(g.el, Math.max(MIN_RATE, 1 - (1 - TAPE_FLOOR) * p));
-      if (p >= TAPE_AUDIBLE) g.gain.gain.rampTo(level * (1 - (p - TAPE_AUDIBLE) / (1 - TAPE_AUDIBLE)), seconds / TAPE_STEPS);
+      if (p >= TAPE_AUDIBLE) rampParam(this.context, g.gain.gain, level * (1 - (p - TAPE_AUDIBLE) / (1 - TAPE_AUDIBLE)), seconds / TAPE_STEPS);
       this.timer = this.setTimer(tick, ms(seconds / TAPE_STEPS));
     };
     this.timer = this.setTimer(tick, ms(seconds / TAPE_STEPS));

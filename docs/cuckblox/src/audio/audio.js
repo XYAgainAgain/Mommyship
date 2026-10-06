@@ -1,5 +1,7 @@
-// CUCKBLOX sound effects: short, fast-decay 8-bit blips synthesized live with Tone.js, in the music's key (A minor,
-// Korobeiniki's, when nothing is playing). Tone loads in the background; sound unlocks on the first key or click.
+// CUCKBLOX sound effects: short, fast-decay 8-bit blips synthesized live in plain Web Audio, in the music's key (A
+// minor, Korobeiniki's, when nothing is playing). They play on Tone's context, which loads in the background for the
+// music; sound unlocks on the first key or click.
+import { contextOf, dbToGain } from './context.js';
 
 const HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11];
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
@@ -29,6 +31,66 @@ export function degree(key, steps) {
   return key.root + octave * 12 + key.scale[i];
 }
 
+const midiHz = (n) => 440 * 2 ** ((n - 69) / 12);
+
+// The five voices: a waveform, a level, and how fast it decays. The thud mimics Tone's MembraneSynth,
+// sweeping down from `octaves` times its note (a plain multiplier, as Tone does it)
+export const VOICES = {
+  blip: { wave: 'square', db: -20, decay: 0.06 },
+  pulse: { wave: 'pulse', db: -19, decay: 0.09 },
+  tri: { wave: 'triangle', db: -11, decay: 0.14 },
+  thud: { wave: 'triangle', db: -9, decay: 0.11, octaves: 3, pitchDecay: 0.035 },
+  hiss: { wave: 'noise', db: -27, decay: 0.1 },
+};
+const ATTACK = 0.001;
+const RELEASE = 0.02;
+// Tone's 0.25-width pulse (high 62.5% of each cycle), built band-limited so it doesn't alias
+const PULSE_DUTY = 0.625;
+const PULSE_HARMONICS = 64;
+
+// Tone's exponential envelope stage: a target curve that holds at 90% of the span and draws straight to 0
+const timeConstant = (span) => Math.log(span + 1) / Math.log(200);
+
+// Schedules that stage from `from` at `start`, stopping at `until` and returning the level there, so a release can
+// take over without cancelAndHoldAtTime (Firefox has none)
+function approach(param, from, start, span, until) {
+  const tc = timeConstant(span);
+  const knee = start + 0.9 * span;
+  const end = start + span;
+  param.setTargetAtTime(0, start, tc);
+  if (until <= knee) {
+    const level = from * Math.exp(-(until - start) / tc);
+    param.setValueAtTime(level, until);
+    return level;
+  }
+  const kneeLevel = from * Math.exp(-(knee - start) / tc);
+  param.setValueAtTime(kneeLevel, knee);
+  if (until < end) {
+    const level = (kneeLevel * (end - until)) / (end - knee);
+    param.linearRampToValueAtTime(level, until);
+    return level;
+  }
+  param.linearRampToValueAtTime(0, end);
+  return 0;
+}
+
+/** Tone's envelope on a gain param: linear attack to `peak`, exponential decay to nothing, and a release at
+ *  `releaseAt` if the decay hasn't finished. Returns the time it falls silent. */
+export function scheduleEnvelope(param, start, peak, decay, releaseAt) {
+  const attackEnd = start + ATTACK;
+  param.setValueAtTime(0, start);
+  param.linearRampToValueAtTime(peak, attackEnd);
+  const decayEnd = attackEnd + decay;
+  const cut = Math.max(releaseAt, attackEnd);
+  if (cut >= decayEnd) {
+    approach(param, peak, attackEnd, decay, Infinity);
+    return decayEnd;
+  }
+  const level = approach(param, peak, attackEnd, decay, cut);
+  approach(param, level, cut, RELEASE, Infinity);
+  return cut + RELEASE;
+}
+
 export class Sound {
   /** @param {{ toneUrl: string, enabled?: boolean }} opts */
   constructor({ toneUrl, enabled = true }) {
@@ -36,9 +98,9 @@ export class Sound {
     this.enabled = enabled;
     this.wanted = false;
     this.Tone = null;
-    this.voices = null;
+    this.context = null;
+    this.waves = null;
     this.loading = null;
-    this.last = new Map();
     this.unsubscribe = null;
     this.hardDropping = false;
     this.keySource = null;
@@ -69,10 +131,10 @@ export class Sound {
    *  it starts on arrival, which browsers allow once the page has had a gesture. */
   unlock() {
     this.wanted = true;
-    if (this.Tone) this.#start();
+    if (this.context) this.#start();
   }
 
-  /** Fetches Tone.js once, as a classic script that defines window.Tone. */
+  /** Fetches Tone.js once, as a classic script that defines window.Tone; its context is the one every sound shares. */
   load() {
     if (this.loading) return this.loading;
     this.loading = new Promise((resolve) => {
@@ -85,8 +147,14 @@ export class Sound {
       document.head.append(s);
     }).then(() => {
       this.Tone = globalThis.Tone ?? null;
-      if (this.Tone) configureTone(this.Tone);
-      if (this.Tone && this.wanted) this.#start();
+      if (!this.Tone) return;
+      try {
+        configureTone(this.Tone);
+      } catch (error) {
+        console.warn('CUCKBLOX kept the default audio buffer:', error);
+      }
+      this.context = contextOf(this.Tone);
+      if (this.context && this.wanted) this.#start();
     });
     return this.loading;
   }
@@ -119,54 +187,99 @@ export class Sound {
     }
   }
 
-  // Tone keeps its own context: handing it a native AudioContext breaks its node checks, so nothing ever builds
+  // A context that refuses to resume (no gesture yet) stays suspended, and #ready keeps every sound quiet until it runs
   #start() {
-    if (this.Tone.getContext().state !== 'running') this.Tone.start();
+    if (this.context.state !== 'running') this.context.resume()?.catch?.(() => {});
     this.#build();
   }
 
-  // Two Tone instruments cover everything: a square blip and a triangle tone, plus a drum-like thud and a noise hiss
+  // The pulse's waveform and the hiss's noise are made once; every note is its own short-lived source
   #build() {
-    if (this.voices) return;
-    const T = this.Tone;
-    const env = (decay) => ({ attack: 0.001, decay, sustain: 0, release: 0.02 });
-    this.voices = {
-      blip: new T.PolySynth(T.Synth, { oscillator: { type: 'square' }, envelope: env(0.06), volume: -20 }).toDestination(),
-      pulse: new T.PolySynth(T.Synth, { oscillator: { type: 'pulse', width: 0.25 }, envelope: env(0.09), volume: -19 }).toDestination(),
-      tri: new T.PolySynth(T.Synth, { oscillator: { type: 'triangle' }, envelope: env(0.14), volume: -11 }).toDestination(),
-      thud: new T.MembraneSynth({ pitchDecay: 0.035, octaves: 3, oscillator: { type: 'triangle' }, envelope: env(0.11), volume: -9 }).toDestination(),
-      hiss: new T.NoiseSynth({ noise: { type: 'white' }, envelope: env(0.1), volume: -27 }).toDestination(),
-    };
+    if (this.waves) return;
+    const c = this.context;
+    try {
+      const real = new Float32Array(PULSE_HARMONICS + 1);
+      for (let n = 1; n <= PULSE_HARMONICS; n++) real[n] = (4 * Math.sin(Math.PI * n * PULSE_DUTY)) / (Math.PI * n);
+      const pulse = c.createPeriodicWave(real, new Float32Array(PULSE_HARMONICS + 1), { disableNormalization: true });
+      const noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
+      const data = noise.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      this.waves = { pulse, noise };
+    } catch (error) {
+      console.warn('CUCKBLOX sound effects are unavailable:', error);
+    }
   }
 
   #ready() {
-    return this.enabled && this.voices && this.Tone.getContext().state === 'running';
+    return this.enabled && !!this.waves && this.context.state === 'running';
   }
 
-  // Monophonic sources refuse two starts at the same instant, so every trigger on a voice is nudged past the last
-  #time(voice, offset) {
-    const t = Math.max(this.Tone.now() + offset, (this.last.get(voice) ?? 0) + 0.004);
-    this.last.set(voice, t);
-    return t;
+  // One note on one voice: its sources through their own envelope, all let go once they end
+  #note(voice, note, at, velocity, length) {
+    const c = this.context;
+    const v = VOICES[voice];
+    const nodes = [];
+    try {
+      const env = c.createGain();
+      nodes.push(env);
+      env.connect(c.destination);
+      const end = scheduleEnvelope(env.gain, at, velocity * dbToGain(v.db), v.decay, at + length);
+      const sources = v.wave === 'noise' ? [this.#noise(env, nodes)] : this.#tones(v, note, at, env, nodes);
+      // Every source stops at the same instant, so the first to end lets the whole note go
+      sources[0].onended = () => {
+        for (const n of nodes) n.disconnect();
+      };
+      for (const src of sources) {
+        if (v.wave === 'noise') src.start(at, Math.random() * (this.waves.noise.duration - 0.01));
+        else src.start(at);
+        src.stop(end);
+      }
+    } catch (error) {
+      for (const n of nodes) n.disconnect();
+      console.warn('CUCKBLOX sound effect skipped:', error);
+    }
+  }
+
+  #noise(env, nodes) {
+    const src = this.context.createBufferSource();
+    src.buffer = this.waves.noise;
+    src.loop = true;
+    src.connect(env);
+    nodes.push(src);
+    return src;
+  }
+
+  #tones(v, note, at, env, nodes) {
+    const c = this.context;
+    const hz = midiHz(note);
+    const osc = (into) => {
+      const o = c.createOscillator();
+      o.frequency.setValueAtTime(v.octaves ? hz * v.octaves : hz, at);
+      if (v.octaves) o.frequency.exponentialRampToValueAtTime(hz, at + v.pitchDecay);
+      o.connect(into);
+      nodes.push(o);
+      return o;
+    };
+    const o = osc(env);
+    if (v.wave === 'pulse') o.setPeriodicWave(this.waves.pulse);
+    else o.type = v.wave;
+    return [o];
   }
 
   #seq(voice, notes, step, velocity, length = 0.05) {
     if (!this.#ready()) return;
-    const T = this.Tone;
-    notes.forEach((n, i) => {
-      const t = this.#time(voice, i * step);
-      this.voices[voice].triggerAttackRelease(T.Frequency(n, 'midi').toFrequency(), length, t, velocity);
-    });
+    const now = this.context.currentTime;
+    notes.forEach((n, i) => this.#note(voice, n, now + i * step, velocity, length));
   }
 
   #thud(note, velocity) {
     if (!this.#ready()) return;
-    this.voices.thud.triggerAttackRelease(this.Tone.Frequency(note, 'midi').toFrequency(), 0.08, this.#time('thud', 0), velocity);
+    this.#note('thud', note, this.context.currentTime, velocity, 0.08);
   }
 
   #hiss(length, velocity) {
     if (!this.#ready()) return;
-    this.voices.hiss.triggerAttackRelease(length, this.#time('hiss', 0), velocity);
+    this.#note('hiss', null, this.context.currentTime, velocity, length);
   }
 
   #onGame(e, game) {

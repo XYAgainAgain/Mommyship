@@ -1378,7 +1378,7 @@ canvas.addEventListener('contextmenu', (e) => { if (data.settings.touch.mouse) e
 
 // Audio may only start inside a user gesture; the first key or click anywhere unlocks it
 // (the title's ambience preview may have been refused before it, so it tries again here)
-for (const type of ['keydown', 'pointerdown']) window.addEventListener(type, () => { sound.unlock(); ambience.wake(); }, { capture: true });
+for (const type of ['keydown', 'pointerdown']) window.addEventListener(type, () => { sound.unlock(); ambience.wake(); ocean.wake(); }, { capture: true });
 
 // Another tab saved: take its credits, purchases, and bests so neither tab's progress erases the other's
 window.addEventListener('storage', (e) => {
@@ -1484,6 +1484,7 @@ function frame(now) {
 
   renderer.update(dt);
   ocean.update(dt);
+  ambience.update(dt);
   updateFps(now);
   if (renderer.needsDraw || uiDirty || titleAnimating) {
     const t0 = performance.now();
@@ -1558,10 +1559,10 @@ async function boot() {
   syncAmbience();
   canvas.focus({ preventScroll: true });
   requestAnimationFrame((t) => { last = t; frame(t); });
-  // Tone.js downloads after the first frame so it never delays the picture
+  // Tone.js downloads after the first frame so it never delays the picture; its context carries every sound
   setTimeout(() => sound.load().then(() => {
-    ocean.setTone(sound.Tone);
-    ambience.setTone(sound.Tone);
+    ocean.setContext(sound.context);
+    ambience.setContext(sound.context);
     return music.load(sound.Tone);
   }).then(syncOcean), 0);
 }
