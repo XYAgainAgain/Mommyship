@@ -16,7 +16,7 @@ import { TEXT, spoken, plain } from './text.js';
 import { ensureWallet, ownsTheme, buyTheme, ownsTune, buyTune, paintQuote, buyPaint, payForClear, bloxBonus, formatCr } from './core/credits.js';
 import { Leaderboard, BoardView, InitialsEntry, isPracticeBoard, eligible, offerInitials, within, submitOutcome, formatRow, rankedValue } from './online/leaderboard.js';
 import { FIREBASE } from './online/firebase.js';
-import { PERF } from './core/perf.js';
+import { PERF, showViewportReadout } from './core/perf.js';
 
 const MAX_FRAME = 0.1;
 const GAME_OVER_PAUSE = 1.6;
@@ -1511,8 +1511,7 @@ function updateFps(now) {
   perf.worsts = [...perf.worsts.slice(-5), perf.worst];
   perf.worst = 0;
   const low = Math.round(1000 / Math.max(...perf.worsts, 1));
-  // Any ?perf= flags in effect ride along, so a screenshot of the counter says what was being tested
-  const text = `${Math.round(perf.frames / secs)} FPS  LOW ${low}  ${Math.round(perf.draws / secs)} DRAWS  ${(perf.draws ? perf.drawMs / perf.draws : 0).toFixed(1)} MS${PERF.label ? `  ${PERF.label.toUpperCase()}` : ''}`;
+  const text = `${Math.round(perf.frames / secs)} FPS  LOW ${low}  ${Math.round(perf.draws / secs)} DRAWS  ${(perf.draws ? perf.drawMs / perf.draws : 0).toFixed(1)} MS`;
   Object.assign(perf, { frames: 0, draws: 0, drawMs: 0, since: now });
   if (data.settings.fps && text !== perf.text) invalidate();
   perf.text = text;
@@ -1596,7 +1595,11 @@ function drawFrame() {
   if (screen === 'themes' && renderer.theme.fps && !renderer.reducedMotion) titleAnimating = true;
   // Bottom-left, outlined, so it never sits on the stats
   if (data.settings.fps && perf.text) {
-    renderer.text(perf.text, L.unit * 0.6, L.H - L.unit * 0.6, { color: renderer.theme.dimText, glow: 0, outline: renderer.theme.calloutOutline, staryllic: 0 });
+    const look = { color: renderer.theme.dimText, glow: 0, outline: renderer.theme.calloutOutline, staryllic: 0 };
+    const y = L.H - L.unit * 0.6;
+    renderer.text(perf.text, L.unit * 0.6, y, look);
+    // Any ?perf= flags in effect get the line above, so a screenshot says what was tested and portrait still fits it
+    if (PERF.label) renderer.text(PERF.label.toUpperCase(), L.unit * 0.6, y - renderer.fontPx(1) * 1.5, look);
   }
   if (sound.blocked && (data.settings.sfx || data.settings.music > 0)) {
     // On its own strip of background, since on a phone it lands across the menu frame
@@ -1619,6 +1622,7 @@ async function boot() {
   applyTube();
   document.body.classList.toggle('perf-pixelated', PERF.pixelated);
   document.body.classList.toggle('perf-nofringe', PERF.nofringe);
+  if (PERF.viewport) showViewportReadout(canvas);
   renderer.resize();
   go('title', Math.max(0, titleIndex(setup.family)));
   // The title previews an owned theme's ambience as soon as the audio context exists

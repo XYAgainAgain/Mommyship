@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
   <title>CUCKBLOX ▣ Recreation Terminal</title>
   <meta name="color-scheme" content="dark">
   <link rel="icon" href="/assets/favicon.png">
@@ -29,11 +29,12 @@
       overscroll-behavior: none;
     }
 
-    /* Edge-to-edge phones draw the page under the system bars, so the terminal stays inside the safe area */
+    /* Edge-to-edge phones draw the page under the system bars, so the terminal stays inside the safe area.
+       --viewport-h is the window height measured by the script in the head, since installed apps can misreport 100dvh */
     #screen {
       display: block;
       width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-      height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      height: calc(var(--viewport-h, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       touch-action: none;
       cursor: default;
     }
@@ -119,7 +120,7 @@
       inline-size: min(22rem, calc(100vw - 2rem));
       box-sizing: border-box;
       margin: auto 1rem 1rem auto;
-      max-height: calc(100dvh - 2rem);
+      max-height: calc(var(--viewport-h, 100dvh) - 2rem);
       overflow: auto;
       padding: 1rem 1.25rem;
       color: var(--text);
@@ -305,8 +306,12 @@
       border: 2px solid var(--phosphor);
     }
 
+    /* Pinned to the corner with no margin: left in flow it would sit below the terminal and overflow the window */
     .visually-hidden {
       position: absolute;
+      top: 0;
+      left: 0;
+      margin: 0;
       width: 1px;
       height: 1px;
       overflow: hidden;
@@ -314,6 +319,29 @@
       white-space: nowrap;
     }
   </style>
+  <script>
+    // Installed Android apps can report a 100dvh taller than the window, so #screen gets the measured height instead.
+    // A fixed box spans the layout viewport, which the on-screen keyboard and pinch zoom leave alone, to the subpixel.
+    (() => {
+      const root = document.documentElement;
+      const box = document.createElement('div');
+      box.setAttribute('aria-hidden', 'true');
+      box.style.cssText = 'position: fixed; inset: 0; visibility: hidden; pointer-events: none;';
+      root.append(box);
+      let fittedWidth = 0;
+      const fit = () => {
+        const { width, height } = box.getBoundingClientRect();
+        // A browser that resizes the page for the keyboard would squash the game under the paint shop's hex field;
+        // while typing only a width change (a rotation) gets through
+        if (document.activeElement?.matches('input, textarea, [contenteditable]') && width === fittedWidth) return;
+        fittedWidth = width;
+        if (root.style.getPropertyValue('--viewport-h') !== `${height}px`) root.style.setProperty('--viewport-h', `${height}px`);
+      };
+      fit();
+      new ResizeObserver(fit).observe(box);
+      document.addEventListener('focusout', () => setTimeout(fit, 0));
+    })();
+  </script>
 </head>
 <body>
   <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
