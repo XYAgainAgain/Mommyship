@@ -230,6 +230,7 @@ function buildMenu() {
           { label: TEXT.title.sfx, say: TEXT.say.sfxLabel, value: onOff(data.settings.sfx), adjustable: true, adjust: toggleSfx, select: toggleSfx },
           { label: TEXT.title.music, value: data.settings.music || TEXT.title.off, adjustable: true, adjust: (d) => setMusic(data.settings.music + d), select: () => setMusic(data.settings.music ? 0 : DEFAULT_MUSIC) },
           { label: TEXT.title.tube, say: TEXT.say.tubeLabel, value: onOff(data.settings.tube), adjustable: true, adjust: toggleTube, select: toggleTube },
+          ...(canFullscreen() ? [{ label: TEXT.title.fullscreen, value: onOff(data.settings.fullscreen), adjustable: true, adjust: toggleFullscreen, select: toggleFullscreen }] : []),
           { label: TEXT.title.ghost, value: onOff(data.settings.ghost), adjustable: true, adjust: toggleGhost, select: toggleGhost },
           { label: TEXT.title.fps, say: TEXT.say.fpsLabel, value: onOff(data.settings.fps), adjustable: true, adjust: toggleFps, select: toggleFps },
         ],
@@ -729,6 +730,27 @@ function toggleTube() {
   announce(TEXT.say.tube(data.settings.tube));
 }
 
+/** Phones and tablets only: a desktop has its own fullscreen key, and an iPhone has no fullscreen for pages. */
+function canFullscreen() {
+  return !!document.fullscreenEnabled && coarsePointer.matches;
+}
+
+/** Chrome on Android holds a page to 60 Hz between touches unless it's fullscreen with a canvas inside. The request
+ *  needs the tap or key that led here, so a pad press leaves the page as it is. */
+function enterFullscreen() {
+  if (!data.settings.fullscreen || !canFullscreen() || document.fullscreenElement) return;
+  document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+}
+
+function toggleFullscreen() {
+  data.settings.fullscreen = !data.settings.fullscreen;
+  if (data.settings.fullscreen) enterFullscreen();
+  else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  saveData(data);
+  refreshMenu();
+  announce(TEXT.say.fullscreen(data.settings.fullscreen));
+}
+
 function toggleRotation() {
   const v = VARIANTS[setup.family];
   setup.rotation[setup.family] = isModern() ? v.classic : v.modern;
@@ -784,6 +806,7 @@ function resumeSaved(snapshot) {
 
 function begin(next) {
   game = next;
+  enterFullscreen();
   if (data.settings.shuffle) learnTuneKeys();
   if (data.settings.shuffle && !shuffleHeld) shuffleStep(true);
   shuffleHeld = false;

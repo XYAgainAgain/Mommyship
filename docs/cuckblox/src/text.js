@@ -48,6 +48,7 @@ export const TEXT = {
     // {name} draws that controller button's glyph, two characters wide
     padHint: '{dpad} = move | {menu} = pause\n{lt}{rt} {a}{b} = spin\n{lb} {dpad}↑ = drop\n{rb}{y} = hold',
     tube: 'TUBE FX',
+    fullscreen: 'FULLSCREEN',
   },
   tunes: {
     title: 'TUNE SELECT',
@@ -208,6 +209,7 @@ export const TEXT = {
     fpsLabel: 'FPS counter',
     tubeLabel: 'Tube effects',
     tube: (on) => `Tube effects ${on ? 'on' : 'off'}`,
+    fullscreen: (on) => `Fullscreen ${on ? 'on' : 'off'}`,
     rotation: (modern) => `Rotation ${modern ? 'Modern' : 'Classic'}`,
     startLevel: (v) => `Start level ${v}`,
     theme: (name, price) => `${name}, ${price}`,

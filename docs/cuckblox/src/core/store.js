@@ -12,7 +12,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 export const MAX_PAD_SIZE = 10;
 
 const DEFAULTS = {
-  settings: { ghost: false, fps: false, sfx: true, music: 5, tune: 'korobeiniki', shuffle: false, tube: true, theme: 'cuck-green', customColors: null, touch: { size: 5, invert: false, swipeUp: 'none', haptics: true, buzz: true, guide: false, holdButton: true, mouse: false } },
+  settings: { ghost: false, fps: false, sfx: true, music: 5, tune: 'korobeiniki', shuffle: false, tube: true, fullscreen: true, theme: 'cuck-green', customColors: null, touch: { size: 5, invert: false, swipeUp: 'none', haptics: true, buzz: true, guide: false, holdButton: true, mouse: false } },
   bests: {},
   maxCombo: 0,
   last: { mode: 'marathon', marathonRotation: 'marathon', practiceRotation: 'practiceClassic', levels: {} },
@@ -49,6 +49,7 @@ function normalize(raw) {
       tune: typeof s.tune === 'string' ? s.tune : D.tune,
       shuffle: bool(s.shuffle, D.shuffle),
       tube: bool(s.tube, D.tube),
+      fullscreen: bool(s.fullscreen, D.fullscreen),
       theme: typeof s.theme === 'string' ? s.theme : D.theme,
       customColors: ZONE_KEYS.every((k) => HEX.test(colors[k])) ? Object.fromEntries(ZONE_KEYS.map((k) => [k, colors[k]])) : null,
       touch: {
