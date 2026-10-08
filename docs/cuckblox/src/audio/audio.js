@@ -94,6 +94,8 @@ export class Sound {
     this.unsubscribe = null;
     this.hardDropping = false;
     this.keySource = null;
+    // When each exact sound last started, keyed by voice, note, velocity, and length
+    this.started = new Map();
   }
 
   /** Where the current key comes from (the music's currentKey()); each sound reads it once as it starts. */
@@ -206,11 +208,18 @@ export class Sound {
 
   // One note on one voice: its sources through their own envelope, all let go once they end
   #note(voice, note, at, velocity, length) {
+    // A frame that catches up several game steps can repeat a sound at one instant; in phase, the copies only add volume
+    const key = `${voice}|${note}|${velocity}|${length}`;
+    if (this.started.get(key) === at) return;
+    this.started.set(key, at);
     const c = this.context;
     const v = VOICES[voice];
     const nodes = [];
     try {
       const env = c.createGain();
+      // A new gain starts at full level, and Chrome now and then plays a note's first block before its envelope
+      // takes hold; starting at 0 makes that block silent instead of a full-volume blare
+      env.gain.value = 0;
       nodes.push(env);
       env.connect(c.destination);
       const end = scheduleEnvelope(env.gain, at, velocity * dbToGain(v.db), v.decay, at + length);

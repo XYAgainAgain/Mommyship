@@ -23,8 +23,9 @@ const MIN_RATE = 0.25;
 const ms = (seconds) => Math.max(0, seconds) * 1000;
 
 export class ThemeAmbience {
+  // The timer defaults are wrapped: called as this.setTimer, a bare setTimeout throws "Illegal invocation"
   /** @param {{ baseUrl: string, enabled?: boolean, makeAudio?: () => HTMLAudioElement, setTimer?: Function, clearTimer?: Function }} opts */
-  constructor({ baseUrl, enabled = true, makeAudio = () => new Audio(), setTimer = setTimeout, clearTimer = clearTimeout }) {
+  constructor({ baseUrl, enabled = true, makeAudio = () => new Audio(), setTimer = (f, ms) => setTimeout(f, ms), clearTimer = (id) => clearTimeout(id) }) {
     this.baseUrl = baseUrl;
     this.enabled = enabled;
     this.makeAudio = makeAudio;
