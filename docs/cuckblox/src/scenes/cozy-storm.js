@@ -24,15 +24,14 @@ export const SKYLINE = M + 58;
 /** The window's shape, for frame painters such as `paintWoodWindow`. */
 export const WINDOW = { panes: PANES, sill: SILL, width: BW, height: BH };
 const paneAt = new Int8Array(N).fill(-1);
+const bottomRow = new Uint8Array(N);
 PANES.forEach((p, i) => {
   for (let y = p.y0; y < p.y1; y++) paneAt.fill(i, y * BW + p.x0, y * BW + p.x1);
+  bottomRow.fill(1, (p.y1 - 1) * BW + p.x0, (p.y1 - 1) * BW + p.x1);
 });
 /** Which pane a backdrop pixel is glass of, or -1 on the frame. */
 export const paneOf = (x, y) => (x >= 0 && x < BW && y >= 0 && y < BH ? paneAt[y * BW + x] : -1);
-const onBottomRow = (cell) => {
-  const p = paneAt[cell];
-  return p >= 0 && Math.floor(cell / BW) === PANES[p].y1 - 1;
-};
+const onBottomRow = (cell) => bottomRow[cell] === 1;
 
 // The pane steps on a fixed tick so a slow frame never teleports a drop, and the same seed always rains the same
 const TICK = 1 / 60;
@@ -156,6 +155,9 @@ export class CozyStormScene {
     this.rain = makeRain(() => this.rng.next(), RAIN_COUNT, RAIN_SPEED);
     this.mass = new Float32Array(N);
     this.wet = new Float32Array(N);
+    // The cells with any wetness left, so drying visits only those instead of the whole glass
+    this.wetCells = new Int16Array(N);
+    this.wetCount = 0;
     this.slot = new Int16Array(N).fill(-1);
     this.beads = new Int32Array(MAX_BEADS);
     this.count = 0;
@@ -171,28 +173,40 @@ export class CozyStormScene {
     this.big = [];
     this.#clearRun();
     for (let i = 0; i < PREWARM / TICK; i++) this.#tick();
+    this.dirty = true;
+    this.drawnGloom = 0;
   }
 
   get flashLog() {
     return this.flash.log;
   }
 
+  /** True only when the next backdrop would match the last one pixel for pixel. Only reduced motion ever holds
+   *  still, and then the game-over gloom is the one thing that still fades in on its own. */
+  get still() {
+    return this.reducedMotion && !this.dirty && this.#gloom() === this.drawnGloom;
+  }
+
   setReducedMotion(on) {
     if (this.reducedMotion && !on) this.neonRestart = true;
     this.reducedMotion = !!on;
     if (on) this.effects = [];
+    this.dirty = true;
   }
 
   /** A new run brings the sky back to life; the glass keeps its rain. */
   reset() {
     this.#clearRun();
+    this.dirty = true;
   }
 
   /** Cozy Storm has no dive, so nothing ever goes under. */
   plunge() {}
 
   onGameOver() {
-    if (this.overAt === null) this.overAt = this.t;
+    if (this.overAt !== null) return;
+    this.overAt = this.t;
+    this.dirty = true;
   }
 
   update(dt) {
@@ -267,7 +281,9 @@ export class CozyStormScene {
       g.dot(this.beacon.x, this.beacon.y);
       this.drawn.set('beacon', 1);
     }
-    const over = this.overAt === null ? 0 : smooth(clamp((this.t - this.overAt) / GLOOM_TIME, 0, 1));
+    const over = this.#gloom();
+    this.drawnGloom = over;
+    this.dirty = false;
     if (over > 0) {
       // Game over: the storm outside sinks into gloom; the frame drawn over it stays lamplit
       ctx.globalAlpha = GLOOM * over;
@@ -292,6 +308,11 @@ export class CozyStormScene {
 
   dispose() {
     this.sprites.dispose();
+  }
+
+  /** How far the game-over gloom has sunk in, 0 to 1. */
+  #gloom() {
+    return this.overAt === null ? 0 : smooth(clamp((this.t - this.overAt) / GLOOM_TIME, 0, 1));
   }
 
   #clearRun() {
@@ -528,12 +549,25 @@ export class CozyStormScene {
       const y = q.y0 + Math.floor(r.next() * (q.y1 - q.y0));
       this.#land(x, y, LAND_MASS[0] + r.next() * LAND_MASS[1]);
     }
-    for (const run of this.runners) this.#flow(run);
-    if (this.runners.some((run) => run.done)) this.runners = this.runners.filter((run) => !run.done);
+    const runners = this.runners;
+    let kept = 0;
+    for (let i = 0; i < runners.length; i++) {
+      const run = runners[i];
+      this.#flow(run);
+      if (!run.done) runners[kept++] = run;
+    }
+    runners.length = kept;
     if (this.ticks % WET_EVERY === 0) {
       const k = Math.exp((-WET_EVERY * TICK) / WET_LIFE);
-      const wet = this.wet;
-      for (let i = 0; i < N; i++) if (wet[i] > 0) wet[i] = wet[i] < 0.02 ? 0 : wet[i] * k;
+      const { wet, wetCells } = this;
+      // Backwards, since a cell that dries swaps the last one into its place
+      for (let i = this.wetCount - 1; i >= 0; i--) {
+        const c = wetCells[i];
+        if (wet[c] < 0.02) {
+          wet[c] = 0;
+          wetCells[i] = wetCells[--this.wetCount];
+        } else wet[c] *= k;
+      }
       // Backwards, since taking a bead moves the last one into its slot
       const drain = POOL_DRAIN * WET_EVERY * TICK;
       for (let i = this.count - 1; i >= 0; i--) {
@@ -605,7 +639,11 @@ export class CozyStormScene {
       for (let dx = -1; dx <= wide; dx++) {
         if (x + dx >= q.x0 && x + dx < q.x1) run.m += this.#takeBead(row * BW + x + dx);
       }
-      for (let dx = 0; dx < wide; dx++) this.wet[row * BW + x + dx] = 1;
+      for (let dx = 0; dx < wide; dx++) {
+        const c = row * BW + x + dx;
+        if (!(this.wet[c] > 0)) this.wetCells[this.wetCount++] = c;
+        this.wet[c] = 1;
+      }
       run.m -= TRAIL_LOSS;
       // Now and then a rivulet leaves a bead behind on its way down
       if (run.m > 1.5 && r.next() < 0.03 && this.#addBead(prev, 0.5)) run.m -= 0.5;

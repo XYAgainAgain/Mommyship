@@ -75,6 +75,7 @@ export class OsminokScene {
     this.rng = new Mulberry32(seed);
     this.t = 0;
     this.drawn = new Map();
+    this.drawnKey = null;
     this.g = null;
     this.#spawn(new Mulberry32(seed ^ 0x2545f491));
     this.#clearRun();
@@ -82,6 +83,12 @@ export class OsminokScene {
 
   get flashLog() {
     return this.flash.log;
+  }
+
+  /** True when the next draw would repeat the last one pixel for pixel, so the renderer can skip it. */
+  get still() {
+    const key = this.#stillKey();
+    return key !== null && key === this.drawnKey;
   }
 
   setReducedMotion(on) {
@@ -158,6 +165,7 @@ export class OsminokScene {
 
   drawBackdrop(ctx, wellRect, dive) {
     this.drawn.clear();
+    this.drawnKey = this.#stillKey();
     const zone = this.zone ?? dive?.zone ?? 0;
     const g = this.#begin(ctx, wellRect);
     ctx.save();
@@ -219,6 +227,14 @@ export class OsminokScene {
     this.effects = [];
     this.flash.free = -Infinity;
     this.nextStrike = this.t + 0.6;
+  }
+
+  /** What a frozen picture depends on, or null while anything still moves: an effect, a crossfade, the game-over
+   *  scatter, or the surface storm's sky glow, which keeps breathing under reduced motion until game over. */
+  #stillKey() {
+    if (!this.reducedMotion || this.effects.length || this.fromZone !== null) return null;
+    if (this.overAt === null ? (this.zone ?? Z.surface) === Z.surface : this.t - this.overAt < SCATTER_TIME) return null;
+    return `${this.zone}|${this.zoneT}|${this.overAt === null}`;
   }
 
   #overT() {

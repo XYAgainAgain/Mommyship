@@ -66,6 +66,57 @@ const WHOLE = new Intl.NumberFormat('en-US');
 // Text widths are pure functions of size and string, so measure() keeps them; a full memo simply starts over
 const MEASURE_CACHE = 2000;
 const WHOLE_KM = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+// Text and glow sprites are keyed by everything they're drawn from, so they outlive theme switches and are capped by
+// bitmap bytes instead: one long bloomed menu line at phone density outweighs a hundred HUD digits
+const TEXT_CACHE_BYTES = 40 * 2 ** 20;
+const GLOW_CACHE_BYTES = 24 * 2 ** 20;
+
+/** Sprites (ImageBitmaps, or `{ img }` records holding one) under a byte budget, least recently used out first. */
+class SpriteLRU {
+  constructor(budget) {
+    this.budget = budget;
+    this.bytes = 0;
+    this.map = new Map();
+  }
+
+  get size() {
+    return this.map.size;
+  }
+
+  get(key) {
+    const e = this.map.get(key);
+    if (!e) return undefined;
+    this.map.delete(key);
+    this.map.set(key, e);
+    return e.sprite;
+  }
+
+  /** The newest sprite always stays, even one over budget on its own. */
+  set(key, sprite) {
+    const old = this.map.get(key);
+    if (old) this.#drop(key, old);
+    const img = sprite.img ?? sprite;
+    const bytes = img.width * img.height * 4;
+    this.map.set(key, { sprite, bytes });
+    this.bytes += bytes;
+    for (const [k, e] of this.map) {
+      if (this.bytes <= this.budget || k === key) break;
+      this.#drop(k, e);
+    }
+  }
+
+  clear() {
+    for (const { sprite } of this.map.values()) (sprite.img ?? sprite).close?.();
+    this.map.clear();
+    this.bytes = 0;
+  }
+
+  #drop(key, e) {
+    (e.sprite.img ?? e.sprite).close?.();
+    this.map.delete(key);
+    this.bytes -= e.bytes;
+  }
+}
 
 // A scene module loads only once a theme that uses it is picked, and the theme still renders if it's missing
 const SCENES = {
@@ -280,17 +331,17 @@ export class Renderer {
     // The shell sets this while the sideways touch HOLD button shows; it stands in for the HOLD label
     this.holdButton = false;
     this.time = 0;
-    this.glowCache = new Map();
+    this.glowCache = new SpriteLRU(GLOW_CACHE_BYTES);
     this.starCache = new Map();
     this.starFlare = null;
-    this.textCache = new Map();
+    this.textCache = new SpriteLRU(TEXT_CACHE_BYTES);
     // The HUD's sprites live outside the cache, one per slot, so a counting score can't push the menus' sprites out
     this.liveText = new Map();
     this.measured = new Map();
     // A font that arrives after boot stopped waiting changes every width and glyph, so text is measured and drawn again
     globalThis.document?.fonts?.addEventListener?.('loadingdone', () => {
       this.measured.clear();
-      this.#evict(this.textCache);
+      this.textCache.clear();
       for (const { sprite } of this.liveText.values()) sprite.img.close?.();
       this.liveText.clear();
       this.dirty = true;
@@ -326,7 +377,7 @@ export class Renderer {
     this.themeT = 0;
     // Stars are dealt per theme, so blocks pick theirs again from the new one
     for (const b of this.matrix ?? []) if (b) b.star = undefined;
-    this.#dropCaches();
+    this.#dropThemeLayers();
     this.#seedDive();
     this.#syncScene();
   }
@@ -379,6 +430,7 @@ export class Renderer {
     return { depth, zone, zoneT: to ? (depth - from) / (to - from) : 0, time: this.time, lost };
   }
 
+  /** True while the well's own game-over darkening is moving, which it draws only when the scene is missing. */
   #updateDive(dt) {
     const d = this.dive;
     if (d.t < DIVE_FADE_TIME) {
@@ -390,7 +442,9 @@ export class Renderer {
         this.dirty = true;
       }
     }
-    if (this.lostT !== null && this.lostT < LOST_DARKEN_TIME) this.lostT += dt;
+    if (this.lostT === null || this.lostT >= LOST_DARKEN_TIME) return false;
+    this.lostT += dt;
+    return !this.scene;
   }
 
   /** What a scene reads each frame: the dive for Osminok, just the clock for any other. */
@@ -405,18 +459,24 @@ export class Renderer {
     this.scene.update(dt, this.#sceneState());
   }
 
+  /** Every sprite is sized to the canvas, so a resize starts them all over. */
   #dropCaches() {
-    this.#evict(this.glowCache);
-    this.#evict(this.textCache);
+    this.glowCache.clear();
+    this.textCache.clear();
     for (const { sprite } of this.liveText.values()) sprite.img.close?.();
     this.liveText.clear();
     this.#evict(this.starCache);
+    this.overlay?.close?.();
+    this.overlay = null;
+    this.#dropThemeLayers();
+  }
+
+  /** The grid, frame, and settled-stack layers are painted in the theme's colors, so a theme switch repaints them. */
+  #dropThemeLayers() {
     this.layers?.grid.columns.close?.();
     this.layers?.grid.rows.close?.();
     this.layers?.frame.close?.();
-    this.overlay?.close?.();
     this.layers = null;
-    this.overlay = null;
     this.stackLayer = null;
     this.dirty = true;
   }
@@ -536,6 +596,7 @@ export class Renderer {
       if (this.critical && !this.reducedMotion) busy = true;
       if (this.zoneCall !== null && this.time >= this.zoneCall) {
         this.zoneCall = null;
+        busy = true;
         if (this.dive) this.#queueCallout(TEXT.osminok.zones[this.dive.zone], CALLOUT_SECONDS);
       }
       if (this.#updateHud()) busy = true;
@@ -549,11 +610,12 @@ export class Renderer {
         this.dirty = true;
       }
     }
-    // Scene backdrops move at full frame rate, so a theme with one draws every frame, menus included
+    // A scene backdrop draws every frame, menus included, until it reports a still picture (a frozen reduced-motion
+    // backdrop); a scene that's missing or still loading has nothing to animate
     if (this.theme.scene) {
-      busy = true;
-      if (this.theme.dive) this.#updateDive(dt);
+      if (this.theme.dive && this.#updateDive(dt)) busy = true;
       this.#updateScene(dt);
+      if (this.scene && !this.scene.still) busy = true;
     }
     // Animated wraps advance at their own frame rate (and hold still for reduced motion)
     const fps = this.reducedMotion ? 0 : this.theme.fps;
@@ -1271,8 +1333,6 @@ export class Renderer {
     const key = `${color}|${size}|${boost}`;
     let s = this.glowCache.get(key);
     if (s) return s;
-    // Animated themes must not grow this forever; a full cache simply starts over
-    if (this.glowCache.size >= 96) this.#evict(this.glowCache);
     const C = size;
     const S = this.#glowSize(C);
     s = this.#bitmap(S, S, (g) => {
@@ -1421,17 +1481,7 @@ export class Renderer {
     let s = live ? this.liveText.get(live) : null;
     if (s?.key === key) return s.sprite;
     s = live ? null : this.textCache.get(key);
-    if (s) {
-      // Recently used text moves to the back of the line, so the oldest strings are the ones pushed out
-      this.textCache.delete(key);
-      this.textCache.set(key, s);
-      return s;
-    }
-    if (!live && this.textCache.size >= 400) {
-      const [oldest, sprite] = this.textCache.entries().next().value;
-      sprite.img.close?.();
-      this.textCache.delete(oldest);
-    }
+    if (s) return s;
     const probe = this.ctx;
     probe.save();
     probe.font = this.#font(px);

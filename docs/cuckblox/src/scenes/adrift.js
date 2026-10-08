@@ -52,6 +52,7 @@ export class AdriftScene {
     this.viewW = 0;
     this.viewH = 0;
     this.viewEpoch = 0;
+    this.drawnDim = NaN;
     // x and y are fractions of the screen's half-width and half-height, so a star born at depth 1 can be anywhere on it
     this.stars = Array.from({ length: STAR_COUNT }, () => this.#spawn(NEAR + this.rng.next() * (1 - NEAR)));
     this.paths = TINTS.map(() => Array.from({ length: BANDS + 1 }, () => WIDTHS.map(() => [])));
@@ -96,6 +97,16 @@ export class AdriftScene {
     this.reducedMotion = !!on;
   }
 
+  /** True when the next draw would repeat the last one: reduced motion freezes the field, so only the game-over
+   *  dimming can still change it. */
+  get still() {
+    return this.reducedMotion && this.#dim() === this.drawnDim;
+  }
+
+  #dim() {
+    return this.overAt === null ? 1 : 1 - OVER_DIM * Math.min(1, (this.t - this.overAt) / OVER_TIME);
+  }
+
   update(dt, state = {}) {
     const step = Math.min(0.25, Math.max(0, dt || 0));
     this.t += step;
@@ -131,7 +142,8 @@ export class AdriftScene {
     // Star sizes follow the well's cell, so they read the same at any pixel density
     const unit = Math.max(1, (wellRect?.cell ?? 24) / 24);
     const still = this.reducedMotion;
-    const dim = this.overAt === null ? 1 : 1 - OVER_DIM * Math.min(1, (this.t - this.overAt) / OVER_TIME);
+    const dim = this.#dim();
+    this.drawnDim = still ? dim : NaN;
     const trail = still ? 0 : Math.max(0, this.speed - CRUISE) * STREAK_SECONDS;
     const streaking = trail > 1e-7;
     const paths = this.paths;
