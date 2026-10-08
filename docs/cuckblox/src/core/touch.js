@@ -61,14 +61,17 @@ export class TouchInput {
     return e.pointerType === 'touch' || e.pointerType === 'pen' || (e.pointerType === 'mouse' && this.settings().mouse);
   }
 
-  #local(e) {
-    const r = this.surface.getBoundingClientRect();
+  /** A pointer event in surface coordinates. The surface's box is read once per touch, at its start, rather than on
+   *  every move. */
+  #local(e, fresh = false) {
+    if (fresh || !this.rect) this.rect = this.surface.getBoundingClientRect();
+    const r = this.rect;
     return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height };
   }
 
   #down(e) {
     if (!this.active() || !this.#accepts(e)) return;
-    const p = this.#local(e);
+    const p = this.#local(e, true);
     // The Hold button takes its own touches, even mid-gesture, as Lightblocks' button does
     if (e.button === 0 && this.holdHit?.(p.x, p.y)) {
       e.preventDefault();
