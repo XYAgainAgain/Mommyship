@@ -12,7 +12,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 export const MAX_PAD_SIZE = 10;
 
 const DEFAULTS = {
-  settings: { ghost: false, fps: false, sfx: true, music: 5, tune: 'korobeiniki', shuffle: false, tube: true, fullscreen: true, theme: 'cuck-green', customColors: null, touch: { size: 5, invert: false, swipeUp: 'none', haptics: true, buzz: true, guide: false, holdButton: true, mouse: false } },
+  settings: { ghost: false, fps: false, sfx: true, music: 5, tune: 'korobeiniki', shuffle: false, tube: true, fullscreen: true, theme: 'cuck-green', customColors: null, touch: { size: 2, invert: false, swipeUp: 'hardDrop', haptics: true, buzz: true, guide: false, holdButton: true, mouse: false } },
   bests: {},
   maxCombo: 0,
   last: { mode: 'marathon', marathonRotation: 'marathon', practiceRotation: 'practiceClassic', levels: {} },
@@ -54,7 +54,7 @@ function normalize(raw) {
       customColors: ZONE_KEYS.every((k) => HEX.test(colors[k])) ? Object.fromEntries(ZONE_KEYS.map((k) => [k, colors[k]])) : null,
       touch: {
         // A legacy drag distance in px maps to the nearest size step
-        size: int(t.size, Number.isInteger(t.threshold) ? Math.min(MAX_PAD_SIZE, Math.max(1, Math.round(t.threshold / 10))) : D.touch.size, 1, MAX_PAD_SIZE),
+        size: int(t.size, Number.isInteger(t.threshold) ? Math.min(MAX_PAD_SIZE, Math.max(1, Math.round(t.threshold / 5))) : D.touch.size, 1, MAX_PAD_SIZE),
         invert: bool(t.invert, D.touch.invert),
         swipeUp: oneOf(t.swipeUp, SWIPES, D.touch.swipeUp),
         haptics: bool(t.haptics, D.touch.haptics),

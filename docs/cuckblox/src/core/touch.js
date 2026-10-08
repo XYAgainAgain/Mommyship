@@ -7,8 +7,8 @@ const GESTURE_GRACE = 0.1;
 
 export const SWIPE_UP = ['none', 'hardDrop', 'hold', 'pause'];
 
-/** Lightblocks' touch pad size: one setting for how big the pad draws and how far a drag must go, 10 CSS px a step. */
-export const padPixels = (size) => size * 10;
+/** Lightblocks' touch pad size: one setting for how big the pad draws and how far a drag must go, 5 CSS px a step. */
+export const padPixels = (size) => size * 5;
 
 export const VIBRATION_MS = { gesture: 20, drop: 80, clear: 150, special: 300 };
 // How hard a gamepad rumbles for the same events, 0–1
