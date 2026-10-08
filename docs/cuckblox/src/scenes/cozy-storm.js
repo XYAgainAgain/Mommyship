@@ -470,7 +470,8 @@ export class CozyStormScene {
     NEON.forEach((tube, i) => {
       const k = this.neonLevel(i);
       ctx.globalCompositeOperation = 'lighter';
-      g.plate(this.sprites.get(`neon|${i}`, BW, BH, (p) => paintNeonGlow(p, tube)), tube.glowAlpha * k);
+      const y = tube.tube[0][1];
+      g.platePart(this.sprites.get(`neon|${i}`, BW, BH, (p) => paintNeonGlow(p, tube)), tube.glowAlpha * k, tube.x0, y - tube.above.length, tube.x1, y + tube.below.length + 1);
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = tube.color;
       ctx.globalAlpha = tube.alpha * k;

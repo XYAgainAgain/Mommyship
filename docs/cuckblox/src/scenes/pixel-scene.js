@@ -48,6 +48,11 @@ export class SpriteCache {
     return s;
   }
 
+  /** A one-off bitmap the caller owns (and closes), off the same scratch canvas. */
+  bake(w, h, paint) {
+    return this.makeBitmap ? this.makeBitmap(w, h, paint) : this.#bitmap(w, h, paint);
+  }
+
   evict() {
     for (const s of this.map.values()) s?.close?.();
     this.map.clear();
@@ -165,6 +170,26 @@ export class Pen {
     if (!sprite || a <= 0.001) return;
     this.ctx.globalAlpha = Math.min(1, a);
     this.ctx.drawImage(sprite, Math.round(this.ox), Math.round(this.oy), this.w, this.h);
+  }
+
+  /** plate() for a sprite that is clear outside backdrop pixels [x0, x1) × [y0, y1): the same draw, clipped to the
+   *  whole canvas pixels over that box. Clear pixels add nothing, so the picture is the same at a fraction of the fill. */
+  platePart(sprite, a, x0, y0, x1, y1) {
+    if (!sprite || a <= 0.001) return;
+    const { ctx } = this;
+    const L = Math.round(this.ox);
+    const T = Math.round(this.oy);
+    const sx = this.w / sprite.width;
+    const sy = this.h / sprite.height;
+    const left = Math.floor(L + x0 * sx) - 1;
+    const top = Math.floor(T + y0 * sy) - 1;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left, top, Math.ceil(L + x1 * sx) + 1 - left, Math.ceil(T + y1 * sy) + 1 - top);
+    ctx.clip();
+    this.plate(sprite, a);
+    ctx.restore();
+    ctx.beginPath();
   }
 }
 

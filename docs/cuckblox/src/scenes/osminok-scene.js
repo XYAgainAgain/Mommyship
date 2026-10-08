@@ -167,9 +167,7 @@ export class OsminokScene {
     ctx.imageSmoothingEnabled = false;
     ctx.globalCompositeOperation = 'source-over';
     const f = this.fromZone === null ? 1 : smooth(clamp(this.fade, 0, 1));
-    if (this.fromZone !== null) this.#plate(this.fromZone, 1);
-    this.#plate(zone, f);
-    if (zone + 1 < DIVE_ZONES.length && this.zoneT > 0) this.#plate(zone + 1, 0.3 * this.zoneT * f);
+    g.plate(this.#backdrop(zone, f), 1);
     const over = this.#overT();
     this.alive = 1 - over;
     this.push = this.reducedMotion ? 0 : over * over * 36;
@@ -207,6 +205,8 @@ export class OsminokScene {
   }
 
   dispose() {
+    this.composite?.sprite?.close?.();
+    this.composite = null;
     this.sprites.dispose();
   }
 
@@ -293,9 +293,28 @@ export class OsminokScene {
     return [x + (dx / len) * this.push, y + (dy / len) * this.push];
   }
 
-  #plate(zone, a) {
-    if (a <= 0.001) return;
-    this.g.plate(this.sprites.get(`p|${zone}`, BW, BH, (g) => this.#paintPlate(g, zone)), a);
+  /** The zone plates (the one being left, this one, and a hint of the next) blended once at backdrop resolution and
+   *  kept until a fade or the depth moves them, so a frame blits one plate instead of up to three. The bottom plate is
+   *  opaque, so the blend is the same one the canvas would have done pixel by pixel. */
+  #backdrop(zone, f) {
+    const layers = [];
+    if (this.fromZone !== null) layers.push([this.fromZone, 1]);
+    layers.push([zone, f]);
+    if (zone + 1 < DIVE_ZONES.length && this.zoneT > 0) layers.push([zone + 1, 0.3 * this.zoneT * f]);
+    const shown = layers.filter(([, a]) => a > 0.001);
+    const key = shown.map(([z, a]) => `${z}:${a}`).join('|');
+    if (this.composite?.key === key) return this.composite.sprite;
+    const plates = shown.map(([z, a]) => [this.sprites.get(`p|${z}`, BW, BH, (g) => this.#paintPlate(g, z)), Math.min(1, a)]);
+    const sprite = this.sprites.bake(BW, BH, (g) => {
+      for (const [plate, a] of plates) {
+        if (!plate) continue;
+        g.globalAlpha = a;
+        g.drawImage(plate, 0, 0);
+      }
+    });
+    this.composite?.sprite?.close?.();
+    this.composite = { key, sprite };
+    return sprite;
   }
 
   /** A zone's still scenery at backdrop resolution, scaled up unsmoothed so every pixel lands on the grid. */
