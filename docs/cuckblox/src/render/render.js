@@ -392,7 +392,8 @@ export class Renderer {
     this.#evict(this.glowCache);
     this.#evict(this.textCache);
     this.#evict(this.starCache);
-    this.layers?.grid.close?.();
+    this.layers?.grid.columns.close?.();
+    this.layers?.grid.rows.close?.();
     this.layers?.frame.close?.();
     this.overlay?.close?.();
     this.layers = null;
@@ -999,28 +1000,44 @@ export class Renderer {
     return s.transferToImageBitmap();
   }
 
-  /** Grid and glowing frame, each rendered once per size and theme. */
+  /** Grid and glowing frame, each rendered once per size and theme. Both are almost empty, so each draw blits only
+   *  their lit parts: the grid's lines as thin strips, the frame's glow as three bands. */
   #wellLayers() {
     if (this.layers) return this.layers;
     const { theme, layout: L } = this;
     const w = COLS * L.C;
     const h = VISIBLE_ROWS * L.C;
-    const grid = this.#bitmap(w, h, (g) => {
+    const xs = Array.from({ length: COLS - 1 }, (_, i) => Math.round((i + 1) * L.C));
+    const ys = Array.from({ length: VISIBLE_ROWS - 1 }, (_, i) => Math.round((i + 1) * L.C));
+    const full = this.#bitmap(w, h, (g) => {
       g.strokeStyle = theme.grid;
       g.lineWidth = 1;
       g.beginPath();
-      for (let x = 1; x < COLS; x++) { const sx = Math.round(x * L.C) + 0.5; g.moveTo(sx, 0); g.lineTo(sx, h); }
-      for (let y = 1; y < VISIBLE_ROWS; y++) { const sy = Math.round(y * L.C) + 0.5; g.moveTo(0, sy); g.lineTo(w, sy); }
+      for (const x of xs) { g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, h); }
+      for (const y of ys) { g.moveTo(0, y + 0.5); g.lineTo(w, y + 0.5); }
       g.stroke();
     });
+    // The stroked grid's lit pixels are copied into two tiny bitmaps, a 1 px strip per line, so they keep whatever
+    // the browser drew (crossings come out lit once or twice depending on the rasterizer). Columns keep the
+    // crossings and rows leave them out, so every pixel is blitted exactly once
+    const columns = this.#bitmap(xs.length, h, (g) => xs.forEach((x, i) => g.drawImage(full, x, 0, 1, h, i, 0, 1, h)));
+    const rows = this.#bitmap(w, ys.length, (g) => {
+      ys.forEach((y, i) => g.drawImage(full, 0, y, w, 1, 0, i, w, 1));
+      for (const x of xs) g.clearRect(x, 0, 1, ys.length);
+    });
+    full.close?.();
+    const grid = { columns, rows, xs, ys };
 
     const lw = Math.max(2, Math.round(L.C / 12));
     const m = Math.ceil(L.C * 1.2);
-    const frame = this.#bitmap(w + 2 * m, h + m * 2, (f) => {
+    const W = w + 2 * m;
+    const H = h + m * 2;
+    const blur = L.C * 0.4;
+    const frame = this.#bitmap(W, H, (f) => {
       f.strokeStyle = theme.frame;
       f.lineWidth = lw;
       f.shadowColor = theme.frame;
-      f.shadowBlur = L.C * 0.4;
+      f.shadowBlur = blur;
       f.beginPath();
       f.moveTo(m - lw, m - L.C * 0.5);
       f.lineTo(m - lw, m + h + lw);
@@ -1028,19 +1045,25 @@ export class Renderer {
       f.lineTo(m + w + lw, m - L.C * 0.5);
       f.stroke();
     });
-    this.layers = { grid, frame, margin: m };
+    this.layers = { grid, frame, bands: frameBands(m, w, h, lw, blur), margin: m };
     return this.layers;
   }
 
   #drawWell(groupAlpha) {
     const { ctx, layout: L } = this;
-    const { grid, frame, margin } = this.#wellLayers();
+    const { grid, frame, bands, margin } = this.#wellLayers();
+    const w = COLS * L.C;
+    const h = VISIBLE_ROWS * L.C;
     ctx.globalAlpha = groupAlpha;
-    ctx.drawImage(grid, L.wellX, L.wellY);
+    grid.xs.forEach((x, i) => ctx.drawImage(grid.columns, i, 0, 1, h, L.wellX + x, L.wellY, 1, h));
+    grid.ys.forEach((y, i) => ctx.drawImage(grid.rows, 0, i, w, 1, L.wellX, L.wellY + y, w, 1));
     let frameAlpha = 0.55;
     if (this.critical) frameAlpha = this.reducedMotion ? 0.95 : 0.7 + 0.3 * Math.sin(this.time * 7);
     ctx.globalAlpha = frameAlpha * groupAlpha;
-    ctx.drawImage(frame, L.wellX - margin, L.wellY - margin);
+    const x = L.wellX - margin;
+    const y = L.wellY - margin;
+    // 1:1 at whole pixels, so each band lands exactly as that part of a full blit would
+    for (const [sx, sy, sw, sh] of bands) ctx.drawImage(frame, sx, sy, sw, sh, x + sx, y + sy, sw, sh);
     ctx.globalAlpha = 1;
   }
 
@@ -1081,12 +1104,19 @@ export class Renderer {
       const lctx = layer.getContext('2d');
       lctx.clearRect(0, 0, layer.width, layer.height);
       this.#drawBlocks(settled, 1, lctx, ox, oy, clarity);
-      this.stackLayer = { canvas: layer, blocks: settled, step: this.themeStep, palette: this.divePalette, clarity };
+      // Everything above the highest settled block's glow stays clear, so the blit starts there; a pixel of slack
+      // covers glows that land between pixels
+      let high = -1;
+      for (const b of settled) high = Math.max(high, b.y);
+      const top = high < 0 ? h : Math.max(0, Math.floor((ROWS - 1 - high) * L.C + m + (L.C - this.#glowSize(L.C)) / 2) - 1);
+      this.stackLayer = { canvas: layer, blocks: settled, step: this.themeStep, palette: this.divePalette, clarity, top };
       this.stats.stack++;
       this.stats.stackMs += performance.now() - t0;
     }
+    const { canvas, top } = this.stackLayer;
+    if (top >= canvas.height) return;
     this.ctx.globalAlpha = groupAlpha;
-    this.ctx.drawImage(this.stackLayer.canvas, ox, oy);
+    this.ctx.drawImage(canvas, 0, top, canvas.width, canvas.height - top, ox, oy + top, canvas.width, canvas.height - top);
     this.ctx.globalAlpha = 1;
   }
 
@@ -1225,7 +1255,7 @@ export class Renderer {
     // Animated themes must not grow this forever; a full cache simply starts over
     if (this.glowCache.size >= 96) this.#evict(this.glowCache);
     const C = size;
-    const S = Math.ceil(C * 2.2 * boost);
+    const S = this.#glowSize(C);
     s = this.#bitmap(S, S, (g) => {
       const m = S / 2;
       g.shadowColor = color;
@@ -1243,6 +1273,11 @@ export class Renderer {
     this.glowCache.set(key, s);
     this.stats.glow++;
     return s;
+  }
+
+  /** A glow sprite's side for a block of size C. */
+  #glowSize(C) {
+    return Math.ceil(C * 2.2 * (this.theme.glowBoost ?? 1));
   }
 
   /** The width every menu panel gets, so title art can line up with it. */
@@ -1856,6 +1891,20 @@ export function textTargetCss(shortSideCss) {
   if (shortSideCss < 600) return 16;
   if (shortSideCss < 1024) return 18;
   return 14;
+}
+
+/** The frame bitmap's nonempty parts as [sx, sy, sw, sh] bands (left side, right side, bottom between them). Each
+ *  reaches four blur sigmas past its stroke, beyond where browsers cut the blur off, so what's skipped is empty.
+ *  Computed rather than read back, since a readback pushes the shared scratch canvas off the GPU. */
+function frameBands(m, w, h, lw, blur) {
+  const W = w + 2 * m;
+  const H = h + 2 * m;
+  const reach = Math.ceil(lw / 2 + 4 * (blur / 2)) + 2;
+  const left = Math.min(W, Math.ceil(m - lw + reach));
+  const right = Math.max(left, Math.floor(m + w + lw - reach));
+  const bottom = Math.max(0, Math.floor(m + h + lw - reach));
+  if (right <= left) return [[0, 0, W, H]];
+  return [[0, 0, left, H], [right, 0, W - right, H], [left, bottom, right - left, H - bottom]];
 }
 
 /** Lays the screen out in board cells. Landscape puts stats and Hold left of the well and Next right of it;
