@@ -85,6 +85,15 @@
       filter: url("#tube-fringe");
     }
 
+    /* ?perf= flags (src/core/perf.js): off unless the URL asks for them */
+    body.perf-pixelated #screen {
+      image-rendering: pixelated;
+    }
+
+    body.perf-nofringe #screen {
+      filter: none;
+    }
+
     body:not(.tube-off) .terminal::before {
       content: "";
       position: absolute;

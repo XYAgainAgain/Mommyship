@@ -266,8 +266,10 @@ class Block {
 }
 
 export class Renderer {
-  constructor(canvas, { theme = DEFAULT_THEME, reducedMotion = false } = {}) {
+  /** `maxDpr` caps the canvas's pixel density (a ?perf= flag; uncapped by default). */
+  constructor(canvas, { theme = DEFAULT_THEME, reducedMotion = false, maxDpr = Infinity } = {}) {
     this.canvas = canvas;
+    this.maxDpr = maxDpr;
     // Opaque: the page never shows through, so the compositor can skip blending the canvas
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.theme = theme;
@@ -492,7 +494,7 @@ export class Renderer {
   }
 
   resize() {
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const dpr = Math.min(this.maxDpr, Math.max(1, window.devicePixelRatio || 1));
     const rect = this.canvas.getBoundingClientRect();
     const w = Math.max(1, Math.round(rect.width * dpr));
     const h = Math.max(1, Math.round(rect.height * dpr));

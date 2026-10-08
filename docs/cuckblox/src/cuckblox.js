@@ -16,6 +16,7 @@ import { TEXT, spoken, plain } from './text.js';
 import { ensureWallet, ownsTheme, buyTheme, ownsTune, buyTune, paintQuote, buyPaint, payForClear, bloxBonus, formatCr } from './core/credits.js';
 import { Leaderboard, BoardView, InitialsEntry, isPracticeBoard, eligible, offerInitials, within, submitOutcome, formatRow, rankedValue } from './online/leaderboard.js';
 import { FIREBASE } from './online/firebase.js';
+import { PERF } from './core/perf.js';
 
 const MAX_FRAME = 0.1;
 const GAME_OVER_PAUSE = 1.6;
@@ -44,7 +45,7 @@ const data = loadData();
 const wallet = ensureWallet(data);
 if (!ownsTheme(wallet, themeById(data.settings.theme, data.settings.customColors))) data.settings.theme = DEFAULT_THEME.id;
 saveData(data);
-const renderer = new Renderer(canvas, { reducedMotion: motionQuery.matches, theme: themeById(data.settings.theme, data.settings.customColors) });
+const renderer = new Renderer(canvas, { reducedMotion: motionQuery.matches, theme: themeById(data.settings.theme, data.settings.customColors), maxDpr: PERF.dpr });
 motionQuery.addEventListener('change', (e) => { renderer.reducedMotion = e.matches; renderer.invalidate(); });
 renderer.showGhost = data.settings.ghost;
 const controls = new GameControls();
@@ -1510,7 +1511,8 @@ function updateFps(now) {
   perf.worsts = [...perf.worsts.slice(-5), perf.worst];
   perf.worst = 0;
   const low = Math.round(1000 / Math.max(...perf.worsts, 1));
-  const text = `${Math.round(perf.frames / secs)} FPS  LOW ${low}  ${Math.round(perf.draws / secs)} DRAWS  ${(perf.draws ? perf.drawMs / perf.draws : 0).toFixed(1)} MS`;
+  // Any ?perf= flags in effect ride along, so a screenshot of the counter says what was being tested
+  const text = `${Math.round(perf.frames / secs)} FPS  LOW ${low}  ${Math.round(perf.draws / secs)} DRAWS  ${(perf.draws ? perf.drawMs / perf.draws : 0).toFixed(1)} MS${PERF.label ? `  ${PERF.label.toUpperCase()}` : ''}`;
   Object.assign(perf, { frames: 0, draws: 0, drawMs: 0, since: now });
   if (data.settings.fps && text !== perf.text) invalidate();
   perf.text = text;
@@ -1615,6 +1617,8 @@ async function boot() {
   }
   paintPage(renderer.theme);
   applyTube();
+  document.body.classList.toggle('perf-pixelated', PERF.pixelated);
+  document.body.classList.toggle('perf-nofringe', PERF.nofringe);
   renderer.resize();
   go('title', Math.max(0, titleIndex(setup.family)));
   // The title previews an owned theme's ambience as soon as the audio context exists
