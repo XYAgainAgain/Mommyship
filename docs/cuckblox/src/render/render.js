@@ -61,6 +61,10 @@ const LOST_DARKEN_TIME = 1.5;
 const LOST_DARKNESS = 0.7;
 const DEEPEST_CALLOUT = 20000;
 const KM = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+// toLocaleString('en-US') builds a formatter on every call; the HUD formats every draw
+const WHOLE = new Intl.NumberFormat('en-US');
+// Text widths are pure functions of size and string, so measure() keeps them; a full memo simply starts over
+const MEASURE_CACHE = 2000;
 const WHOLE_KM = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
 // A scene module loads only once a theme that uses it is picked, and the theme still renders if it's missing
@@ -278,6 +282,17 @@ export class Renderer {
     this.starCache = new Map();
     this.starFlare = null;
     this.textCache = new Map();
+    // The HUD's sprites live outside the cache, one per slot, so a counting score can't push the menus' sprites out
+    this.liveText = new Map();
+    this.measured = new Map();
+    // A font that arrives after boot stopped waiting changes every width and glyph, so text is measured and drawn again
+    globalThis.document?.fonts?.addEventListener?.('loadingdone', () => {
+      this.measured.clear();
+      this.#evict(this.textCache);
+      for (const { sprite } of this.liveText.values()) sprite.img.close?.();
+      this.liveText.clear();
+      this.dirty = true;
+    });
     this.layers = null;
     this.overlay = null;
     this.stackLayer = null;
@@ -391,6 +406,8 @@ export class Renderer {
   #dropCaches() {
     this.#evict(this.glowCache);
     this.#evict(this.textCache);
+    for (const { sprite } of this.liveText.values()) sprite.img.close?.();
+    this.liveText.clear();
     this.#evict(this.starCache);
     this.layers?.grid.columns.close?.();
     this.layers?.grid.rows.close?.();
@@ -1300,11 +1317,17 @@ export class Renderer {
   }
 
   measure(str, size = 1) {
+    const px = this.#fontPx(size);
+    const key = `${px}|${str}`;
+    let w = this.measured.get(key);
+    if (w !== undefined) return w;
+    if (this.measured.size >= MEASURE_CACHE) this.measured.clear();
     const { ctx } = this;
     ctx.save();
-    ctx.font = this.#font(this.#fontPx(size));
-    const w = ctx.measureText(str).width;
+    ctx.font = this.#font(px);
+    w = ctx.measureText(str).width;
     ctx.restore();
+    this.measured.set(key, w);
     return w;
   }
 
@@ -1389,17 +1412,20 @@ export class Renderer {
     }
   }
 
-  /** A string rendered once, bloom and outline included, then reused until the text or size changes. */
-  #textSprite(str, px, color, glow, outline, spacing = 0, bold = false) {
+  /** A string rendered once, bloom and outline included, then reused until the text or size changes. A `live` slot
+   *  holds just its latest sprite, for text that changes every frame. */
+  #textSprite(str, px, color, glow, outline, spacing = 0, bold = false, live = null) {
     const key = `${px}|${color}|${glow}|${outline}|${spacing}|${bold}|${str}`;
-    let s = this.textCache.get(key);
+    let s = live ? this.liveText.get(live) : null;
+    if (s?.key === key) return s.sprite;
+    s = live ? null : this.textCache.get(key);
     if (s) {
-      // Recently used text moves to the back of the line, so counting HUD numbers only push out stale strings
+      // Recently used text moves to the back of the line, so the oldest strings are the ones pushed out
       this.textCache.delete(key);
       this.textCache.set(key, s);
       return s;
     }
-    if (this.textCache.size >= 400) {
+    if (!live && this.textCache.size >= 400) {
       const [oldest, sprite] = this.textCache.entries().next().value;
       sprite.img.close?.();
       this.textCache.delete(oldest);
@@ -1441,19 +1467,22 @@ export class Renderer {
       draw(g, 'fillText');
     });
     s = { img, width, ascent, pad };
-    this.textCache.set(key, s);
+    if (live) {
+      this.liveText.get(live)?.sprite.img.close?.();
+      this.liveText.set(live, { key, sprite: s });
+    } else this.textCache.set(key, s);
     this.stats.text++;
     return s;
   }
 
   /** Text on the 11 px pixel grid with a phosphor bloom; y is the baseline. `spacing` adds that many pixels between
    *  characters, for stretching a line to an exact width. */
-  text(str, x, y, { size = 1, align = 'left', color = this.theme.text, glow = 0.6, alpha = 1, outline = null, spacing = 0, bold = false, staryllic = 1 } = {}) {
+  text(str, x, y, { size = 1, align = 'left', color = this.theme.text, glow = 0.6, alpha = 1, outline = null, spacing = 0, bold = false, staryllic = 1, live = null } = {}) {
     if (!str) return;
     // The translation layer glitches only in the drawn glyphs; layout and hit boxes keep the Latin string
     const { text: shown, next } = glyphFlicker(str, this.time, { rate: this.reducedMotion ? 0 : staryllic });
     if (next < this.glyphNext) this.glyphNext = next;
-    const { img, width, ascent, pad } = this.#textSprite(shown, this.#fontPx(size), color, glow, outline, Math.round(spacing), bold);
+    const { img, width, ascent, pad } = this.#textSprite(shown, this.#fontPx(size), color, glow, outline, Math.round(spacing), bold, live);
     const ox = align === 'center' ? width / 2 : align === 'right' ? width : 0;
     const { ctx } = this;
     ctx.globalAlpha = alpha;
@@ -1463,7 +1492,7 @@ export class Renderer {
 
   #drawHud() {
     const { layout: L, game: g, theme } = this;
-    const fmt = (n) => n.toLocaleString('en-US');
+    const fmt = (n) => WHOLE.format(n);
     // Each stat as [label key, value, then ever shorter values a narrow portrait column falls back to]
     const stat = (key, n) => [key, fmt(n), COMPACT.format(n)];
     const h = this.hud;
@@ -1485,8 +1514,8 @@ export class Renderer {
         const x = L.wellX + colW * (i + 0.5);
         const shown = values.find(fits) ?? values.at(-1);
         this.text(labels[key], x, L.statsLabelY, { align: 'center', color: theme.dimText, glow: 0.3, staryllic: HUD_STARYLLIC });
-        this.text(shown, x, L.statsValueY, { align: 'center' });
-        if (flash[key]) this.text(shown, x, L.statsValueY, { align: 'center', color: theme.calloutText, glow: 0.9, alpha: flash[key] });
+        this.text(shown, x, L.statsValueY, { align: 'center', live: key });
+        if (flash[key]) this.text(shown, x, L.statsValueY, { align: 'center', color: theme.calloutText, glow: 0.9, alpha: flash[key], live: `${key}+` });
       });
     } else {
       // One size for every value, shrunk only when the widest would spill out of the side panel
@@ -1494,8 +1523,8 @@ export class Renderer {
       rows.forEach(([key, v], i) => {
         const y = L.statsY + i * L.unit * (2.4 + size);
         this.text(TEXT.hud[key], L.statsX, y, { color: theme.dimText, glow: 0.3, staryllic: HUD_STARYLLIC });
-        this.text(v, L.statsX, y + L.unit * (0.4 + size), { size });
-        if (flash[key]) this.text(v, L.statsX, y + L.unit * (0.4 + size), { size, color: theme.calloutText, glow: 0.9, alpha: flash[key] });
+        this.text(v, L.statsX, y + L.unit * (0.4 + size), { size, live: key });
+        if (flash[key]) this.text(v, L.statsX, y + L.unit * (0.4 + size), { size, color: theme.calloutText, glow: 0.9, alpha: flash[key], live: `${key}+` });
       });
     }
   }
