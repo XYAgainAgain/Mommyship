@@ -24,6 +24,56 @@ export const keyName = (key) => (key ? `${NAMES[key.root]} ${key.mode}` : 'none'
 
 const ticksPerBar = (ts) => Math.max(1, Math.round(((ts?.beats || 4) * SONG_PPQ * 4) / (ts?.unit || 4)));
 
+// Sine Sculptor's limits on a song's meter changes
+const MAX_METER_CHANGES = 256;
+const MAX_TICK = SONG_PPQ * 4 * 10_000;
+const BEAT_UNITS = [2, 4, 8, 16];
+const validMeter = (ts) => Number.isInteger(ts?.beats) && ts.beats >= 1 && ts.beats <= 32 && BEAT_UNITS.includes(ts.unit);
+
+/** The song's meters as stretches [{ tick, barTicks, bar, endTick }], bar counted from 0, read and counted the way
+ *  Sine Sculptor's player does, so the loop length here always matches the one it plays. */
+function meterMap(song) {
+  const raw = Array.isArray(song?.meterChanges) ? song.meterChanges.slice(0, MAX_METER_CHANGES * 4) : [];
+  const sorted = raw
+    .map((ts) => ({ tick: Math.round(Number(ts?.tick)), ts }))
+    .filter(({ tick, ts }) => tick >= 0 && tick <= MAX_TICK && validMeter(ts))
+    .sort((a, b) => a.tick - b.tick);
+  // The last of a tie wins, and a change at tick 0 is the opening meter
+  const changes = sorted.filter((c, i) => sorted[i + 1]?.tick !== c.tick);
+  const opening = changes[0]?.tick === 0 ? changes.shift().ts : validMeter(song?.timeSignature) ? song.timeSignature : null;
+  const points = [{ tick: 0, ts: opening }];
+  for (const change of changes) {
+    const last = points[points.length - 1];
+    // Repeating the meter in force on one of its bar lines changes nothing
+    const same = change.ts.beats === (last.ts?.beats ?? 4) && change.ts.unit === (last.ts?.unit ?? 4);
+    if (same && (change.tick - last.tick) % ticksPerBar(last.ts) === 0) continue;
+    if (points.length > MAX_METER_CHANGES) break;
+    points.push(change);
+  }
+  let bar = 0;
+  return points.map(({ tick, ts }, i) => {
+    const endTick = points[i + 1]?.tick ?? Infinity;
+    const stretch = { tick, barTicks: ticksPerBar(ts), bar, endTick };
+    if (endTick !== Infinity) bar += Math.ceil((endTick - tick) / stretch.barTicks);
+    return stretch;
+  });
+}
+
+const stretchAt = (map, tick) => map.findLast((s) => s.tick <= tick) ?? map[0];
+function barIndex(map, tick) {
+  const s = stretchAt(map, Math.max(0, tick));
+  return s.bar + Math.floor((Math.max(0, tick) - s.tick) / s.barTicks);
+}
+function barStart(map, index) {
+  const s = map.findLast((m) => m.bar <= index) ?? map[0];
+  return s.tick + (index - s.bar) * s.barTicks;
+}
+function barLineAtOrAfter(map, tick) {
+  const t = Math.max(0, tick);
+  const s = stretchAt(map, t);
+  return Math.min(s.tick + Math.ceil((t - s.tick) / s.barTicks) * s.barTicks, s.endTick);
+}
+
 /** Pearson correlation of a 12-bin histogram against a profile rotated to `root`; 0 for an empty histogram. */
 function correlate(hist, profile, root) {
   let sx = 0;
@@ -117,7 +167,7 @@ function refineChanges(path, bins) {
 }
 
 /** Where the player's whole-song loop wraps: the last clip's end over every track, kits included, rounded up to a bar. */
-function loopTicks(song, bar, notesEnd) {
+function loopTicks(song, meter, notesEnd) {
   let end = notesEnd;
   for (const track of song?.tracks ?? []) {
     for (const clip of track?.clips ?? []) {
@@ -125,7 +175,7 @@ function loopTicks(song, bar, notesEnd) {
       if (Number.isFinite(e)) end = Math.max(end, e);
     }
   }
-  return Math.max(1, Math.ceil(end / bar)) * bar;
+  return barLineAtOrAfter(meter, end) || barStart(meter, 1);
 }
 
 /** A song's transpose rule as { dial, points }, with the dial's name the player answers getDial() to. */
@@ -161,23 +211,25 @@ export function transposeAt(rule, value) {
  */
 export function analyzeSong(bundle) {
   const song = bundle?.song ?? bundle;
-  const bar = ticksPerBar(song?.timeSignature);
+  const meter = meterMap(song);
   const notes = pitchedNotes(bundle);
   if (!notes.length) return { segments: [], lengthTicks: 0, key: null, transpose: null };
   let notesEnd = 0;
   for (const [, e] of notes) notesEnd = Math.max(notesEnd, e);
-  const lengthTicks = loopTicks(song, bar, notesEnd);
-  const bars = Math.ceil(notesEnd / bar);
+  const lengthTicks = loopTicks(song, meter, notesEnd);
+  const barsBefore = (tick) => barIndex(meter, barLineAtOrAfter(meter, tick));
+  const bars = barsBefore(notesEnd);
   // This runs synchronously at load, so a pathological bundle gets no key following rather than a frozen tab
   let work = 0;
-  for (const [s, e] of notes) work += Math.ceil(e / bar) - Math.floor(s / bar);
+  for (const [s, e] of notes) work += barsBefore(e) - barIndex(meter, s);
   if (bars > MAX_BARS || work > MAX_WORK) return { segments: [], lengthTicks, key: null, transpose: null };
+  const starts = Float64Array.from({ length: bars + 1 }, (_, b) => barStart(meter, b));
   const bins = new Float64Array(bars * 12);
   const opening = new Float64Array(12);
   for (const [s, e, pc] of notes) {
     // A note held across bar lines counts in each bar for as long as it sounds there
-    for (let b = Math.floor(s / bar); b < bars && b * bar < e; b++) {
-      const overlap = (Math.min(e, (b + 1) * bar) - Math.max(s, b * bar)) / SONG_PPQ;
+    for (let b = barIndex(meter, s); b < bars && starts[b] < e; b++) {
+      const overlap = (Math.min(e, starts[b + 1]) - Math.max(s, starts[b])) / SONG_PPQ;
       bins[b * 12 + pc] += overlap;
       if (b < OPENING_BARS) opening[pc] += overlap;
     }
@@ -222,7 +274,7 @@ export function analyzeSong(bundle) {
   for (let b = 0; b < bars; b++) {
     heard[path[b]]++;
     if (b > 0 && path[b] === path[b - 1]) continue;
-    segments.push({ fromTick: b * bar, ...keyOf(path[b]) });
+    segments.push({ fromTick: starts[b], ...keyOf(path[b]) });
   }
   // Ties go to the key heard first
   let longest = path[0];

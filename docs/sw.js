@@ -99,7 +99,7 @@ self.addEventListener('fetch', (event) => {
   /* Big one-off downloads (rules ZIP, wallpapers) stay out of every cache; a stale latest.zip would outlive a version bump */
   if (path.startsWith('/downloads/') || path.startsWith('/assets/rules/')) return;
 
-  if (isAudio(path)) { event.respondWith(audioResponse(req)); return; }
+  if (isAudio(path)) { event.respondWith(audioResponse(event)); return; }
   if (isHTML(req, path)) { event.respondWith(networkFirst(event, SHELL_CACHE, true)); return; }
   if (isGalaxyCode(path)) { event.respondWith(networkFirst(event, GALAXY_CACHE, false)); return; }
   if (isGalaxyStatic(path)) { event.respondWith(cacheFirst(event, GALAXY_CACHE)); return; }
@@ -176,43 +176,152 @@ function fetchWithTimeout(req, ms) {
   return fetch(req, { signal: ctl.signal }).finally(() => clearTimeout(timer));
 }
 
-/* Audio: cached on first play. <audio> elements ask in byte ranges, so a cached whole
-   file is sliced into a 206 by hand; the Cache API stores full bodies only. */
-async function audioResponse(req) {
-  const cache = await caches.open(AUDIO_CACHE);
-  const key = new Request(req.url);
-  let full = await cache.match(key);
-  if (!full) {
-    try {
-      const res = await fetch(key);
-      if (!res.ok || res.status === 206) return fetch(req);
-      await cache.put(key, res.clone());
-      full = res;
-    } catch (e) {
-      return Response.error();
+/* Audio: cached whole on first play. <audio> elements ask in byte ranges, which the Cache API can't store, so one
+   full download per file answers every range it can while it runs, then lands in the cache for later plays to slice. */
+const audioFills = new Map();
+/* How far past the download's front an ask still waits for it rather than going to the network */
+const FILL_REACH = 512 * 1024;
+
+async function audioResponse(event) {
+  const req = event.request;
+  const url = req.url;
+  const range = parseRange(req.headers.get('range'));
+  try {
+    const cache = await caches.open(AUDIO_CACHE);
+    let fill = audioFills.get(url);
+    if (!fill) {
+      const full = await cache.match(url);
+      if (full) return range ? await audioSlice(full, range) : full;
+      fill = audioFills.get(url) || startFill(event, cache, url);
     }
+    if (!(await fill.ready)) return await passthrough(req);
+    const span = range ? resolveRange(range, fill.total) : { start: 0, end: fill.total - 1 };
+    if (!span) return unsatisfiable(fill.total);
+    /* Further on than the download has reached (a seek ahead, or the file's end read for its length): the network
+       answers that sooner, and the element comes back for the rest at a point the download already holds */
+    if (span.start > fill.received + FILL_REACH) return await passthrough(req);
+    const body = fillStream(fill, span.start, span.end);
+    if (!range) return new Response(body, { headers: { 'Content-Type': fill.type, 'Content-Length': String(fill.total) } });
+    return new Response(body, { status: 206, headers: rangeHeaders(fill.type, span.start, span.end, fill.total) });
+  } catch (e) {
+    return Response.error();
   }
-  const range = req.headers.get('range');
-  if (!range) return full;
-  const buf = await full.clone().arrayBuffer();
-  const m = /bytes=(\d*)-(\d*)/.exec(range);
-  const total = buf.byteLength;
-  let start = m && m[1] ? parseInt(m[1], 10) : 0;
-  let end = m && m[2] ? parseInt(m[2], 10) : total - 1;
-  if (m && !m[1] && m[2]) { start = Math.max(0, total - parseInt(m[2], 10)); end = total - 1; }
-  end = Math.min(end, total - 1);
-  if (start > end || start >= total) {
-    return new Response(null, { status: 416, headers: { 'Content-Range': 'bytes */' + total } });
-  }
-  return new Response(buf.slice(start, end + 1), {
-    status: 206,
-    headers: {
-      'Content-Type': full.headers.get('Content-Type') || 'audio/ogg',
-      'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
-      'Content-Length': String(end - start + 1),
-      'Accept-Ranges': 'bytes'
+}
+
+/* Downloads the whole file once, keeping its bytes for any range asked for meanwhile. `ready` resolves to the fill,
+   or to null when the answer can't be shared (not a plain 200 of known length), so asks go to the network instead. */
+function startFill(event, cache, url) {
+  const fill = { chunks: [], received: 0, total: 0, type: 'audio/ogg', failed: false, wake: [] };
+  const wakeAll = () => { for (const wake of fill.wake.splice(0)) wake(); };
+  let settle;
+  fill.ready = new Promise((resolve) => { settle = resolve; });
+  audioFills.set(url, fill);
+  event.waitUntil((async () => {
+    try {
+      const res = await fetch(url);
+      const total = Number(res.headers.get('content-length'));
+      if (res.status !== 200 || !(total > 0) || res.headers.get('content-encoding')) {
+        if (res.body) res.body.cancel().catch(() => {});
+        settle(null);
+        return;
+      }
+      fill.total = total;
+      fill.type = res.headers.get('content-type') || fill.type;
+      settle(fill);
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fill.chunks.push(value);
+        fill.received += value.byteLength;
+        wakeAll();
+      }
+      if (fill.received !== total) throw new Error('audio download cut short');
+      const blob = new Blob(fill.chunks, { type: fill.type });
+      await cache.put(url, new Response(blob, { headers: { 'Content-Type': fill.type, 'Content-Length': String(total) } })).catch(() => {});
+    } catch (e) {
+      fill.failed = true;
+      settle(null);
+    } finally {
+      audioFills.delete(url);
+      wakeAll();
+    }
+  })());
+  return fill;
+}
+
+/* Bytes start–end of a fill as they arrive, one stored chunk per pull so a paused element holds nothing extra */
+function fillStream(fill, start, end) {
+  let at = start;
+  let index = 0;
+  let base = 0;
+  let cancelled = false;
+  return new ReadableStream({
+    async pull(controller) {
+      while (at >= fill.received && !fill.failed && !cancelled) await new Promise((wake) => fill.wake.push(wake));
+      if (cancelled) return;
+      if (at >= fill.received) {
+        controller.error(new Error('audio download failed'));
+        return;
+      }
+      while (base + fill.chunks[index].byteLength <= at) base += fill.chunks[index++].byteLength;
+      const chunk = fill.chunks[index];
+      const piece = chunk.subarray(at - base, Math.min(chunk.byteLength, end + 1 - base));
+      controller.enqueue(piece);
+      at += piece.byteLength;
+      if (at > end) controller.close();
+    },
+    cancel() {
+      cancelled = true;
     }
   });
+}
+
+/* Chrome refuses a media element whose ranges mix the worker's own responses with network ones, so these are rewrapped */
+async function passthrough(req) {
+  const res = await fetch(req);
+  if (!res.body) return res;
+  const headers = new Headers(res.headers);
+  /* The body arrives already decoded */
+  if (headers.has('content-encoding')) {
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+  }
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+/* { start, end } from a single-range header, either side null when left open (start null is a suffix); null otherwise */
+function parseRange(header) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header || '');
+  if (!m || (!m[1] && !m[2])) return null;
+  return { start: m[1] ? parseInt(m[1], 10) : null, end: m[2] ? parseInt(m[2], 10) : null };
+}
+
+/* The range as inclusive byte offsets inside a file of `total` bytes, or null when none of it is there */
+function resolveRange(range, total) {
+  if (range.start === null) return range.end > 0 ? { start: Math.max(0, total - range.end), end: total - 1 } : null;
+  const end = range.end === null ? total - 1 : Math.min(range.end, total - 1);
+  return range.start > end ? null : { start: range.start, end };
+}
+
+const unsatisfiable = (total) => new Response(null, { status: 416, headers: { 'Content-Range': 'bytes */' + total } });
+
+/* A Blob slice stays on disk where the browser keeps it there, so a seek never reads the whole file into memory */
+async function audioSlice(full, range) {
+  const blob = await full.blob();
+  const span = resolveRange(range, blob.size);
+  if (!span) return unsatisfiable(blob.size);
+  const type = full.headers.get('Content-Type') || 'audio/ogg';
+  return new Response(blob.slice(span.start, span.end + 1), { status: 206, headers: rangeHeaders(type, span.start, span.end, blob.size) });
+}
+
+function rangeHeaders(type, start, end, total) {
+  return {
+    'Content-Type': type,
+    'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
+    'Content-Length': String(end - start + 1),
+    'Accept-Ranges': 'bytes'
+  };
 }
 
 function offlineResponse() {
