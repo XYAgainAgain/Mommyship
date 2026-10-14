@@ -65,6 +65,7 @@ export const TEXT = {
     downUnder: 'DOWN UNDER',
     wellerman: 'WELLERMAN',
     ievanPolkka: 'IEVAN POLKKA',
+    caribbeanBlue: 'CARIBBEAN BLUE',
     theme: 'CUCKBLOX THEME A-SIDE',
     shuffle: 'SHUFFLE ALL OWNED',
   },

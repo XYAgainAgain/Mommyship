@@ -64,6 +64,7 @@ const TUNES = [
   { id: 'caramelldansen', name: TEXT.tunes.caramelldansen, bundle: './music/Caramelldansen.song.json', homeLevel: 0, kcr: 5 },
   { id: 'wellerman', name: TEXT.tunes.wellerman, bundle: './music/Soon%20May%20the%20Wellerman%20Come.song.json', homeLevel: 0, kcr: 5 },
   { id: 'ievan-polkka', name: TEXT.tunes.ievanPolkka, bundle: './music/Ievan%20Polkka.song.json', homeLevel: 8, kcr: 5 },
+  { id: 'caribbean-blue', name: TEXT.tunes.caribbeanBlue, bundle: './music/Caribbean%20Blue.song.json', homeLevel: 0, kcr: 10 },
   { id: 'down-under', name: TEXT.tunes.downUnder, bundle: './music/Down%20Under.song.json', homeLevel: 0, kcr: 15 },
   { id: 'finally-landing', name: TEXT.tunes.finallyLanding, bundle: "./music/We're%20Finally%20Landing.song.json", homeLevel: 0, kcr: 20 },
   { id: 'anthem', name: TEXT.tunes.anthem, bundle: './music/Anthem%201-2.song.json', homeLevel: 0, kcr: 40 },
